@@ -1,0 +1,307 @@
+.teksttv-editor-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.teksttv-editor-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.teksttv-editor-preview {
+    width: 400px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 40px;
+}
+
+.teksttv-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.teksttv-preview-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.teksttv-preview-nav .button {
+    padding: 0 4px;
+    min-height: 28px;
+    min-width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.teksttv-preview-nav .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.teksttv-preview-counter {
+    font-size: 12px;
+    font-weight: 600;
+    color: #50575e;
+    min-width: 40px;
+    text-align: center;
+}
+
+.teksttv-preview-container {
+    position: relative;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    background: #1d2327;
+}
+
+.teksttv-preview-container.is-loading::before {
+    content: "Preview wordt geladen...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #787c82;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.teksttv-preview-container.is-empty::before {
+    content: "Voer tekst in voor een preview";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #50575e;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.teksttv-preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.teksttv-preview-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #787c82;
+}
+
+.teksttv-preview-note .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.teksttv-preview-thumbs {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    overflow-x: auto;
+    padding: 4px 0;
+}
+
+.teksttv-preview-thumb {
+    flex-shrink: 0;
+    width: 96px;
+    height: 54px;
+    border: 2px solid #c3c4c7;
+    border-radius: 3px;
+    background: #1d2327;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.15s;
+}
+
+.teksttv-preview-thumb:hover {
+    border-color: #8c8f94;
+}
+
+.teksttv-preview-thumb.is-active {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.teksttv-preview-thumb iframe {
+    width: 1920px;
+    height: 1080px;
+    border: 0;
+    transform-origin: 0 0;
+    transform: scale(0.05);
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.teksttv-preview-thumb-number {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.teksttv-preview-enlarge-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    padding: 0;
+}
+
+.teksttv-preview-container:hover .teksttv-preview-enlarge-btn {
+    opacity: 1;
+}
+
+.teksttv-preview-enlarge-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.teksttv-preview-enlarge-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.teksttv-preview-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.teksttv-preview-overlay iframe {
+    width: 90vw;
+    max-width: 1920px;
+    aspect-ratio: 16 / 9;
+    border: 0;
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
+    cursor: default;
+}
+
+.teksttv-overlay-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 24px;
+    z-index: 1;
+}
+
+.teksttv-overlay-counter {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 50px;
+    text-align: center;
+}
+
+.teksttv-overlay-nav-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.teksttv-overlay-nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.teksttv-overlay-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.teksttv-overlay-nav-btn .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.teksttv-preview-overlay-close {
+    position: absolute;
+    top: 12px;
+    right: 24px;
+    color: #fff;
+    font-size: 32px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.teksttv-preview-overlay-close:hover {
+    opacity: 1;
+}
+
+.teksttv-no-preview {
+    padding: 20px;
+    text-align: center;
+    color: #787c82;
+    background: #f6f7f7;
+    border: 1px dashed #c3c4c7;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+@media (max-width: 1200px) {
+    .teksttv-editor-layout {
+        flex-direction: column;
+    }
+    .teksttv-editor-preview {
+        width: 100%;
+        max-width: 500px;
+        position: static;
+    }
+}

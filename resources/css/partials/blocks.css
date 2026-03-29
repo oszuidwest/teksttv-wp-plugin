@@ -1,0 +1,444 @@
+.teksttv-loop-header {
+    max-width: 800px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.teksttv-api-url {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0f0f1;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #50575e;
+}
+
+.teksttv-api-url code {
+    background: none;
+    padding: 0;
+    color: #2271b1;
+}
+
+.teksttv-api-url a {
+    text-decoration: none;
+}
+
+.teksttv-api-url .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #787c82;
+}
+
+.teksttv-blocks {
+    max-width: 800px;
+}
+
+.teksttv-block {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    transition: box-shadow 0.15s ease;
+}
+
+.teksttv-block:hover {
+    border-color: #8c8f94;
+}
+
+.teksttv-block-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: #f6f7f7;
+    border-bottom: 1px solid #c3c4c7;
+    border-radius: 4px 4px 0 0;
+    cursor: move;
+    gap: 10px;
+    user-select: none;
+}
+
+.teksttv-block-header .teksttv-block-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: #2271b1;
+    color: #fff;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.teksttv-block-header .teksttv-block-icon .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.teksttv-block-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.teksttv-block-summary {
+    color: #787c82;
+    font-size: 12px;
+}
+
+.teksttv-block-handle {
+    color: #c3c4c7;
+    cursor: move;
+}
+
+.teksttv-block-handle:hover {
+    color: #787c82;
+}
+
+.teksttv-remove-block {
+    color: #787c82 !important;
+    text-decoration: none !important;
+    padding: 2px;
+    border-radius: 2px;
+    transition: color 0.1s;
+}
+
+.teksttv-remove-block:hover {
+    color: #b32d2e !important;
+}
+
+.teksttv-block-body {
+    padding: 14px;
+}
+
+.teksttv-block-body .teksttv-block-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: flex-end;
+}
+
+.teksttv-block-body .teksttv-block-field > label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #50575e;
+    margin-bottom: 4px;
+}
+
+.teksttv-block-body .teksttv-block-field select,
+.teksttv-block-body .teksttv-block-field input:not([type="checkbox"]):not([type="hidden"]) {
+    min-width: 100px;
+}
+
+/* Tom Select overrides — match WP admin input styling */
+.teksttv-block-field .ts-wrapper {
+    min-width: 200px;
+    width: 240px;
+    font-size: 13px;
+}
+
+.teksttv-block-field .ts-wrapper .ts-control {
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    min-height: 30px;
+    padding: 2px 6px;
+    background: #fff;
+    box-shadow: 0 0 0 transparent;
+    transition: border-color 0.1s;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.teksttv-block-field .ts-wrapper.focus .ts-control {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+.teksttv-block-field .ts-wrapper .ts-control .item {
+    padding: 2px 6px;
+    margin: 2px;
+    font-size: 12px;
+    border-radius: 3px;
+    background: #2271b1;
+    color: #fff;
+    border: none;
+}
+
+.teksttv-block-field .ts-wrapper .ts-control .item .remove {
+    color: rgba(255, 255, 255, 0.7);
+    border-left-color: rgba(255, 255, 255, 0.3);
+}
+
+.teksttv-block-field .ts-wrapper .ts-control .item .remove:hover {
+    color: #fff;
+}
+
+.teksttv-block-field .ts-wrapper .ts-control input {
+    font-size: 13px;
+}
+
+.teksttv-block-field .ts-wrapper .ts-dropdown {
+    border: 1px solid #8c8f94;
+    border-top: 0;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.teksttv-block-field .ts-wrapper .ts-dropdown .option {
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.teksttv-block-field .ts-wrapper .ts-dropdown .active {
+    background: #f0f6fc;
+    color: #1d2327;
+}
+
+.teksttv-block-fields--transitions {
+    border-top: 1px solid #f0f0f1;
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+.teksttv-block-fields--transitions .teksttv-block-image-preview img {
+    width: 80px;
+    height: 50px;
+    object-fit: cover;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.teksttv-campaign-slides-section {
+    border-top: 1px solid #f0f0f1;
+    padding-top: 12px;
+    margin-top: 12px;
+}
+
+.teksttv-campaign-slides-section .teksttv-section-label {
+    margin-bottom: 8px;
+}
+
+.teksttv-block-image-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.teksttv-block-image-preview img {
+    width: 120px;
+    height: 80px;
+    object-fit: cover;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    display: block;
+}
+
+.teksttv-block-image-fields {
+    flex: 1;
+}
+
+.teksttv-block-image-fields p {
+    margin: 0 0 8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.teksttv-block-scheduling-toggle {
+    border-top: 1px solid #f0f0f1;
+    padding-top: 10px;
+    margin-top: 4px;
+}
+
+.teksttv-block-scheduling-toggle label {
+    font-size: 12px;
+    color: #50575e;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.teksttv-block-fields--scheduling {
+    border-top: 1px solid #f0f0f1;
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+.teksttv-block-fields--duration {
+    border-top: 1px solid #f0f0f1;
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+.teksttv-unit {
+    font-size: 12px;
+    color: #787c82;
+}
+
+.teksttv-date-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #2271b1;
+    cursor: pointer;
+    margin-top: 4px;
+    text-decoration: none;
+    border: none;
+    background: none;
+    padding: 0;
+}
+
+.teksttv-date-reset:hover {
+    color: #135e96;
+}
+
+.teksttv-date-reset .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.teksttv-block-header .teksttv-block-toggle {
+    color: #787c82;
+    transition: transform 0.15s;
+}
+
+.teksttv-block.is-expanded .teksttv-block-header .teksttv-block-toggle {
+    transform: rotate(180deg);
+}
+
+/* Sortable states */
+.teksttv-block.ui-sortable-helper {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-color: #2271b1;
+}
+
+.teksttv-block.ui-sortable-placeholder {
+    visibility: visible !important;
+    background: #f0f6fc;
+    border: 2px dashed #2271b1;
+    border-radius: 4px;
+    min-height: 60px;
+}
+
+.teksttv-block.ui-sortable-placeholder * {
+    visibility: hidden;
+}
+
+.teksttv-add-block-bar {
+    max-width: 800px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.teksttv-split-button {
+    position: relative;
+    display: inline-flex;
+}
+
+.teksttv-split-button > .button:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 0;
+}
+
+.teksttv-split-button-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    padding: 0 4px !important;
+    min-width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.teksttv-split-button-toggle .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.teksttv-split-button-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 2px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    min-width: 160px;
+}
+
+.teksttv-split-button-menu.is-open {
+    display: block;
+}
+
+.teksttv-split-button-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    color: #1d2327;
+}
+
+.teksttv-split-button-menu button:hover {
+    background: #f0f0f1;
+}
+
+.teksttv-split-button-menu button.is-active {
+    font-weight: 600;
+    color: #2271b1;
+}
+
+.teksttv-split-button-menu button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #787c82;
+}
+
+.teksttv-split-button-menu button.is-active .dashicons {
+    color: #2271b1;
+}
+
+.teksttv-bar-spacer {
+    flex: 1;
+}
+
+.teksttv-add-block-bar .button-link {
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.teksttv-add-block-bar .button .dashicons {
+    margin-right: 2px;
+    vertical-align: text-bottom;
+    line-height: 1.4;
+}

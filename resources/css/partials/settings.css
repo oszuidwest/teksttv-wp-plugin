@@ -1,0 +1,58 @@
+.teksttv-tab-content {
+    margin-top: 20px;
+}
+
+.teksttv-tab-intro {
+    max-width: 800px;
+    margin-bottom: 20px;
+    color: #50575e;
+}
+
+.teksttv-channels-table {
+    max-width: 800px;
+    border-collapse: collapse;
+}
+
+.teksttv-channels-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+}
+
+.teksttv-channels-table td {
+    padding: 8px 12px;
+    vertical-align: middle;
+}
+
+.teksttv-channels-table input[type="text"] {
+    width: 100%;
+}
+
+.teksttv-channels-table .teksttv-channel-actions {
+    width: 80px;
+    text-align: right;
+}
+
+.teksttv-channels-table .teksttv-remove-channel {
+    color: #b32d2e;
+}
+
+.teksttv-channels-table .teksttv-remove-channel:hover {
+    color: #a00;
+}
+
+.teksttv-channels-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    max-width: 800px;
+}
+
+.teksttv-settings-form {
+    max-width: 800px;
+}
+
+.teksttv-settings-form .form-table th {
+    width: 180px;
+}

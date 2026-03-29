@@ -1,0 +1,36 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  php:
+    name: PHP (PHPCS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+
+      - uses: ramsey/composer-install@v3
+
+      - run: vendor/bin/phpcs
+
+  typescript:
+    name: TypeScript (Biome + tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install
+
+      - run: bunx biome check resources/
+
+      - run: bunx tsc --noEmit

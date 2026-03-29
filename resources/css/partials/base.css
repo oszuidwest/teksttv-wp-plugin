@@ -1,0 +1,101 @@
+.is-hidden {
+    display: none !important;
+}
+
+.teksttv-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    max-width: 800px;
+}
+
+.teksttv-card h3 {
+    margin: 0 0 4px;
+    font-size: 14px;
+}
+
+.teksttv-card .description {
+    margin-top: 2px;
+    margin-bottom: 12px;
+}
+
+.teksttv-section-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.teksttv-card-actions {
+    margin-top: 8px;
+}
+
+.teksttv-form-table {
+    margin-top: 0;
+}
+
+.teksttv-checkbox-list {
+    margin-top: 8px;
+}
+
+.teksttv-checkbox-list-item {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.teksttv-checkbox-list--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+}
+
+.teksttv-checkbox-list--inline .teksttv-checkbox-list-item {
+    margin-bottom: 0;
+}
+
+.teksttv-field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #50575e;
+    margin-bottom: 4px;
+}
+
+.teksttv-inline-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 12px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.teksttv-button-icon {
+    vertical-align: text-bottom;
+    margin-right: 2px;
+}
+
+.teksttv-cat-image-preview {
+    max-width: 200px;
+}
+
+.teksttv-empty-state {
+    padding: 32px 20px;
+    text-align: center;
+    color: #787c82;
+    border: 2px dashed #c3c4c7;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    max-width: 800px;
+}
+
+.teksttv-empty-state .dashicons {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 8px;
+    color: #c3c4c7;
+}

@@ -1,0 +1,23 @@
+{
+    "name": "teksttv-wp-plugin",
+    "private": true,
+    "scripts": {
+        "build": "bun run build:js && bun run build:css && bun run build:static",
+        "build:js": "bun build resources/ts/admin.ts --outdir assets --minify",
+        "build:css": "bun build resources/css/admin.css --outdir assets --minify",
+        "build:static": "cp resources/ts/tinymce-separator.js assets/ && cp resources/css/tinymce-content.css assets/",
+        "dev": "bun run build:js -- --watch & bun run build:css -- --watch",
+        "lint": "bun run lint:php && bun run lint:js",
+        "lint:php": "vendor/bin/phpcs",
+        "lint:js": "bunx biome check resources/",
+        "lint:fix": "vendor/bin/phpcbf; bunx biome check --write resources/"
+    },
+    "dependencies": {
+        "tom-select": "^2.5.2"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.4.9",
+        "@types/jquery": "^4.0.0",
+        "@types/jqueryui": "^1.12.24"
+    }
+}
