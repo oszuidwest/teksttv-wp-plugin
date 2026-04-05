@@ -15,6 +15,7 @@ class Plugin
 
         BuiltinBlocks::init();
         AdminPage::init();
+        AuditPage::init();
         CampaignsPage::init();
         PostMeta::init();
         CategoryMeta::init();

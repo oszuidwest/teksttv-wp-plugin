@@ -32,6 +32,9 @@ export interface TeksttvPostConfig {
     defaultEndDate: string;
     fallbackImage: ImageData | '';
     customImage: ImageData | '';
+    generateUrl: string;
+    aiSupported: boolean;
+    postId: number;
 }
 
 /** WordPress TinyMCE editor instance (partial) */

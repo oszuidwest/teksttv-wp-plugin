@@ -113,6 +113,8 @@ class PostMeta
         }
         $default_end = ($default_days > 0 && !empty($saved_start)) ? date('Y-m-d', strtotime($saved_start . ' + ' . $default_days . ' days')) : '';
 
+        $ai_supported = Helpers::has_feature('ai_generate') && function_exists('wp_supports_ai') && wp_supports_ai();
+
         wp_localize_script('teksttv-post-meta', 'teksttvPost', [
             'previewUrl' => $preview_url,
             'nonce' => wp_create_nonce('teksttv_meta'),
@@ -121,6 +123,9 @@ class PostMeta
             'defaultEndDate' => $default_end,
             'fallbackImage' => $fallback_image ?: '',
             'customImage' => $custom_image ?: '',
+            'generateUrl' => rest_url('teksttv/v1/generate'),
+            'aiSupported' => $ai_supported,
+            'postId' => $post_id ?: 0,
         ]);
     }
 
@@ -183,10 +188,23 @@ class PostMeta
                 <!-- Two-column layout: editor left, preview right -->
                 <div class="teksttv-editor-layout">
                     <div class="teksttv-editor-main">
+                        <?php $ai_enabled = Helpers::has_feature('ai_generate') && function_exists('wp_supports_ai') && wp_supports_ai(); ?>
+                        <?php if ($ai_enabled) : ?>
+                        <div class="teksttv-meta-section teksttv-ai-section">
+                            <button type="button" class="button button-small teksttv-generate-btn" data-field="both"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> Genereer kop &amp; tekst</button>
+                            <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
+                        </div>
+                        <?php endif; ?>
+
                         <?php if (Helpers::has_feature('custom_title')) : ?>
                         <!-- Title override -->
                         <div class="teksttv-meta-section">
-                            <label for="teksttv-title" class="teksttv-section-label">Kop</label>
+                            <div class="teksttv-section-header">
+                                <label for="teksttv-title" class="teksttv-section-label">Kop</label>
+                                <?php if ($ai_enabled) : ?>
+                                <button type="button" class="button button-small teksttv-generate-btn" data-field="title"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> Genereer</button>
+                                <?php endif; ?>
+                            </div>
                             <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
                             <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" />
                             <p class="description">Laat leeg om de titel van het artikel te gebruiken.</p>
@@ -195,7 +213,12 @@ class PostMeta
 
                         <!-- Content -->
                         <div class="teksttv-meta-section teksttv-content-wrap">
-                            <label class="teksttv-section-label">Tekst voor Tekst TV</label>
+                            <div class="teksttv-section-header">
+                                <label class="teksttv-section-label">Tekst voor Tekst TV</label>
+                                <?php if ($ai_enabled) : ?>
+                                <button type="button" class="button button-small teksttv-generate-btn" data-field="body"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> Genereer</button>
+                                <?php endif; ?>
+                            </div>
                             <?php
                             // Build toolbar based on enabled features
                             $toolbar_items = [];

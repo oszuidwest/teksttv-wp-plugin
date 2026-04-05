@@ -56,6 +56,63 @@
     border-bottom: 0;
 }
 
+.teksttv-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.teksttv-meta-section input.large-text {
+    width: 100%;
+}
+
+.teksttv-ai-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.teksttv-generate-btn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+}
+
+.teksttv-generate-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+}
+
+.teksttv-generate-status {
+    font-size: 12px;
+    color: #50575e;
+}
+
+.teksttv-generate-status.is-error {
+    color: #d63638;
+}
+
+.teksttv-generate-status.is-warning {
+    color: #dba617;
+}
+
+.teksttv-spin {
+    animation: teksttv-spin 1s linear infinite;
+}
+
+@keyframes teksttv-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .teksttv-content-wrap .teksttv-content-toolbar {
     display: flex;
     align-items: center;

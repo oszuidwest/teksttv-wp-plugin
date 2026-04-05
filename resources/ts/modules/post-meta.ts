@@ -1,4 +1,4 @@
-import type { ImageData, Slide, TextSlide, TeksttvPostConfig, WPMediaAttachment } from './types';
+import type { ImageData, Slide, TeksttvPostConfig, TextSlide, WPMediaAttachment } from './types';
 import { encodeSlideData } from './utils';
 
 function updateThumbnails($thumbs: JQuery, slides: Slide[], activeIndex: number, baseUrl: string): void {
@@ -412,6 +412,97 @@ export function initPostMeta(): void {
             updatePreview();
         }
     });
+
+    // =========================================================================
+    // AI generate buttons
+    // =========================================================================
+
+    if (config?.aiSupported && config.generateUrl) {
+        const loadingMessages = [
+            'Even nadenken...',
+            'Artikel aan het lezen...',
+            'De essentie aan het vinden...',
+            'Aan het samenvatten...',
+            'Tekst TV klaar maken...',
+            'Tekst aan het polijsten...',
+        ];
+
+        function applyTitle(content: string): void {
+            $('#teksttv-title').val(content).trigger('input');
+        }
+
+        function applyBody(content: string): void {
+            const editor = typeof tinymce !== 'undefined' ? tinymce?.get('teksttv_content') : null;
+            if (editor && !editor.isHidden()) {
+                editor.setContent(content);
+                editor.fire('change');
+            } else {
+                $('#teksttv_content').val(content).trigger('input');
+            }
+        }
+
+        $('.teksttv-generate-btn').on('click', function () {
+            const $btn = $(this);
+            const field = $btn.data('field') as string;
+            const $status = $('#teksttv-generate-status');
+
+            if ($btn.prop('disabled')) return;
+
+            const originalText = $btn.html();
+            let msgIndex = 0;
+            const spinnerHtml = '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon"></span> ';
+            $btn.prop('disabled', true).html(spinnerHtml + loadingMessages[0]);
+            const msgInterval = setInterval(() => {
+                msgIndex = (msgIndex + 1) % loadingMessages.length;
+                $btn.html(spinnerHtml + loadingMessages[msgIndex]);
+            }, 2500);
+            $status.text('').removeClass('is-error is-warning');
+
+            fetch(config.generateUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': config.restNonce,
+                },
+                body: JSON.stringify({ post_id: config.postId, field }),
+            })
+                .then((res) => res.json())
+                .then(
+                    (data: {
+                        title?: string;
+                        body?: string;
+                        content?: string;
+                        error?: string;
+                        warning?: string;
+                    }) => {
+                        if (data.error) {
+                            $status.text(data.error).addClass('is-error');
+                            return;
+                        }
+
+                        if (field === 'both') {
+                            if (data.title) applyTitle(data.title);
+                            if (data.body) applyBody(data.body);
+                        } else if (field === 'title' && data.content) {
+                            applyTitle(data.content);
+                        } else if (field === 'body' && data.content) {
+                            applyBody(data.content);
+                        }
+
+                        if (data.warning) {
+                            $status.text(data.warning).addClass('is-warning');
+                        }
+                    },
+                )
+                .catch(() => {
+                    $status.text('Er ging iets mis bij het genereren.').addClass('is-error');
+                })
+                .finally(() => {
+                    clearInterval(msgInterval);
+                    $btn.prop('disabled', false).html(originalText);
+                });
+        });
+    }
 
     // =========================================================================
     // Word count

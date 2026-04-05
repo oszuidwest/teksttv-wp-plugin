@@ -31,6 +31,34 @@ class RestApi
             ],
         ]);
 
+        register_rest_route(self::NAMESPACE, '/generate', [
+            'methods' => 'POST',
+            'callback' => [self::class, 'generate_content'],
+            'permission_callback' => function () {
+                return current_user_can('edit_teksttv');
+            },
+            'args' => [
+                'post_id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+                'field' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'enum' => ['title', 'body', 'both'],
+                ],
+            ],
+        ]);
+
+        register_rest_route(self::NAMESPACE, '/export-training-data', [
+            'methods' => 'GET',
+            'callback' => [self::class, 'export_training_data'],
+            'permission_callback' => function () {
+                return current_user_can('manage_teksttv');
+            },
+        ]);
+
         register_rest_route(self::NAMESPACE, '/slides', [
             'methods' => 'GET',
             'callback' => [self::class, 'get_slides'],
@@ -79,6 +107,333 @@ class RestApi
         }
 
         return new WP_REST_Response($data, 200);
+    }
+
+    public static function generate_content(WP_REST_Request $request): WP_REST_Response
+    {
+        if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
+            return new WP_REST_Response(
+                ['error' => 'AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.'],
+                503
+            );
+        }
+
+        $post_id = $request->get_param('post_id');
+        $field = $request->get_param('field');
+
+        // Rate limiting per user
+        $prompts_config = Helpers::get_ai_prompts();
+        $rate_limit = $prompts_config['rate_limit'];
+        $user_id = get_current_user_id();
+        $rate_key = 'teksttv_ai_rate_' . $user_id;
+        $rate_count = (int) get_transient($rate_key);
+        if ($rate_count >= $rate_limit) {
+            return new WP_REST_Response(
+                ['error' => 'Te veel verzoeken. Probeer het over een minuut opnieuw.'],
+                429
+            );
+        }
+        set_transient($rate_key, $rate_count + 1, 60);
+
+        if (!current_user_can('edit_post', $post_id)) {
+            return new WP_REST_Response(['error' => 'Onvoldoende rechten.'], 403);
+        }
+
+        $post = get_post($post_id);
+        if (!$post) {
+            return new WP_REST_Response(['error' => 'Post niet gevonden.'], 404);
+        }
+
+        // Clean post content for AI input
+        $post_text = self::prepare_content($post->post_content);
+        $post_title = $post->post_title;
+
+        if (empty($post_text) && empty($post_title)) {
+            return new WP_REST_Response(['error' => 'Post heeft geen content om samen te vatten.'], 422);
+        }
+
+        $prompts = Helpers::get_ai_prompts();
+        $min_words = $prompts['min_input_words'];
+        if ($min_words > 0) {
+            $word_count = str_word_count($post_text);
+            if ($word_count < $min_words) {
+                return new WP_REST_Response(
+                    ['error' => sprintf('Artikel bevat te weinig tekst (%d woorden, minimaal %d vereist).', $word_count, $min_words)],
+                    422
+                );
+            }
+        }
+
+        $fields_to_generate = $field === 'both' ? ['title', 'body'] : [$field];
+        $response_data = [];
+        $warnings = [];
+
+        foreach ($fields_to_generate as $current_field) {
+            $result = self::generate_single_field($current_field, $post_title, $post_text);
+            if (is_wp_error($result)) {
+                return new WP_REST_Response(
+                    ['error' => 'AI-generatie mislukt: ' . $result->get_error_message()],
+                    500
+                );
+            }
+            $response_data[$current_field] = $result['content'];
+            if (!empty($result['warning'])) {
+                $warnings[] = $result['warning'];
+            }
+        }
+
+        // Save AI output as post meta for audit trail (before prefix, for clean comparison)
+        if (isset($response_data['title'])) {
+            update_post_meta($post_id, '_teksttv_ai_title', $response_data['title']);
+        }
+        if (isset($response_data['body'])) {
+            update_post_meta($post_id, '_teksttv_ai_body', $response_data['body']);
+        }
+
+        // Apply region prefix to body (after save, so audit trail stays clean)
+        if (isset($response_data['body'])) {
+            $region_prefix = self::get_region_prefix($post_id);
+            if (!empty($region_prefix)) {
+                $response_data['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $response_data['body']));
+            }
+        }
+
+        // For single field requests, keep backward-compatible response
+        $response = $field !== 'both' ? ['content' => $response_data[$field]] : $response_data;
+
+        if (!empty($warnings)) {
+            $response['warning'] = implode(' ', $warnings);
+        }
+
+        return new WP_REST_Response($response, 200);
+    }
+
+    /**
+     * Generate a single field (title or body) using the WP AI Client.
+     *
+     * @return array{content: string, warning?: string}|\WP_Error
+     */
+    private static function generate_single_field(string $field, string $post_title, string $post_text)
+    {
+        $prompts = Helpers::get_ai_prompts();
+        $word_limit = $prompts['word_limit'];
+        $title_char_limit = $prompts['title_char_limit'];
+        $max_retries = $prompts['max_retries'];
+
+        if ($field === 'title') {
+            $user_prompt = sprintf(
+                "%s\n\nTitel: %s\n\n%s",
+                $prompts['prompt_title'],
+                $post_title,
+                mb_substr($post_text, 0, 2000)
+            );
+            $system = $prompts['system'] . sprintf(
+                ' De kop mag maximaal %d tekens lang zijn.',
+                $title_char_limit
+            );
+        } else {
+            $user_prompt = sprintf(
+                "%s\n\nTitel: %s\n\n%s",
+                $prompts['prompt_body'],
+                $post_title,
+                mb_substr($post_text, 0, 4000)
+            );
+            $system = $prompts['system'] . sprintf(
+                ' De samenvatting moet tussen de %d en %d woorden zijn.',
+                (int) ceil($word_limit * 0.2),
+                $word_limit
+            );
+        }
+
+        $last_content = '';
+        $warning = '';
+
+        for ($attempt = 1; $attempt <= $max_retries; $attempt++) {
+            $builder = wp_ai_client_prompt($user_prompt)
+                ->using_system_instruction($system)
+                ->using_max_tokens($prompts['max_tokens']);
+
+            if ($prompts['temperature'] !== '') {
+                $builder = $builder->using_temperature((float) $prompts['temperature']);
+            }
+            if ($prompts['top_p'] !== '') {
+                $builder = $builder->using_top_p((float) $prompts['top_p']);
+            }
+
+            // Apply configured model or provider
+            $model_setting = $prompts['model'] ?? '';
+            $provider_setting = $prompts['provider'] ?? '';
+            if (!empty($model_setting) && str_contains($model_setting, '/')) {
+                [$provider_id, $model_id] = explode('/', $model_setting, 2);
+                $builder = $builder->using_model_preference([$provider_id, $model_id]);
+            } elseif (!empty($provider_setting)) {
+                $builder = $builder->using_provider($provider_setting);
+            }
+
+            $result = $builder->generate_text();
+
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            $last_content = trim($result);
+
+            // Validate output length
+            if ($field === 'title') {
+                if (mb_strlen($last_content) <= $title_char_limit) {
+                    break;
+                }
+                if ($attempt === $max_retries) {
+                    $warning = sprintf(
+                        'Kop is %d tekens (limiet: %d). Controleer en kort eventueel handmatig in.',
+                        mb_strlen($last_content),
+                        $title_char_limit
+                    );
+                }
+            } else {
+                $count = str_word_count($last_content);
+                $min_words = (int) ceil($word_limit * 0.2);
+                if ($count >= $min_words && $count <= $word_limit) {
+                    break;
+                }
+                if ($attempt === $max_retries) {
+                    $warning = sprintf(
+                        'Tekst bevat %d woorden (limiet: %d-%d). Controleer en pas eventueel handmatig aan.',
+                        $count,
+                        $min_words,
+                        $word_limit
+                    );
+                }
+            }
+        }
+
+        // For body, wrap in paragraphs for TinyMCE
+        if ($field === 'body') {
+            $last_content = wpautop($last_content);
+        }
+
+        $response = ['content' => $last_content];
+        if (!empty($warning)) {
+            $response['warning'] = $warning;
+        }
+
+        return $response;
+    }
+
+    /**
+     * Prepare post content for AI input by cleaning HTML structure.
+     */
+    private static function prepare_content(string $html): string
+    {
+        // Remove script, style, and noscript tags with their content
+        $text = preg_replace('/<(script|style|noscript)[^>]*>.*?<\/\1>/si', '', $html);
+
+        // Convert block elements to newlines for readability
+        $text = preg_replace('/<\/(p|div|h[1-6]|li|tr|blockquote)>/i', "\n", $text);
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $text);
+
+        // Strip remaining HTML tags
+        $text = wp_strip_all_tags($text);
+
+        // Decode HTML entities
+        $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+
+        // Normalize whitespace
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+
+        return trim($text);
+    }
+
+    /**
+     * Build a region prefix from the post's taxonomy terms.
+     */
+    private static function get_region_prefix(int $post_id): string
+    {
+        $prompts = Helpers::get_ai_prompts();
+        $taxonomy = $prompts['region_taxonomy'] ?? '';
+
+        if (empty($taxonomy) || !taxonomy_exists($taxonomy)) {
+            return '';
+        }
+
+        $terms = wp_get_post_terms($post_id, $taxonomy, ['fields' => 'names']);
+        if (is_wp_error($terms) || empty($terms)) {
+            return '';
+        }
+
+        return implode(' / ', array_map('mb_strtoupper', $terms));
+    }
+
+    public static function export_training_data(): WP_REST_Response
+    {
+        $prompts = Helpers::get_ai_prompts();
+        $system = $prompts['system'];
+
+        $query = new \WP_Query([
+            'post_type' => 'post',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                'relation' => 'OR',
+                ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
+                ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
+            ],
+        ]);
+
+        $lines = [];
+
+        foreach ($query->posts as $post) {
+            $ai_body = get_post_meta($post->ID, '_teksttv_ai_body', true);
+            $current_body = get_post_meta($post->ID, '_teksttv_content', true);
+
+            // Only include posts where the body was modified by the editor
+            if (empty($ai_body) || empty($current_body) || trim($ai_body) === trim($current_body)) {
+                continue;
+            }
+
+            $post_text = self::prepare_content($post->post_content);
+            $user_prompt = sprintf(
+                "%s\n\nTitel: %s\n\n%s",
+                $prompts['prompt_body'],
+                $post->post_title,
+                mb_substr($post_text, 0, 4000)
+            );
+
+            $lines[] = wp_json_encode([
+                'input' => [
+                    'messages' => [
+                        ['role' => 'system', 'content' => $system],
+                        ['role' => 'user', 'content' => $user_prompt],
+                    ],
+                ],
+                'preferred_output' => [
+                    ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($current_body)))],
+                ],
+                'non_preferred_output' => [
+                    ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($ai_body)))],
+                ],
+            ], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (empty($lines)) {
+            return new WP_REST_Response(['error' => 'Geen trainingsdata beschikbaar. Er zijn nog geen posts waarvan de AI-tekst is bewerkt.'], 404);
+        }
+
+        // Return as downloadable JSONL
+        header('Content-Type: application/jsonl');
+        header('Content-Disposition: attachment; filename="teksttv-training-data.jsonl"');
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSONL output, not HTML
+        echo implode("\n", $lines);
+        exit;
+    }
+
+    /**
+     * Strip a region prefix (e.g. "LEIDEN - " or "DEN HAAG / ROOSENDAAL - ") from a string.
+     */
+    public static function strip_region_prefix(string $content): string
+    {
+        $result = preg_replace('/^[A-Z][A-Z\s\/\-]*\s-\s/', '', trim($content));
+        return $result !== null ? $result : trim($content);
     }
 
     public static function get_slides(WP_REST_Request $request): WP_REST_Response

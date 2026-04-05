@@ -92,6 +92,7 @@ class Helpers
             'custom_title', 'sidebar_image', 'extra_images',
             'scheduling', 'page_separator',
             'bold', 'italic', 'underline', 'lists',
+            'ai_generate',
         ]);
     }
 
@@ -101,6 +102,89 @@ class Helpers
     public static function has_feature(string $feature): bool
     {
         return in_array($feature, self::get_features(), true);
+    }
+
+    /**
+     * Get the AI prompt configuration with defaults.
+     *
+     * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, min_input_words: int}
+     */
+    public static function get_ai_prompts(): array
+    {
+        $saved = get_option('teksttv_ai_prompts', []);
+        $word_limit = max(10, (int) ($saved['word_limit'] ?? 100));
+        $title_char_limit = max(10, (int) ($saved['title_char_limit'] ?? 40));
+        $min_input = max(0, (int) ($saved['min_input_words'] ?? 50));
+        $max_retries = max(1, min(5, (int) ($saved['max_retries'] ?? 3)));
+        $rate_limit = max(1, min(60, (int) ($saved['rate_limit'] ?? 10)));
+
+        $defaults = [
+            'system' => 'Je bent een eindredacteur voor tekst-tv. Schrijf in natuurlijk, vloeiend Nederlands voor een breed publiek. Gebruik korte, heldere zinnen. Schrijf alleen in het Nederlands en gebruik geen gedachtestreepjes.',
+            'prompt_title' => sprintf(
+                'Schrijf een korte, pakkende kop voor tekst-tv (maximaal %d tekens) gebaseerd op dit artikel. Geef alleen de kop terug, zonder aanhalingstekens.',
+                $title_char_limit
+            ),
+            'prompt_body' => sprintf(
+                'Vat dit nieuwsartikel samen voor tekst-tv in maximaal %d woorden. Schrijf in vloeiende, korte zinnen zonder HTML-opmaak.',
+                $word_limit
+            ),
+        ];
+
+        return [
+            'system' => !empty($saved['system']) ? $saved['system'] : $defaults['system'],
+            'prompt_title' => !empty($saved['prompt_title']) ? $saved['prompt_title'] : $defaults['prompt_title'],
+            'prompt_body' => !empty($saved['prompt_body']) ? $saved['prompt_body'] : $defaults['prompt_body'],
+            'word_limit' => $word_limit,
+            'title_char_limit' => $title_char_limit,
+            'min_input_words' => $min_input,
+            'max_retries' => $max_retries,
+            'rate_limit' => $rate_limit,
+            'region_taxonomy' => $saved['region_taxonomy'] ?? '',
+            'provider' => $saved['provider'] ?? '',
+            'model' => $saved['model'] ?? '',
+            'temperature' => $saved['temperature'] ?? '',
+            'top_p' => $saved['top_p'] ?? '',
+            'max_tokens' => max(64, (int) ($saved['max_tokens'] ?? 2048)),
+        ];
+    }
+
+    /**
+     * Get available AI models grouped by provider.
+     *
+     * @return array<string, array{label: string, models: array<string, string>}>
+     */
+    public static function get_ai_models(): array
+    {
+        if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
+            return [];
+        }
+
+        try {
+            $registry = \WordPress\AiClient\AiClient::defaultRegistry();
+            $requirements = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
+                [\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration()],
+                []
+            );
+
+            $result = [];
+            foreach ($registry->findModelsMetadataForSupport($requirements) as $provider_models) {
+                $provider = $provider_models->getProvider();
+                $provider_id = $provider->getId();
+                $models = [];
+                foreach ($provider_models->getModels() as $model) {
+                    $models[$model->getId()] = $model->getName();
+                }
+                if (!empty($models)) {
+                    $result[$provider_id] = [
+                        'label' => $provider->getName(),
+                        'models' => $models,
+                    ];
+                }
+            }
+            return $result;
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**

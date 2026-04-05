@@ -1,0 +1,74 @@
+.teksttv-audit-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.teksttv-audit-stat-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+}
+
+.teksttv-audit-stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1d2327;
+    line-height: 1;
+}
+
+.teksttv-audit-stat-label {
+    font-size: 12px;
+    color: #787c82;
+    margin-top: 4px;
+}
+
+.teksttv-audit-table {
+    max-width: 900px;
+}
+
+.teksttv-audit-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.teksttv-audit-badge--ok {
+    background: #edfaef;
+    color: #00a32a;
+}
+
+.teksttv-audit-badge--edited {
+    background: #fef8ee;
+    color: #bd8600;
+}
+
+.teksttv-audit-badge--none {
+    background: #f0f0f1;
+    color: #787c82;
+}
+
+.teksttv-audit-diff {
+    margin-bottom: 8px;
+}
+
+.teksttv-audit-diff th {
+    width: 50%;
+}
+
+.teksttv-audit-cell {
+    vertical-align: top;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
