@@ -441,13 +441,17 @@ export function initPostMeta(): void {
             }
         }
 
-        $('.teksttv-generate-btn').on('click', function () {
-            const $btn = $(this);
-            const field = $btn.data('field') as string;
+        function hasExistingContent(): boolean {
+            const title = (($('#teksttv-title').val() as string) || '').trim();
+            const body = getEditorContent()
+                .replace(/<[^>]+>/g, '')
+                .trim();
+            return title.length > 0 || body.length > 0;
+        }
+
+        function doGenerate($btn: JQuery, field: string): void {
+            if (!config) return;
             const $status = $('#teksttv-generate-status');
-
-            if ($btn.prop('disabled')) return;
-
             const originalText = $btn.html();
             let msgIndex = 0;
             const spinnerHtml = '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon"></span> ';
@@ -489,6 +493,15 @@ export function initPostMeta(): void {
                             applyBody(data.content);
                         }
 
+                        // Show AI badge
+                        let $badge = $('#teksttv-ai-badge');
+                        if (!$badge.length) {
+                            $badge = $(
+                                '<span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> AI gegenereerd</span>',
+                            );
+                            $('#teksttv-generate-status').after($badge);
+                        }
+
                         if (data.warning) {
                             $status.text(data.warning).addClass('is-warning');
                         }
@@ -501,8 +514,70 @@ export function initPostMeta(): void {
                     clearInterval(msgInterval);
                     $btn.prop('disabled', false).html(originalText);
                 });
+        }
+
+        $('.teksttv-generate-btn').on('click', function () {
+            const $btn = $(this);
+            const field = $btn.data('field') as string;
+
+            if ($btn.prop('disabled')) return;
+
+            // Warn if post is not yet saved
+            if (config.isNewPost) {
+                window.alert('Sla de post eerst op voordat je AI-content kunt genereren.');
+                return;
+            }
+
+            // Confirm before overwriting existing content
+            if (hasExistingContent()) {
+                if (!window.confirm('Dit overschrijft de huidige tekst. Doorgaan?')) {
+                    return;
+                }
+            }
+
+            doGenerate($btn, field);
         });
+
+        // Auto-generate when toggling TekstTV on with empty fields
+        if (!config.isNewPost) {
+            $active.on('change', () => {
+                if (!$active.is(':checked')) return;
+                if (hasExistingContent()) return;
+
+                setTimeout(() => {
+                    if (window.confirm('Wil je automatisch een kop en tekst genereren?')) {
+                        const $btn = $('.teksttv-generate-btn[data-field="both"]');
+                        if ($btn.length) {
+                            doGenerate($btn, 'both');
+                        }
+                    }
+                }, 300);
+            });
+        }
     }
+
+    // =========================================================================
+    // Title character count
+    // =========================================================================
+
+    function updateCharCount(): void {
+        const $cc = $('#teksttv-charcount');
+        if (!$cc.length) return;
+
+        const limit = config?.titleCharLimit ?? 0;
+        const title = (($('#teksttv-title').val() as string) || '').trim();
+        const len = title.length;
+
+        if (limit > 0 && len > 0) {
+            const over = len > limit;
+            $cc.html(`<span${over ? ' class="teksttv-charcount-over"' : ''}>${len} / ${limit} tekens</span>`);
+        } else {
+            $cc.text('');
+        }
+    }
+
+    $('#teksttv-title').on('input', updateCharCount);
+    updateCharCount();
 
     // =========================================================================
     // Word count
@@ -520,7 +595,15 @@ export function initPostMeta(): void {
         const pageCount = content.split(/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i).length;
         const totalWords = text ? text.split(/\s+/).length : 0;
 
-        const parts = [`<span>${totalWords} woorden</span>`];
+        const wordLimit = config?.wordLimit ?? 0;
+        let wordHtml: string;
+        if (wordLimit > 0 && totalWords > 0) {
+            const over = totalWords > wordLimit;
+            wordHtml = `<span${over ? ' class="teksttv-charcount-over"' : ''}>${totalWords} / ${wordLimit} woorden</span>`;
+        } else {
+            wordHtml = `<span>${totalWords} woorden</span>`;
+        }
+        const parts = [wordHtml];
         if (pageCount > 1) {
             parts.push(`<span>${pageCount} slides</span>`);
         }

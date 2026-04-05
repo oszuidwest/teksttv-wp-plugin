@@ -35,6 +35,10 @@ export interface TeksttvPostConfig {
     generateUrl: string;
     aiSupported: boolean;
     postId: number;
+    isNewPost: boolean;
+    titleCharLimit: number;
+    wordLimit: number;
+    hasAiContent: boolean;
 }
 
 /** WordPress TinyMCE editor instance (partial) */

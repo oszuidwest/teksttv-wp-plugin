@@ -126,6 +126,10 @@ class PostMeta
             'generateUrl' => rest_url('teksttv/v1/generate'),
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
+            'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
+            'titleCharLimit' => $ai_supported ? Helpers::get_ai_prompts()['title_char_limit'] : 0,
+            'wordLimit' => $ai_supported ? Helpers::get_ai_prompts()['word_limit'] : 0,
+            'hasAiContent' => $post_id && (get_post_meta($post_id, '_teksttv_ai_title', true) || get_post_meta($post_id, '_teksttv_ai_body', true)),
         ]);
     }
 
@@ -193,6 +197,9 @@ class PostMeta
                         <div class="teksttv-meta-section teksttv-ai-section">
                             <button type="button" class="button button-small teksttv-generate-btn" data-field="both"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> Genereer kop &amp; tekst</button>
                             <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
+                            <?php if (get_post_meta($post->ID, '_teksttv_ai_title', true) || get_post_meta($post->ID, '_teksttv_ai_body', true)) : ?>
+                            <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> AI gegenereerd</span>
+                            <?php endif; ?>
                         </div>
                         <?php endif; ?>
 
@@ -207,7 +214,10 @@ class PostMeta
                             </div>
                             <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
                             <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" />
-                            <p class="description">Laat leeg om de titel van het artikel te gebruiken.</p>
+                            <div class="teksttv-title-footer">
+                                <p class="description">Laat leeg om de titel van het artikel te gebruiken.</p>
+                                <span class="teksttv-charcount" id="teksttv-charcount"></span>
+                            </div>
                         </div>
                         <?php endif; ?>
 

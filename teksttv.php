@@ -27,7 +27,7 @@ register_activation_hook(__FILE__, function () {
     if ($admin) {
         $admin->add_cap('manage_teksttv');
         $admin->add_cap('manage_teksttv_campaigns');
-        $admin->add_cap('manage_teksttv_prompts');
+        $admin->add_cap('manage_teksttv_content');
         $admin->add_cap('edit_teksttv');
     }
 
@@ -45,7 +45,7 @@ register_deactivation_hook(__FILE__, function () {
         if ($role) {
             $role->remove_cap('manage_teksttv');
             $role->remove_cap('manage_teksttv_campaigns');
-            $role->remove_cap('manage_teksttv_prompts');
+            $role->remove_cap('manage_teksttv_content');
             $role->remove_cap('edit_teksttv');
         }
     }

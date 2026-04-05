@@ -54,10 +54,10 @@ class AdminPage
         if (Helpers::has_feature('ai_generate')) {
             add_submenu_page(
                 'teksttv',
-                'AI Instellingen',
-                'AI Instellingen',
-                'manage_teksttv_prompts',
-                'teksttv-prompts',
+                'Content & AI',
+                'Content & AI',
+                'manage_teksttv_content',
+                'teksttv-content',
                 [self::class, 'render_prompts_page']
             );
         }
@@ -121,7 +121,7 @@ class AdminPage
             'default' => ['custom_title', 'sidebar_image', 'extra_images', 'scheduling', 'page_separator', 'bold', 'italic', 'underline', 'lists'],
         ]);
 
-        register_setting('teksttv_prompts', 'teksttv_ai_prompts', [
+        register_setting('teksttv_content', 'teksttv_ai_prompts', [
             'type' => 'array',
             'sanitize_callback' => function ($input) {
                 if (!is_array($input)) {
@@ -579,12 +579,12 @@ class AdminPage
         $prompts = Helpers::get_ai_prompts();
 
         echo '<div class="wrap">';
-        echo '<h1>AI Instellingen</h1>';
+        echo '<h1>Content & AI</h1>';
 
         ?>
         <div class="teksttv-tab-content">
             <form method="post" action="options.php" class="teksttv-settings-form">
-                <?php settings_fields('teksttv_prompts'); ?>
+                <?php settings_fields('teksttv_content'); ?>
 
                 <div class="teksttv-card">
                     <h3>Systeem instructie</h3>
