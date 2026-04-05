@@ -405,8 +405,8 @@ class SlidesBuilder
         $slides = [];
 
         foreach ($campaigns as $campaign) {
-            $campaign_group = $campaign['group'] ?? 0;
-            if (!in_array((int) $campaign_group, array_map('intval', $groups), true)) {
+            $campaign_group = (string) ($campaign['group'] ?? '');
+            if (!in_array($campaign_group, $groups, true)) {
                 continue;
             }
 
@@ -422,6 +422,17 @@ class SlidesBuilder
                     ];
                 }
             }
+        }
+
+        // Apply rotation limit: show only N slides, rotating based on time
+        $limit = !empty($block['limit']) ? (int) $block['limit'] : 0;
+        if ($limit > 0 && count($slides) > $limit) {
+            $offset = (int) floor(time() / 180) % count($slides);
+            $rotated = [];
+            for ($i = 0; $i < $limit; $i++) {
+                $rotated[] = $slides[($offset + $i) % count($slides)];
+            }
+            $slides = $rotated;
         }
 
         // Add intro/outro transitions if there are commercial slides

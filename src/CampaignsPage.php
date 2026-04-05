@@ -13,8 +13,8 @@ class CampaignsPage
     {
         add_submenu_page(
             'teksttv',
-            'Reclame',
-            'Reclame',
+            'Campagnes',
+            'Campagnes',
             'manage_teksttv_campaigns',
             'teksttv-campaigns',
             [self::class, 'render_page']
@@ -30,20 +30,48 @@ class CampaignsPage
 
         $campaigns = Helpers::get_campaigns();
         $channels = Helpers::get_channels();
+        $groups = Helpers::get_campaign_groups();
 
         echo '<div class="wrap">';
-        echo '<h1>Reclame campagnes</h1>';
+        echo '<h1>Campagnes</h1>';
         settings_errors('teksttv_campaigns');
 
         ?>
         <form method="post">
             <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
 
+            <!-- Groups management -->
+            <div class="teksttv-card" style="margin-bottom:24px;">
+                <h3>Groepen</h3>
+                <p class="description">Definieer groepen om campagnes te organiseren. In de loop kies je per reclame-blok welke groepen getoond worden.</p>
+                <table class="widefat teksttv-channels-table" id="teksttv-groups">
+                    <thead>
+                        <tr>
+                            <th>Naam</th>
+                            <th class="teksttv-channel-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($groups as $gi => $group_label) : ?>
+                        <tr class="teksttv-group-row">
+                            <td><input type="text" name="teksttv_campaign_groups[]" value="<?php echo esc_attr($group_label); ?>" class="regular-text" required placeholder="Bijv. Reclame" /></td>
+                            <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group"><span class="dashicons dashicons-trash"></span></button></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p class="teksttv-card-actions">
+                    <button type="button" class="button" id="teksttv-add-group"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Groep toevoegen</button>
+                </p>
+            </div>
+
+            <!-- Campaigns -->
+            <h2>Campagnes</h2>
             <div id="teksttv-campaigns" class="teksttv-blocks">
                 <?php
                 if (!empty($campaigns)) {
                     foreach ($campaigns as $i => $campaign) {
-                        self::render_campaign($i, $campaign, $channels);
+                        self::render_campaign($i, $campaign, $channels, $groups);
                     }
                 } else {
                     ?>
@@ -67,19 +95,22 @@ class CampaignsPage
         </form>
 
         <script type="text/html" id="tmpl-teksttv-campaign">
-            <?php self::render_campaign('__INDEX__', [], $channels); ?>
+            <?php self::render_campaign('__INDEX__', [], $channels, $groups); ?>
         </script>
 
         </div>
         <?php
     }
 
-    private static function render_campaign(int|string $index, array $campaign, array $channels): void
+    /**
+     * @param string[] $groups Available group labels.
+     */
+    private static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
     {
         $id = $campaign['id'] ?? 'camp_' . time() . '_' . wp_rand();
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
-        $group = $campaign['group'] ?? 1;
+        $group = (string) ($campaign['group'] ?? '');
         $date_start = $campaign['date_start'] ?? '';
         $date_end = $campaign['date_end'] ?? '';
         $duration = $campaign['duration'] ?? '';
@@ -105,10 +136,11 @@ class CampaignsPage
                     </div>
                     <div class="teksttv-block-field">
                         <label>Groep</label>
-                        <select name="teksttv_campaigns[<?php echo esc_attr($index); ?>][group]">
-                            <?php for ($g = 1; $g <= 10; $g++) : ?>
-                            <option value="<?php echo $g; ?>" <?php selected($group, $g); ?>><?php echo $g; ?></option>
-                            <?php endfor; ?>
+                        <select name="teksttv_campaigns[<?php echo esc_attr($index); ?>][group]" class="teksttv-campaign-group-select">
+                            <option value="">— Geen groep —</option>
+                            <?php foreach ($groups as $group_label) : ?>
+                            <option value="<?php echo esc_attr($group_label); ?>" <?php selected($group, $group_label); ?>><?php echo esc_html($group_label); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="teksttv-block-field">
@@ -174,6 +206,21 @@ class CampaignsPage
             return;
         }
 
+        // Save groups
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized below
+        $raw_groups = isset($_POST['teksttv_campaign_groups']) ? wp_unslash($_POST['teksttv_campaign_groups']) : [];
+        $groups = [];
+        if (is_array($raw_groups)) {
+            foreach ($raw_groups as $label) {
+                $label = sanitize_text_field($label);
+                if ($label !== '') {
+                    $groups[] = $label;
+                }
+            }
+        }
+        update_option('teksttv_campaign_groups', array_values(array_unique($groups)));
+
+        // Save campaigns
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         $campaigns = [];
@@ -182,7 +229,7 @@ class CampaignsPage
             $saved = [
                 'id' => sanitize_key($item['id'] ?? ('camp_' . time() . '_' . wp_rand())),
                 'name' => sanitize_text_field($item['name'] ?? ''),
-                'group' => max(1, min(10, absint($item['group'] ?? 1))),
+                'group' => sanitize_text_field($item['group'] ?? ''),
             ];
 
             // Channels

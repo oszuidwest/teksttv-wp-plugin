@@ -198,6 +198,21 @@ class Helpers
     }
 
     /**
+     * Get configured campaign groups.
+     *
+     * @return string[] Array of group labels.
+     */
+    public static function get_campaign_groups(): array
+    {
+        $groups = get_option('teksttv_campaign_groups', []);
+        if (!empty($groups) && is_array($groups)) {
+            return array_values($groups);
+        }
+
+        return [];
+    }
+
+    /**
      * Get all campaigns.
      */
     public static function get_campaigns(): array

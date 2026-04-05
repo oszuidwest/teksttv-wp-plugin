@@ -330,7 +330,11 @@ export function initLoopPage(): void {
                 $block.find('select option:selected').each(function () {
                     if ($(this).val()) groups.push($(this).text());
                 });
-                summary = groups.length ? `Groep ${groups.join(', ')}` : 'Geen groep';
+                const limit = $block.find('input[name$="[limit]"]').val() as string;
+                const parts: string[] = [];
+                parts.push(groups.length ? groups.join(', ') : 'Geen groep');
+                if (limit) parts.push(`max ${limit}`);
+                summary = parts.join(' · ');
             } else if (type === 'weather') {
                 summary = ($block.find('input[type="text"]').first().val() as string) || 'Geen locatie';
             } else if (type === 'campaign') {

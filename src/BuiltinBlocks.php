@@ -207,21 +207,32 @@ class BuiltinBlocks
 
     public static function render_commercial(int|string $index, array $block, string $prefix): void
     {
-        $groups = (array) ($block['groups'] ?? []);
+        $selected_groups = (array) ($block['groups'] ?? []);
+        $available_groups = Helpers::get_campaign_groups();
         $intro_id = $block['intro_image_id'] ?? 0;
         $outro_id = $block['outro_image_id'] ?? 0;
         $intro_url = $intro_id ? wp_get_attachment_image_url((int) $intro_id, 'thumbnail') : '';
         $outro_url = $outro_id ? wp_get_attachment_image_url((int) $outro_id, 'thumbnail') : '';
+        $limit = $block['limit'] ?? '';
 
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
                 <label>Groep(en)</label>
+                <?php if (!empty($available_groups)) : ?>
                 <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="Kies groep(en)..." multiple>
-                    <?php for ($g = 1; $g <= 10; $g++) : ?>
-                    <option value="<?php echo $g; ?>" <?php echo in_array($g, array_map('intval', $groups), true) ? 'selected' : ''; ?>><?php echo $g; ?></option>
-                    <?php endfor; ?>
+                    <?php foreach ($available_groups as $group_label) : ?>
+                    <option value="<?php echo esc_attr($group_label); ?>" <?php echo in_array($group_label, $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_label); ?></option>
+                    <?php endforeach; ?>
                 </select>
+                <?php else : ?>
+                <p class="description">Geen groepen geconfigureerd. <a href="<?php echo esc_url(admin_url('admin.php?page=teksttv-campaigns')); ?>">Groepen beheren</a></p>
+                <?php endif; ?>
+            </div>
+            <div class="teksttv-block-field">
+                <label>Max. slides</label>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][limit]" value="<?php echo esc_attr($limit); ?>" min="1" max="100" class="small-text" placeholder="Alle" />
+                <p class="description">Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.</p>
             </div>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--transitions">
@@ -251,14 +262,22 @@ class BuiltinBlocks
     {
         $groups = [];
         if (!empty($raw['groups']) && is_array($raw['groups'])) {
-            $groups = array_filter(array_map('absint', $raw['groups']));
+            $groups = array_map('sanitize_text_field', $raw['groups']);
+            $groups = array_filter($groups, fn($g) => $g !== '');
         }
 
-        return [
+        $saved = [
             'groups' => array_values($groups),
             'intro_image_id' => absint($raw['intro_image_id'] ?? 0),
             'outro_image_id' => absint($raw['outro_image_id'] ?? 0),
         ];
+
+        $limit = $raw['limit'] ?? '';
+        if ($limit !== '') {
+            $saved['limit'] = absint($limit);
+        }
+
+        return $saved;
     }
 
     // =========================================================================
