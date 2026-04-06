@@ -156,7 +156,11 @@ class AdminPage
         ]);
     }
 
-    public static function sanitize_channels($input): array
+    /**
+     * @param mixed $input
+     * @return list<array{slug: string, label: string}>
+     */
+    public static function sanitize_channels(mixed $input): array
     {
         if (!is_array($input)) {
             return [];
@@ -335,7 +339,7 @@ class AdminPage
                     </div>
                     <?php else :
                         $single_ticker = array_key_first($ticker_types);
-                    ?>
+                        ?>
                     <button type="button" class="button" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Ticker toevoegen</button>
                     <?php endif; ?>
                 </div>
@@ -598,7 +602,7 @@ class AdminPage
                         <tr>
                             <th scope="row"><label for="teksttv_ai_title_char_limit">Tekenlimiet</label></th>
                             <td>
-                                <input type="number" id="teksttv_ai_title_char_limit" name="teksttv_ai_prompts[title_char_limit]" value="<?php echo esc_attr($prompts['title_char_limit']); ?>" min="10" max="100" class="small-text" /> tekens
+                                <input type="number" id="teksttv_ai_title_char_limit" name="teksttv_ai_prompts[title_char_limit]" value="<?php echo esc_attr((string) $prompts['title_char_limit']); ?>" min="10" max="100" class="small-text" /> tekens
                             </td>
                         </tr>
                     </table>
@@ -612,7 +616,7 @@ class AdminPage
                         <tr>
                             <th scope="row"><label for="teksttv_ai_word_limit">Woordlimiet</label></th>
                             <td>
-                                <input type="number" id="teksttv_ai_word_limit" name="teksttv_ai_prompts[word_limit]" value="<?php echo esc_attr($prompts['word_limit']); ?>" min="10" max="500" class="small-text" /> woorden
+                                <input type="number" id="teksttv_ai_word_limit" name="teksttv_ai_prompts[word_limit]" value="<?php echo esc_attr((string) $prompts['word_limit']); ?>" min="10" max="500" class="small-text" /> woorden
                             </td>
                         </tr>
                     </table>
@@ -624,21 +628,21 @@ class AdminPage
                         <tr>
                             <th scope="row"><label for="teksttv_ai_min_input">Minimum input</label></th>
                             <td>
-                                <input type="number" id="teksttv_ai_min_input" name="teksttv_ai_prompts[min_input_words]" value="<?php echo esc_attr($prompts['min_input_words']); ?>" min="0" max="500" class="small-text" /> woorden
+                                <input type="number" id="teksttv_ai_min_input" name="teksttv_ai_prompts[min_input_words]" value="<?php echo esc_attr((string) $prompts['min_input_words']); ?>" min="0" max="500" class="small-text" /> woorden
                                 <p class="description">Minimum aantal woorden in het bronartikel. Stel 0 in om uit te schakelen.</p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row"><label for="teksttv_ai_max_retries">Max pogingen</label></th>
                             <td>
-                                <input type="number" id="teksttv_ai_max_retries" name="teksttv_ai_prompts[max_retries]" value="<?php echo esc_attr($prompts['max_retries']); ?>" min="1" max="5" class="small-text" />
+                                <input type="number" id="teksttv_ai_max_retries" name="teksttv_ai_prompts[max_retries]" value="<?php echo esc_attr((string) $prompts['max_retries']); ?>" min="1" max="5" class="small-text" />
                                 <p class="description">Aantal pogingen als de output niet binnen het limiet valt. Elke extra poging kost een API-call.</p>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row"><label for="teksttv_ai_rate_limit">Rate limit</label></th>
                             <td>
-                                <input type="number" id="teksttv_ai_rate_limit" name="teksttv_ai_prompts[rate_limit]" value="<?php echo esc_attr($prompts['rate_limit']); ?>" min="1" max="60" class="small-text" /> per minuut
+                                <input type="number" id="teksttv_ai_rate_limit" name="teksttv_ai_prompts[rate_limit]" value="<?php echo esc_attr((string) $prompts['rate_limit']); ?>" min="1" max="60" class="small-text" /> per minuut
                                 <p class="description">Maximaal aantal AI-verzoeken per gebruiker per minuut.</p>
                             </td>
                         </tr>
@@ -655,7 +659,7 @@ class AdminPage
                             <td>
                                 <?php
                                 $all_taxonomies = self::get_post_taxonomies_static();
-                                $region_tax = $prompts['region_taxonomy'] ?? '';
+                                $region_tax = $prompts['region_taxonomy'];
                                 ?>
                                 <select id="teksttv_ai_region_taxonomy" name="teksttv_ai_prompts[region_taxonomy]">
                                     <option value="">Geen regio-prefix</option>
@@ -680,7 +684,7 @@ class AdminPage
                                 <select id="teksttv_ai_provider" name="teksttv_ai_prompts[provider]">
                                     <option value="">Automatisch</option>
                                     <?php foreach ($ai_models as $provider_id => $provider_data) : ?>
-                                        <option value="<?php echo esc_attr($provider_id); ?>" <?php selected($prompts['provider'] ?? '', $provider_id); ?>><?php echo esc_html($provider_data['label']); ?></option>
+                                        <option value="<?php echo esc_attr($provider_id); ?>" <?php selected($prompts['provider'], $provider_id); ?>><?php echo esc_html($provider_data['label']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <p class="description">Forceer een specifieke AI-provider. Bij "Automatisch" kiest WordPress de beste beschikbare provider.</p>
@@ -726,7 +730,7 @@ class AdminPage
                         <tr>
                             <th scope="row"><label for="teksttv_ai_max_tokens">Max tokens</label></th>
                             <td>
-                                <input type="number" id="teksttv_ai_max_tokens" name="teksttv_ai_prompts[max_tokens]" value="<?php echo esc_attr($prompts['max_tokens']); ?>" min="64" max="8192" step="1" class="small-text" />
+                                <input type="number" id="teksttv_ai_max_tokens" name="teksttv_ai_prompts[max_tokens]" value="<?php echo esc_attr((string) $prompts['max_tokens']); ?>" min="64" max="8192" step="1" class="small-text" />
                                 <p class="description">Maximaal aantal tokens in de AI-response. Standaard 2048.</p>
                             </td>
                         </tr>
@@ -749,7 +753,7 @@ class AdminPage
     /**
      * Get all public taxonomies that apply to posts.
      *
-     * @return array Array of ['name' => slug, 'label' => label, 'terms' => [id => name]]
+     * @return list<array{name: string, label: string, terms: array<int, string>}>
      */
     public static function get_post_taxonomies_static(): array
     {
@@ -788,6 +792,8 @@ class AdminPage
 
     /**
      * Render a loop or ticker block using the registry.
+     *
+     * @param array<string, mixed> $block
      */
     public static function render_block_generic(int|string $index, array $block, string $prefix = 'teksttv_blocks'): void
     {
@@ -816,6 +822,7 @@ class AdminPage
         <?php
     }
 
+    /** @param array<string, mixed> $block */
     private static function render_scheduling_fields(int|string $index, array $block, string $prefix = 'teksttv_blocks'): void
     {
         $date_start = $block['date_start'] ?? '';
@@ -849,7 +856,7 @@ class AdminPage
                 <div class="teksttv-days-row">
                     <?php foreach ($day_labels as $num => $label) : ?>
                     <label class="teksttv-day-toggle">
-                        <input type="checkbox" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][days][]" value="<?php echo esc_attr($num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
+                        <input type="checkbox" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][days][]" value="<?php echo esc_attr((string) $num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
                         <span><?php echo esc_html($label); ?></span>
                     </label>
                     <?php endforeach; ?>
@@ -918,6 +925,9 @@ class AdminPage
 
     /**
      * Extract and save scheduling fields (date_start, date_end, days) from a block.
+     *
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>
      */
     private static function extract_scheduling_fields(array $raw): array
     {

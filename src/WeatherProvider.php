@@ -14,7 +14,7 @@ interface WeatherProvider
      * Fetch weather forecast for a location.
      *
      * @param string $location Human-readable location (e.g. "Breda,NL")
-     * @return array|null Normalized weather data or null on failure.
+     * @return array<string, mixed>|null Normalized weather data or null on failure.
      *   Expected shape: ['city' => string, 'days' => [['date' => DateTime, ...]]]
      */
     public function fetch(string $location): ?array;

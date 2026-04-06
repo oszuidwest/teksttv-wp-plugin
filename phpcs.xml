@@ -41,5 +41,8 @@
         <exclude name="WordPress.PHP.YodaConditions"/>
         <exclude name="Universal.Operators.DisallowShortTernary"/>
     </rule>
+    <rule ref="WordPress.WP">
+        <exclude name="WordPress.WP.GlobalVariablesOverride"/>
+    </rule>
     <rule ref="Generic.CodeAnalysis.EmptyPHPStatement"/>
 </ruleset>

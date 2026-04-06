@@ -8,6 +8,8 @@ class SlidesBuilder
 {
     /**
      * Get text slide duration in ms (block override or global default).
+     *
+     * @param array<string, mixed> $block
      */
     private static function get_duration_text(array $block): int
     {
@@ -19,6 +21,8 @@ class SlidesBuilder
 
     /**
      * Get image slide duration in ms (block override or global default).
+     *
+     * @param array<string, mixed> $block
      */
     private static function get_duration_image(array $block): int
     {
@@ -36,7 +40,7 @@ class SlidesBuilder
      *
      * @param int    $attachment_id The attachment post ID.
      * @param string $size          Image size to retrieve.
-     * @return array|null Image data array or null if attachment not found.
+     * @return array<string, string>|null Image data array or null if attachment not found.
      */
     private static function get_image_data(int $attachment_id, string $size = 'large'): ?array
     {
@@ -63,6 +67,8 @@ class SlidesBuilder
 
     /**
      * Build ticker messages for a channel.
+     *
+     * @return list<array<string, string>>
      */
     public static function build_ticker(string $channel_slug): array
     {
@@ -92,6 +98,8 @@ class SlidesBuilder
 
     /**
      * Build all slides for a channel based on its loop configuration.
+     *
+     * @return list<array<string, mixed>>
      */
     public static function build(string $channel_slug): array
     {
@@ -113,6 +121,9 @@ class SlidesBuilder
 
     /**
      * Build a single image slide from an image block.
+     *
+     * @param array<string, mixed> $block
+     * @return list<array<string, mixed>>
      */
     public static function build_image_slide(array $block, string $channel = ''): array
     {
@@ -146,6 +157,9 @@ class SlidesBuilder
 
     /**
      * Build slides from an articles block.
+     *
+     * @param array<string, mixed> $block
+     * @return list<array<string, mixed>>
      */
     public static function build_article_slides(array $block, string $channel = ''): array
     {
@@ -292,7 +306,6 @@ class SlidesBuilder
 
         $api_key = get_option('teksttv_openweather_api_key', '');
 
-        /** @var WeatherProvider|null $provider */
         $provider = !empty($api_key) ? new OpenWeatherProvider($api_key) : null;
 
         /**
@@ -326,6 +339,9 @@ class SlidesBuilder
 
     /**
      * Build a weather slide from a weather block.
+     *
+     * @param array<string, mixed> $block
+     * @return list<array<string, mixed>>
      */
     public static function build_weather_slide(array $block, string $channel = ''): array
     {
@@ -383,6 +399,9 @@ class SlidesBuilder
 
     /**
      * Build commercial slides from a commercial block.
+     *
+     * @param array<string, mixed> $block
+     * @return list<array<string, mixed>>
      */
     public static function build_commercial_slides(array $block, string $channel = ''): array
     {
@@ -471,7 +490,7 @@ class SlidesBuilder
      * Priority: per-post override > category image > post thumbnail.
      * Returns image data array (url + caption + attribution) or null.
      *
-     * @return array|null Image data array or null.
+     * @return array<string, string>|null Image data array or null.
      */
     private static function get_sidebar_image_data(int $post_id): ?array
     {
@@ -516,6 +535,8 @@ class SlidesBuilder
 
     /**
      * Get image data for a category's TekstTV image.
+     *
+     * @return array<string, string>|null
      */
     private static function get_category_image_data(int $term_id): ?array
     {

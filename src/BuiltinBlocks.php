@@ -25,8 +25,8 @@ class BuiltinBlocks
     /**
      * Sanitize taxonomy filters from raw POST data.
      *
-     * @param array $raw Raw block data containing 'taxonomy_filters' key.
-     * @return array Sanitized taxonomy filters keyed by taxonomy name.
+     * @param array<string, mixed> $raw Raw block data containing 'taxonomy_filters' key.
+     * @return array<string, list<int>> Sanitized taxonomy filters keyed by taxonomy name.
      */
     private static function sanitize_taxonomy_filters(array $raw): array
     {
@@ -64,6 +64,9 @@ class BuiltinBlocks
         ]);
     }
 
+    /**
+     * @param array<string, mixed> $block
+     */
     public static function render_articles(int|string $index, array $block, string $prefix): void
     {
         $count = $block['count'] ?? 3;
@@ -81,7 +84,7 @@ class BuiltinBlocks
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
                 <label>Aantal</label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][count]" value="<?php echo esc_attr($count); ?>" min="1" max="50" class="small-text" />
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" />
             </div>
             <?php foreach ($taxonomies as $tax) :
                 $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));
@@ -90,7 +93,7 @@ class BuiltinBlocks
                 <label><?php echo esc_html($tax['label']); ?></label>
                 <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="Filter..." multiple>
                     <?php foreach ($tax['terms'] as $term_id => $term_name) : ?>
-                    <option value="<?php echo esc_attr($term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
+                    <option value="<?php echo esc_attr((string) $term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -99,16 +102,20 @@ class BuiltinBlocks
         <div class="teksttv-block-fields teksttv-block-fields--duration">
             <div class="teksttv-block-field">
                 <label>Duur tekst</label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration_text]" value="<?php echo esc_attr($dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr($default_text); ?>" /> <span class="teksttv-unit">sec</span>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration_text]" value="<?php echo esc_attr($dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
             <div class="teksttv-block-field">
                 <label>Duur afbeelding</label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration_image]" value="<?php echo esc_attr($dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr($default_image); ?>" /> <span class="teksttv-unit">sec</span>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration_image]" value="<?php echo esc_attr($dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>
         <?php
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>|null
+     */
     public static function save_articles(array $raw): ?array
     {
         $saved = [
@@ -145,6 +152,9 @@ class BuiltinBlocks
         ]);
     }
 
+    /**
+     * @param array<string, mixed> $block
+     */
     public static function render_image(int|string $index, array $block, string $prefix): void
     {
         $image_id = $block['image_id'] ?? 0;
@@ -166,7 +176,7 @@ class BuiltinBlocks
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
                         <label>Duur</label>
-                        <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr($default_image); ?>" /> <span class="teksttv-unit">sec</span>
+                        <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>
             </div>
@@ -174,6 +184,10 @@ class BuiltinBlocks
         <?php
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>|null
+     */
     public static function save_image(array $raw): ?array
     {
         $saved = [
@@ -205,6 +219,9 @@ class BuiltinBlocks
         ]);
     }
 
+    /**
+     * @param array<string, mixed> $block
+     */
     public static function render_commercial(int|string $index, array $block, string $prefix): void
     {
         $selected_groups = (array) ($block['groups'] ?? []);
@@ -258,6 +275,10 @@ class BuiltinBlocks
         <?php
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>|null
+     */
     public static function save_commercial(array $raw): ?array
     {
         $groups = [];
@@ -297,6 +318,9 @@ class BuiltinBlocks
         ]);
     }
 
+    /**
+     * @param array<string, mixed> $block
+     */
     public static function render_weather(int|string $index, array $block, string $prefix): void
     {
         $location = $block['location'] ?? '';
@@ -321,6 +345,10 @@ class BuiltinBlocks
         <?php
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>|null
+     */
     public static function save_weather(array $raw): ?array
     {
         $saved = [
@@ -353,6 +381,9 @@ class BuiltinBlocks
         ]);
     }
 
+    /**
+     * @param array<string, mixed> $item
+     */
     public static function render_ticker_text(int|string $index, array $item, string $prefix): void
     {
         $message = $item['message'] ?? '';
@@ -367,6 +398,10 @@ class BuiltinBlocks
         <?php
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>|null
+     */
     public static function save_ticker_text(array $raw): ?array
     {
         $message = sanitize_text_field($raw['message'] ?? '');
@@ -377,6 +412,10 @@ class BuiltinBlocks
         return ['message' => $message];
     }
 
+    /**
+     * @param array<string, mixed> $item
+     * @return list<array{message: string}>
+     */
     public static function build_ticker_text(array $item, string $channel): array
     {
         $text = $item['message'] ?? '';
@@ -404,6 +443,9 @@ class BuiltinBlocks
         ]);
     }
 
+    /**
+     * @param array<string, mixed> $item
+     */
     public static function render_ticker_headlines(int|string $index, array $item, string $prefix): void
     {
         $count = $item['count'] ?? 5;
@@ -418,7 +460,7 @@ class BuiltinBlocks
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
                 <label>Aantal</label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][count]" value="<?php echo esc_attr($count); ?>" min="1" max="20" class="small-text" />
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="20" class="small-text" />
             </div>
             <div class="teksttv-block-field">
                 <label>Prefix</label>
@@ -431,7 +473,7 @@ class BuiltinBlocks
                 <label><?php echo esc_html($tax['label']); ?></label>
                 <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="Filter..." multiple>
                     <?php foreach ($tax['terms'] as $term_id => $term_name) : ?>
-                    <option value="<?php echo esc_attr($term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
+                    <option value="<?php echo esc_attr((string) $term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -440,6 +482,10 @@ class BuiltinBlocks
         <?php
     }
 
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>|null
+     */
     public static function save_ticker_headlines(array $raw): ?array
     {
         $saved = [
@@ -459,6 +505,10 @@ class BuiltinBlocks
         return $saved;
     }
 
+    /**
+     * @param array<string, mixed> $item
+     * @return list<array{message: string}>
+     */
     public static function build_ticker_headlines(array $item, string $channel): array
     {
         $count = $item['count'] ?? 5;

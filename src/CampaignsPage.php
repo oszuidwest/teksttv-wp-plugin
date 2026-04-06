@@ -103,7 +103,9 @@ class CampaignsPage
     }
 
     /**
-     * @param string[] $groups Available group labels.
+     * @param array<string, mixed> $campaign
+     * @param list<array{slug: string, label: string}> $channels
+     * @param list<string> $groups Available group labels.
      */
     private static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
     {
@@ -145,7 +147,7 @@ class CampaignsPage
                     </div>
                     <div class="teksttv-block-field">
                         <label>Duur per slide</label>
-                        <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr($default_duration); ?>" /> <span class="teksttv-unit">sec</span>
+                        <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>
                 <div class="teksttv-block-fields">

@@ -14,6 +14,7 @@ class OpenWeatherProvider implements WeatherProvider
         $this->api_key = $api_key;
     }
 
+    /** @return array<string, mixed>|null */
     public function fetch(string $location): ?array
     {
         $cache_key = 'teksttv_weather_' . sanitize_title($location);
@@ -44,6 +45,7 @@ class OpenWeatherProvider implements WeatherProvider
         }
     }
 
+    /** @return array{lat: float, lon: float, name: string}|null */
     private function geocode(string $location): ?array
     {
         $cache_key = 'teksttv_geo_' . sanitize_title($location);
@@ -79,6 +81,7 @@ class OpenWeatherProvider implements WeatherProvider
         return $coords;
     }
 
+    /** @return array<string, mixed>|null */
     private function fetch_onecall(float $lat, float $lon): ?array
     {
         $url = add_query_arg([
@@ -108,6 +111,10 @@ class OpenWeatherProvider implements WeatherProvider
         return $data;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array{city: string, days: list<array<string, mixed>>}
+     */
     private function process(array $data, string $city_name): array
     {
         $days = [];

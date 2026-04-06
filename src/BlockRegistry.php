@@ -21,14 +21,14 @@ namespace TekstTV;
  */
 class BlockRegistry
 {
-    /** @var array<string, array> */
+    /** @var array<string, array<string, mixed>> */
     private static array $types = [];
 
     /**
      * Register a block type.
      *
-     * @param string $slug  Unique block type identifier.
-     * @param array  $args  {
+     * @param string                $slug  Unique block type identifier.
+     * @param array<string, mixed>  $args  {
      *     @type string   $label   Display label.
      *     @type string   $icon    Dashicon class name (without 'dashicons-' prefix).
      *     @type string   $color   Icon background color (hex).
@@ -57,6 +57,8 @@ class BlockRegistry
 
     /**
      * Get a registered block type.
+     *
+     * @return array<string, mixed>|null
      */
     public static function get(string $slug): ?array
     {
@@ -67,7 +69,7 @@ class BlockRegistry
      * Get all registered block types, optionally filtered by context.
      *
      * @param string|null $context 'loop', 'ticker', or null for all.
-     * @return array<string, array>
+     * @return array<string, array<string, mixed>>
      */
     public static function all(?string $context = null): array
     {
@@ -82,6 +84,8 @@ class BlockRegistry
 
     /**
      * Render the admin form fields for a block.
+     *
+     * @param array<string, mixed> $data
      */
     public static function render(string $slug, int|string $index, array $data, string $prefix = 'teksttv_blocks'): void
     {
@@ -96,7 +100,8 @@ class BlockRegistry
     /**
      * Sanitize and save a block's POST data.
      *
-     * @return array|null Sanitized block data, or null to skip.
+     * @param array<string, mixed> $raw_data
+     * @return array<string, mixed>|null Sanitized block data, or null to skip.
      */
     public static function save(string $slug, array $raw_data): ?array
     {
@@ -117,7 +122,8 @@ class BlockRegistry
     /**
      * Build slides or ticker messages from a block.
      *
-     * @return array Array of slides (loop context) or ticker messages (ticker context).
+     * @param array<string, mixed> $data
+     * @return list<array<string, mixed>> Array of slides (loop context) or ticker messages (ticker context).
      */
     public static function build(string $slug, array $data, string $channel = ''): array
     {

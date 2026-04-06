@@ -1,0 +1,73 @@
+<?php
+/**
+ * Stubs for WordPress 7 AI Client API (not yet available as Composer package).
+ *
+ * @phpstan-type AiClientBuilder object{
+ *     using_system_instruction: callable(string): object,
+ *     using_max_tokens: callable(int): object,
+ *     using_temperature: callable(float): object,
+ *     using_top_p: callable(float): object,
+ *     using_model_preference: callable(array): object,
+ *     using_provider: callable(string): object,
+ *     generate_text: callable(): (string|\WP_Error)
+ * }
+ */
+
+namespace {
+    if (!function_exists('wp_ai_client_prompt')) {
+        /**
+         * @return object
+         */
+        function wp_ai_client_prompt(string $prompt)
+        {
+            return new stdClass();
+        }
+    }
+
+    if (!function_exists('wp_supports_ai')) {
+        function wp_supports_ai(): bool
+        {
+            return false;
+        }
+    }
+}
+
+namespace WordPress\AiClient {
+    if (!class_exists(AiClient::class)) {
+        class AiClient
+        {
+            /** @return object */
+            public static function defaultRegistry()
+            {
+                return new \stdClass();
+            }
+        }
+    }
+}
+
+namespace WordPress\AiClient\Providers\Models\DTO {
+    if (!class_exists(ModelRequirements::class)) {
+        class ModelRequirements
+        {
+            /**
+             * @param list<object> $capabilities
+             * @param list<object> $extra
+             */
+            public function __construct(array $capabilities, array $extra)
+            {
+            }
+        }
+    }
+}
+
+namespace WordPress\AiClient\Providers\Models\Enums {
+    if (!class_exists(CapabilityEnum::class)) {
+        class CapabilityEnum
+        {
+            public static function textGeneration(): self
+            {
+                return new self();
+            }
+        }
+    }
+}

@@ -261,8 +261,8 @@ class RestApi
             }
 
             // Apply configured model or provider
-            $model_setting = $prompts['model'] ?? '';
-            $provider_setting = $prompts['provider'] ?? '';
+            $model_setting = $prompts['model'];
+            $provider_setting = $prompts['provider'];
             if (!empty($model_setting) && str_contains($model_setting, '/')) {
                 [$provider_id, $model_id] = explode('/', $model_setting, 2);
                 $builder = $builder->using_model_preference([$provider_id, $model_id]);
@@ -351,7 +351,7 @@ class RestApi
     private static function get_region_prefix(int $post_id): string
     {
         $prompts = Helpers::get_ai_prompts();
-        $taxonomy = $prompts['region_taxonomy'] ?? '';
+        $taxonomy = $prompts['region_taxonomy'];
 
         if (empty($taxonomy) || !taxonomy_exists($taxonomy)) {
             return '';

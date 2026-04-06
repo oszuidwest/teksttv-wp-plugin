@@ -10,7 +10,7 @@ class Helpers
     /**
      * Check if content should be displayed on the given day.
      *
-     * @param array|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
+     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
      * @param DateTimeInterface|null $date Date to check, defaults to current date
      */
     public static function is_allowed_on_day(?array $allowed_days, ?DateTimeInterface $date = null): bool
@@ -56,6 +56,8 @@ class Helpers
 
     /**
      * Get all WP categories as id => name array for use in dropdowns.
+     *
+     * @return array<int, string>
      */
     public static function get_category_options(): array
     {
@@ -70,7 +72,7 @@ class Helpers
     /**
      * Get the stored channels list.
      *
-     * @return array Array of ['slug' => string, 'label' => string]
+     * @return list<array{slug: string, label: string}>
      */
     public static function get_channels(): array
     {
@@ -84,7 +86,7 @@ class Helpers
     /**
      * Get the enabled features.
      *
-     * @return array Array of feature slugs
+     * @return list<string> Array of feature slugs
      */
     public static function get_features(): array
     {
@@ -107,7 +109,7 @@ class Helpers
     /**
      * Get the AI prompt configuration with defaults.
      *
-     * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, min_input_words: int}
+     * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
      */
     public static function get_ai_prompts(): array
     {
@@ -190,7 +192,7 @@ class Helpers
     /**
      * Get the loop configuration for a channel.
      *
-     * @return array Array of block definitions
+     * @return list<array<string, mixed>> Array of block definitions
      */
     public static function get_loop_config(string $channel_slug): array
     {
@@ -214,6 +216,8 @@ class Helpers
 
     /**
      * Get all campaigns.
+     *
+     * @return list<array<string, mixed>>
      */
     public static function get_campaigns(): array
     {
@@ -223,6 +227,8 @@ class Helpers
     /**
      * Get active campaigns for a specific channel.
      * Filters by channel assignment and date range.
+     *
+     * @return array<int, array<string, mixed>>
      */
     public static function get_active_campaigns(string $channel): array
     {

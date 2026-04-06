@@ -12,6 +12,10 @@ class PostMeta
         add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
     }
 
+    /**
+     * @param array<string, string> $plugins
+     * @return array<string, string>
+     */
     public static function register_tinymce_plugin(array $plugins): array
     {
         $plugins['teksttv_separator'] = TEKSTTV_PLUGIN_URL . 'assets/tinymce-separator.js';
@@ -88,7 +92,7 @@ class PostMeta
         $custom_image = null;
         if ($post_id) {
             $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
-            if ($sidebar_id && $sidebar_id !== '0') {
+            if ($sidebar_id) {
                 $custom_url = wp_get_attachment_image_url((int) $sidebar_id, 'large');
                 if ($custom_url) {
                     $custom_image = ['url' => $custom_url];
@@ -402,7 +406,7 @@ class PostMeta
                                     <div class="teksttv-days-row">
                                         <?php foreach ($day_labels as $num => $label) : ?>
                                         <label class="teksttv-day-toggle">
-                                            <input type="checkbox" name="teksttv_days[]" value="<?php echo esc_attr($num); ?>" <?php checked(in_array((string) $num, $days, true)); ?> />
+                                            <input type="checkbox" name="teksttv_days[]" value="<?php echo esc_attr((string) $num); ?>" <?php checked(in_array((string) $num, $days, true)); ?> />
                                             <span><?php echo esc_html($label); ?></span>
                                         </label>
                                         <?php endforeach; ?>

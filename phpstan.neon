@@ -1,0 +1,11 @@
+parameters:
+    level: 6
+    paths:
+        - teksttv.php
+        - src/
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    scanFiles:
+        - stubs/wp-ai-client.stub
+    scanDirectories:
+        - vendor/php-stubs/

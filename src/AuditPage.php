@@ -43,19 +43,19 @@ class AuditPage
         <div class="teksttv-tab-content">
             <div class="teksttv-audit-stats">
                 <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html($stats['total']); ?></span>
+                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['total']); ?></span>
                     <span class="teksttv-audit-stat-label">Posts met AI</span>
                 </div>
                 <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html($stats['title_modified_pct']); ?>%</span>
+                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['title_modified_pct']); ?>%</span>
                     <span class="teksttv-audit-stat-label">Koppen bewerkt</span>
                 </div>
                 <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html($stats['body_modified_pct']); ?>%</span>
+                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['body_modified_pct']); ?>%</span>
                     <span class="teksttv-audit-stat-label">Teksten bewerkt</span>
                 </div>
                 <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html($stats['any_modified_pct']); ?>%</span>
+                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['any_modified_pct']); ?>%</span>
                     <span class="teksttv-audit-stat-label">Totaal bewerkt</span>
                 </div>
             </div>
@@ -185,7 +185,7 @@ class AuditPage
     /**
      * Get all posts that have AI-generated content.
      *
-     * @return array Array of post data with status info
+     * @return list<array{id: int, title: string, title_status: string, body_status: string, date: string}>
      */
     private static function get_ai_posts(): array
     {
@@ -222,6 +222,8 @@ class AuditPage
 
     /**
      * Get aggregate statistics with separate title/body breakdowns.
+     *
+     * @return array{total: int, title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}
      */
     private static function get_stats(): array
     {
