@@ -15,37 +15,21 @@ export function initLoopPage(): void {
     });
 
     // =========================================================================
-    // Split button: block type dropdown
+    // Block type dropdown: add block on click
     // =========================================================================
-
-    let selectedBlockType = 'articles';
 
     $('#teksttv-add-block-toggle').on('click', (e) => {
         e.stopPropagation();
         $('#teksttv-add-block-menu').toggleClass('is-open');
     });
 
-    $('#teksttv-add-block-menu').on('click', 'button', function () {
-        selectedBlockType = $(this).data('type') as string;
-        const label = $(this).text().trim();
-        $('#teksttv-add-block-label').text(label);
-        $('#teksttv-add-block-menu button').removeClass('is-active');
-        $(this).addClass('is-active');
-        $('#teksttv-add-block-menu').removeClass('is-open');
-    });
-
     $(document).on('click', () => {
-        $('.teksttv-split-button-menu').removeClass('is-open');
+        $('.teksttv-dropdown-menu').removeClass('is-open');
     });
 
-    // =========================================================================
-    // Add block (loop page)
-    // =========================================================================
-
-    $('#teksttv-add-block-btn').on('click', () => {
+    function addBlock(type: string): void {
         $('#teksttv-empty-state').remove();
 
-        const type = selectedBlockType;
         const templateHtml = $(`#tmpl-teksttv-block-${type}`).html();
         if (!templateHtml) return;
         const index = $blocks.children('.teksttv-block').length;
@@ -58,6 +42,13 @@ export function initLoopPage(): void {
         $newBlock.find('.teksttv-block-body').show();
         $newBlock.addClass('is-expanded');
         initTomSelectIn($newBlock[0]);
+    }
+
+    $('#teksttv-add-block-menu').on('click', 'button', function (e) {
+        e.stopPropagation();
+        const type = $(this).data('type') as string;
+        $('#teksttv-add-block-menu').removeClass('is-open');
+        addBlock(type);
     });
 
     // =========================================================================
@@ -229,25 +220,8 @@ export function initLoopPage(): void {
             }
         });
 
-        // Ticker split button
-        let selectedTickerType = 'ticker_text';
-
-        $('#teksttv-add-ticker-toggle').on('click', (e) => {
-            e.stopPropagation();
-            $('#teksttv-add-ticker-menu').toggleClass('is-open');
-        });
-
-        $('#teksttv-add-ticker-menu').on('click', 'button', function () {
-            selectedTickerType = $(this).data('type') as string;
-            const label = $(this).text().trim();
-            $('#teksttv-add-ticker-label').text(label);
-            $('#teksttv-add-ticker-menu button').removeClass('is-active');
-            $(this).addClass('is-active');
-            $('#teksttv-add-ticker-menu').removeClass('is-open');
-        });
-
-        $('#teksttv-add-ticker-btn').on('click', () => {
-            const type = selectedTickerType;
+        // Ticker dropdown
+        function addTicker(type: string): void {
             const templateHtml = $(`#tmpl-teksttv-ticker-${type}`).html();
             if (!templateHtml) return;
             const index = $ticker.children('.teksttv-block').length;
@@ -259,6 +233,22 @@ export function initLoopPage(): void {
             $newBlock.addClass('is-expanded');
             initTomSelectIn($newBlock[0]);
             $newBlock.find('input[type="text"]').first().trigger('focus');
+        }
+
+        $('#teksttv-add-ticker-toggle').on('click', (e) => {
+            e.stopPropagation();
+            $('#teksttv-add-ticker-menu').toggleClass('is-open');
+        });
+
+        $('#teksttv-add-ticker-menu').on('click', 'button', function (e) {
+            e.stopPropagation();
+            const type = $(this).data('type') as string;
+            $('#teksttv-add-ticker-menu').removeClass('is-open');
+            addTicker(type);
+        });
+
+        $('#teksttv-add-ticker-single').on('click', function () {
+            addTicker($(this).data('type') as string);
         });
 
         function reindexTicker(): void {

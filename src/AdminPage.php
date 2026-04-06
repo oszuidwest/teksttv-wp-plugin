@@ -199,14 +199,14 @@ class AdminPage
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
             ['jquery', 'jquery-ui-sortable', 'teksttv-tomselect'],
-            TEKSTTV_VERSION,
+            (string) filemtime(TEKSTTV_PLUGIN_DIR . 'assets/admin.js'),
             true
         );
         wp_enqueue_style(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
             ['teksttv-tomselect'],
-            TEKSTTV_VERSION
+            (string) filemtime(TEKSTTV_PLUGIN_DIR . 'assets/admin.css')
         );
     }
 
@@ -297,14 +297,12 @@ class AdminPage
                 </div>
 
                 <div class="teksttv-add-block-bar">
-                    <div class="teksttv-split-button">
-                        <button type="button" class="button" id="teksttv-add-block-btn"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <span id="teksttv-add-block-label">Artikelen</span></button>
-                        <button type="button" class="button teksttv-split-button-toggle" id="teksttv-add-block-toggle"><span class="dashicons dashicons-arrow-down-alt2"></span></button>
-                        <div class="teksttv-split-button-menu" id="teksttv-add-block-menu">
-                            <?php $first = true; foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
-                            <button type="button" data-type="<?php echo esc_attr($block_slug); ?>" <?php echo $first ? 'class="is-active"' : ''; ?>><span class="dashicons dashicons-<?php echo esc_attr($block_meta['icon']); ?>"></span> <?php echo esc_html($block_meta['label']); ?></button>
-                                <?php $first = false;
-                            endforeach; ?>
+                    <div class="teksttv-dropdown-button">
+                        <button type="button" class="button" id="teksttv-add-block-toggle"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Blok toevoegen <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                        <div class="teksttv-dropdown-menu" id="teksttv-add-block-menu">
+                            <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
+                            <button type="button" data-type="<?php echo esc_attr($block_slug); ?>"><span class="dashicons dashicons-<?php echo esc_attr($block_meta['icon']); ?>"></span> <?php echo esc_html($block_meta['label']); ?></button>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                     <span class="teksttv-bar-spacer"></span>
@@ -326,20 +324,20 @@ class AdminPage
                 </div>
                 <?php $ticker_types = BlockRegistry::all('ticker'); ?>
                 <div class="teksttv-add-block-bar">
-                    <div class="teksttv-split-button">
-                        <button type="button" class="button" id="teksttv-add-ticker-btn"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <span id="teksttv-add-ticker-label"><?php echo esc_html(reset($ticker_types)['label'] ?? 'Ticker'); ?></span></button>
-                        <?php if (count($ticker_types) > 1) : ?>
-                        <button type="button" class="button teksttv-split-button-toggle" id="teksttv-add-ticker-toggle"><span class="dashicons dashicons-arrow-down-alt2"></span></button>
-                        <div class="teksttv-split-button-menu" id="teksttv-add-ticker-menu">
-                            <?php $first = true; foreach ($ticker_types as $ticker_slug => $ticker_meta) : ?>
-                            <button type="button" data-type="<?php echo esc_attr($ticker_slug); ?>" <?php echo $first ? 'class="is-active"' : ''; ?>><span class="dashicons dashicons-<?php echo esc_attr($ticker_meta['icon']); ?>"></span> <?php echo esc_html($ticker_meta['label']); ?></button>
-                                <?php
-                                $first = false;
-                            endforeach;
-                            ?>
+                    <?php if (count($ticker_types) > 1) : ?>
+                    <div class="teksttv-dropdown-button">
+                        <button type="button" class="button" id="teksttv-add-ticker-toggle"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Ticker toevoegen <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                        <div class="teksttv-dropdown-menu" id="teksttv-add-ticker-menu">
+                            <?php foreach ($ticker_types as $ticker_slug => $ticker_meta) : ?>
+                            <button type="button" data-type="<?php echo esc_attr($ticker_slug); ?>"><span class="dashicons dashicons-<?php echo esc_attr($ticker_meta['icon']); ?>"></span> <?php echo esc_html($ticker_meta['label']); ?></button>
+                            <?php endforeach; ?>
                         </div>
-                        <?php endif; ?>
                     </div>
+                    <?php else :
+                        $single_ticker = array_key_first($ticker_types);
+                    ?>
+                    <button type="button" class="button" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Ticker toevoegen</button>
+                    <?php endif; ?>
                 </div>
 
                 <?php
