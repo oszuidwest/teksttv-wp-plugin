@@ -487,7 +487,9 @@ class PostMeta
             update_post_meta($post_id, '_teksttv_date_start', $date_start);
             update_post_meta($post_id, '_teksttv_date_end', $date_end);
 
+            $valid_days = ['1', '2', '3', '4', '5', '6', '7'];
             $days = array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'] ?? []));
+            $days = array_values(array_intersect($days, $valid_days));
             update_post_meta($post_id, '_teksttv_days', $days);
         }
 

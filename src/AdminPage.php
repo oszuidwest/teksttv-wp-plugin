@@ -299,12 +299,17 @@ class AdminPage
     // =========================================================================
 
     /**
-     * Get all public taxonomies that apply to posts.
+     * Get all public taxonomies that apply to posts. Cached per request.
      *
      * @return list<array{name: string, label: string, terms: array<int, string>}>
      */
     public static function get_post_taxonomies_static(): array
     {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
         $tax_names = get_object_taxonomies('post');
         $result = [];
 
@@ -335,6 +340,7 @@ class AdminPage
             ];
         }
 
+        $cache = $result;
         return $result;
     }
 
@@ -490,9 +496,10 @@ class AdminPage
             $fields['date_end'] = $de;
         }
 
+        $valid_days = ['1', '2', '3', '4', '5', '6', '7'];
         $block_days = $raw['days'] ?? [];
         if (is_array($block_days)) {
-            $block_days = array_map('sanitize_text_field', $block_days);
+            $block_days = array_values(array_intersect(array_map('sanitize_text_field', $block_days), $valid_days));
             if (count($block_days) < 7) {
                 $fields['days'] = $block_days;
             }

@@ -4,6 +4,8 @@ namespace TekstTV;
 
 class AuditPage
 {
+    private const PER_PAGE = 50;
+
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
@@ -34,7 +36,14 @@ class AuditPage
             return;
         }
 
-        $stats = self::get_stats();
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination, no action taken
+        $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+
+        $query_result = self::query_ai_posts($paged);
+        $posts = $query_result['posts'];
+        $total_posts = $query_result['total'];
+        $total_pages = (int) ceil($total_posts / self::PER_PAGE);
+        $stats = self::compute_stats($posts);
 
         echo '<div class="wrap">';
         echo '<h1>AI Audit</h1>';
@@ -43,7 +52,7 @@ class AuditPage
         <div class="teksttv-tab-content">
             <div class="teksttv-audit-stats">
                 <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['total']); ?></span>
+                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $total_posts); ?></span>
                     <span class="teksttv-audit-stat-label">Posts met AI</span>
                 </div>
                 <div class="teksttv-audit-stat-card">
@@ -65,10 +74,7 @@ class AuditPage
                 <span class="description">Exporteert alle bewerkte AI-teksten als DPO trainingsdata voor fine-tuning.</span>
             </p>
 
-            <?php
-            $posts = self::get_ai_posts();
-            if (empty($posts)) :
-                ?>
+            <?php if (empty($posts)) : ?>
                 <div class="teksttv-card">
                     <p>Nog geen posts met AI-gegenereerde content.</p>
                 </div>
@@ -95,6 +101,23 @@ class AuditPage
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <?php if ($total_pages > 1) : ?>
+                <div class="tablenav bottom">
+                    <div class="tablenav-pages">
+                        <span class="displaying-num"><?php echo esc_html(sprintf('%d items', $total_posts)); ?></span>
+                        <?php
+                        echo paginate_links([
+                            'base' => add_query_arg('paged', '%#%'),
+                            'format' => '',
+                            'current' => $paged,
+                            'total' => $total_pages,
+                            'prev_text' => '&laquo;',
+                            'next_text' => '&raquo;',
+                        ]);
+                        ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
         <?php
@@ -166,9 +189,6 @@ class AuditPage
         echo '</div>';
     }
 
-    /**
-     * Render a diff using WordPress built-in wp_text_diff.
-     */
     private static function render_diff(string $left, string $right, bool $split_view = true): string
     {
         if (empty($left) && empty($right)) {
@@ -183,15 +203,16 @@ class AuditPage
     }
 
     /**
-     * Get all posts that have AI-generated content.
+     * Query posts with AI-generated content, paginated.
      *
-     * @return list<array{id: int, title: string, title_status: string, body_status: string, date: string}>
+     * @return array{posts: list<array{id: int, title: string, title_status: string, body_status: string, date: string}>, total: int}
      */
-    private static function get_ai_posts(): array
+    private static function query_ai_posts(int $paged = 1): array
     {
         $query = new \WP_Query([
             'post_type' => 'post',
-            'posts_per_page' => 100,
+            'posts_per_page' => self::PER_PAGE,
+            'paged' => $paged,
             'meta_query' => [
                 'relation' => 'OR',
                 ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
@@ -217,17 +238,20 @@ class AuditPage
             ];
         }
 
-        return $results;
+        return [
+            'posts' => $results,
+            'total' => $query->found_posts,
+        ];
     }
 
     /**
-     * Get aggregate statistics with separate title/body breakdowns.
+     * Compute stats from an already-fetched posts array.
      *
-     * @return array{total: int, title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}
+     * @param list<array{title_status: string, body_status: string}> $posts
+     * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}
      */
-    private static function get_stats(): array
+    private static function compute_stats(array $posts): array
     {
-        $posts = self::get_ai_posts();
         $total = count($posts);
         $title_modified = 0;
         $body_modified = 0;
@@ -250,7 +274,6 @@ class AuditPage
         $pct = fn($n) => $total > 0 ? round(($n / $total) * 100) : 0;
 
         return [
-            'total' => $total,
             'title_modified_pct' => $pct($title_modified),
             'body_modified_pct' => $pct($body_modified),
             'any_modified_pct' => $pct($any_modified),
@@ -258,8 +281,6 @@ class AuditPage
     }
 
     /**
-     * Compare AI version with current version.
-     *
      * @return string 'unmodified', 'modified', or 'no_ai'
      */
     private static function compare(string $ai_version, string $current_version): string
@@ -271,9 +292,6 @@ class AuditPage
         return trim($ai_version) === trim($current_version) ? 'unmodified' : 'modified';
     }
 
-    /**
-     * Render a status badge.
-     */
     private static function render_status_badge(string $status): string
     {
         switch ($status) {

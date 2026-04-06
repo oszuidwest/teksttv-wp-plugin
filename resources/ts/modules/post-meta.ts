@@ -1,5 +1,5 @@
 import type { ImageData, Slide, TeksttvPostConfig, TextSlide, WPMediaAttachment, WPMediaFrame } from './types';
-import { encodeSlideData } from './utils';
+import { encodeSlideData, escAttr } from './utils';
 
 function updateThumbnails($thumbs: JQuery, slides: Slide[], activeIndex: number, baseUrl: string): void {
     const thumbCount = $thumbs.children().length;
@@ -126,9 +126,9 @@ export function initPostMeta(): void {
             for (const att of attachments) {
                 const thumbUrl = att.sizes?.thumbnail?.url ?? att.url;
                 const html =
-                    `<div class="teksttv-image-item" data-id="${att.id}">` +
-                    `<img src="${thumbUrl}" alt="" />` +
-                    `<input type="hidden" name="teksttv_images[]" value="${att.id}" />` +
+                    `<div class="teksttv-image-item" data-id="${escAttr(att.id)}">` +
+                    `<img src="${escAttr(thumbUrl)}" alt="" />` +
+                    `<input type="hidden" name="teksttv_images[]" value="${escAttr(att.id)}" />` +
                     '<button type="button" class="button-link teksttv-remove-image"><span class="dashicons dashicons-no-alt"></span></button>' +
                     '</div>';
                 $list.append(html);

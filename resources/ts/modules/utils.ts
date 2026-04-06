@@ -1,5 +1,10 @@
 import type { Slide } from './types';
 
+/** Escape a string for safe insertion into an HTML attribute. */
+export function escAttr(value: string | number): string {
+    return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 /** Encode a slide object to a base64 string for the preview URL. */
 export function encodeSlideData(slide: Slide): string {
     const json = JSON.stringify(slide);

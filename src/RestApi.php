@@ -197,98 +197,28 @@ class RestApi
     private static function generate_single_field(string $field, string $post_title, string $post_text)
     {
         $prompts = Helpers::get_ai_prompts();
-        $word_limit = $prompts['word_limit'];
-        $title_char_limit = $prompts['title_char_limit'];
-        $max_retries = $prompts['max_retries'];
-
-        if ($field === 'title') {
-            $user_prompt = sprintf(
-                "%s\n\nTitel: %s\n\n%s",
-                $prompts['prompt_title'],
-                $post_title,
-                mb_substr($post_text, 0, 2000)
-            );
-            $system = $prompts['system'] . sprintf(
-                ' De kop mag maximaal %d tekens lang zijn.',
-                $title_char_limit
-            );
-        } else {
-            $user_prompt = sprintf(
-                "%s\n\nTitel: %s\n\n%s",
-                $prompts['prompt_body'],
-                $post_title,
-                mb_substr($post_text, 0, 4000)
-            );
-            $system = $prompts['system'] . sprintf(
-                ' De samenvatting moet tussen de %d en %d woorden zijn.',
-                (int) ceil($word_limit * 0.2),
-                $word_limit
-            );
-        }
+        [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $prompts);
 
         $last_content = '';
         $warning = '';
 
-        for ($attempt = 1; $attempt <= $max_retries; $attempt++) {
-            $builder = wp_ai_client_prompt($user_prompt)
-                ->using_system_instruction($system)
-                ->using_max_tokens($prompts['max_tokens']);
-
-            if ($prompts['temperature'] !== '') {
-                $builder = $builder->using_temperature((float) $prompts['temperature']);
-            }
-            if ($prompts['top_p'] !== '') {
-                $builder = $builder->using_top_p((float) $prompts['top_p']);
-            }
-
-            // Apply configured model or provider
-            $model_setting = $prompts['model'];
-            $provider_setting = $prompts['provider'];
-            if (!empty($model_setting) && str_contains($model_setting, '/')) {
-                [$provider_id, $model_id] = explode('/', $model_setting, 2);
-                $builder = $builder->using_model_preference([$provider_id, $model_id]);
-            } elseif (!empty($provider_setting)) {
-                $builder = $builder->using_provider($provider_setting);
-            }
-
-            $result = $builder->generate_text();
+        for ($attempt = 1; $attempt <= $prompts['max_retries']; $attempt++) {
+            $result = self::call_ai($user_prompt, $system, $prompts);
 
             if (is_wp_error($result)) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+                error_log('TekstTV AI generation error: ' . $result->get_error_message());
                 return $result;
             }
 
             $last_content = trim($result);
+            $warning = self::validate_ai_output($field, $last_content, $prompts, $attempt === $prompts['max_retries']);
 
-            // Validate output length
-            if ($field === 'title') {
-                if (mb_strlen($last_content) <= $title_char_limit) {
-                    break;
-                }
-                if ($attempt === $max_retries) {
-                    $warning = sprintf(
-                        'Kop is %d tekens (limiet: %d). Controleer en kort eventueel handmatig in.',
-                        mb_strlen($last_content),
-                        $title_char_limit
-                    );
-                }
-            } else {
-                $count = Helpers::count_words($last_content);
-                $min_words = (int) ceil($word_limit * 0.2);
-                if ($count >= $min_words && $count <= $word_limit) {
-                    break;
-                }
-                if ($attempt === $max_retries) {
-                    $warning = sprintf(
-                        'Tekst bevat %d woorden (limiet: %d-%d). Controleer en pas eventueel handmatig aan.',
-                        $count,
-                        $min_words,
-                        $word_limit
-                    );
-                }
+            if (empty($warning)) {
+                break;
             }
         }
 
-        // For body, wrap in paragraphs for TinyMCE
         if ($field === 'body') {
             $last_content = wpautop($last_content);
         }
@@ -299,6 +229,111 @@ class RestApi
         }
 
         return $response;
+    }
+
+    /**
+     * Build the system instruction and user prompt for AI generation.
+     *
+     * @param array<string, mixed> $prompts
+     * @return array{0: string, 1: string} [user_prompt, system]
+     */
+    private static function build_ai_prompt(string $field, string $post_title, string $post_text, array $prompts): array
+    {
+        if ($field === 'title') {
+            $user_prompt = sprintf(
+                "%s\n\nTitel: %s\n\n%s",
+                $prompts['prompt_title'],
+                $post_title,
+                mb_substr($post_text, 0, 2000)
+            );
+            $system = $prompts['system'] . sprintf(
+                ' De kop mag maximaal %d tekens lang zijn.',
+                $prompts['title_char_limit']
+            );
+        } else {
+            $user_prompt = sprintf(
+                "%s\n\nTitel: %s\n\n%s",
+                $prompts['prompt_body'],
+                $post_title,
+                mb_substr($post_text, 0, 4000)
+            );
+            $system = $prompts['system'] . sprintf(
+                ' De samenvatting moet tussen de %d en %d woorden zijn.',
+                (int) ceil($prompts['word_limit'] * 0.2),
+                $prompts['word_limit']
+            );
+        }
+
+        return [$user_prompt, $system];
+    }
+
+    /**
+     * Call the WP AI Client with configured model/provider settings.
+     *
+     * @param array<string, mixed> $prompts
+     * @return string|\WP_Error
+     */
+    private static function call_ai(string $user_prompt, string $system, array $prompts)
+    {
+        $builder = wp_ai_client_prompt($user_prompt)
+            ->using_system_instruction($system)
+            ->using_max_tokens($prompts['max_tokens']);
+
+        if ($prompts['temperature'] !== '') {
+            $builder = $builder->using_temperature((float) $prompts['temperature']);
+        }
+        if ($prompts['top_p'] !== '') {
+            $builder = $builder->using_top_p((float) $prompts['top_p']);
+        }
+
+        $model_setting = $prompts['model'];
+        $provider_setting = $prompts['provider'];
+        if (!empty($model_setting) && str_contains($model_setting, '/')) {
+            [$provider_id, $model_id] = explode('/', $model_setting, 2);
+            $builder = $builder->using_model_preference([$provider_id, $model_id]);
+        } elseif (!empty($provider_setting)) {
+            $builder = $builder->using_provider($provider_setting);
+        }
+
+        return $builder->generate_text();
+    }
+
+    /**
+     * Validate AI output against length constraints.
+     *
+     * @param array<string, mixed> $prompts
+     * @return string Warning message if invalid, empty string if valid.
+     */
+    private static function validate_ai_output(string $field, string $content, array $prompts, bool $is_last_attempt): string
+    {
+        if ($field === 'title') {
+            if (mb_strlen($content) <= $prompts['title_char_limit']) {
+                return '';
+            }
+            if ($is_last_attempt) {
+                return sprintf(
+                    'Kop is %d tekens (limiet: %d). Controleer en kort eventueel handmatig in.',
+                    mb_strlen($content),
+                    $prompts['title_char_limit']
+                );
+            }
+        } else {
+            $count = Helpers::count_words($content);
+            $min_words = (int) ceil($prompts['word_limit'] * 0.2);
+            if ($count >= $min_words && $count <= $prompts['word_limit']) {
+                return '';
+            }
+            if ($is_last_attempt) {
+                return sprintf(
+                    'Tekst bevat %d woorden (limiet: %d-%d). Controleer en pas eventueel handmatig aan.',
+                    $count,
+                    $min_words,
+                    $prompts['word_limit']
+                );
+            }
+        }
+
+        return 'retry';
     }
 
     /**
@@ -357,59 +392,71 @@ class RestApi
         $prompts = Helpers::get_ai_prompts();
         $system = $prompts['system'];
 
-        $query = new \WP_Query([
-            'post_type' => 'post',
-            'posts_per_page' => -1,
-            'meta_query' => [
-                'relation' => 'OR',
-                ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
-                ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
-            ],
-        ]);
-
-        $lines = [];
-
-        foreach ($query->posts as $post) {
-            $ai_body = get_post_meta($post->ID, '_teksttv_ai_body', true);
-            $current_body = get_post_meta($post->ID, '_teksttv_content', true);
-
-            // Only include posts where the body was modified by the editor
-            if (empty($ai_body) || empty($current_body) || trim($ai_body) === trim($current_body)) {
-                continue;
-            }
-
-            $post_text = self::prepare_content($post->post_content);
-            $user_prompt = sprintf(
-                "%s\n\nTitel: %s\n\n%s",
-                $prompts['prompt_body'],
-                $post->post_title,
-                mb_substr($post_text, 0, 4000)
-            );
-
-            $lines[] = wp_json_encode([
-                'input' => [
-                    'messages' => [
-                        ['role' => 'system', 'content' => $system],
-                        ['role' => 'user', 'content' => $user_prompt],
-                    ],
-                ],
-                'preferred_output' => [
-                    ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($current_body)))],
-                ],
-                'non_preferred_output' => [
-                    ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($ai_body)))],
-                ],
-            ], JSON_UNESCAPED_UNICODE);
-        }
-
-        if (empty($lines)) {
-            wp_die(esc_html__('Geen trainingsdata beschikbaar. Er zijn nog geen posts waarvan de AI-tekst is bewerkt.', 'teksttv'));
-        }
+        // Stream JSONL output in batches to avoid loading all posts into memory
+        $page = 1;
+        $has_output = false;
 
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSONL output, not HTML
         header('Content-Type: application/jsonl');
         header('Content-Disposition: attachment; filename="teksttv-training-data.jsonl"');
-        echo implode("\n", $lines);
+
+        do {
+            $query = new \WP_Query([
+                'post_type' => 'post',
+                'posts_per_page' => 100,
+                'paged' => $page,
+                'meta_query' => [
+                    'relation' => 'OR',
+                    ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
+                    ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
+                ],
+            ]);
+
+            foreach ($query->posts as $post) {
+                $ai_body = get_post_meta($post->ID, '_teksttv_ai_body', true);
+                $current_body = get_post_meta($post->ID, '_teksttv_content', true);
+
+                if (empty($ai_body) || empty($current_body) || trim($ai_body) === trim($current_body)) {
+                    continue;
+                }
+
+                $post_text = self::prepare_content($post->post_content);
+                $user_prompt = sprintf(
+                    "%s\n\nTitel: %s\n\n%s",
+                    $prompts['prompt_body'],
+                    $post->post_title,
+                    mb_substr($post_text, 0, 4000)
+                );
+
+                if ($has_output) {
+                    echo "\n";
+                }
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSONL output
+                echo wp_json_encode([
+                    'input' => [
+                        'messages' => [
+                            ['role' => 'system', 'content' => $system],
+                            ['role' => 'user', 'content' => $user_prompt],
+                        ],
+                    ],
+                    'preferred_output' => [
+                        ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($current_body)))],
+                    ],
+                    'non_preferred_output' => [
+                        ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($ai_body)))],
+                    ],
+                ], JSON_UNESCAPED_UNICODE);
+                $has_output = true;
+            }
+
+            $page++;
+        } while ($page <= $query->max_num_pages);
+
+        if (!$has_output) {
+            // Headers already sent, output error as plain text
+            echo '{"error": "Geen trainingsdata beschikbaar."}';
+        }
+
         exit;
     }
 

@@ -195,7 +195,7 @@ class SlidesBuilder
 
             // Build text slides from content
             if (!empty($content)) {
-                $pages = Helpers::has_feature('page_separator') ? preg_split('/\n*-{3,}\n*/', $content) : [$content];
+                $pages = Helpers::has_feature('page_separator') ? preg_split('/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i', $content) : [$content];
                 foreach ($pages as $page_content) {
                     $page_content = trim($page_content);
                     if (empty($page_content)) {
@@ -306,11 +306,15 @@ class SlidesBuilder
 
         $provider = self::get_weather_provider();
         if (!$provider) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log('TekstTV: No weather provider configured. Check OpenWeather API key in settings.');
             return [];
         }
 
         $weather = $provider->fetch($location);
         if (!$weather || empty($weather['days'])) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log(sprintf('TekstTV: Weather fetch failed for location "%s".', $location));
             return [];
         }
 
@@ -446,8 +450,9 @@ class SlidesBuilder
             }
         }
 
-        // 2. Primary category (Yoast SEO) then first category with TekstTV image
-        $primary_term_id = get_post_meta($post_id, '_yoast_wpseo_primary_category', true);
+        // 2. Primary category then first category with TekstTV image
+        /** @var int|string|false $primary_term_id Filterable primary category term ID. */
+        $primary_term_id = apply_filters('teksttv_primary_category', get_post_meta($post_id, '_yoast_wpseo_primary_category', true), $post_id);
         if ($primary_term_id) {
             $data = self::get_category_image_data((int) $primary_term_id);
             if ($data) {

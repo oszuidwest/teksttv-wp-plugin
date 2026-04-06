@@ -1,5 +1,5 @@
 import type { WPMediaAttachment } from './types';
-import { initTomSelectIn } from './utils';
+import { escAttr, initTomSelectIn } from './utils';
 
 /** Loop configuration page + Campaigns page: sortable blocks, media pickers. */
 export function initLoopPage(): void {
@@ -108,9 +108,9 @@ export function initLoopPage(): void {
             attachments.forEach((att) => {
                 const thumbUrl = att.sizes?.thumbnail?.url ?? att.url;
                 const html =
-                    `<div class="teksttv-image-item" data-id="${att.id}">` +
-                    `<img src="${thumbUrl}" alt="" />` +
-                    `<input type="hidden" name="${baseName}" value="${att.id}" />` +
+                    `<div class="teksttv-image-item" data-id="${escAttr(att.id)}">` +
+                    `<img src="${escAttr(thumbUrl)}" alt="" />` +
+                    `<input type="hidden" name="${escAttr(baseName)}" value="${escAttr(att.id)}" />` +
                     '<button type="button" class="button-link teksttv-remove-image"><span class="dashicons dashicons-no-alt"></span></button>' +
                     '</div>';
                 $list.append(html);
