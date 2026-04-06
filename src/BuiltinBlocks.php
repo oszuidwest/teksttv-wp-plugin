@@ -28,7 +28,7 @@ class BuiltinBlocks
      * @param array<string, mixed> $raw Raw block data containing 'taxonomy_filters' key.
      * @return array<string, list<int>> Sanitized taxonomy filters keyed by taxonomy name.
      */
-    private static function sanitize_taxonomy_filters(array $raw): array
+    public static function sanitize_taxonomy_filters(array $raw): array
     {
         $tax_filters = [];
         if (!empty($raw['taxonomy_filters']) && is_array($raw['taxonomy_filters'])) {

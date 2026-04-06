@@ -11,7 +11,8 @@
         "lint:php": "vendor/bin/phpcs",
         "lint:js": "bunx biome check resources/",
         "lint:fix": "vendor/bin/phpcbf; bunx biome check --write resources/",
-        "analyse": "vendor/bin/phpstan analyse --memory-limit=1G"
+        "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
+        "test": "vendor/bin/phpunit"
     },
     "dependencies": {
         "tom-select": "^2.5.2"

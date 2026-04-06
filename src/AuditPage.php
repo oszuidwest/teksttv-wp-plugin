@@ -250,7 +250,7 @@ class AuditPage
      * @param list<array{title_status: string, body_status: string}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}
      */
-    private static function compute_stats(array $posts): array
+    public static function compute_stats(array $posts): array
     {
         $total = count($posts);
         $title_modified = 0;
@@ -283,7 +283,7 @@ class AuditPage
     /**
      * @return string 'unmodified', 'modified', or 'no_ai'
      */
-    private static function compare(string $ai_version, string $current_version): string
+    public static function compare(string $ai_version, string $current_version): string
     {
         if (empty($ai_version)) {
             return 'no_ai';

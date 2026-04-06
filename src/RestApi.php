@@ -196,7 +196,7 @@ class RestApi
      *
      * @return array{content: string, warning?: string}|\WP_Error
      */
-    private static function generate_single_field(string $field, string $post_title, string $post_text)
+    public static function generate_single_field(string $field, string $post_title, string $post_text)
     {
         $prompts = Helpers::get_ai_prompts();
         [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $prompts);
@@ -239,7 +239,7 @@ class RestApi
      * @param array<string, mixed> $prompts
      * @return array{0: string, 1: string} [user_prompt, system]
      */
-    private static function build_ai_prompt(string $field, string $post_title, string $post_text, array $prompts): array
+    public static function build_ai_prompt(string $field, string $post_title, string $post_text, array $prompts): array
     {
         if ($field === 'title') {
             $user_prompt = sprintf(
@@ -275,7 +275,7 @@ class RestApi
      * @param array<string, mixed> $prompts
      * @return string|\WP_Error
      */
-    private static function call_ai(string $user_prompt, string $system, array $prompts)
+    public static function call_ai(string $user_prompt, string $system, array $prompts)
     {
         $builder = wp_ai_client_prompt($user_prompt)
             ->using_system_instruction($system)
@@ -306,7 +306,7 @@ class RestApi
      * @param array<string, mixed> $prompts
      * @return string Warning message if invalid, empty string if valid.
      */
-    private static function validate_ai_output(string $field, string $content, array $prompts, bool $is_last_attempt): string
+    public static function validate_ai_output(string $field, string $content, array $prompts, bool $is_last_attempt): string
     {
         if ($field === 'title') {
             if (mb_strlen($content) <= $prompts['title_char_limit']) {
@@ -343,7 +343,7 @@ class RestApi
     /**
      * Prepare post content for AI input by cleaning HTML structure.
      */
-    private static function prepare_content(string $html): string
+    public static function prepare_content(string $html): string
     {
         // Remove script, style, and noscript tags with their content
         $text = preg_replace('/<(script|style|noscript)[^>]*>.*?<\/\1>/si', '', $html);
@@ -368,7 +368,7 @@ class RestApi
     /**
      * Build a region prefix from the post's taxonomy terms.
      */
-    private static function get_region_prefix(int $post_id): string
+    public static function get_region_prefix(int $post_id): string
     {
         $prompts = Helpers::get_ai_prompts();
         $taxonomy = $prompts['region_taxonomy'];

@@ -195,13 +195,8 @@ class SlidesBuilder
 
             // Build text slides from content
             if (!empty($content)) {
-                $pages = Helpers::has_feature('page_separator') ? preg_split('/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i', $content) : [$content];
+                $pages = self::split_pages($content);
                 foreach ($pages as $page_content) {
-                    $page_content = trim($page_content);
-                    if (empty($page_content)) {
-                        continue;
-                    }
-
                     $slide = [
                         'type' => 'text',
                         'duration' => self::get_duration_text($block),
@@ -247,7 +242,7 @@ class SlidesBuilder
      * Get the weather provider instance.
      * Filterable via 'teksttv_weather_provider' for custom implementations.
      */
-    private static function get_weather_provider(): ?WeatherProvider
+    public static function get_weather_provider(): ?WeatherProvider
     {
         if (self::$weather_provider_resolved) {
             return self::$weather_provider;
@@ -268,14 +263,23 @@ class SlidesBuilder
         return self::$weather_provider;
     }
 
-    private static function wind_deg_to_direction(float $deg): string
+    /**
+     * Reset the cached weather provider. Useful for testing.
+     */
+    public static function reset_weather_provider(): void
+    {
+        self::$weather_provider = null;
+        self::$weather_provider_resolved = false;
+    }
+
+    public static function wind_deg_to_direction(float $deg): string
     {
         $directions = ['N', 'NNO', 'NO', 'ONO', 'O', 'OZO', 'ZO', 'ZZO', 'Z', 'ZZW', 'ZW', 'WZW', 'W', 'WNW', 'NW', 'NNW'];
         $index = (int) round($deg / 22.5) % 16;
         return $directions[$index];
     }
 
-    private static function wind_speed_to_beaufort(float $speed): int
+    public static function wind_speed_to_beaufort(float $speed): int
     {
         $scale = [0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7];
         foreach ($scale as $bft => $threshold) {
@@ -429,6 +433,30 @@ class SlidesBuilder
     }
 
     /**
+     * Split content into pages using the page separator pattern.
+     * Returns non-empty trimmed page strings.
+     *
+     * @return list<string>
+     */
+    public static function split_pages(string $content): array
+    {
+        if (!Helpers::has_feature('page_separator')) {
+            $trimmed = trim($content);
+            return $trimmed !== '' ? [$trimmed] : [];
+        }
+
+        $parts = preg_split('/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i', $content);
+        $pages = [];
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part !== '') {
+                $pages[] = $part;
+            }
+        }
+        return $pages;
+    }
+
+    /**
      * Get sidebar image data for a post.
      *
      * Priority: per-post override > category image > post thumbnail.
@@ -436,7 +464,7 @@ class SlidesBuilder
      *
      * @return array<string, string>|null Image data array or null.
      */
-    private static function get_sidebar_image_data(int $post_id): ?array
+    public static function get_sidebar_image_data(int $post_id): ?array
     {
         // 1. Per-post override (0 = explicitly no image)
         $override_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);

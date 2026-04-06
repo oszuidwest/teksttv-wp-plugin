@@ -219,14 +219,37 @@ class PostMeta
             return;
         }
 
+        // Sanitize POST data
+        $data = [
+            'active' => isset($_POST['teksttv_active']),
+            'title' => sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? '')),
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via wp_kses in process_save()
+            'content' => wp_unslash($_POST['teksttv_content'] ?? ''),
+            'date_start' => sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? '')),
+            'date_end' => sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? '')),
+            'days' => array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'] ?? [])),
+            'images' => array_map('absint', wp_unslash($_POST['teksttv_images'] ?? [])),
+            'sidebar_image' => sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? '')),
+        ];
+
+        self::process_save($post_id, $data);
+        RestApi::invalidate_slides_cache();
+    }
+
+    /**
+     * Process sanitized meta data and persist to the database.
+     * Separated from save_meta() for testability without $_POST.
+     *
+     * @param array<string, mixed> $data Sanitized field values.
+     */
+    public static function process_save(int $post_id, array $data): void
+    {
         // Active toggle
-        $active = isset($_POST['teksttv_active']) ? '1' : '0';
-        update_post_meta($post_id, '_teksttv_active', $active);
+        update_post_meta($post_id, '_teksttv_active', $data['active'] ? '1' : '0');
 
         // Title override (only save if feature enabled)
         if (Helpers::has_feature('custom_title')) {
-            $title = sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? ''));
-            update_post_meta($post_id, '_teksttv_title', $title);
+            update_post_meta($post_id, '_teksttv_title', $data['title'] ?? '');
         }
 
         // Content — strip tags that are disabled by features
@@ -247,32 +270,28 @@ class PostMeta
             $allowed_tags['ol'] = [];
             $allowed_tags['li'] = [];
         }
-        $content = wp_kses(wp_unslash($_POST['teksttv_content'] ?? ''), $allowed_tags);
+        $content = wp_kses($data['content'] ?? '', $allowed_tags);
         update_post_meta($post_id, '_teksttv_content', $content);
 
         // Scheduling (only save if feature enabled)
         if (Helpers::has_feature('scheduling')) {
-            $date_start = sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? ''));
-            $date_end = sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? ''));
-            update_post_meta($post_id, '_teksttv_date_start', $date_start);
-            update_post_meta($post_id, '_teksttv_date_end', $date_end);
+            update_post_meta($post_id, '_teksttv_date_start', $data['date_start'] ?? '');
+            update_post_meta($post_id, '_teksttv_date_end', $data['date_end'] ?? '');
 
             $valid_days = ['1', '2', '3', '4', '5', '6', '7'];
-            $days = array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'] ?? []));
-            $days = array_values(array_intersect($days, $valid_days));
+            $days = array_values(array_intersect($data['days'] ?? [], $valid_days));
             update_post_meta($post_id, '_teksttv_days', $days);
         }
 
         // Extra images (only save if feature enabled)
         if (Helpers::has_feature('extra_images')) {
-            $images = array_map('absint', wp_unslash($_POST['teksttv_images'] ?? []));
-            $images = array_filter($images);
+            $images = array_filter($data['images'] ?? []);
             update_post_meta($post_id, '_teksttv_images', $images);
         }
 
         // Sidebar image (only save if feature enabled)
         if (Helpers::has_feature('sidebar_image')) {
-            $sidebar_raw = sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? ''));
+            $sidebar_raw = $data['sidebar_image'] ?? '';
             if ($sidebar_raw === '0') {
                 update_post_meta($post_id, '_teksttv_sidebar_image', '0');
             } elseif (absint($sidebar_raw) > 0) {
@@ -281,7 +300,5 @@ class PostMeta
                 delete_post_meta($post_id, '_teksttv_sidebar_image');
             }
         }
-
-        RestApi::invalidate_slides_cache();
     }
 }
