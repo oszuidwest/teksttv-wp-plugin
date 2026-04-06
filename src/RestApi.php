@@ -12,6 +12,7 @@ class RestApi
     public static function init(): void
     {
         add_action('rest_api_init', [self::class, 'register_routes']);
+        add_action('admin_post_teksttv_export_training_data', [self::class, 'export_training_data']);
     }
 
     public static function register_routes(): void
@@ -51,14 +52,6 @@ class RestApi
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/export-training-data', [
-            'methods' => 'GET',
-            'callback' => [self::class, 'export_training_data'],
-            'permission_callback' => function () {
-                return current_user_can('manage_teksttv');
-            },
-        ]);
-
         register_rest_route(self::NAMESPACE, '/slides', [
             'methods' => 'GET',
             'callback' => [self::class, 'get_slides'],
@@ -89,21 +82,9 @@ class RestApi
     public static function get_image_data(WP_REST_Request $request): WP_REST_Response
     {
         $id = $request->get_param('id');
-        $url = wp_get_attachment_image_url($id, 'large');
-        if (!$url) {
+        $data = Helpers::get_image_data($id);
+        if (!$data) {
             return new WP_REST_Response(['error' => 'Attachment not found'], 404);
-        }
-
-        $data = ['url' => $url];
-
-        $caption = wp_get_attachment_caption($id);
-        if ($caption) {
-            $data['caption'] = $caption;
-        }
-
-        $attribution = apply_filters('teksttv_image_attribution', '', $id);
-        if ($attribution) {
-            $data['attribution'] = $attribution;
         }
 
         return new WP_REST_Response($data, 200);
@@ -155,7 +136,7 @@ class RestApi
         $prompts = Helpers::get_ai_prompts();
         $min_words = $prompts['min_input_words'];
         if ($min_words > 0) {
-            $word_count = str_word_count($post_text);
+            $word_count = Helpers::count_words($post_text);
             if ($word_count < $min_words) {
                 return new WP_REST_Response(
                     ['error' => sprintf('Artikel bevat te weinig tekst (%d woorden, minimaal %d vereist).', $word_count, $min_words)],
@@ -291,7 +272,7 @@ class RestApi
                     );
                 }
             } else {
-                $count = str_word_count($last_content);
+                $count = Helpers::count_words($last_content);
                 $min_words = (int) ceil($word_limit * 0.2);
                 if ($count >= $min_words && $count <= $word_limit) {
                     break;
@@ -365,8 +346,14 @@ class RestApi
         return implode(' / ', array_map('mb_strtoupper', $terms));
     }
 
-    public static function export_training_data(): WP_REST_Response
+    public static function export_training_data(): void
     {
+        if (!current_user_can('manage_teksttv')) {
+            wp_die(esc_html__('Onvoldoende rechten.', 'teksttv'), 403);
+        }
+
+        check_admin_referer('teksttv_export_training_data');
+
         $prompts = Helpers::get_ai_prompts();
         $system = $prompts['system'];
 
@@ -416,13 +403,12 @@ class RestApi
         }
 
         if (empty($lines)) {
-            return new WP_REST_Response(['error' => 'Geen trainingsdata beschikbaar. Er zijn nog geen posts waarvan de AI-tekst is bewerkt.'], 404);
+            wp_die(esc_html__('Geen trainingsdata beschikbaar. Er zijn nog geen posts waarvan de AI-tekst is bewerkt.', 'teksttv'));
         }
 
-        // Return as downloadable JSONL
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSONL output, not HTML
         header('Content-Type: application/jsonl');
         header('Content-Disposition: attachment; filename="teksttv-training-data.jsonl"');
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSONL output, not HTML
         echo implode("\n", $lines);
         exit;
     }

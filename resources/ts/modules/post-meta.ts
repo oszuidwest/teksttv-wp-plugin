@@ -1,4 +1,4 @@
-import type { ImageData, Slide, TeksttvPostConfig, TextSlide, WPMediaAttachment } from './types';
+import type { ImageData, Slide, TeksttvPostConfig, TextSlide, WPMediaAttachment, WPMediaFrame } from './types';
 import { encodeSlideData } from './utils';
 
 function updateThumbnails($thumbs: JQuery, slides: Slide[], activeIndex: number, baseUrl: string): void {
@@ -106,20 +106,21 @@ export function initPostMeta(): void {
     // Extra images: media picker + sortable
     // =========================================================================
 
-    let mediaFrame: any;
+    let mediaFrame: WPMediaFrame | null = null;
     $('#teksttv-add-images').on('click', (e) => {
         e.preventDefault();
         if (mediaFrame) {
             mediaFrame.open();
             return;
         }
-        mediaFrame = (wp as any).media({
+        mediaFrame = wp.media({
             title: 'Afbeeldingen selecteren',
             button: { text: 'Toevoegen' },
             multiple: true,
             library: { type: 'image' },
         });
         mediaFrame.on('select', () => {
+            if (!mediaFrame) return;
             const attachments: WPMediaAttachment[] = mediaFrame.state().get('selection').toJSON();
             const $list = $('#teksttv-images-list');
             for (const att of attachments) {
@@ -154,7 +155,7 @@ export function initPostMeta(): void {
     // Sidebar image card selector (3 states: default, custom, none)
     // =========================================================================
 
-    let sidebarFrame: any;
+    let sidebarFrame: WPMediaFrame | null = null;
     let customImageData: ImageData | null = config?.customImage ? (config.customImage as ImageData) : null;
 
     function activateSidebarCard(state: string): void {
@@ -179,8 +180,9 @@ export function initPostMeta(): void {
             sidebarFrame.open();
             return;
         }
-        sidebarFrame = (wp as any).media({ multiple: false, library: { type: 'image' } });
+        sidebarFrame = wp.media({ multiple: false, library: { type: 'image' } });
         sidebarFrame.on('select', () => {
+            if (!sidebarFrame) return;
             const att: WPMediaAttachment = sidebarFrame.state().get('selection').first().toJSON();
             const url = att.sizes?.medium?.url ?? att.url;
             $('#teksttv-sidebar-image-id').val(att.id);
@@ -471,42 +473,34 @@ export function initPostMeta(): void {
                 body: JSON.stringify({ post_id: config.postId, field }),
             })
                 .then((res) => res.json())
-                .then(
-                    (data: {
-                        title?: string;
-                        body?: string;
-                        content?: string;
-                        error?: string;
-                        warning?: string;
-                    }) => {
-                        if (data.error) {
-                            $status.text(data.error).addClass('is-error');
-                            return;
-                        }
+                .then((data: { title?: string; body?: string; content?: string; error?: string; warning?: string }) => {
+                    if (data.error) {
+                        $status.text(data.error).addClass('is-error');
+                        return;
+                    }
 
-                        if (field === 'both') {
-                            if (data.title) applyTitle(data.title);
-                            if (data.body) applyBody(data.body);
-                        } else if (field === 'title' && data.content) {
-                            applyTitle(data.content);
-                        } else if (field === 'body' && data.content) {
-                            applyBody(data.content);
-                        }
+                    if (field === 'both') {
+                        if (data.title) applyTitle(data.title);
+                        if (data.body) applyBody(data.body);
+                    } else if (field === 'title' && data.content) {
+                        applyTitle(data.content);
+                    } else if (field === 'body' && data.content) {
+                        applyBody(data.content);
+                    }
 
-                        // Show AI badge
-                        let $badge = $('#teksttv-ai-badge');
-                        if (!$badge.length) {
-                            $badge = $(
-                                '<span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> AI gegenereerd</span>',
-                            );
-                            $('#teksttv-generate-status').after($badge);
-                        }
+                    // Show AI badge
+                    let $badge = $('#teksttv-ai-badge');
+                    if (!$badge.length) {
+                        $badge = $(
+                            '<span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> AI gegenereerd</span>',
+                        );
+                        $('#teksttv-generate-status').after($badge);
+                    }
 
-                        if (data.warning) {
-                            $status.text(data.warning).addClass('is-warning');
-                        }
-                    },
-                )
+                    if (data.warning) {
+                        $status.text(data.warning).addClass('is-warning');
+                    }
+                })
                 .catch(() => {
                     $status.text('Er ging iets mis bij het genereren.').addClass('is-error');
                 })

@@ -3,6 +3,8 @@ parameters:
     paths:
         - teksttv.php
         - src/
+    excludePaths:
+        - src/views/
     bootstrapFiles:
         - phpstan-bootstrap.php
     scanFiles:

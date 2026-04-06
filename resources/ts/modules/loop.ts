@@ -1,3 +1,4 @@
+import type { WPMediaAttachment } from './types';
 import { initTomSelectIn } from './utils';
 
 /** Loop configuration page + Campaigns page: sortable blocks, media pickers. */
@@ -101,10 +102,10 @@ export function initLoopPage(): void {
         const $section = $(this).closest('.teksttv-campaign-slides-section');
         const $list = $section.find('.teksttv-campaign-slides');
         const baseName = $list.data('name') as string;
-        const frame = (wp as any).media({ multiple: true, library: { type: 'image' } });
+        const frame = wp.media({ multiple: true, library: { type: 'image' } });
         frame.on('select', () => {
-            const attachments = frame.state().get('selection').toJSON();
-            attachments.forEach((att: any) => {
+            const attachments: WPMediaAttachment[] = frame.state().get('selection').toJSON();
+            attachments.forEach((att) => {
                 const thumbUrl = att.sizes?.thumbnail?.url ?? att.url;
                 const html =
                     `<div class="teksttv-image-item" data-id="${att.id}">` +
@@ -125,9 +126,9 @@ export function initLoopPage(): void {
     $blocks.on('click', '.teksttv-block-image-select', function (e) {
         e.preventDefault();
         const $field = $(this).closest('.teksttv-block-field, .teksttv-block-image-fields');
-        const frame = (wp as any).media({ multiple: false, library: { type: 'image' } });
+        const frame = wp.media({ multiple: false, library: { type: 'image' } });
         frame.on('select', () => {
-            const att = frame.state().get('selection').first().toJSON();
+            const att: WPMediaAttachment = frame.state().get('selection').first().toJSON();
             const url = att.sizes?.medium?.url ?? att.url;
             $field.find('.teksttv-block-image-id').val(att.id);
             $field.find('.teksttv-block-image-thumb').attr('src', url);
@@ -203,14 +204,18 @@ export function initLoopPage(): void {
 
         $ticker.on('click', '.teksttv-remove-block', function (e) {
             e.stopPropagation();
-            $(this).closest('.teksttv-block').slideUp(200, function () {
-                $(this).remove();
-                reindexTicker();
-            });
+            $(this)
+                .closest('.teksttv-block')
+                .slideUp(200, function () {
+                    $(this).remove();
+                    reindexTicker();
+                });
         });
 
         $ticker.on('change', '.teksttv-scheduling-checkbox', function () {
-            const $scheduling = $(this).closest('.teksttv-block-scheduling-toggle').next('.teksttv-block-fields--scheduling');
+            const $scheduling = $(this)
+                .closest('.teksttv-block-scheduling-toggle')
+                .next('.teksttv-block-fields--scheduling');
             if ($(this).is(':checked')) {
                 $scheduling.slideDown(150);
             } else {

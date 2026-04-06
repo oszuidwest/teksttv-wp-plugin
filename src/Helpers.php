@@ -256,4 +256,100 @@ class Helpers
     {
         return get_option('teksttv_preview_url', '');
     }
+
+    /**
+     * Check if a block/item passes its scheduling constraints (date range + weekdays).
+     *
+     * @param array<string, mixed> $block Block or ticker item data.
+     */
+    public static function is_block_scheduled(array $block): bool
+    {
+        if (!self::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
+            return false;
+        }
+        $days = $block['days'] ?? [];
+        if (!empty($days) && !self::is_allowed_on_day($days)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Build a tax_query array from taxonomy filters.
+     *
+     * @param array<string, mixed> $taxonomy_filters Keyed by taxonomy name, values are term ID arrays.
+     * @return list<array{taxonomy: string, field: string, terms: list<int>}>
+     */
+    public static function build_tax_query(array $taxonomy_filters): array
+    {
+        $tax_query = [];
+        foreach ($taxonomy_filters as $taxonomy => $term_ids) {
+            $term_ids = (array) $term_ids;
+            $term_ids = array_filter(array_map('intval', $term_ids));
+            if (!empty($term_ids)) {
+                $tax_query[] = [
+                    'taxonomy' => $taxonomy,
+                    'field' => 'term_id',
+                    'terms' => $term_ids,
+                ];
+            }
+        }
+        return $tax_query;
+    }
+
+    /**
+     * Build image data for an attachment (url, caption, attribution).
+     *
+     * @param int    $attachment_id The attachment post ID.
+     * @param string $size          Image size to retrieve.
+     * @return array<string, string>|null Image data array or null if not found.
+     */
+    public static function get_image_data(int $attachment_id, string $size = 'large'): ?array
+    {
+        $url = wp_get_attachment_image_url($attachment_id, $size);
+        if (!$url) {
+            return null;
+        }
+
+        $data = ['url' => $url];
+
+        $caption = wp_get_attachment_caption($attachment_id) ?: '';
+        if (!empty($caption)) {
+            $data['caption'] = $caption;
+        }
+
+        $attribution = apply_filters('teksttv_image_attribution', '', $attachment_id);
+        if (!empty($attribution)) {
+            $data['attribution'] = $attribution;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Count words in a string. More reliable than str_word_count() for Dutch and non-ASCII text.
+     */
+    public static function count_words(string $text): int
+    {
+        return (int) preg_match_all('/\S+/', $text);
+    }
+
+    /**
+     * Build a meta_query fragment that pre-filters expired posts in SQL.
+     *
+     * Excludes posts whose _teksttv_date_end is set and is before today.
+     * Posts without a date_end (or with empty value) pass through.
+     *
+     * @return array<int|string, mixed>
+     */
+    public static function get_date_end_meta_query(): array
+    {
+        $today = current_datetime()->format('Y-m-d');
+        return [
+            'relation' => 'OR',
+            ['key' => '_teksttv_date_end', 'compare' => 'NOT EXISTS'],
+            ['key' => '_teksttv_date_end', 'value' => '', 'compare' => '='],
+            ['key' => '_teksttv_date_end', 'value' => $today, 'compare' => '>=', 'type' => 'DATE'],
+        ];
+    }
 }

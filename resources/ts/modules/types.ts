@@ -45,8 +45,10 @@ export interface TeksttvPostConfig {
 export interface WPTinyMCEEditor {
     id: string;
     getContent(): string;
+    setContent(content: string): void;
     isHidden(): boolean;
     on(event: string, callback: () => void): void;
+    fire(event: string): void;
 }
 
 /** WordPress TinyMCE global (partial) */
@@ -67,9 +69,29 @@ export interface WPMediaAttachment {
     };
 }
 
+/** WordPress media frame instance (partial) */
+export interface WPMediaFrame {
+    open(): void;
+    on(event: string, callback: () => void): void;
+    state(): {
+        get(key: string): {
+            toJSON(): WPMediaAttachment[];
+            first(): { toJSON(): WPMediaAttachment };
+        };
+    };
+}
+
+/** Options for creating a WordPress media frame */
+export interface WPMediaOptions {
+    title?: string;
+    button?: { text: string };
+    multiple?: boolean;
+    library?: { type: string };
+}
+
 /** WordPress global (partial — media library) */
 interface WPGlobal {
-    media(options: any): any;
+    media(options: WPMediaOptions): WPMediaFrame;
 }
 
 declare global {

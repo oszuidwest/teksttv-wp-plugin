@@ -73,18 +73,7 @@ class PostMeta
         if ($post_id) {
             $thumb_id = get_post_thumbnail_id($post_id);
             if ($thumb_id) {
-                $thumb_url = wp_get_attachment_image_url($thumb_id, 'large');
-                if ($thumb_url) {
-                    $fallback_image = ['url' => $thumb_url];
-                    $caption = wp_get_attachment_caption($thumb_id);
-                    if ($caption) {
-                        $fallback_image['caption'] = $caption;
-                    }
-                    $attribution = apply_filters('teksttv_image_attribution', '', $thumb_id);
-                    if ($attribution) {
-                        $fallback_image['attribution'] = $attribution;
-                    }
-                }
+                $fallback_image = Helpers::get_image_data((int) $thumb_id);
             }
         }
 
@@ -93,18 +82,7 @@ class PostMeta
         if ($post_id) {
             $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
             if ($sidebar_id) {
-                $custom_url = wp_get_attachment_image_url((int) $sidebar_id, 'large');
-                if ($custom_url) {
-                    $custom_image = ['url' => $custom_url];
-                    $custom_caption = wp_get_attachment_caption((int) $sidebar_id);
-                    if ($custom_caption) {
-                        $custom_image['caption'] = $custom_caption;
-                    }
-                    $custom_attr = apply_filters('teksttv_image_attribution', '', (int) $sidebar_id);
-                    if ($custom_attr) {
-                        $custom_image['attribution'] = $custom_attr;
-                    }
-                }
+                $custom_image = Helpers::get_image_data((int) $sidebar_id);
             }
         }
 

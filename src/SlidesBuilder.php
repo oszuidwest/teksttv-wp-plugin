@@ -35,34 +35,13 @@ class SlidesBuilder
     /**
      * Build image data object for an attachment.
      *
-     * Returns an object with url, caption, and attribution.
-     * Attribution is resolved via the 'teksttv_image_attribution' filter.
-     *
      * @param int    $attachment_id The attachment post ID.
      * @param string $size          Image size to retrieve.
      * @return array<string, string>|null Image data array or null if attachment not found.
      */
     private static function get_image_data(int $attachment_id, string $size = 'large'): ?array
     {
-        $url = wp_get_attachment_image_url($attachment_id, $size);
-        if (!$url) {
-            return null;
-        }
-
-        $caption = wp_get_attachment_caption($attachment_id) ?: '';
-        $attribution = apply_filters('teksttv_image_attribution', '', $attachment_id);
-
-        $data = ['url' => $url];
-
-        if (!empty($caption)) {
-            $data['caption'] = $caption;
-        }
-
-        if (!empty($attribution)) {
-            $data['attribution'] = $attribution;
-        }
-
-        return $data;
+        return Helpers::get_image_data($attachment_id, $size);
     }
 
     /**
@@ -79,16 +58,11 @@ class SlidesBuilder
 
         $messages = [];
         foreach ($items as $item) {
-            $type = $item['type'] ?? '';
-            // Check scheduling per ticker item
-            if (!Helpers::is_within_date_range($item['date_start'] ?? null, $item['date_end'] ?? null)) {
-                continue;
-            }
-            $item_days = $item['days'] ?? [];
-            if (!empty($item_days) && !Helpers::is_allowed_on_day($item_days)) {
+            if (!Helpers::is_block_scheduled($item)) {
                 continue;
             }
 
+            $type = $item['type'] ?? '';
             $built = BlockRegistry::build($type, $item, $channel_slug);
             $messages = array_merge($messages, $built);
         }
@@ -127,12 +101,7 @@ class SlidesBuilder
      */
     public static function build_image_slide(array $block, string $channel = ''): array
     {
-        if (!Helpers::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
-            return [];
-        }
-
-        $days = $block['days'] ?? [];
-        if (!empty($days) && !Helpers::is_allowed_on_day($days)) {
+        if (!Helpers::is_block_scheduled($block)) {
             return [];
         }
 
@@ -163,12 +132,7 @@ class SlidesBuilder
      */
     public static function build_article_slides(array $block, string $channel = ''): array
     {
-        // Block-level scheduling
-        if (!Helpers::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
-            return [];
-        }
-        $block_days = $block['days'] ?? [];
-        if (!empty($block_days) && !Helpers::is_allowed_on_day($block_days)) {
+        if (!Helpers::is_block_scheduled($block)) {
             return [];
         }
 
@@ -182,11 +146,9 @@ class SlidesBuilder
             'post_status' => 'publish',
             'no_found_rows' => true,
             'meta_query' => [
-                [
-                    'key' => '_teksttv_active',
-                    'value' => '1',
-                    'compare' => '=',
-                ],
+                'relation' => 'AND',
+                ['key' => '_teksttv_active', 'value' => '1', 'compare' => '='],
+                Helpers::get_date_end_meta_query(),
             ],
         ];
 
@@ -199,22 +161,9 @@ class SlidesBuilder
         }
 
         // Apply taxonomy filters (each value is an array of term IDs)
-        if (!empty($taxonomy_filters)) {
-            $tax_query = [];
-            foreach ($taxonomy_filters as $taxonomy => $term_ids) {
-                $term_ids = (array) $term_ids;
-                $term_ids = array_filter(array_map('intval', $term_ids));
-                if (!empty($term_ids)) {
-                    $tax_query[] = [
-                        'taxonomy' => $taxonomy,
-                        'field' => 'term_id',
-                        'terms' => $term_ids,
-                    ];
-                }
-            }
-            if (!empty($tax_query)) {
-                $args['tax_query'] = $tax_query;
-            }
+        $tax_query = Helpers::build_tax_query($taxonomy_filters);
+        if (!empty($tax_query)) {
+            $args['tax_query'] = $tax_query;
         }
 
         $query = new WP_Query($args);
@@ -345,11 +294,7 @@ class SlidesBuilder
      */
     public static function build_weather_slide(array $block, string $channel = ''): array
     {
-        if (!Helpers::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
-            return [];
-        }
-        $block_days = $block['days'] ?? [];
-        if (!empty($block_days) && !Helpers::is_allowed_on_day($block_days)) {
+        if (!Helpers::is_block_scheduled($block)) {
             return [];
         }
 
@@ -405,12 +350,7 @@ class SlidesBuilder
      */
     public static function build_commercial_slides(array $block, string $channel = ''): array
     {
-        // Block-level scheduling
-        if (!Helpers::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
-            return [];
-        }
-        $block_days = $block['days'] ?? [];
-        if (!empty($block_days) && !Helpers::is_allowed_on_day($block_days)) {
+        if (!Helpers::is_block_scheduled($block)) {
             return [];
         }
 

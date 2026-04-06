@@ -522,11 +522,9 @@ class BuiltinBlocks
             'no_found_rows' => true,
             'fields' => 'ids',
             'meta_query' => [
-                [
-                    'key' => '_teksttv_active',
-                    'value' => '1',
-                    'compare' => '=',
-                ],
+                'relation' => 'AND',
+                ['key' => '_teksttv_active', 'value' => '1', 'compare' => '='],
+                Helpers::get_date_end_meta_query(),
             ],
         ];
 
@@ -539,22 +537,9 @@ class BuiltinBlocks
         }
 
         // Apply taxonomy filters
-        if (!empty($taxonomy_filters)) {
-            $tax_query = [];
-            foreach ($taxonomy_filters as $taxonomy => $term_ids) {
-                $term_ids = (array) $term_ids;
-                $term_ids = array_filter(array_map('intval', $term_ids));
-                if (!empty($term_ids)) {
-                    $tax_query[] = [
-                        'taxonomy' => $taxonomy,
-                        'field' => 'term_id',
-                        'terms' => $term_ids,
-                    ];
-                }
-            }
-            if (!empty($tax_query)) {
-                $args['tax_query'] = $tax_query;
-            }
+        $tax_query = Helpers::build_tax_query($taxonomy_filters);
+        if (!empty($tax_query)) {
+            $args['tax_query'] = $tax_query;
         }
 
         $query = new \WP_Query($args);

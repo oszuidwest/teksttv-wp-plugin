@@ -61,7 +61,7 @@ class AuditPage
             </div>
 
             <p>
-                <a href="<?php echo esc_url(wp_nonce_url(rest_url('teksttv/v1/export-training-data'), 'wp_rest')); ?>" class="button"><span class="dashicons dashicons-download teksttv-button-icon"></span> Exporteer trainingsdata (JSONL)</a>
+                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=teksttv_export_training_data'), 'teksttv_export_training_data')); ?>" class="button"><span class="dashicons dashicons-download teksttv-button-icon"></span> Exporteer trainingsdata (JSONL)</a>
                 <span class="description">Exporteert alle bewerkte AI-teksten als DPO trainingsdata voor fine-tuning.</span>
             </p>
 
