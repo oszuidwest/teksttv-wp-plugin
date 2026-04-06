@@ -474,6 +474,8 @@ class AdminPage
         }
         update_option('teksttv_ticker_' . $channel, $ticker);
 
+        RestApi::invalidate_slides_cache($channel);
+
         add_settings_error('teksttv', 'loop_saved', 'Loop configuratie opgeslagen.', 'success');
     }
 

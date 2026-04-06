@@ -84,7 +84,7 @@ class RestApi
         $id = $request->get_param('id');
         $data = Helpers::get_image_data($id);
         if (!$data) {
-            return new WP_REST_Response(['error' => 'Attachment not found'], 404);
+            return new WP_REST_Response(['error' => __('Bijlage niet gevonden.', 'teksttv')], 404);
         }
 
         return new WP_REST_Response($data, 200);
@@ -94,7 +94,7 @@ class RestApi
     {
         if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
             return new WP_REST_Response(
-                ['error' => 'AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.'],
+                ['error' => __('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.', 'teksttv')],
                 503
             );
         }
@@ -110,19 +110,19 @@ class RestApi
         $rate_count = (int) get_transient($rate_key);
         if ($rate_count >= $rate_limit) {
             return new WP_REST_Response(
-                ['error' => 'Te veel verzoeken. Probeer het over een minuut opnieuw.'],
+                ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv')],
                 429
             );
         }
         set_transient($rate_key, $rate_count + 1, 60);
 
         if (!current_user_can('edit_post', $post_id)) {
-            return new WP_REST_Response(['error' => 'Onvoldoende rechten.'], 403);
+            return new WP_REST_Response(['error' => __('Onvoldoende rechten.', 'teksttv')], 403);
         }
 
         $post = get_post($post_id);
         if (!$post) {
-            return new WP_REST_Response(['error' => 'Post niet gevonden.'], 404);
+            return new WP_REST_Response(['error' => __('Post niet gevonden.', 'teksttv')], 404);
         }
 
         // Clean post content for AI input
@@ -130,7 +130,7 @@ class RestApi
         $post_title = $post->post_title;
 
         if (empty($post_text) && empty($post_title)) {
-            return new WP_REST_Response(['error' => 'Post heeft geen content om samen te vatten.'], 422);
+            return new WP_REST_Response(['error' => __('Post heeft geen content om samen te vatten.', 'teksttv')], 422);
         }
 
         $prompts = Helpers::get_ai_prompts();
@@ -139,7 +139,8 @@ class RestApi
             $word_count = Helpers::count_words($post_text);
             if ($word_count < $min_words) {
                 return new WP_REST_Response(
-                    ['error' => sprintf('Artikel bevat te weinig tekst (%d woorden, minimaal %d vereist).', $word_count, $min_words)],
+                    // translators: %1$d: actual word count, %2$d: minimum required words
+                    ['error' => sprintf(__('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', 'teksttv'), $word_count, $min_words)],
                     422
                 );
             }
@@ -153,7 +154,8 @@ class RestApi
             $result = self::generate_single_field($current_field, $post_title, $post_text);
             if (is_wp_error($result)) {
                 return new WP_REST_Response(
-                    ['error' => 'AI-generatie mislukt: ' . $result->get_error_message()],
+                    // translators: %s: error message from AI provider
+                    ['error' => sprintf(__('AI-generatie mislukt: %s', 'teksttv'), $result->get_error_message())],
                     500
                 );
             }
@@ -311,8 +313,9 @@ class RestApi
                 return '';
             }
             if ($is_last_attempt) {
+                // translators: %1$d: actual character count, %2$d: maximum allowed characters
                 return sprintf(
-                    'Kop is %d tekens (limiet: %d). Controleer en kort eventueel handmatig in.',
+                    __('Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.', 'teksttv'),
                     mb_strlen($content),
                     $prompts['title_char_limit']
                 );
@@ -324,8 +327,9 @@ class RestApi
                 return '';
             }
             if ($is_last_attempt) {
+                // translators: %1$d: actual word count, %2$d: minimum words, %3$d: maximum words
                 return sprintf(
-                    'Tekst bevat %d woorden (limiet: %d-%d). Controleer en pas eventueel handmatig aan.',
+                    __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv'),
                     $count,
                     $min_words,
                     $prompts['word_limit']
@@ -454,7 +458,8 @@ class RestApi
 
         if (!$has_output) {
             // Headers already sent, output error as plain text
-            echo '{"error": "Geen trainingsdata beschikbaar."}';
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON output
+            echo wp_json_encode(['error' => __('Geen trainingsdata beschikbaar.', 'teksttv')]);
         }
 
         exit;
@@ -469,18 +474,40 @@ class RestApi
         return $result !== null ? $result : trim($content);
     }
 
+    private const SLIDES_CACHE_TTL = 180; // 3 minutes
+
     public static function get_slides(WP_REST_Request $request): WP_REST_Response
     {
         $channel = $request->get_param('channel');
+        $cache_key = 'teksttv_slides_' . $channel;
 
-        $response = new WP_REST_Response([
-            'slides' => SlidesBuilder::build($channel),
-            'ticker' => SlidesBuilder::build_ticker($channel),
-        ], 200);
+        $data = get_transient($cache_key);
+        if ($data === false) {
+            $data = [
+                'slides' => SlidesBuilder::build($channel),
+                'ticker' => SlidesBuilder::build_ticker($channel),
+            ];
+            set_transient($cache_key, $data, self::SLIDES_CACHE_TTL);
+        }
 
-        // Cache for 3 minutes
-        $response->header('Cache-Control', 'public, max-age=180');
+        $response = new WP_REST_Response($data, 200);
+        $response->header('Cache-Control', 'public, max-age=' . self::SLIDES_CACHE_TTL);
 
         return $response;
+    }
+
+    /**
+     * Invalidate the slides cache for one or all channels.
+     */
+    public static function invalidate_slides_cache(string $channel = ''): void
+    {
+        if (!empty($channel)) {
+            delete_transient('teksttv_slides_' . $channel);
+            return;
+        }
+
+        foreach (Helpers::get_channels() as $ch) {
+            delete_transient('teksttv_slides_' . $ch['slug']);
+        }
     }
 }
