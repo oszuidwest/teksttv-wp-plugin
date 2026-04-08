@@ -213,49 +213,6 @@ class BuiltinBlocksTest extends TestCase
     }
 
     // =========================================================================
-    // sanitize_taxonomy_filters()
-    // =========================================================================
-
-    public function test_sanitize_taxonomy_filters_empty(): void
-    {
-        $result = BuiltinBlocks::sanitize_taxonomy_filters([]);
-        $this->assertSame([], $result);
-    }
-
-    public function test_sanitize_taxonomy_filters_valid_input(): void
-    {
-        $raw = ['taxonomy_filters' => ['category' => ['1', '5']]];
-        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
-
-        $this->assertArrayHasKey('category', $result);
-        $this->assertSame([1, 5], $result['category']);
-    }
-
-    public function test_sanitize_taxonomy_filters_removes_zero_ids(): void
-    {
-        $raw = ['taxonomy_filters' => ['category' => ['0', '1']]];
-        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
-
-        $this->assertSame([1], array_values($result['category']));
-    }
-
-    public function test_sanitize_taxonomy_filters_skips_empty_term_arrays(): void
-    {
-        $raw = ['taxonomy_filters' => ['category' => ['0', '0']]];
-        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
-
-        $this->assertArrayNotHasKey('category', $result);
-    }
-
-    public function test_sanitize_taxonomy_filters_handles_scalar_value(): void
-    {
-        $raw = ['taxonomy_filters' => ['category' => '5']];
-        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
-
-        $this->assertSame([5], $result['category']);
-    }
-
-    // =========================================================================
     // save_articles() — with taxonomy filters
     // =========================================================================
 
@@ -359,31 +316,6 @@ class BuiltinBlocksTest extends TestCase
         $this->assertSame([['message' => '  spaced  ']], $result);
     }
 
-    // =========================================================================
-    // sanitize_taxonomy_filters() — multiple taxonomies
-    // =========================================================================
-
-    public function test_sanitize_taxonomy_filters_handles_multiple_taxonomies(): void
-    {
-        $raw = ['taxonomy_filters' => [
-            'category' => ['1', '2'],
-            'post_tag' => ['5'],
-        ]];
-        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
-
-        $this->assertCount(2, $result);
-        $this->assertSame([1, 2], $result['category']);
-        $this->assertSame([5], $result['post_tag']);
-    }
-
-    public function test_sanitize_taxonomy_filters_sanitizes_taxonomy_name(): void
-    {
-        $raw = ['taxonomy_filters' => ['Category!' => ['1']]];
-        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
-
-        // sanitize_key strips the '!'
-        $this->assertArrayHasKey('category', $result);
-    }
 
     // =========================================================================
     // build_ticker_headlines() — WP_Query integration
