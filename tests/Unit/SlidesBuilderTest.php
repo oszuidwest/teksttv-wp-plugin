@@ -675,4 +675,303 @@ class SlidesBuilderTest extends TestCase
         $result = SlidesBuilder::get_sidebar_image_data(1);
         $this->assertSame('https://example.com/primary.jpg', $result['url']);
     }
+
+    // =========================================================================
+    // build() — main orchestrator
+    // =========================================================================
+
+    public function test_build_returns_empty_for_empty_config(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([]);
+
+        $result = SlidesBuilder::build('tv1');
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_delegates_to_block_registry(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([
+                ['type' => 'image', 'image_id' => 42],
+                ['type' => 'image', 'image_id' => 43],
+            ]);
+
+        // Register mock block type
+        \TekstTV\BlockRegistry::register('image', [
+            'label' => 'Test Image',
+            'context' => 'loop',
+            'build' => function (array $block, string $channel) {
+                return [['type' => 'image', 'id' => $block['image_id']]];
+            },
+        ]);
+
+        $result = SlidesBuilder::build('tv1');
+
+        $this->assertCount(2, $result);
+        $this->assertSame(42, $result[0]['id']);
+        $this->assertSame(43, $result[1]['id']);
+    }
+
+    public function test_build_filters_null_slides(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([
+                ['type' => 'test_null'],
+            ]);
+
+        \TekstTV\BlockRegistry::register('test_null', [
+            'label' => 'Null',
+            'context' => 'loop',
+            'build' => function () {
+                return [null, null];
+            },
+        ]);
+
+        $result = SlidesBuilder::build('tv1');
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_skips_unregistered_types(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([
+                ['type' => 'nonexistent_type'],
+            ]);
+
+        $result = SlidesBuilder::build('tv1');
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // build_ticker() — main ticker orchestrator
+    // =========================================================================
+
+    public function test_build_ticker_returns_empty_for_empty_config(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ticker_tv1', [])
+            ->andReturn([]);
+
+        $result = SlidesBuilder::build_ticker('tv1');
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_ticker_delegates_to_block_registry(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        Functions\expect('get_option')
+            ->with('teksttv_ticker_tv1', [])
+            ->andReturn([
+                ['type' => 'ticker_text', 'message' => 'Breaking news'],
+            ]);
+
+        \TekstTV\BlockRegistry::register('ticker_text', [
+            'label' => 'Tekst',
+            'context' => 'ticker',
+            'build' => function (array $item) {
+                return [['message' => $item['message']]];
+            },
+        ]);
+
+        $result = SlidesBuilder::build_ticker('tv1');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Breaking news', $result[0]['message']);
+    }
+
+    public function test_build_ticker_skips_unscheduled_items(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        Functions\expect('get_option')
+            ->with('teksttv_ticker_tv1', [])
+            ->andReturn([
+                ['type' => 'ticker_text', 'message' => 'Future', 'date_start' => '2026-05-01'],
+            ]);
+
+        \TekstTV\BlockRegistry::register('ticker_text', [
+            'label' => 'Tekst',
+            'context' => 'ticker',
+            'build' => function (array $item) {
+                return [['message' => $item['message']]];
+            },
+        ]);
+
+        $result = SlidesBuilder::build_ticker('tv1');
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_ticker_sanitizes_channel_slug(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ticker_test', [])
+            ->andReturn([]);
+
+        SlidesBuilder::build_ticker('Test');
+        // No exception = sanitize_key worked
+        $this->assertTrue(true);
+    }
+
+    // =========================================================================
+    // build_image_slide() — edge case: integer 0 override
+    // =========================================================================
+
+    public function test_sidebar_image_override_with_integer_zero(): void
+    {
+        Functions\expect('get_post_meta')
+            ->with(1, '_teksttv_sidebar_image', true)
+            ->andReturn(0);
+
+        $result = SlidesBuilder::get_sidebar_image_data(1);
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // get_weather_provider()
+    // =========================================================================
+
+    public function test_get_weather_provider_returns_null_without_api_key(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_openweather_api_key', '')
+            ->andReturn('');
+        Functions\expect('apply_filters')
+            ->with('teksttv_weather_provider', null)
+            ->andReturn(null);
+
+        $result = SlidesBuilder::get_weather_provider();
+        $this->assertNull($result);
+    }
+
+    public function test_get_weather_provider_returns_provider_with_api_key(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_openweather_api_key', '')
+            ->andReturn('test-key');
+        Functions\expect('apply_filters')
+            ->andReturnUsing(fn($filter, $provider) => $provider);
+
+        $result = SlidesBuilder::get_weather_provider();
+        $this->assertInstanceOf(WeatherProvider::class, $result);
+    }
+
+    public function test_get_weather_provider_caches_result(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_openweather_api_key', '')
+            ->once()
+            ->andReturn('test-key');
+        Functions\expect('apply_filters')
+            ->once()
+            ->andReturnUsing(fn($filter, $provider) => $provider);
+
+        $result1 = SlidesBuilder::get_weather_provider();
+        $result2 = SlidesBuilder::get_weather_provider();
+
+        $this->assertSame($result1, $result2);
+    }
+
+    public function test_get_weather_provider_allows_filter_override(): void
+    {
+        $custom_provider = \Mockery::mock(WeatherProvider::class);
+
+        Functions\expect('get_option')
+            ->with('teksttv_openweather_api_key', '')
+            ->andReturn('');
+        Functions\expect('apply_filters')
+            ->with('teksttv_weather_provider', null)
+            ->andReturn($custom_provider);
+
+        $result = SlidesBuilder::get_weather_provider();
+        $this->assertSame($custom_provider, $result);
+    }
+
+    // =========================================================================
+    // split_pages() — plain text separator
+    // =========================================================================
+
+    public function test_split_pages_with_plain_text_separator(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_features', \Mockery::any())
+            ->andReturn(['page_separator']);
+
+        $result = SlidesBuilder::split_pages("Page one\n---\nPage two");
+        $this->assertCount(2, $result);
+        $this->assertSame('Page one', $result[0]);
+        $this->assertSame('Page two', $result[1]);
+    }
+
+    // =========================================================================
+    // build_weather_slide() — uses default duration
+    // =========================================================================
+
+    public function test_build_weather_slide_uses_default_duration(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $mock_provider = \Mockery::mock(WeatherProvider::class);
+        $mock_provider->shouldReceive('fetch')->andReturn([
+            'city' => 'Breda',
+            'days' => [
+                [
+                    'date' => new \DateTime('2026-04-07'),
+                    'temp_min' => 8.0, 'temp_max' => 16.0,
+                    'weather_id' => 800, 'description' => 'Helder',
+                    'icon' => '01d', 'wind_deg' => 0, 'wind_speed' => 0,
+                ],
+            ],
+        ]);
+
+        Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('key');
+        Functions\expect('apply_filters')->andReturn($mock_provider);
+        Functions\expect('date_i18n')->andReturn('dinsdag 7 apr');
+
+        // No duration in block = should use WEATHER_DURATION constant (15000)
+        $block = ['location' => 'Breda,NL', 'title' => 'Weer'];
+        $result = SlidesBuilder::build_weather_slide($block);
+
+        $this->assertSame(15000, $result[0]['duration']);
+    }
+
+    // =========================================================================
+    // build_commercial_slides() — default duration from option
+    // =========================================================================
+
+    public function test_build_commercial_slides_uses_default_duration(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+        Functions\when('get_option')->alias(function (string $name, $default = false) {
+            if ($name === 'teksttv_campaigns') {
+                return [
+                    [
+                        'channels' => ['tv1'],
+                        'group' => 'sponsors',
+                        'slides' => [100],
+                    ],
+                ];
+            }
+            if ($name === 'teksttv_duration_image') {
+                return 7;
+            }
+            return $default;
+        });
+        Functions\expect('wp_get_attachment_url')->andReturn('https://example.com/img.jpg');
+
+        $block = ['groups' => ['sponsors']];
+        $result = SlidesBuilder::build_commercial_slides($block, 'tv1');
+
+        // Campaign has no duration, so uses global default: 7 * 1000 = 7000
+        $this->assertSame(7000, $result[0]['duration']);
+    }
 }

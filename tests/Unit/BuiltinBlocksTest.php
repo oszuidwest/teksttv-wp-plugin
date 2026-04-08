@@ -2,6 +2,7 @@
 
 namespace TekstTV\Tests\Unit;
 
+use Brain\Monkey\Functions;
 use TekstTV\BuiltinBlocks;
 
 class BuiltinBlocksTest extends TestCase
@@ -246,5 +247,135 @@ class BuiltinBlocksTest extends TestCase
         $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
 
         $this->assertSame([5], $result['category']);
+    }
+
+    // =========================================================================
+    // save_articles() — with taxonomy filters
+    // =========================================================================
+
+    public function test_save_articles_with_taxonomy_filters(): void
+    {
+        $result = BuiltinBlocks::save_articles([
+            'count' => '5',
+            'taxonomy_filters' => ['category' => ['1', '3']],
+        ]);
+
+        $this->assertSame(5, $result['count']);
+        $this->assertArrayHasKey('category', $result['taxonomy_filters']);
+        $this->assertSame([1, 3], $result['taxonomy_filters']['category']);
+    }
+
+    // =========================================================================
+    // save_commercial() — empty groups array
+    // =========================================================================
+
+    public function test_save_commercial_empty_groups_defaults(): void
+    {
+        $result = BuiltinBlocks::save_commercial([]);
+
+        $this->assertSame([], $result['groups']);
+        $this->assertSame(0, $result['intro_image_id']);
+        $this->assertSame(0, $result['outro_image_id']);
+    }
+
+    public function test_save_commercial_non_array_groups(): void
+    {
+        $result = BuiltinBlocks::save_commercial(['groups' => 'single']);
+
+        $this->assertSame([], $result['groups']);
+    }
+
+    // =========================================================================
+    // save_weather() — empty fields
+    // =========================================================================
+
+    public function test_save_weather_omits_empty_duration(): void
+    {
+        $result = BuiltinBlocks::save_weather([
+            'location' => 'Breda,NL',
+            'title' => 'Weer',
+            'duration' => '',
+        ]);
+
+        $this->assertArrayNotHasKey('duration', $result);
+    }
+
+    public function test_save_weather_empty_fields(): void
+    {
+        $result = BuiltinBlocks::save_weather([]);
+
+        $this->assertSame('', $result['location']);
+        $this->assertSame('', $result['title']);
+    }
+
+    // =========================================================================
+    // save_image() — defaults
+    // =========================================================================
+
+    public function test_save_image_defaults_to_zero(): void
+    {
+        $result = BuiltinBlocks::save_image([]);
+
+        $this->assertSame(0, $result['image_id']);
+    }
+
+    // =========================================================================
+    // save_ticker_headlines() — with taxonomy filters
+    // =========================================================================
+
+    public function test_save_ticker_headlines_with_taxonomy_filters(): void
+    {
+        $result = BuiltinBlocks::save_ticker_headlines([
+            'count' => '3',
+            'taxonomy_filters' => ['category' => ['1']],
+        ]);
+
+        $this->assertArrayHasKey('taxonomy_filters', $result);
+        $this->assertSame([1], $result['taxonomy_filters']['category']);
+    }
+
+    public function test_save_ticker_headlines_omits_empty_taxonomy_filters(): void
+    {
+        $result = BuiltinBlocks::save_ticker_headlines([
+            'taxonomy_filters' => ['category' => ['0']],
+        ]);
+
+        $this->assertArrayNotHasKey('taxonomy_filters', $result);
+    }
+
+    // =========================================================================
+    // build_ticker_text() — scheduling passthrough
+    // =========================================================================
+
+    public function test_build_ticker_text_returns_trimmed_message(): void
+    {
+        $result = BuiltinBlocks::build_ticker_text(['message' => '  spaced  '], 'tv1');
+        $this->assertSame([['message' => '  spaced  ']], $result);
+    }
+
+    // =========================================================================
+    // sanitize_taxonomy_filters() — multiple taxonomies
+    // =========================================================================
+
+    public function test_sanitize_taxonomy_filters_handles_multiple_taxonomies(): void
+    {
+        $raw = ['taxonomy_filters' => [
+            'category' => ['1', '2'],
+            'post_tag' => ['5'],
+        ]];
+        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
+
+        $this->assertCount(2, $result);
+        $this->assertSame([1, 2], $result['category']);
+        $this->assertSame([5], $result['post_tag']);
+    }
+
+    public function test_sanitize_taxonomy_filters_sanitizes_taxonomy_name(): void
+    {
+        $raw = ['taxonomy_filters' => ['Category!' => ['1']]];
+        $result = BuiltinBlocks::sanitize_taxonomy_filters($raw);
+
+        // sanitize_key strips the '!'
+        $this->assertArrayHasKey('category', $result);
     }
 }

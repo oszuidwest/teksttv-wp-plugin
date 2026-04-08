@@ -368,4 +368,313 @@ class HelpersTest extends TestCase
         $result = Helpers::get_active_campaigns('tv99');
         $this->assertEmpty($result);
     }
+
+    // =========================================================================
+    // get_image_data()
+    // =========================================================================
+
+    public function test_get_image_data_returns_null_when_no_url(): void
+    {
+        Functions\expect('wp_get_attachment_image_url')
+            ->with(999, 'large')
+            ->andReturn(false);
+
+        $this->assertNull(Helpers::get_image_data(999));
+    }
+
+    public function test_get_image_data_returns_url_only_when_no_extras(): void
+    {
+        Functions\expect('wp_get_attachment_image_url')
+            ->with(42, 'large')
+            ->andReturn('https://example.com/img.jpg');
+        Functions\expect('wp_get_attachment_caption')
+            ->with(42)
+            ->andReturn('');
+        Functions\expect('apply_filters')
+            ->with('teksttv_image_attribution', '', 42)
+            ->andReturn('');
+
+        $result = Helpers::get_image_data(42);
+
+        $this->assertSame(['url' => 'https://example.com/img.jpg'], $result);
+    }
+
+    public function test_get_image_data_includes_caption(): void
+    {
+        Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/img.jpg');
+        Functions\expect('wp_get_attachment_caption')->with(42)->andReturn('Een foto');
+        Functions\expect('apply_filters')->andReturn('');
+
+        $result = Helpers::get_image_data(42);
+
+        $this->assertSame('Een foto', $result['caption']);
+    }
+
+    public function test_get_image_data_includes_attribution(): void
+    {
+        Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/img.jpg');
+        Functions\expect('wp_get_attachment_caption')->andReturn('');
+        Functions\expect('apply_filters')
+            ->with('teksttv_image_attribution', '', 42)
+            ->andReturn('Foto: ANP');
+
+        $result = Helpers::get_image_data(42);
+
+        $this->assertSame('Foto: ANP', $result['attribution']);
+        $this->assertArrayNotHasKey('caption', $result);
+    }
+
+    public function test_get_image_data_includes_both_caption_and_attribution(): void
+    {
+        Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/img.jpg');
+        Functions\expect('wp_get_attachment_caption')->andReturn('Zonsondergang');
+        Functions\expect('apply_filters')->andReturn('Foto: ANP');
+
+        $result = Helpers::get_image_data(42);
+
+        $this->assertSame('Zonsondergang', $result['caption']);
+        $this->assertSame('Foto: ANP', $result['attribution']);
+    }
+
+    public function test_get_image_data_uses_custom_size(): void
+    {
+        Functions\expect('wp_get_attachment_image_url')
+            ->with(42, 'thumbnail')
+            ->andReturn('https://example.com/thumb.jpg');
+        Functions\expect('wp_get_attachment_caption')->andReturn('');
+        Functions\expect('apply_filters')->andReturn('');
+
+        $result = Helpers::get_image_data(42, 'thumbnail');
+
+        $this->assertSame('https://example.com/thumb.jpg', $result['url']);
+    }
+
+    // =========================================================================
+    // get_channels()
+    // =========================================================================
+
+    public function test_get_channels_returns_configured_channels(): void
+    {
+        $channels = [
+            ['slug' => 'tv1', 'label' => 'TV 1'],
+            ['slug' => 'tv2', 'label' => 'TV 2'],
+        ];
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn($channels);
+
+        $this->assertSame($channels, Helpers::get_channels());
+    }
+
+    public function test_get_channels_returns_default_when_empty(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn([]);
+
+        $result = Helpers::get_channels();
+
+        $this->assertCount(1, $result);
+        $this->assertSame('tv1', $result[0]['slug']);
+        $this->assertSame('TV 1', $result[0]['label']);
+    }
+
+    // =========================================================================
+    // has_feature()
+    // =========================================================================
+
+    public function test_has_feature_returns_true_when_enabled(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_features', \Mockery::any())
+            ->andReturn(['bold', 'italic', 'ai_generate']);
+
+        $this->assertTrue(Helpers::has_feature('ai_generate'));
+    }
+
+    public function test_has_feature_returns_false_when_disabled(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_features', \Mockery::any())
+            ->andReturn(['bold', 'italic']);
+
+        $this->assertFalse(Helpers::has_feature('ai_generate'));
+    }
+
+    // =========================================================================
+    // get_ai_prompts()
+    // =========================================================================
+
+    public function test_get_ai_prompts_returns_defaults_when_empty(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn([]);
+
+        $result = Helpers::get_ai_prompts();
+
+        $this->assertSame(100, $result['word_limit']);
+        $this->assertSame(40, $result['title_char_limit']);
+        $this->assertSame(50, $result['min_input_words']);
+        $this->assertSame(3, $result['max_retries']);
+        $this->assertSame(10, $result['rate_limit']);
+        $this->assertSame(2048, $result['max_tokens']);
+        $this->assertNotEmpty($result['system']);
+        $this->assertNotEmpty($result['prompt_title']);
+        $this->assertNotEmpty($result['prompt_body']);
+    }
+
+    public function test_get_ai_prompts_uses_saved_values(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn([
+                'system' => 'Custom system prompt',
+                'word_limit' => 200,
+                'title_char_limit' => 50,
+                'max_retries' => 5,
+                'temperature' => 0.7,
+                'model' => 'anthropic/claude-3',
+            ]);
+
+        $result = Helpers::get_ai_prompts();
+
+        $this->assertSame('Custom system prompt', $result['system']);
+        $this->assertSame(200, $result['word_limit']);
+        $this->assertSame(50, $result['title_char_limit']);
+        $this->assertSame(5, $result['max_retries']);
+        $this->assertSame(0.7, $result['temperature']);
+        $this->assertSame('anthropic/claude-3', $result['model']);
+    }
+
+    public function test_get_ai_prompts_clamps_max_retries(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn(['max_retries' => 99]);
+
+        $result = Helpers::get_ai_prompts();
+        $this->assertSame(5, $result['max_retries']);
+    }
+
+    public function test_get_ai_prompts_clamps_rate_limit(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn(['rate_limit' => 999]);
+
+        $result = Helpers::get_ai_prompts();
+        $this->assertSame(60, $result['rate_limit']);
+    }
+
+    // =========================================================================
+    // get_campaign_groups()
+    // =========================================================================
+
+    public function test_get_campaign_groups_returns_groups(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_campaign_groups', [])
+            ->andReturn(['Sponsors', 'Partners']);
+
+        $this->assertSame(['Sponsors', 'Partners'], Helpers::get_campaign_groups());
+    }
+
+    public function test_get_campaign_groups_returns_empty_when_not_set(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_campaign_groups', [])
+            ->andReturn([]);
+
+        $this->assertSame([], Helpers::get_campaign_groups());
+    }
+
+    public function test_get_campaign_groups_returns_empty_for_non_array(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_campaign_groups', [])
+            ->andReturn(false);
+
+        $this->assertSame([], Helpers::get_campaign_groups());
+    }
+
+    // =========================================================================
+    // get_category_options()
+    // =========================================================================
+
+    public function test_get_category_options_includes_all_option(): void
+    {
+        $cat1 = (object) ['term_id' => 1, 'name' => 'Nieuws'];
+        $cat2 = (object) ['term_id' => 2, 'name' => 'Sport'];
+
+        Functions\expect('get_categories')
+            ->with(['hide_empty' => false])
+            ->andReturn([$cat1, $cat2]);
+
+        $result = Helpers::get_category_options();
+
+        $this->assertSame('Alle categorieën', $result[0]);
+        $this->assertSame('Nieuws', $result[1]);
+        $this->assertSame('Sport', $result[2]);
+    }
+
+    // =========================================================================
+    // get_loop_config()
+    // =========================================================================
+
+    public function test_get_loop_config_returns_option_value(): void
+    {
+        $config = [['type' => 'articles', 'count' => 5]];
+
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn($config);
+
+        $this->assertSame($config, Helpers::get_loop_config('tv1'));
+    }
+
+    public function test_get_loop_config_sanitizes_slug(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_loop_test-channel', [])
+            ->andReturn([]);
+
+        $result = Helpers::get_loop_config('Test-Channel');
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // get_preview_url()
+    // =========================================================================
+
+    public function test_get_preview_url_returns_option(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_preview_url', '')
+            ->andReturn('https://preview.example.com');
+
+        $this->assertSame('https://preview.example.com', Helpers::get_preview_url());
+    }
+
+    public function test_get_preview_url_returns_empty_when_not_set(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_preview_url', '')
+            ->andReturn('');
+
+        $this->assertSame('', Helpers::get_preview_url());
+    }
+
+    // =========================================================================
+    // is_within_date_range() — edge case: invalid date format
+    // =========================================================================
+
+    public function test_is_within_date_range_ignores_invalid_start_format(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        // Invalid format should not block
+        $this->assertTrue(Helpers::is_within_date_range('not-a-date', ''));
+    }
 }
