@@ -7,6 +7,12 @@ use TekstTV\BuiltinBlocks;
 
 class BuiltinBlocksTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        \WP_Query::reset();
+    }
+
     // =========================================================================
     // save_articles()
     // =========================================================================
@@ -377,5 +383,163 @@ class BuiltinBlocksTest extends TestCase
 
         // sanitize_key strips the '!'
         $this->assertArrayHasKey('category', $result);
+    }
+
+    // =========================================================================
+    // build_ticker_headlines() — WP_Query integration
+    // =========================================================================
+
+    /**
+     * Helper: set up common mocks for build_ticker_headlines tests.
+     *
+     * @param list<int> $postIds Post IDs to return from WP_Query (fields=ids).
+     * @param array<string, mixed> $metaMap Post meta keyed by "{post_id}:{key}".
+     */
+    private function setupTickerHeadlines(array $postIds, array $metaMap = []): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        // build_ticker_headlines uses fields=ids, so $query->posts is a list of ints
+        \WP_Query::$stubPosts = $postIds;
+
+        Functions\when('get_option')->alias(fn(string $name, $default = false) => match ($name) {
+            'teksttv_max_post_age' => 30,
+            default => $default,
+        });
+
+        Functions\when('get_post_meta')->alias(function (int $post_id, string $key, bool $single) use ($metaMap) {
+            return $metaMap["{$post_id}:{$key}"] ?? '';
+        });
+    }
+
+    public function test_build_ticker_headlines_returns_messages(): void
+    {
+        $this->setupTickerHeadlines([10, 20], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '',
+            '10:_teksttv_date_end' => '',
+            '20:_teksttv_days' => '',
+            '20:_teksttv_date_start' => '',
+            '20:_teksttv_date_end' => '',
+        ]);
+
+        Functions\when('get_the_title')->alias(fn($id) => "Titel {$id}");
+
+        $item = ['count' => 5];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertCount(2, $result);
+        $this->assertSame(['message' => 'Titel 10'], $result[0]);
+        $this->assertSame(['message' => 'Titel 20'], $result[1]);
+    }
+
+    public function test_build_ticker_headlines_with_prefix(): void
+    {
+        $this->setupTickerHeadlines([10], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '',
+            '10:_teksttv_date_end' => '',
+        ]);
+
+        Functions\when('get_the_title')->alias(fn($id) => 'Nieuws artikel');
+
+        $item = ['count' => 5, 'prefix' => 'Nieuws:'];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Nieuws: Nieuws artikel', $result[0]['message']);
+    }
+
+    public function test_build_ticker_headlines_returns_empty_when_no_posts(): void
+    {
+        $this->setupTickerHeadlines([]);
+
+        $item = ['count' => 5];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_ticker_headlines_skips_posts_restricted_by_day(): void
+    {
+        // 2026-04-07 is Tuesday (N=2)
+        $this->setupTickerHeadlines([10], [
+            '10:_teksttv_days' => ['1', '3'], // Mon, Wed — not Tuesday
+        ]);
+
+        $item = ['count' => 5];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_ticker_headlines_skips_posts_outside_date_range(): void
+    {
+        $this->setupTickerHeadlines([10], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '2026-05-01',
+            '10:_teksttv_date_end' => '2026-05-31',
+        ]);
+
+        $item = ['count' => 5];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_ticker_headlines_skips_empty_titles(): void
+    {
+        $this->setupTickerHeadlines([10], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '',
+            '10:_teksttv_date_end' => '',
+        ]);
+
+        Functions\when('get_the_title')->justReturn('');
+
+        $item = ['count' => 5];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_ticker_headlines_mixes_scheduled_and_unscheduled(): void
+    {
+        // 2026-04-07 is Tuesday (N=2)
+        $this->setupTickerHeadlines([10, 20, 30], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '',
+            '10:_teksttv_date_end' => '',
+            '20:_teksttv_days' => ['1'], // Monday only — skip
+            '30:_teksttv_days' => '',
+            '30:_teksttv_date_start' => '',
+            '30:_teksttv_date_end' => '',
+        ]);
+
+        Functions\when('get_the_title')->alias(fn($id) => "Post {$id}");
+
+        $item = ['count' => 10];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertCount(2, $result);
+        $this->assertSame('Post 10', $result[0]['message']);
+        $this->assertSame('Post 30', $result[1]['message']);
+    }
+
+    public function test_build_ticker_headlines_passes_posts_with_no_day_restrictions(): void
+    {
+        $this->setupTickerHeadlines([10], [
+            '10:_teksttv_days' => '', // empty = no restriction
+            '10:_teksttv_date_start' => '',
+            '10:_teksttv_date_end' => '',
+        ]);
+
+        Functions\when('get_the_title')->justReturn('Titel');
+
+        $item = ['count' => 5];
+        $result = BuiltinBlocks::build_ticker_headlines($item, 'tv1');
+
+        $this->assertCount(1, $result);
     }
 }

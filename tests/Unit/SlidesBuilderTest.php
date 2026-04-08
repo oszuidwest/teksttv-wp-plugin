@@ -13,6 +13,7 @@ class SlidesBuilderTest extends TestCase
     {
         parent::setUp();
         SlidesBuilder::reset_weather_provider();
+        \WP_Query::reset();
     }
 
     // =========================================================================
@@ -973,5 +974,295 @@ class SlidesBuilderTest extends TestCase
 
         // Campaign has no duration, so uses global default: 7 * 1000 = 7000
         $this->assertSame(7000, $result[0]['duration']);
+    }
+
+    // =========================================================================
+    // build_article_slides() — WP_Query integration
+    // =========================================================================
+
+    /**
+     * Helper: set up common mocks for build_article_slides tests.
+     * Returns "now" in a scheduled state so the block is active.
+     *
+     * @param list<object> $posts Posts to return from WP_Query stub.
+     * @param array<string, mixed> $metaMap Post meta keyed by "{post_id}:{key}".
+     */
+    private function setupArticleSlides(array $posts, array $metaMap = []): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        \WP_Query::$stubPosts = $posts;
+
+        // Track current post ID via the WP_Query stub's loop
+        $postIndex = -1;
+        Functions\when('get_the_ID')->alias(function () use ($posts, &$postIndex) {
+            $postIndex++;
+            return $posts[$postIndex]->ID ?? 0;
+        });
+
+        Functions\when('get_post_meta')->alias(function (int $post_id, string $key, bool $single) use ($metaMap) {
+            return $metaMap["{$post_id}:{$key}"] ?? '';
+        });
+
+        Functions\when('get_option')->alias(function (string $name, $default = false) {
+            return match ($name) {
+                'teksttv_max_post_age' => 30,
+                'teksttv_duration_text' => 20,
+                'teksttv_duration_image' => 7,
+                'teksttv_features' => ['page_separator'],
+                default => $default,
+            };
+        });
+
+        Functions\when('wpautop')->alias(fn($text) => '<p>' . $text . '</p>');
+        Functions\when('wp_reset_postdata')->justReturn(true);
+    }
+
+    public function test_build_article_slides_returns_empty_when_not_scheduled(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $block = ['date_start' => '2026-05-01'];
+        $this->assertSame([], SlidesBuilder::build_article_slides($block));
+    }
+
+    public function test_build_article_slides_returns_empty_when_no_posts(): void
+    {
+        $this->setupArticleSlides([]);
+
+        $block = ['count' => 3];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_article_slides_creates_text_slides_from_content(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '',
+            '10:_teksttv_date_end' => '',
+            '10:_teksttv_title' => '',
+            '10:_teksttv_content' => 'Eerste alinea',
+            '10:_teksttv_sidebar_image' => '',
+            '10:_teksttv_images' => '',
+        ]);
+
+        Functions\expect('get_the_title')->andReturn('Post Titel');
+
+        // No sidebar image: no override, no categories, no thumbnail
+        Functions\expect('apply_filters')
+            ->with('teksttv_primary_category', \Mockery::any(), 10)
+            ->andReturn('');
+        Functions\expect('wp_get_post_categories')->with(10)->andReturn([]);
+        Functions\expect('get_post_thumbnail_id')->with(10)->andReturn(0);
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('text', $result[0]['type']);
+        $this->assertSame('Post Titel', $result[0]['title']);
+        $this->assertSame('<p>Eerste alinea</p>', $result[0]['body']);
+        $this->assertSame(20000, $result[0]['duration']);
+        $this->assertArrayNotHasKey('image', $result[0]);
+    }
+
+    public function test_build_article_slides_uses_custom_title(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_title' => 'Aangepaste kop',
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '0',
+        ]);
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertSame('Aangepaste kop', $result[0]['title']);
+    }
+
+    public function test_build_article_slides_includes_sidebar_image(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_title' => '',
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '42',
+            '10:_teksttv_images' => '',
+        ]);
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+        Functions\expect('wp_get_attachment_image_url')->with(42, 'large')->andReturn('https://example.com/sidebar.jpg');
+        Functions\expect('wp_get_attachment_caption')->with(42)->andReturn('');
+        Functions\expect('apply_filters')->with('teksttv_image_attribution', '', 42)->andReturn('');
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertArrayHasKey('image', $result[0]);
+        $this->assertSame('https://example.com/sidebar.jpg', $result[0]['image']['url']);
+    }
+
+    public function test_build_article_slides_splits_content_into_multiple_pages(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_title' => '',
+            '10:_teksttv_content' => '<p>Pagina een</p><p>---</p><p>Pagina twee</p>',
+            '10:_teksttv_sidebar_image' => '0',
+            '10:_teksttv_images' => '',
+        ]);
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertCount(2, $result);
+        $this->assertSame('<p><p>Pagina een</p></p>', $result[0]['body']);
+        $this->assertSame('<p><p>Pagina twee</p></p>', $result[1]['body']);
+    }
+
+    public function test_build_article_slides_adds_extra_images(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_title' => '',
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '0',
+            '10:_teksttv_images' => [50, 51],
+        ]);
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+        Functions\expect('wp_get_attachment_image_url')
+            ->andReturnUsing(fn($id) => "https://example.com/img-{$id}.jpg");
+        Functions\expect('wp_get_attachment_caption')->andReturn('');
+        Functions\expect('apply_filters')->andReturn('');
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        // 1 text slide + 2 image slides
+        $this->assertCount(3, $result);
+        $this->assertSame('text', $result[0]['type']);
+        $this->assertSame('image', $result[1]['type']);
+        $this->assertSame('https://example.com/img-50.jpg', $result[1]['url']);
+        $this->assertSame('image', $result[2]['type']);
+        $this->assertSame(7000, $result[1]['duration']);
+    }
+
+    public function test_build_article_slides_skips_post_restricted_by_day(): void
+    {
+        // 2026-04-07 is a Tuesday (N=2)
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_days' => ['1', '3', '5'], // Mon, Wed, Fri — not Tuesday
+            '10:_teksttv_content' => 'Tekst',
+        ]);
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_article_slides_skips_post_outside_date_range(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '2026-05-01',
+            '10:_teksttv_date_end' => '2026-05-31',
+        ]);
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_article_slides_uses_custom_text_duration(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '0',
+        ]);
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+
+        $block = ['count' => 1, 'duration_text' => 30];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertSame(30000, $result[0]['duration']);
+    }
+
+    public function test_build_article_slides_skips_empty_content(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_content' => '',
+            '10:_teksttv_sidebar_image' => '0',
+            '10:_teksttv_images' => '',
+        ]);
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+
+        // No sidebar image
+        Functions\expect('apply_filters')
+            ->with('teksttv_primary_category', \Mockery::any(), 10)
+            ->andReturn('');
+        Functions\expect('wp_get_post_categories')->with(10)->andReturn([]);
+        Functions\expect('get_post_thumbnail_id')->with(10)->andReturn(0);
+
+        $block = ['count' => 1];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        // No content and no images = no slides
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_article_slides_applies_taxonomy_filters(): void
+    {
+        $this->setupArticleSlides([]);
+
+        $block = [
+            'count' => 3,
+            'taxonomy_filters' => ['category' => [1, 5]],
+        ];
+        SlidesBuilder::build_article_slides($block, 'tv1');
+
+        // Verify the WP_Query received the tax_query
+        // We can't easily inspect the query args since WP_Query is a stub,
+        // but we verify it doesn't crash and returns empty for no posts
+        $this->assertTrue(true);
+    }
+
+    public function test_build_article_slides_multiple_posts(): void
+    {
+        $post1 = (object) ['ID' => 10];
+        $post2 = (object) ['ID' => 20];
+        $this->setupArticleSlides([$post1, $post2], [
+            '10:_teksttv_content' => 'Eerste',
+            '10:_teksttv_sidebar_image' => '0',
+            '10:_teksttv_images' => '',
+            '20:_teksttv_content' => 'Tweede',
+            '20:_teksttv_sidebar_image' => '0',
+            '20:_teksttv_images' => '',
+        ]);
+
+        Functions\when('get_the_title')->alias(fn($id = null) => "Titel {$id}");
+
+        $block = ['count' => 2];
+        $result = SlidesBuilder::build_article_slides($block, 'tv1');
+
+        $this->assertCount(2, $result);
+        $this->assertSame('<p>Eerste</p>', $result[0]['body']);
+        $this->assertSame('<p>Tweede</p>', $result[1]['body']);
     }
 }

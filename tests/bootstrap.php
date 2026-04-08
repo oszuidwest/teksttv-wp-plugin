@@ -63,3 +63,53 @@ if (!function_exists('wp_strip_all_tags')) {
         return trim($text);
     }
 }
+
+// Minimal WP_Query stub for unit testing methods that instantiate WP_Query.
+// Tests set WP_Query::$stubPosts before calling the method under test.
+if (!class_exists('WP_Query')) {
+    class WP_Query
+    {
+        /** @var list<object> Posts to return from the stub. Set this in your test. */
+        public static array $stubPosts = [];
+
+        /** @var array<string, mixed> The query args passed to the constructor. */
+        public array $query_vars = [];
+
+        /** @var list<object> */
+        public array $posts = [];
+
+        public int $found_posts = 0;
+        public int $max_num_pages = 1;
+
+        private int $current = -1;
+
+        public function __construct(array $args = [])
+        {
+            $this->query_vars = $args;
+            $this->posts = self::$stubPosts;
+            $this->found_posts = count($this->posts);
+        }
+
+        public function have_posts(): bool
+        {
+            return ($this->current + 1) < count($this->posts);
+        }
+
+        public function the_post(): void
+        {
+            $this->current++;
+        }
+
+        /** Get the current post in the loop (for mocking get_the_ID). */
+        public function current_post(): ?object
+        {
+            return $this->posts[$this->current] ?? null;
+        }
+
+        /** Reset stub state between tests. */
+        public static function reset(): void
+        {
+            self::$stubPosts = [];
+        }
+    }
+}
