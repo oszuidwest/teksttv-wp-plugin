@@ -21,7 +21,7 @@ export function initTomSelectIn(container: Element | Document = document): void 
     if (typeof TomSelect === 'undefined') return;
 
     container.querySelectorAll<HTMLSelectElement>('.teksttv-tomselect').forEach((el) => {
-        if ((el as any).tomselect) return;
+        if ((el as unknown as { tomselect?: unknown }).tomselect) return;
         new TomSelect(el, {
             plugins: ['remove_button'],
             placeholder: el.dataset.placeholder || 'Filter...',
