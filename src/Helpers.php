@@ -78,7 +78,7 @@ class Helpers
     {
         $channels = get_option('teksttv_channels', []);
         if (empty($channels)) {
-            return [['slug' => 'tv1', 'label' => 'TV 1']];
+            return [['slug' => 'tv1', 'label' => __('TV 1', 'teksttv')]];
         }
         return $channels;
     }

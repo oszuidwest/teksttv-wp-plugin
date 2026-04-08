@@ -24,10 +24,10 @@ namespace TekstTV;
         <label>
             <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" />
             <span class="dashicons dashicons-desktop"></span>
-            Toon op Tekst TV
+            <?php esc_html_e('Toon op Tekst TV', 'teksttv'); ?>
         </label>
         <span class="teksttv-toggle-status <?php echo $active === '1' ? 'is-active' : ''; ?>" id="teksttv-toggle-status">
-            <?php echo $active === '1' ? 'Actief' : 'Inactief'; ?>
+            <?php echo $active === '1' ? esc_html__('Actief', 'teksttv') : esc_html__('Inactief', 'teksttv'); ?>
         </span>
     </div>
 
@@ -37,10 +37,10 @@ namespace TekstTV;
             <div class="teksttv-editor-main">
                 <?php if ($ai_enabled) : ?>
                 <div class="teksttv-meta-section teksttv-ai-section">
-                    <button type="button" class="button button-small teksttv-generate-btn" data-field="both"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> Genereer kop &amp; tekst</button>
+                    <button type="button" class="button button-small teksttv-generate-btn" data-field="both"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html__('Genereer kop & tekst', 'teksttv'); ?></button>
                     <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
                     <?php if (get_post_meta($post->ID, '_teksttv_ai_title', true) || get_post_meta($post->ID, '_teksttv_ai_body', true)) : ?>
-                    <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> AI gegenereerd</span>
+                    <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> <?php esc_html_e('AI gegenereerd', 'teksttv'); ?></span>
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
@@ -49,15 +49,15 @@ namespace TekstTV;
                 <!-- Title override -->
                 <div class="teksttv-meta-section">
                     <div class="teksttv-section-header">
-                        <label for="teksttv-title" class="teksttv-section-label">Kop</label>
+                        <label for="teksttv-title" class="teksttv-section-label"><?php esc_html_e('Kop', 'teksttv'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> Genereer</button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
                     <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" />
                     <div class="teksttv-title-footer">
-                        <p class="description">Laat leeg om de titel van het artikel te gebruiken.</p>
+                        <p class="description"><?php esc_html_e('Laat leeg om de titel van het artikel te gebruiken.', 'teksttv'); ?></p>
                         <span class="teksttv-charcount" id="teksttv-charcount"></span>
                     </div>
                 </div>
@@ -66,9 +66,9 @@ namespace TekstTV;
                 <!-- Content -->
                 <div class="teksttv-meta-section teksttv-content-wrap">
                     <div class="teksttv-section-header">
-                        <label class="teksttv-section-label">Tekst voor Tekst TV</label>
+                        <label class="teksttv-section-label"><?php esc_html_e('Tekst voor Tekst TV', 'teksttv'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> Genereer</button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php
@@ -115,7 +115,7 @@ namespace TekstTV;
                 <?php if (Helpers::has_feature('sidebar_image')) : ?>
                 <!-- Sidebar image -->
                 <div class="teksttv-meta-section teksttv-sidebar-image-section">
-                    <span class="teksttv-section-label">Sidebar afbeelding</span>
+                    <span class="teksttv-section-label"><?php esc_html_e('Sidebar afbeelding', 'teksttv'); ?></span>
                     <?php
                     $sidebar_image_id = get_post_meta($post->ID, '_teksttv_sidebar_image', true);
                     $is_none = $sidebar_image_id === '0';
@@ -127,7 +127,7 @@ namespace TekstTV;
                     <input type="hidden" name="teksttv_sidebar_image" id="teksttv-sidebar-image-id" value="<?php echo esc_attr($sidebar_image_id); ?>" />
                     <div class="teksttv-image-cards" data-active="<?php echo esc_attr($active_state); ?>">
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'default' ? 'is-active' : ''; ?>" data-state="default" id="teksttv-sidebar-card-default">
-                            <span class="teksttv-image-card-label">Standaard</span>
+                            <span class="teksttv-image-card-label"><?php esc_html_e('Standaard', 'teksttv'); ?></span>
                             <?php if ($fallback_url) : ?>
                                 <img src="<?php echo esc_url($fallback_url); ?>" alt="" class="teksttv-image-card-thumb" />
                             <?php else : ?>
@@ -135,7 +135,7 @@ namespace TekstTV;
                             <?php endif; ?>
                         </button>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'custom' ? 'is-active' : ''; ?>" data-state="custom" id="teksttv-sidebar-card-custom">
-                            <span class="teksttv-image-card-label">Eigen</span>
+                            <span class="teksttv-image-card-label"><?php esc_html_e('Eigen', 'teksttv'); ?></span>
                             <?php if ($custom_url) : ?>
                                 <img src="<?php echo esc_url($custom_url); ?>" alt="" class="teksttv-image-card-thumb" id="teksttv-sidebar-image-img" />
                             <?php else : ?>
@@ -144,7 +144,7 @@ namespace TekstTV;
                             <?php endif; ?>
                         </button>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'none' ? 'is-active' : ''; ?>" data-state="none" id="teksttv-sidebar-card-none">
-                            <span class="teksttv-image-card-label">Geen</span>
+                            <span class="teksttv-image-card-label"><?php esc_html_e('Geen', 'teksttv'); ?></span>
                             <span class="teksttv-image-card-icon"><span class="dashicons dashicons-hidden"></span></span>
                         </button>
                     </div>
@@ -154,8 +154,8 @@ namespace TekstTV;
                 <?php if (Helpers::has_feature('extra_images')) : ?>
                 <!-- Extra images -->
                 <div class="teksttv-meta-section teksttv-images-section">
-                    <h4>Extra afbeeldingen</h4>
-                    <p class="description">Worden als aparte fullscreen image-slides getoond na de tekst.</p>
+                    <h4><?php esc_html_e('Extra afbeeldingen', 'teksttv'); ?></h4>
+                    <p class="description"><?php esc_html_e('Worden als aparte fullscreen image-slides getoond na de tekst.', 'teksttv'); ?></p>
                     <div id="teksttv-images-list" class="teksttv-images-list">
                         <?php foreach ($images as $attachment_id) : ?>
                             <?php $thumb = wp_get_attachment_image_url($attachment_id, 'thumbnail'); ?>
@@ -168,7 +168,7 @@ namespace TekstTV;
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="button" id="teksttv-add-images"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> Afbeeldingen toevoegen</button>
+                    <button type="button" class="button" id="teksttv-add-images"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php esc_html_e('Afbeeldingen toevoegen', 'teksttv'); ?></button>
                 </div>
                 <?php endif; ?>
 
@@ -176,29 +176,29 @@ namespace TekstTV;
                 <!-- Scheduling -->
                 <div class="teksttv-meta-section teksttv-collapsible">
                     <button type="button" class="teksttv-collapsible-toggle">
-                        <span class="teksttv-section-label">Planning</span>
+                        <span class="teksttv-section-label"><?php esc_html_e('Planning', 'teksttv'); ?></span>
                         <span class="dashicons dashicons-arrow-down-alt2 teksttv-collapsible-icon"></span>
                     </button>
                     <div class="teksttv-collapsible-body is-hidden">
                     <div class="teksttv-scheduling">
                         <div class="teksttv-scheduling-group">
-                            <h4>Periode</h4>
+                            <h4><?php esc_html_e('Periode', 'teksttv'); ?></h4>
                             <div class="teksttv-dates-row">
                                 <div class="teksttv-date-field">
-                                    <label for="teksttv-date-start">Vanaf</label>
+                                    <label for="teksttv-date-start"><?php esc_html_e('Vanaf', 'teksttv'); ?></label>
                                     <input type="date" name="teksttv_date_start" value="<?php echo esc_attr($date_start); ?>" id="teksttv-date-start" />
                                 </div>
                                 <div class="teksttv-date-field">
-                                    <label for="teksttv-date-end">Tot en met</label>
+                                    <label for="teksttv-date-end"><?php esc_html_e('Tot en met', 'teksttv'); ?></label>
                                     <input type="date" name="teksttv_date_end" value="<?php echo esc_attr($date_end); ?>" id="teksttv-date-end" />
-                                    <button type="button" class="teksttv-date-reset is-hidden" id="teksttv-date-end-reset" title="Zet naar standaard einddatum">
-                                        <span class="dashicons dashicons-image-rotate"></span> Standaard
+                                    <button type="button" class="teksttv-date-reset is-hidden" id="teksttv-date-end-reset" title="<?php echo esc_attr__('Zet naar standaard einddatum', 'teksttv'); ?>">
+                                        <span class="dashicons dashicons-image-rotate"></span> <?php esc_html_e('Standaard', 'teksttv'); ?>
                                     </button>
                                 </div>
                             </div>
                         </div>
                         <div class="teksttv-scheduling-group">
-                            <h4>Weekdagen</h4>
+                            <h4><?php esc_html_e('Weekdagen', 'teksttv'); ?></h4>
                             <div class="teksttv-days-row">
                                 <?php foreach ($day_labels as $num => $label) : ?>
                                 <label class="teksttv-day-toggle">
@@ -207,7 +207,7 @@ namespace TekstTV;
                                 </label>
                                 <?php endforeach; ?>
                             </div>
-                            <p class="description">Bericht wordt alleen op geselecteerde dagen getoond.</p>
+                            <p class="description"><?php esc_html_e('Bericht wordt alleen op geselecteerde dagen getoond.', 'teksttv'); ?></p>
                         </div>
                     </div>
                     </div>
@@ -218,7 +218,7 @@ namespace TekstTV;
             <!-- Preview sidebar -->
             <div class="teksttv-editor-preview" id="teksttv-preview-wrap">
                 <div class="teksttv-preview-header">
-                    <span class="teksttv-section-label">Preview</span>
+                    <span class="teksttv-section-label"><?php esc_html_e('Preview', 'teksttv'); ?></span>
                     <div class="teksttv-preview-nav" id="teksttv-preview-nav">
                         <button type="button" class="button button-small" id="teksttv-preview-prev" disabled><span class="dashicons dashicons-arrow-left-alt2"></span></button>
                         <span class="teksttv-preview-counter" id="teksttv-preview-counter">1 / 1</span>
@@ -235,7 +235,7 @@ namespace TekstTV;
                     </div>
                 <?php else : ?>
                     <div class="teksttv-no-preview">
-                        Stel een preview URL in bij <a href="<?php echo esc_url(admin_url('admin.php?page=teksttv&tab=settings')); ?>">Tekst TV &rarr; Instellingen</a> om live preview te activeren.
+                        <?php echo wp_kses(sprintf(__('Stel een preview URL in bij <a href="%s">Tekst TV &rarr; Instellingen</a> om live preview te activeren.', 'teksttv'), esc_url(admin_url('admin.php?page=teksttv&tab=settings'))), ['a' => ['href' => []]]); ?>
                     </div>
                 <?php endif; ?>
             </div>

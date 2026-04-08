@@ -54,7 +54,7 @@ class BuiltinBlocks
     private static function register_articles(): void
     {
         BlockRegistry::register('articles', [
-            'label' => 'Artikelen',
+            'label' => __('Artikelen', 'teksttv'),
             'icon' => 'admin-post',
             'color' => '#2271b1',
             'context' => 'loop',
@@ -83,7 +83,7 @@ class BuiltinBlocks
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label>Aantal</label>
+                <label><?php esc_html_e('Aantal', 'teksttv'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" />
             </div>
             <?php foreach ($taxonomies as $tax) :
@@ -101,11 +101,11 @@ class BuiltinBlocks
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--duration">
             <div class="teksttv-block-field">
-                <label>Duur tekst</label>
+                <label><?php esc_html_e('Duur tekst', 'teksttv'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration_text]" value="<?php echo esc_attr($dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
             <div class="teksttv-block-field">
-                <label>Duur afbeelding</label>
+                <label><?php esc_html_e('Duur afbeelding', 'teksttv'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration_image]" value="<?php echo esc_attr($dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>
@@ -142,7 +142,7 @@ class BuiltinBlocks
     private static function register_image(): void
     {
         BlockRegistry::register('image', [
-            'label' => 'Afbeelding',
+            'label' => __('Afbeelding', 'teksttv'),
             'icon' => 'format-image',
             'color' => '#8c8f94',
             'context' => 'loop',
@@ -170,12 +170,12 @@ class BuiltinBlocks
             <div class="teksttv-block-image-fields">
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][image_id]" value="<?php echo esc_attr($image_id); ?>" class="teksttv-block-image-id" />
                 <p>
-                    <button type="button" class="button teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> Afbeelding kiezen</button>
-                    <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>">Verwijderen</button>
+                    <button type="button" class="button teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Afbeelding kiezen', 'teksttv'); ?></button>
+                    <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
                 </p>
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
-                        <label>Duur</label>
+                        <label><?php esc_html_e('Duur', 'teksttv'); ?></label>
                         <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>
@@ -209,7 +209,7 @@ class BuiltinBlocks
     private static function register_commercial(): void
     {
         BlockRegistry::register('commercial', [
-            'label' => 'Reclame',
+            'label' => __('Reclame', 'teksttv'),
             'icon' => 'megaphone',
             'color' => '#d63638',
             'context' => 'loop',
@@ -235,41 +235,41 @@ class BuiltinBlocks
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label>Groep(en)</label>
+                <label><?php esc_html_e('Groep(en)', 'teksttv'); ?></label>
                 <?php if (!empty($available_groups)) : ?>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="Kies groep(en)..." multiple>
+                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv'); ?>" multiple>
                     <?php foreach ($available_groups as $group_label) : ?>
                     <option value="<?php echo esc_attr($group_label); ?>" <?php echo in_array($group_label, $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_label); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
-                <p class="description">Geen groepen geconfigureerd. <a href="<?php echo esc_url(admin_url('admin.php?page=teksttv-campaigns')); ?>">Groepen beheren</a></p>
+                <p class="description"><?php echo wp_kses(sprintf(__('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', 'teksttv'), esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
             <div class="teksttv-block-field">
-                <label>Max. slides</label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][limit]" value="<?php echo esc_attr($limit); ?>" min="1" max="100" class="small-text" placeholder="Alle" />
-                <p class="description">Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.</p>
+                <label><?php esc_html_e('Max. slides', 'teksttv'); ?></label>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][limit]" value="<?php echo esc_attr($limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv'); ?>" />
+                <p class="description"><?php esc_html_e('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.', 'teksttv'); ?></p>
             </div>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--transitions">
             <div class="teksttv-block-field">
-                <label>Intro afbeelding</label>
+                <label><?php esc_html_e('Intro afbeelding', 'teksttv'); ?></label>
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][intro_image_id]" value="<?php echo esc_attr($intro_id); ?>" class="teksttv-block-image-id" />
                 <div class="teksttv-block-image-preview <?php echo $intro_url ? '' : 'is-hidden'; ?>">
                     <img src="<?php echo esc_url($intro_url); ?>" alt="" class="teksttv-block-image-thumb" />
                 </div>
-                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> Kiezen</button>
-                <button type="button" class="button-link teksttv-block-image-remove <?php echo $intro_url ? '' : 'is-hidden'; ?>">Verwijderen</button>
+                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv'); ?></button>
+                <button type="button" class="button-link teksttv-block-image-remove <?php echo $intro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
             </div>
             <div class="teksttv-block-field">
-                <label>Outro afbeelding</label>
+                <label><?php esc_html_e('Outro afbeelding', 'teksttv'); ?></label>
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][outro_image_id]" value="<?php echo esc_attr($outro_id); ?>" class="teksttv-block-image-id" />
                 <div class="teksttv-block-image-preview <?php echo $outro_url ? '' : 'is-hidden'; ?>">
                     <img src="<?php echo esc_url($outro_url); ?>" alt="" class="teksttv-block-image-thumb" />
                 </div>
-                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> Kiezen</button>
-                <button type="button" class="button-link teksttv-block-image-remove <?php echo $outro_url ? '' : 'is-hidden'; ?>">Verwijderen</button>
+                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv'); ?></button>
+                <button type="button" class="button-link teksttv-block-image-remove <?php echo $outro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
             </div>
         </div>
         <?php
@@ -308,7 +308,7 @@ class BuiltinBlocks
     private static function register_weather(): void
     {
         BlockRegistry::register('weather', [
-            'label' => 'Weer',
+            'label' => __('Weer', 'teksttv'),
             'icon' => 'cloud',
             'color' => '#72aee6',
             'context' => 'loop',
@@ -330,15 +330,15 @@ class BuiltinBlocks
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label>Locatie</label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][location]" value="<?php echo esc_attr($location); ?>" class="regular-text" placeholder="Breda,NL" />
+                <label><?php esc_html_e('Locatie', 'teksttv'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][location]" value="<?php echo esc_attr($location); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Breda,NL', 'teksttv'); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label>Titel</label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][title]" value="<?php echo esc_attr($title); ?>" class="regular-text" placeholder="Het weer" />
+                <label><?php esc_html_e('Titel', 'teksttv'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][title]" value="<?php echo esc_attr($title); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Het weer', 'teksttv'); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label>Duur</label>
+                <label><?php esc_html_e('Duur', 'teksttv'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="15" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>
@@ -371,7 +371,7 @@ class BuiltinBlocks
     private static function register_ticker_text(): void
     {
         BlockRegistry::register('ticker_text', [
-            'label' => 'Tekst',
+            'label' => __('Tekst', 'teksttv'),
             'icon' => 'editor-textcolor',
             'color' => '#e65100',
             'context' => 'ticker',
@@ -391,8 +391,8 @@ class BuiltinBlocks
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field" style="flex:1;">
-                <label>Bericht</label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][message]" value="<?php echo esc_attr($message); ?>" class="large-text" placeholder="Ticker tekst..." />
+                <label><?php esc_html_e('Bericht', 'teksttv'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][message]" value="<?php echo esc_attr($message); ?>" class="large-text" placeholder="<?php echo esc_attr__('Ticker tekst...', 'teksttv'); ?>" />
             </div>
         </div>
         <?php
@@ -433,7 +433,7 @@ class BuiltinBlocks
     private static function register_ticker_headlines(): void
     {
         BlockRegistry::register('ticker_headlines', [
-            'label' => 'Koppen',
+            'label' => __('Koppen', 'teksttv'),
             'icon' => 'list-view',
             'color' => '#2271b1',
             'context' => 'ticker',
@@ -459,12 +459,12 @@ class BuiltinBlocks
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label>Aantal</label>
+                <label><?php esc_html_e('Aantal', 'teksttv'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="20" class="small-text" />
             </div>
             <div class="teksttv-block-field">
-                <label>Prefix</label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][prefix]" value="<?php echo esc_attr($item_prefix); ?>" class="regular-text" placeholder="bijv. Nieuws:" />
+                <label><?php esc_html_e('Prefix', 'teksttv'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][prefix]" value="<?php echo esc_attr($item_prefix); ?>" class="regular-text" placeholder="<?php echo esc_attr__('bijv. Nieuws:', 'teksttv'); ?>" />
             </div>
             <?php foreach ($taxonomies as $tax) :
                 $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));

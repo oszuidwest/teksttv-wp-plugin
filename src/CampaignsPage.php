@@ -13,8 +13,8 @@ class CampaignsPage
     {
         add_submenu_page(
             'teksttv',
-            'Campagnes',
-            'Campagnes',
+            __('Campagnes', 'teksttv'),
+            __('Campagnes', 'teksttv'),
             'manage_teksttv_campaigns',
             'teksttv-campaigns',
             [self::class, 'render_page']
@@ -57,7 +57,7 @@ class CampaignsPage
             <div class="teksttv-block-header">
                 <span class="teksttv-block-handle dashicons dashicons-move"></span>
                 <span class="teksttv-block-icon" style="background:#d63638"><span class="dashicons dashicons-megaphone"></span></span>
-                <span class="teksttv-block-title"><?php echo esc_html($name ?: 'Campagne'); ?></span>
+                <span class="teksttv-block-title"><?php echo esc_html($name ?: __('Campagne', 'teksttv')); ?></span>
                 <span class="teksttv-block-summary"></span>
                 <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2"></span>
                 <button type="button" class="button-link teksttv-remove-block"><span class="dashicons dashicons-trash"></span></button>
@@ -66,37 +66,37 @@ class CampaignsPage
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
-                        <label>Naam</label>
-                        <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="Bijv. Sponsor X" />
+                        <label><?php esc_html_e('Naam', 'teksttv'); ?></label>
+                        <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Bijv. Sponsor X', 'teksttv'); ?>" />
                     </div>
                     <div class="teksttv-block-field">
-                        <label>Groep</label>
+                        <label><?php esc_html_e('Groep', 'teksttv'); ?></label>
                         <select name="teksttv_campaigns[<?php echo esc_attr($index); ?>][group]" class="teksttv-campaign-group-select">
-                            <option value="">— Geen groep —</option>
+                            <option value=""><?php esc_html_e('— Geen groep —', 'teksttv'); ?></option>
                             <?php foreach ($groups as $group_label) : ?>
                             <option value="<?php echo esc_attr($group_label); ?>" <?php selected($group, $group_label); ?>><?php echo esc_html($group_label); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="teksttv-block-field">
-                        <label>Duur per slide</label>
+                        <label><?php esc_html_e('Duur per slide', 'teksttv'); ?></label>
                         <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
-                        <label>Vanaf</label>
+                        <label><?php esc_html_e('Vanaf', 'teksttv'); ?></label>
                         <input type="date" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
                     </div>
                     <div class="teksttv-block-field">
-                        <label>Tot en met</label>
+                        <label><?php esc_html_e('Tot en met', 'teksttv'); ?></label>
                         <input type="date" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
                     </div>
                 </div>
                 <?php if (count($channels) > 1) : ?>
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
-                        <span class="teksttv-field-label">Kanalen</span>
+                        <span class="teksttv-field-label"><?php esc_html_e('Kanalen', 'teksttv'); ?></span>
                         <?php foreach ($channels as $ch) : ?>
                         <label class="teksttv-inline-checkbox">
                             <input type="checkbox" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][channels][]" value="<?php echo esc_attr($ch['slug']); ?>" <?php checked(in_array($ch['slug'], $campaign_channels, true) || empty($campaign_channels)); ?> />
@@ -111,7 +111,7 @@ class CampaignsPage
                     <?php endforeach; ?>
                 <?php endif; ?>
                 <div class="teksttv-campaign-slides-section">
-                    <label class="teksttv-section-label">Slides</label>
+                    <label class="teksttv-section-label"><?php esc_html_e('Slides', 'teksttv'); ?></label>
                     <div class="teksttv-campaign-slides teksttv-images-list" data-name="teksttv_campaigns[<?php echo esc_attr($index); ?>][slides][]">
                         <?php foreach ($slides as $attachment_id) :
                             $thumb = wp_get_attachment_image_url((int) $attachment_id, 'thumbnail');
@@ -124,7 +124,7 @@ class CampaignsPage
                             <?php endif;
                         endforeach; ?>
                     </div>
-                    <button type="button" class="button teksttv-campaign-add-slides"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> Slides toevoegen</button>
+                    <button type="button" class="button teksttv-campaign-add-slides"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php esc_html_e('Slides toevoegen', 'teksttv'); ?></button>
                 </div>
             </div>
         </div>
@@ -206,6 +206,6 @@ class CampaignsPage
 
         RestApi::invalidate_slides_cache();
 
-        add_settings_error('teksttv_campaigns', 'saved', 'Campagnes opgeslagen.', 'success');
+        add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv'), 'success');
     }
 }

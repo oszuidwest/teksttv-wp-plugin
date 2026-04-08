@@ -42,7 +42,7 @@ settings_errors('teksttv');
                 ?>
                 <div class="teksttv-empty-state" id="teksttv-empty-state">
                     <span class="dashicons dashicons-playlist-video"></span><br />
-                    Nog geen blokken. Voeg een artikelen-blok toe om te beginnen.
+                    <?php esc_html_e('Nog geen blokken. Voeg een artikelen-blok toe om te beginnen.', 'teksttv'); ?>
                 </div>
                 <?php
             }
@@ -51,7 +51,7 @@ settings_errors('teksttv');
 
         <div class="teksttv-add-block-bar">
             <div class="teksttv-dropdown-button">
-                <button type="button" class="button" id="teksttv-add-block-toggle"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Blok toevoegen <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                <button type="button" class="button" id="teksttv-add-block-toggle"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Blok toevoegen', 'teksttv'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
                 <div class="teksttv-dropdown-menu" id="teksttv-add-block-menu">
                     <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
                     <button type="button" data-type="<?php echo esc_attr($block_slug); ?>"><span class="dashicons dashicons-<?php echo esc_attr($block_meta['icon']); ?>"></span> <?php echo esc_html($block_meta['label']); ?></button>
@@ -59,12 +59,12 @@ settings_errors('teksttv');
                 </div>
             </div>
             <span class="teksttv-bar-spacer"></span>
-            <button type="button" class="button-link" id="teksttv-expand-all">Alles openklappen</button>
-            <button type="button" class="button-link" id="teksttv-collapse-all">Alles dichtklappen</button>
+            <button type="button" class="button-link" id="teksttv-expand-all"><?php esc_html_e('Alles openklappen', 'teksttv'); ?></button>
+            <button type="button" class="button-link" id="teksttv-collapse-all"><?php esc_html_e('Alles dichtklappen', 'teksttv'); ?></button>
         </div>
 
         <!-- Ticker -->
-        <h2 class="teksttv-ticker-heading">Ticker berichten</h2>
+        <h2 class="teksttv-ticker-heading"><?php esc_html_e('Ticker berichten', 'teksttv'); ?></h2>
         <div id="teksttv-ticker" class="teksttv-blocks">
             <?php if (!empty($ticker_items)) :
                 foreach ($ticker_items as $ti => $ticker_item) :
@@ -76,7 +76,7 @@ settings_errors('teksttv');
         <div class="teksttv-add-block-bar">
             <?php if (count($ticker_types) > 1) : ?>
             <div class="teksttv-dropdown-button">
-                <button type="button" class="button" id="teksttv-add-ticker-toggle"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Ticker toevoegen <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                <button type="button" class="button" id="teksttv-add-ticker-toggle"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Ticker toevoegen', 'teksttv'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
                 <div class="teksttv-dropdown-menu" id="teksttv-add-ticker-menu">
                     <?php foreach ($ticker_types as $ticker_slug => $ticker_meta) : ?>
                     <button type="button" data-type="<?php echo esc_attr($ticker_slug); ?>"><span class="dashicons dashicons-<?php echo esc_attr($ticker_meta['icon']); ?>"></span> <?php echo esc_html($ticker_meta['label']); ?></button>
@@ -86,7 +86,7 @@ settings_errors('teksttv');
             <?php else :
                 $single_ticker = array_key_first($ticker_types);
                 ?>
-            <button type="button" class="button" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> Ticker toevoegen</button>
+            <button type="button" class="button" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Ticker toevoegen', 'teksttv'); ?></button>
             <?php endif; ?>
         </div>
 
@@ -101,10 +101,10 @@ settings_errors('teksttv');
 
         <div class="teksttv-add-block-bar">
             <span class="teksttv-bar-spacer"></span>
-            <button type="button" class="button-link" id="teksttv-expand-all">Alles openklappen</button>
-            <button type="button" class="button-link" id="teksttv-collapse-all">Alles dichtklappen</button>
+            <button type="button" class="button-link" id="teksttv-expand-all"><?php esc_html_e('Alles openklappen', 'teksttv'); ?></button>
+            <button type="button" class="button-link" id="teksttv-collapse-all"><?php esc_html_e('Alles dichtklappen', 'teksttv'); ?></button>
             <span class="teksttv-bar-spacer"></span>
-            <?php submit_button('Loop opslaan', 'primary', 'submit', false); ?>
+            <?php submit_button(__('Loop opslaan', 'teksttv'), 'primary', 'submit', false); ?>
         </div>
     </form>
 

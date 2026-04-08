@@ -30,7 +30,7 @@ class PostMeta
 
         add_meta_box(
             'teksttv_meta',
-            'Tekst TV',
+            __('Tekst TV', 'teksttv'),
             [self::class, 'render_meta_box'],
             'post',
             'normal',
@@ -146,8 +146,8 @@ class PostMeta
         }
 
         $day_labels = [
-            '1' => 'Ma', '2' => 'Di', '3' => 'Wo', '4' => 'Do',
-            '5' => 'Vr', '6' => 'Za', '7' => 'Zo',
+            '1' => __('Ma', 'teksttv'), '2' => __('Di', 'teksttv'), '3' => __('Wo', 'teksttv'), '4' => __('Do', 'teksttv'),
+            '5' => __('Vr', 'teksttv'), '6' => __('Za', 'teksttv'), '7' => __('Zo', 'teksttv'),
         ];
 
         $preview_url = Helpers::get_preview_url();
