@@ -39,7 +39,7 @@ jobs:
           cp README.md dist/teksttv/
           cd dist && zip -r ../teksttv.zip teksttv/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: teksttv-plugin
           path: teksttv.zip
