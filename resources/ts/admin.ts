@@ -1,15 +1,5 @@
-import { initCampaignsPage } from './modules/campaigns';
-import { initCategoryMeta } from './modules/category-meta';
-import { initChannelsPage } from './modules/channels';
-import { initLoopPage } from './modules/loop';
-import { initPostMeta } from './modules/post-meta';
-import { initTomSelectIn } from './modules/utils';
+import Alpine from 'alpinejs';
+import { registerTeksttvAlpine } from './alpine/register';
 
-jQuery(() => {
-    initCampaignsPage();
-    initChannelsPage();
-    initLoopPage();
-    initTomSelectIn();
-    initPostMeta();
-    initCategoryMeta();
-});
+registerTeksttvAlpine();
+Alpine.start();

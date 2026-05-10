@@ -14,14 +14,14 @@ echo '<h1>' . esc_html__('Campagnes', 'teksttv') . '</h1>';
 settings_errors('teksttv_campaigns');
 
 ?>
-<form method="post">
+<form method="post" x-data="teksttvCampaignsPage">
     <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
 
     <!-- Groups management -->
     <div class="teksttv-card" style="margin-bottom:24px;">
         <h3><?php esc_html_e('Groepen', 'teksttv'); ?></h3>
         <p class="description"><?php esc_html_e('Definieer groepen om campagnes te organiseren. In de loop kies je per campagne-blok welke groepen getoond worden.', 'teksttv'); ?></p>
-        <table class="widefat teksttv-channels-table" id="teksttv-groups">
+        <table class="widefat teksttv-channels-table" id="teksttv-groups" @click="groupsClick($event)">
             <thead>
                 <tr>
                     <th><?php esc_html_e('Naam', 'teksttv'); ?></th>
@@ -38,12 +38,12 @@ settings_errors('teksttv_campaigns');
             </tbody>
         </table>
         <p class="teksttv-card-actions">
-            <button type="button" class="button" id="teksttv-add-group"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Groep toevoegen', 'teksttv'); ?></button>
+            <button type="button" class="button" id="teksttv-add-group" @click.prevent="addGroupRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Groep toevoegen', 'teksttv'); ?></button>
         </p>
     </div>
 
     <h2><?php esc_html_e('Campagnes', 'teksttv'); ?></h2>
-    <div id="teksttv-campaigns" class="teksttv-blocks">
+    <div id="teksttv-campaigns" class="teksttv-blocks" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
         <?php
         if (!empty($campaigns)) {
             foreach ($campaigns as $i => $campaign) {
@@ -61,10 +61,10 @@ settings_errors('teksttv_campaigns');
     </div>
 
     <div class="teksttv-add-block-bar">
-        <button type="button" class="button" id="teksttv-add-campaign"><span class="dashicons dashicons-plus-alt2"></span> <?php esc_html_e('Campagne toevoegen', 'teksttv'); ?></button>
+        <button type="button" class="button" id="teksttv-add-campaign" @click.prevent="addCampaignBlock()"><span class="dashicons dashicons-plus-alt2"></span> <?php esc_html_e('Campagne toevoegen', 'teksttv'); ?></button>
         <span class="teksttv-bar-spacer"></span>
-        <button type="button" class="button-link" id="teksttv-expand-all"><?php esc_html_e('Alles openklappen', 'teksttv'); ?></button>
-        <button type="button" class="button-link" id="teksttv-collapse-all"><?php esc_html_e('Alles dichtklappen', 'teksttv'); ?></button>
+        <button type="button" class="button-link teksttv-action-expand-blocks" id="teksttv-expand-all" @click.prevent="expandAllBlocks()"><?php esc_html_e('Alles openklappen', 'teksttv'); ?></button>
+        <button type="button" class="button-link teksttv-action-collapse-blocks" id="teksttv-collapse-all" @click.prevent="collapseAllBlocks()"><?php esc_html_e('Alles dichtklappen', 'teksttv'); ?></button>
         <span class="teksttv-bar-spacer"></span>
         <?php submit_button(__('Opslaan', 'teksttv'), 'primary', 'submit', false); ?>
     </div>

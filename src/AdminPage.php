@@ -201,7 +201,7 @@ class AdminPage
         wp_enqueue_script(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
-            ['jquery', 'teksttv-tomselect'],
+            ['teksttv-tomselect'],
             (string) filemtime(TEKSTTV_PLUGIN_DIR . 'assets/admin.js'),
             true
         );

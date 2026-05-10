@@ -53,7 +53,7 @@ class PostMeta
         wp_enqueue_script(
             'teksttv-post-meta',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
-            ['jquery', 'wp-i18n'],
+            ['wp-i18n'],
             TEKSTTV_VERSION,
             true
         );

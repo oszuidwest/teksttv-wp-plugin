@@ -29,6 +29,6 @@
             "quoteStyle": "single",
             "semicolons": "always"
         },
-        "globals": ["jQuery", "tinymce", "wp", "teksttvPost", "TomSelect"]
+        "globals": ["tinymce", "wp", "teksttvPost", "TomSelect"]
     }
 }

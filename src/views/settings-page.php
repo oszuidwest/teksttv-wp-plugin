@@ -14,7 +14,7 @@ echo '<div class="wrap">';
 echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv') . '</h1>';
 
 ?>
-<div class="teksttv-tab-content">
+<div class="teksttv-tab-content" x-data="teksttvSettingsPage">
     <form method="post" action="options.php" class="teksttv-settings-form">
         <?php settings_fields('teksttv_settings'); ?>
 
@@ -22,7 +22,7 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv') . '</h1>';
         <div class="teksttv-card">
             <h3><?php esc_html_e('Kanalen', 'teksttv'); ?></h3>
             <p class="description"><?php esc_html_e('Beheer de kanalen waarvoor Tekst TV slides worden gegenereerd. Elk kanaal krijgt een eigen loop en API endpoint.', 'teksttv'); ?></p>
-            <table class="widefat teksttv-channels-table" id="teksttv-channels">
+            <table class="widefat teksttv-channels-table" id="teksttv-channels" @click="channelsClick($event)">
                 <thead>
                     <tr>
                         <th><?php esc_html_e('Slug', 'teksttv'); ?></th>
@@ -41,7 +41,7 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv') . '</h1>';
                 </tbody>
             </table>
             <p class="teksttv-card-actions">
-                <button type="button" class="button" id="teksttv-add-channel"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Kanaal toevoegen', 'teksttv'); ?></button>
+                <button type="button" class="button" id="teksttv-add-channel" @click.prevent="addChannelRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Kanaal toevoegen', 'teksttv'); ?></button>
             </p>
         </div>
 

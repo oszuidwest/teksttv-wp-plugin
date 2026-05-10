@@ -19,10 +19,10 @@
 namespace TekstTV;
 
 ?>
-<div class="teksttv-meta-box">
+<div class="teksttv-meta-box" x-data="teksttvPostMetaPage">
     <div class="teksttv-toggle-bar">
         <label>
-            <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" />
+            <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" @change="onActiveChange()" />
             <span class="dashicons dashicons-desktop"></span>
             <?php esc_html_e('Toon op Tekst TV', 'teksttv'); ?>
         </label>
@@ -37,7 +37,7 @@ namespace TekstTV;
             <div class="teksttv-editor-main">
                 <?php if ($ai_enabled) : ?>
                 <div class="teksttv-meta-section teksttv-ai-section">
-                    <button type="button" class="button button-small teksttv-generate-btn" data-field="both"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html__('Genereer kop & tekst', 'teksttv'); ?></button>
+                    <button type="button" class="button button-small teksttv-generate-btn" data-field="both" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html__('Genereer kop & tekst', 'teksttv'); ?></button>
                     <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
                     <?php if (get_post_meta($post->ID, '_teksttv_ai_title', true) || get_post_meta($post->ID, '_teksttv_ai_body', true)) : ?>
                     <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> <?php esc_html_e('AI gegenereerd', 'teksttv'); ?></span>
@@ -51,11 +51,11 @@ namespace TekstTV;
                     <div class="teksttv-section-header">
                         <label for="teksttv-title" class="teksttv-section-label"><?php esc_html_e('Kop', 'teksttv'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv'); ?></button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
-                    <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" />
+                    <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" @input="onTitleInputMeta()" />
                     <div class="teksttv-title-footer">
                         <p class="description"><?php esc_html_e('Laat leeg om de titel van het artikel te gebruiken.', 'teksttv'); ?></p>
                         <span class="teksttv-charcount" id="teksttv-charcount"></span>
@@ -68,7 +68,7 @@ namespace TekstTV;
                     <div class="teksttv-section-header">
                         <label class="teksttv-section-label"><?php esc_html_e('Tekst voor Tekst TV', 'teksttv'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv'); ?></button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php
@@ -126,7 +126,7 @@ namespace TekstTV;
                     ?>
                     <input type="hidden" name="teksttv_sidebar_image" id="teksttv-sidebar-image-id" value="<?php echo esc_attr($sidebar_image_id); ?>" />
                     <div class="teksttv-image-cards" data-active="<?php echo esc_attr($active_state); ?>">
-                        <button type="button" class="teksttv-image-card <?php echo $active_state === 'default' ? 'is-active' : ''; ?>" data-state="default" id="teksttv-sidebar-card-default">
+                        <button type="button" class="teksttv-image-card <?php echo $active_state === 'default' ? 'is-active' : ''; ?>" data-state="default" id="teksttv-sidebar-card-default" @click.prevent="activateSidebarCardDefault()">
                             <span class="teksttv-image-card-label"><?php esc_html_e('Standaard', 'teksttv'); ?></span>
                             <?php if ($fallback_url) : ?>
                                 <img src="<?php echo esc_url($fallback_url); ?>" alt="" class="teksttv-image-card-thumb" />
@@ -134,7 +134,7 @@ namespace TekstTV;
                                 <span class="teksttv-image-card-icon"><span class="dashicons dashicons-format-image"></span></span>
                             <?php endif; ?>
                         </button>
-                        <button type="button" class="teksttv-image-card <?php echo $active_state === 'custom' ? 'is-active' : ''; ?>" data-state="custom" id="teksttv-sidebar-card-custom">
+                        <button type="button" class="teksttv-image-card <?php echo $active_state === 'custom' ? 'is-active' : ''; ?>" data-state="custom" id="teksttv-sidebar-card-custom" @click.prevent="openSidebarCustom()">
                             <span class="teksttv-image-card-label"><?php esc_html_e('Eigen', 'teksttv'); ?></span>
                             <?php if ($custom_url) : ?>
                                 <img src="<?php echo esc_url($custom_url); ?>" alt="" class="teksttv-image-card-thumb" id="teksttv-sidebar-image-img" />
@@ -143,7 +143,7 @@ namespace TekstTV;
                                 <img src="" alt="" class="teksttv-image-card-thumb is-hidden" id="teksttv-sidebar-image-img" />
                             <?php endif; ?>
                         </button>
-                        <button type="button" class="teksttv-image-card <?php echo $active_state === 'none' ? 'is-active' : ''; ?>" data-state="none" id="teksttv-sidebar-card-none">
+                        <button type="button" class="teksttv-image-card <?php echo $active_state === 'none' ? 'is-active' : ''; ?>" data-state="none" id="teksttv-sidebar-card-none" @click.prevent="activateSidebarCardNone()">
                             <span class="teksttv-image-card-label"><?php esc_html_e('Geen', 'teksttv'); ?></span>
                             <span class="teksttv-image-card-icon"><span class="dashicons dashicons-hidden"></span></span>
                         </button>
@@ -156,7 +156,7 @@ namespace TekstTV;
                 <div class="teksttv-meta-section teksttv-images-section">
                     <h4><?php esc_html_e('Extra afbeeldingen', 'teksttv'); ?></h4>
                     <p class="description"><?php esc_html_e('Worden als aparte fullscreen image-slides getoond na de tekst.', 'teksttv'); ?></p>
-                    <div id="teksttv-images-list" class="teksttv-images-list">
+                    <div id="teksttv-images-list" class="teksttv-images-list" @click="onExtraImagesClick($event)">
                         <?php foreach ($images as $attachment_id) : ?>
                             <?php $thumb = wp_get_attachment_image_url($attachment_id, 'thumbnail'); ?>
                             <?php if ($thumb) : ?>
@@ -168,18 +168,18 @@ namespace TekstTV;
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="button" id="teksttv-add-images"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php esc_html_e('Afbeeldingen toevoegen', 'teksttv'); ?></button>
+                    <button type="button" class="button" id="teksttv-add-images" @click="openExtraImages($event)"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php esc_html_e('Afbeeldingen toevoegen', 'teksttv'); ?></button>
                 </div>
                 <?php endif; ?>
 
                 <?php if (Helpers::has_feature('scheduling')) : ?>
                 <!-- Scheduling -->
-                <div class="teksttv-meta-section teksttv-collapsible">
-                    <button type="button" class="teksttv-collapsible-toggle">
+                <div class="teksttv-meta-section teksttv-collapsible" x-data="{ planOpen: false }">
+                    <button type="button" class="teksttv-collapsible-toggle" @click.prevent="planOpen = !planOpen" :aria-expanded="planOpen">
                         <span class="teksttv-section-label"><?php esc_html_e('Planning', 'teksttv'); ?></span>
                         <span class="dashicons dashicons-arrow-down-alt2 teksttv-collapsible-icon"></span>
                     </button>
-                    <div class="teksttv-collapsible-body is-hidden">
+                    <div class="teksttv-collapsible-body" x-show="planOpen" x-cloak>
                     <div class="teksttv-scheduling">
                         <div class="teksttv-scheduling-group">
                             <h4><?php esc_html_e('Periode', 'teksttv'); ?></h4>
@@ -190,8 +190,8 @@ namespace TekstTV;
                                 </div>
                                 <div class="teksttv-date-field">
                                     <label for="teksttv-date-end"><?php esc_html_e('Tot en met', 'teksttv'); ?></label>
-                                    <input type="date" name="teksttv_date_end" value="<?php echo esc_attr($date_end); ?>" id="teksttv-date-end" />
-                                    <button type="button" class="teksttv-date-reset is-hidden" id="teksttv-date-end-reset" title="<?php echo esc_attr__('Zet naar standaard einddatum', 'teksttv'); ?>">
+                                    <input type="date" name="teksttv_date_end" value="<?php echo esc_attr($date_end); ?>" id="teksttv-date-end" @change="onDateEndChange()" />
+                                    <button type="button" class="teksttv-date-reset is-hidden" id="teksttv-date-end-reset" title="<?php echo esc_attr__('Zet naar standaard einddatum', 'teksttv'); ?>" @click.prevent="resetDateEnd($event)">
                                         <span class="dashicons dashicons-image-rotate"></span> <?php esc_html_e('Standaard', 'teksttv'); ?>
                                     </button>
                                 </div>
@@ -220,17 +220,17 @@ namespace TekstTV;
                 <div class="teksttv-preview-header">
                     <span class="teksttv-section-label"><?php esc_html_e('Preview', 'teksttv'); ?></span>
                     <div class="teksttv-preview-nav" id="teksttv-preview-nav">
-                        <button type="button" class="button button-small" id="teksttv-preview-prev" disabled><span class="dashicons dashicons-arrow-left-alt2"></span></button>
+                        <button type="button" class="button button-small" id="teksttv-preview-prev" disabled @click.prevent="previewPrev()"><span class="dashicons dashicons-arrow-left-alt2"></span></button>
                         <span class="teksttv-preview-counter" id="teksttv-preview-counter">1 / 1</span>
-                        <button type="button" class="button button-small" id="teksttv-preview-next" disabled><span class="dashicons dashicons-arrow-right-alt2"></span></button>
+                        <button type="button" class="button button-small" id="teksttv-preview-next" disabled @click.prevent="previewNext()"><span class="dashicons dashicons-arrow-right-alt2"></span></button>
                     </div>
                 </div>
                 <?php if ($preview_url) : ?>
                     <div class="teksttv-preview-container">
                         <iframe id="teksttv-preview-iframe" class="teksttv-preview-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
-                        <button type="button" class="teksttv-preview-enlarge-btn" id="teksttv-preview-enlarge" title="Vergroot preview"><span class="dashicons dashicons-editor-expand"></span></button>
+                        <button type="button" class="teksttv-preview-enlarge-btn" id="teksttv-preview-enlarge" title="Vergroot preview" @click.prevent="openPreviewOverlay()"><span class="dashicons dashicons-editor-expand"></span></button>
                     </div>
-                    <div class="teksttv-preview-thumbs" id="teksttv-preview-thumbs">
+                    <div class="teksttv-preview-thumbs" id="teksttv-preview-thumbs" @click="onPreviewThumbClick($event)">
                         <!-- Filled by JS: mini slide thumbnails -->
                     </div>
                 <?php else : ?>
