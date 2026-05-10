@@ -16,7 +16,7 @@ class BuiltinBlocks
     {
         self::register_articles();
         self::register_image();
-        self::register_commercial();
+        self::register_campaign();
         self::register_weather();
         self::register_ticker_text();
         self::register_ticker_headlines();
@@ -203,26 +203,26 @@ class BuiltinBlocks
     }
 
     // =========================================================================
-    // Commercial block (loop)
+    // Campaign block (loop) — surfaced in Dutch UI as «Campagne»
     // =========================================================================
 
-    private static function register_commercial(): void
+    private static function register_campaign(): void
     {
-        BlockRegistry::register('commercial', [
-            'label' => __('Reclame', 'teksttv'),
+        BlockRegistry::register('campaign', [
+            'label' => __('Campagne', 'teksttv'),
             'icon' => 'megaphone',
             'color' => '#d63638',
             'context' => 'loop',
-            'render' => [self::class, 'render_commercial'],
-            'save' => [self::class, 'save_commercial'],
-            'build' => [SlidesBuilder::class, 'build_commercial_slides'],
+            'render' => [self::class, 'render_campaign'],
+            'save' => [self::class, 'save_campaign'],
+            'build' => [SlidesBuilder::class, 'build_campaign_slides'],
         ]);
     }
 
     /**
      * @param array<string, mixed> $block
      */
-    public static function render_commercial(int|string $index, array $block, string $prefix): void
+    public static function render_campaign(int|string $index, array $block, string $prefix): void
     {
         $selected_groups = (array) ($block['groups'] ?? []);
         $available_groups = Helpers::get_campaign_groups();
@@ -279,7 +279,7 @@ class BuiltinBlocks
      * @param array<string, mixed> $raw
      * @return array<string, mixed>|null
      */
-    public static function save_commercial(array $raw): ?array
+    public static function save_campaign(array $raw): ?array
     {
         $groups = [];
         if (!empty($raw['groups']) && is_array($raw['groups'])) {

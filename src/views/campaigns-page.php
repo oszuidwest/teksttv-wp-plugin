@@ -1,6 +1,6 @@
 <?php
 /**
- * Campaigns page template.
+ * Campaigns admin template.
  *
  * @var list<array<string, mixed>> $campaigns
  * @var list<array{slug: string, label: string}> $channels
@@ -20,7 +20,7 @@ settings_errors('teksttv_campaigns');
     <!-- Groups management -->
     <div class="teksttv-card" style="margin-bottom:24px;">
         <h3><?php esc_html_e('Groepen', 'teksttv'); ?></h3>
-        <p class="description"><?php esc_html_e('Definieer groepen om campagnes te organiseren. In de loop kies je per reclame-blok welke groepen getoond worden.', 'teksttv'); ?></p>
+        <p class="description"><?php esc_html_e('Definieer groepen om campagnes te organiseren. In de loop kies je per campagne-blok welke groepen getoond worden.', 'teksttv'); ?></p>
         <table class="widefat teksttv-channels-table" id="teksttv-groups">
             <thead>
                 <tr>
@@ -31,7 +31,7 @@ settings_errors('teksttv_campaigns');
             <tbody>
                 <?php foreach ($groups as $gi => $group_label) : ?>
                 <tr class="teksttv-group-row">
-                    <td><input type="text" name="teksttv_campaign_groups[]" value="<?php echo esc_attr($group_label); ?>" class="regular-text" required placeholder="<?php echo esc_attr__('Bijv. Reclame', 'teksttv'); ?>" /></td>
+                    <td><input type="text" name="teksttv_campaign_groups[]" value="<?php echo esc_attr($group_label); ?>" class="regular-text" required placeholder="<?php echo esc_attr__('Bijv. Campagne', 'teksttv'); ?>" /></td>
                     <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group"><span class="dashicons dashicons-trash"></span></button></td>
                 </tr>
                 <?php endforeach; ?>
@@ -42,7 +42,6 @@ settings_errors('teksttv_campaigns');
         </p>
     </div>
 
-    <!-- Campaigns -->
     <h2><?php esc_html_e('Campagnes', 'teksttv'); ?></h2>
     <div id="teksttv-campaigns" class="teksttv-blocks">
         <?php

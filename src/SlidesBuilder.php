@@ -351,12 +351,12 @@ class SlidesBuilder
     }
 
     /**
-     * Build commercial slides from a commercial block.
+     * Build slides from a campaign loop block (Dutch UI: Campagne).
      *
      * @param array<string, mixed> $block
      * @return list<array<string, mixed>>
      */
-    public static function build_commercial_slides(array $block, string $channel = ''): array
+    public static function build_campaign_slides(array $block, string $channel = ''): array
     {
         if (!Helpers::is_block_scheduled($block)) {
             return [];
@@ -367,7 +367,7 @@ class SlidesBuilder
             return [];
         }
 
-        // Get active campaigns for this channel and filter by group
+        // Active campaigns for this channel (filtered by group below)
         $campaigns = Helpers::get_active_campaigns($channel);
         $slides = [];
 
@@ -383,7 +383,7 @@ class SlidesBuilder
                 $url = wp_get_attachment_url((int) $attachment_id);
                 if ($url) {
                     $slides[] = [
-                        'type' => 'commercial',
+                        'type' => 'campaign',
                         'duration' => $duration,
                         'url' => $url,
                     ];
@@ -402,14 +402,14 @@ class SlidesBuilder
             $slides = $rotated;
         }
 
-        // Add intro/outro transitions if there are commercial slides
+        // Intro/outro transitions when there are campaign slides
         if (!empty($slides)) {
             $intro_id = (int) ($block['intro_image_id'] ?? 0);
             if ($intro_id) {
                 $intro_url = wp_get_attachment_url($intro_id);
                 if ($intro_url) {
                     array_unshift($slides, [
-                        'type' => 'commercial_transition',
+                        'type' => 'campaign_transition',
                         'duration' => self::TRANSITION_DURATION,
                         'url' => $intro_url,
                     ]);
@@ -421,7 +421,7 @@ class SlidesBuilder
                 $outro_url = wp_get_attachment_url($outro_id);
                 if ($outro_url) {
                     $slides[] = [
-                        'type' => 'commercial_transition',
+                        'type' => 'campaign_transition',
                         'duration' => self::TRANSITION_DURATION,
                         'url' => $outro_url,
                     ];

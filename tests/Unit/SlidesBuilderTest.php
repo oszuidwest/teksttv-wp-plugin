@@ -246,19 +246,19 @@ class SlidesBuilderTest extends TestCase
     }
 
     // =========================================================================
-    // build_commercial_slides() — rotation limit
+    // build_campaign_slides() — rotation limit
     // =========================================================================
 
-    public function test_build_commercial_slides_returns_empty_when_no_groups(): void
+    public function test_build_campaign_slides_returns_empty_when_no_groups(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
 
         $block = ['groups' => []];
-        $this->assertSame([], SlidesBuilder::build_commercial_slides($block, 'tv1'));
+        $this->assertSame([], SlidesBuilder::build_campaign_slides($block, 'tv1'));
     }
 
-    public function test_build_commercial_slides_returns_empty_when_not_scheduled(): void
+    public function test_build_campaign_slides_returns_empty_when_not_scheduled(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -267,10 +267,10 @@ class SlidesBuilderTest extends TestCase
             'groups' => ['sponsors'],
             'date_start' => '2026-05-01',
         ];
-        $this->assertSame([], SlidesBuilder::build_commercial_slides($block, 'tv1'));
+        $this->assertSame([], SlidesBuilder::build_campaign_slides($block, 'tv1'));
     }
 
-    public function test_build_commercial_slides_with_campaigns(): void
+    public function test_build_campaign_slides_with_campaigns(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -290,16 +290,16 @@ class SlidesBuilderTest extends TestCase
             ->andReturnUsing(fn($id) => 'https://example.com/img-' . $id . '.jpg');
 
         $block = ['groups' => ['sponsors']];
-        $result = SlidesBuilder::build_commercial_slides($block, 'tv1');
+        $result = SlidesBuilder::build_campaign_slides($block, 'tv1');
 
         $this->assertCount(2, $result);
-        $this->assertSame('commercial', $result[0]['type']);
+        $this->assertSame('campaign', $result[0]['type']);
         $this->assertSame(5000, $result[0]['duration']);
         $this->assertSame('https://example.com/img-100.jpg', $result[0]['url']);
         $this->assertSame('https://example.com/img-101.jpg', $result[1]['url']);
     }
 
-    public function test_build_commercial_slides_filters_by_channel(): void
+    public function test_build_campaign_slides_filters_by_channel(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -314,12 +314,12 @@ class SlidesBuilderTest extends TestCase
             ]);
 
         $block = ['groups' => ['sponsors']];
-        $result = SlidesBuilder::build_commercial_slides($block, 'tv1');
+        $result = SlidesBuilder::build_campaign_slides($block, 'tv1');
 
         $this->assertSame([], $result);
     }
 
-    public function test_build_commercial_slides_rotation_limit(): void
+    public function test_build_campaign_slides_rotation_limit(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -339,13 +339,13 @@ class SlidesBuilderTest extends TestCase
             ->andReturnUsing(fn($id) => 'https://example.com/img-' . $id . '.jpg');
 
         $block = ['groups' => ['sponsors'], 'limit' => 2];
-        $result = SlidesBuilder::build_commercial_slides($block, 'tv1');
+        $result = SlidesBuilder::build_campaign_slides($block, 'tv1');
 
         // Should only return 2 slides despite 5 available
         $this->assertCount(2, $result);
     }
 
-    public function test_build_commercial_slides_intro_outro(): void
+    public function test_build_campaign_slides_intro_outro(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -367,16 +367,16 @@ class SlidesBuilderTest extends TestCase
             'intro_image_id' => 50,
             'outro_image_id' => 51,
         ];
-        $result = SlidesBuilder::build_commercial_slides($block, 'tv1');
+        $result = SlidesBuilder::build_campaign_slides($block, 'tv1');
 
         $this->assertCount(3, $result);
-        $this->assertSame('commercial_transition', $result[0]['type']);
+        $this->assertSame('campaign_transition', $result[0]['type']);
         $this->assertSame(5000, $result[0]['duration']);
-        $this->assertSame('commercial', $result[1]['type']);
-        $this->assertSame('commercial_transition', $result[2]['type']);
+        $this->assertSame('campaign', $result[1]['type']);
+        $this->assertSame('campaign_transition', $result[2]['type']);
     }
 
-    public function test_build_commercial_slides_no_intro_outro_when_no_commercials(): void
+    public function test_build_campaign_slides_no_intro_outro_when_no_matching_campaigns(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -389,7 +389,7 @@ class SlidesBuilderTest extends TestCase
             'intro_image_id' => 50,
             'outro_image_id' => 51,
         ];
-        $result = SlidesBuilder::build_commercial_slides($block, 'tv1');
+        $result = SlidesBuilder::build_campaign_slides($block, 'tv1');
 
         // No campaigns matched, so no intro/outro either
         $this->assertSame([], $result);
@@ -945,10 +945,10 @@ class SlidesBuilderTest extends TestCase
     }
 
     // =========================================================================
-    // build_commercial_slides() — default duration from option
+    // build_campaign_slides() — default duration from option
     // =========================================================================
 
-    public function test_build_commercial_slides_uses_default_duration(): void
+    public function test_build_campaign_slides_uses_default_duration(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -970,7 +970,7 @@ class SlidesBuilderTest extends TestCase
         Functions\expect('wp_get_attachment_url')->andReturn('https://example.com/img.jpg');
 
         $block = ['groups' => ['sponsors']];
-        $result = SlidesBuilder::build_commercial_slides($block, 'tv1');
+        $result = SlidesBuilder::build_campaign_slides($block, 'tv1');
 
         // Campaign has no duration, so uses global default: 7 * 1000 = 7000
         $this->assertSame(7000, $result[0]['duration']);

@@ -1,10 +1,10 @@
 import type { WPMediaAttachment } from './types';
 import { escAttr, initTomSelectIn } from './utils';
 
-/** Loop configuration page + Campaigns page: sortable blocks, media pickers. */
+/** Loop configuration page + Campaigns admin: sortable blocks, media pickers. */
 export function initLoopPage(): void {
     const $ = jQuery;
-    // Works for both #teksttv-blocks (loop) and #teksttv-campaigns (campaigns page)
+    // Works for both #teksttv-blocks (loop) and #teksttv-campaigns
     const $blocks = $('#teksttv-blocks, #teksttv-campaigns').first();
     if (!$blocks.length) return;
 
@@ -53,7 +53,7 @@ export function initLoopPage(): void {
     });
 
     // =========================================================================
-    // Add campaign (campaigns page)
+    // Add campaign (campaigns admin)
     // =========================================================================
 
     $('#teksttv-add-campaign').on('click', () => {
@@ -320,7 +320,7 @@ export function initLoopPage(): void {
             if (type === 'image') {
                 const imageId = $block.find('.teksttv-block-image-id').first().val() as string;
                 summary = imageId && imageId !== '0' ? 'Afbeelding' : 'Geen afbeelding';
-            } else if (type === 'commercial') {
+            } else if (type === 'campaign') {
                 const groups: string[] = [];
                 $block.find('select option:selected').each(function () {
                     if ($(this).val()) groups.push($(this).text());
@@ -332,7 +332,7 @@ export function initLoopPage(): void {
                 summary = parts.join(' · ');
             } else if (type === 'weather') {
                 summary = ($block.find('input[type="text"]').first().val() as string) || 'Geen locatie';
-            } else if (type === 'campaign') {
+            } else if (type === 'campaign_item') {
                 summary = ($block.find('input[type="text"]').first().val() as string) || 'Naamloze campagne';
             } else {
                 // Articles

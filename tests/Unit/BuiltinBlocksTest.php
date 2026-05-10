@@ -99,12 +99,12 @@ class BuiltinBlocksTest extends TestCase
     }
 
     // =========================================================================
-    // save_commercial()
+    // save_campaign()
     // =========================================================================
 
-    public function test_save_commercial_with_groups(): void
+    public function test_save_campaign_with_groups(): void
     {
-        $result = BuiltinBlocks::save_commercial([
+        $result = BuiltinBlocks::save_campaign([
             'groups' => ['Sponsors', 'Partners'],
             'intro_image_id' => '10',
             'outro_image_id' => '20',
@@ -115,18 +115,18 @@ class BuiltinBlocksTest extends TestCase
         $this->assertSame(20, $result['outro_image_id']);
     }
 
-    public function test_save_commercial_filters_empty_groups(): void
+    public function test_save_campaign_filters_empty_groups(): void
     {
-        $result = BuiltinBlocks::save_commercial([
+        $result = BuiltinBlocks::save_campaign([
             'groups' => ['Sponsors', '', 'Partners'],
         ]);
 
         $this->assertSame(['Sponsors', 'Partners'], $result['groups']);
     }
 
-    public function test_save_commercial_with_limit(): void
+    public function test_save_campaign_with_limit(): void
     {
-        $result = BuiltinBlocks::save_commercial([
+        $result = BuiltinBlocks::save_campaign([
             'groups' => ['A'],
             'limit' => '5',
         ]);
@@ -134,9 +134,9 @@ class BuiltinBlocksTest extends TestCase
         $this->assertSame(5, $result['limit']);
     }
 
-    public function test_save_commercial_omits_empty_limit(): void
+    public function test_save_campaign_omits_empty_limit(): void
     {
-        $result = BuiltinBlocks::save_commercial([
+        $result = BuiltinBlocks::save_campaign([
             'groups' => ['A'],
             'limit' => '',
         ]);
@@ -229,21 +229,21 @@ class BuiltinBlocksTest extends TestCase
     }
 
     // =========================================================================
-    // save_commercial() — empty groups array
+    // save_campaign() — empty groups array
     // =========================================================================
 
-    public function test_save_commercial_empty_groups_defaults(): void
+    public function test_save_campaign_empty_groups_defaults(): void
     {
-        $result = BuiltinBlocks::save_commercial([]);
+        $result = BuiltinBlocks::save_campaign([]);
 
         $this->assertSame([], $result['groups']);
         $this->assertSame(0, $result['intro_image_id']);
         $this->assertSame(0, $result['outro_image_id']);
     }
 
-    public function test_save_commercial_non_array_groups(): void
+    public function test_save_campaign_non_array_groups(): void
     {
-        $result = BuiltinBlocks::save_commercial(['groups' => 'single']);
+        $result = BuiltinBlocks::save_campaign(['groups' => 'single']);
 
         $this->assertSame([], $result['groups']);
     }

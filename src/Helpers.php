@@ -215,7 +215,7 @@ class Helpers
     }
 
     /**
-     * Get all campaigns.
+     * Get all saved campaigns (sponsor slots, etc.).
      *
      * @return list<array<string, mixed>>
      */
@@ -225,8 +225,7 @@ class Helpers
     }
 
     /**
-     * Get active campaigns for a specific channel.
-     * Filters by channel assignment and date range.
+     * Get campaigns active for a specific channel (assignment + date range).
      *
      * @return array<int, array<string, mixed>>
      */

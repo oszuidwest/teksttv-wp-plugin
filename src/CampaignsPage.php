@@ -53,7 +53,7 @@ class CampaignsPage
         $default_duration = (int) get_option('teksttv_duration_image', 7);
 
         ?>
-        <div class="teksttv-block" data-type="campaign">
+        <div class="teksttv-block" data-type="campaign_item">
             <div class="teksttv-block-header">
                 <span class="teksttv-block-handle dashicons dashicons-move"></span>
                 <span class="teksttv-block-icon" style="background:#d63638"><span class="dashicons dashicons-megaphone"></span></span>
