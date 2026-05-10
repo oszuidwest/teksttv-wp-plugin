@@ -8,45 +8,6 @@ use TekstTV\RestApi;
 class RestApiTest extends TestCase
 {
     // =========================================================================
-    // strip_region_prefix()
-    // =========================================================================
-
-    public function test_strip_region_prefix_removes_simple_prefix(): void
-    {
-        $this->assertSame('tekst hier', RestApi::strip_region_prefix('LEIDEN - tekst hier'));
-    }
-
-    public function test_strip_region_prefix_removes_multi_region_prefix(): void
-    {
-        $this->assertSame('tekst hier', RestApi::strip_region_prefix('DEN HAAG / ROOSENDAAL - tekst hier'));
-    }
-
-    public function test_strip_region_prefix_leaves_text_without_prefix(): void
-    {
-        $this->assertSame('gewone tekst', RestApi::strip_region_prefix('gewone tekst'));
-    }
-
-    public function test_strip_region_prefix_leaves_lowercase_text(): void
-    {
-        $this->assertSame('leiden - tekst', RestApi::strip_region_prefix('leiden - tekst'));
-    }
-
-    public function test_strip_region_prefix_handles_empty_string(): void
-    {
-        $this->assertSame('', RestApi::strip_region_prefix(''));
-    }
-
-    public function test_strip_region_prefix_trims_whitespace(): void
-    {
-        $this->assertSame('tekst', RestApi::strip_region_prefix('  UTRECHT - tekst'));
-    }
-
-    public function test_strip_region_prefix_handles_prefix_with_hyphens(): void
-    {
-        $this->assertSame('tekst', RestApi::strip_region_prefix('WEST-BRABANT - tekst'));
-    }
-
-    // =========================================================================
     // validate_ai_output()
     // =========================================================================
 

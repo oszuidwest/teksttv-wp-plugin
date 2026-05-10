@@ -12,7 +12,6 @@ class RestApi
     public static function init(): void
     {
         add_action('rest_api_init', [self::class, 'register_routes']);
-        add_action('admin_post_teksttv_export_training_data', [self::class, 'export_training_data']);
     }
 
     public static function register_routes(): void
@@ -383,95 +382,6 @@ class RestApi
         }
 
         return implode(' / ', array_map('mb_strtoupper', $terms));
-    }
-
-    public static function export_training_data(): void
-    {
-        if (!current_user_can('manage_teksttv')) {
-            wp_die(esc_html__('Onvoldoende rechten.', 'teksttv'), 403);
-        }
-
-        check_admin_referer('teksttv_export_training_data');
-
-        $prompts = Helpers::get_ai_prompts();
-        $system = $prompts['system'];
-
-        // Stream JSONL output in batches to avoid loading all posts into memory
-        $page = 1;
-        $has_output = false;
-
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSONL output, not HTML
-        header('Content-Type: application/jsonl');
-        header('Content-Disposition: attachment; filename="teksttv-training-data.jsonl"');
-
-        do {
-            $query = new \WP_Query([
-                'post_type' => 'post',
-                'posts_per_page' => 100,
-                'paged' => $page,
-                'meta_query' => [
-                    'relation' => 'OR',
-                    ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
-                    ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
-                ],
-            ]);
-
-            foreach ($query->posts as $post) {
-                $ai_body = get_post_meta($post->ID, '_teksttv_ai_body', true);
-                $current_body = get_post_meta($post->ID, '_teksttv_content', true);
-
-                if (empty($ai_body) || empty($current_body) || trim($ai_body) === trim($current_body)) {
-                    continue;
-                }
-
-                $post_text = self::prepare_content($post->post_content);
-                $user_prompt = sprintf(
-                    "%s\n\nTitel: %s\n\n%s",
-                    $prompts['prompt_body'],
-                    $post->post_title,
-                    mb_substr($post_text, 0, 4000)
-                );
-
-                if ($has_output) {
-                    echo "\n";
-                }
-                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSONL output
-                echo wp_json_encode([
-                    'input' => [
-                        'messages' => [
-                            ['role' => 'system', 'content' => $system],
-                            ['role' => 'user', 'content' => $user_prompt],
-                        ],
-                    ],
-                    'preferred_output' => [
-                        ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($current_body)))],
-                    ],
-                    'non_preferred_output' => [
-                        ['role' => 'assistant', 'content' => self::strip_region_prefix(wp_strip_all_tags(trim($ai_body)))],
-                    ],
-                ], JSON_UNESCAPED_UNICODE);
-                $has_output = true;
-            }
-
-            $page++;
-        } while ($page <= $query->max_num_pages);
-
-        if (!$has_output) {
-            // Headers already sent, output error as plain text
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON output
-            echo wp_json_encode(['error' => __('Geen trainingsdata beschikbaar.', 'teksttv')]);
-        }
-
-        exit;
-    }
-
-    /**
-     * Strip a region prefix (e.g. "LEIDEN - " or "DEN HAAG / ROOSENDAAL - ") from a string.
-     */
-    public static function strip_region_prefix(string $content): string
-    {
-        $result = preg_replace('/^[A-Z][A-Z\s\/\-]*\s-\s/', '', trim($content));
-        return $result !== null ? $result : trim($content);
     }
 
     private const SLIDES_CACHE_TTL = 180; // 3 minutes

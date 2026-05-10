@@ -69,11 +69,6 @@ class AuditPage
                 </div>
             </div>
 
-            <p>
-                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=teksttv_export_training_data'), 'teksttv_export_training_data')); ?>" class="button"><span class="dashicons dashicons-download teksttv-button-icon"></span> <?php esc_html_e('Exporteer trainingsdata (JSONL)', 'teksttv'); ?></a>
-                <span class="description"><?php esc_html_e('Exporteert alle bewerkte AI-teksten als DPO trainingsdata voor fine-tuning.', 'teksttv'); ?></span>
-            </p>
-
             <?php if (empty($posts)) : ?>
                 <div class="teksttv-card">
                     <p><?php esc_html_e('Nog geen posts met AI-gegenereerde content.', 'teksttv'); ?></p>
