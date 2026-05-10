@@ -323,13 +323,13 @@
     transform: rotate(180deg);
 }
 
-/* Sortable states */
-.teksttv-block.ui-sortable-helper {
+/* SortableJS drag states */
+.teksttv-block.teksttv-sortable-drag {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     border-color: #2271b1;
 }
 
-.teksttv-block.ui-sortable-placeholder {
+.teksttv-block.teksttv-sortable-ghost {
     visibility: visible !important;
     background: #f0f6fc;
     border: 2px dashed #2271b1;
@@ -337,7 +337,7 @@
     min-height: 60px;
 }
 
-.teksttv-block.ui-sortable-placeholder * {
+.teksttv-block.teksttv-sortable-ghost * {
     visibility: hidden;
 }
 

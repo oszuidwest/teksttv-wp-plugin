@@ -50,7 +50,6 @@ class PostMeta
         }
 
         wp_enqueue_media();
-        wp_enqueue_script('jquery-ui-sortable');
         wp_enqueue_script(
             'teksttv-post-meta',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',

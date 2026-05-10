@@ -1,5 +1,13 @@
+import Sortable from 'sortablejs';
 import type { WPMediaAttachment } from './types';
 import { escAttr, initTomSelectIn } from './utils';
+
+const blockSortableOpts = {
+    handle: '.teksttv-block-handle',
+    ghostClass: 'teksttv-sortable-ghost',
+    dragClass: 'teksttv-sortable-drag',
+    animation: 150,
+};
 
 /** Loop configuration page + Campaigns admin: sortable blocks, media pickers. */
 export function initLoopPage(): void {
@@ -8,11 +16,12 @@ export function initLoopPage(): void {
     const $blocks = $('#teksttv-blocks, #teksttv-campaigns').first();
     if (!$blocks.length) return;
 
-    $blocks.sortable({
-        handle: '.teksttv-block-handle',
-        placeholder: 'teksttv-block ui-sortable-placeholder',
-        tolerance: 'pointer',
-        update: () => reindexBlocks(),
+    const blocksEl = $blocks[0];
+    new Sortable(blocksEl, {
+        ...blockSortableOpts,
+        onEnd: (evt) => {
+            if (evt.oldIndex !== evt.newIndex) reindexBlocks();
+        },
     });
 
     // =========================================================================
@@ -37,7 +46,6 @@ export function initLoopPage(): void {
         const rendered = templateHtml.replace(/__INDEX__/g, String(index));
         $blocks.append(rendered);
         const $newBlock = $blocks.children('.teksttv-block').last();
-        $blocks.sortable('refresh');
         updateBlockSummaries();
 
         $newBlock.find('.teksttv-block-body').show();
@@ -63,7 +71,6 @@ export function initLoopPage(): void {
         const rendered = templateHtml.replace(/__INDEX__/g, String(index));
         $blocks.append(rendered);
         const $newBlock = $blocks.children('.teksttv-block').last();
-        $blocks.sortable('refresh');
         $newBlock.find('.teksttv-block-body').show();
         $newBlock.addClass('is-expanded');
     });
@@ -186,11 +193,11 @@ export function initLoopPage(): void {
 
     const $ticker = $('#teksttv-ticker');
     if ($ticker.length) {
-        $ticker.sortable({
-            handle: '.teksttv-block-handle',
-            placeholder: 'teksttv-block ui-sortable-placeholder',
-            tolerance: 'pointer',
-            update: () => reindexTicker(),
+        new Sortable($ticker[0], {
+            ...blockSortableOpts,
+            onEnd: (evt) => {
+                if (evt.oldIndex !== evt.newIndex) reindexTicker();
+            },
         });
 
         // Collapse, expand, remove — reuse existing block handlers (they delegate on $blocks)
@@ -233,7 +240,6 @@ export function initLoopPage(): void {
             const rendered = templateHtml.replace(/__TINDEX__/g, String(index));
             $ticker.append(rendered);
             const $newBlock = $ticker.children('.teksttv-block').last();
-            $ticker.sortable('refresh');
             $newBlock.find('.teksttv-block-body').show();
             $newBlock.addClass('is-expanded');
             initTomSelectIn($newBlock[0]);

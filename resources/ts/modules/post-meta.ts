@@ -1,3 +1,4 @@
+import Sortable from 'sortablejs';
 import type { ImageData, Slide, TeksttvPostConfig, TextSlide, WPMediaAttachment, WPMediaFrame } from './types';
 import { encodeSlideData, escAttr } from './utils';
 
@@ -137,11 +138,14 @@ export function initPostMeta(): void {
         mediaFrame.open();
     });
 
-    $('#teksttv-images-list').sortable({
-        tolerance: 'pointer',
-        cursor: 'move',
-        placeholder: 'teksttv-image-item ui-sortable-placeholder',
-    });
+    const imagesListEl = document.getElementById('teksttv-images-list');
+    if (imagesListEl) {
+        new Sortable(imagesListEl, {
+            ghostClass: 'teksttv-sortable-ghost',
+            dragClass: 'teksttv-sortable-drag',
+            animation: 150,
+        });
+    }
 
     $(document).on('click', '.teksttv-remove-image', function () {
         $(this)
