@@ -334,6 +334,21 @@ class Helpers
     }
 
     /**
+     * WordPress script/style version string from file mtime (cache bust on deploy/edit).
+     *
+     * @param string $relative_path Path under the plugin root, e.g. assets/admin.js
+     */
+    public static function asset_version(string $relative_path): string
+    {
+        $path = TEKSTTV_PLUGIN_DIR . ltrim($relative_path, '/');
+        if (!is_readable($path)) {
+            return TEKSTTV_VERSION;
+        }
+
+        return (string) filemtime($path);
+    }
+
+    /**
      * Build a meta_query fragment that pre-filters expired posts in SQL.
      *
      * Excludes posts whose _teksttv_date_end is set and is before today.

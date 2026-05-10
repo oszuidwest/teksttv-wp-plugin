@@ -31,14 +31,14 @@ class CategoryMeta
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
             [],
-            TEKSTTV_VERSION,
+            Helpers::asset_version('assets/admin.js'),
             true
         );
         wp_enqueue_style(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
             [],
-            TEKSTTV_VERSION
+            Helpers::asset_version('assets/admin.css')
         );
     }
 

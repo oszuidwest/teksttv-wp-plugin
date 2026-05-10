@@ -54,14 +54,14 @@ class PostMeta
             'teksttv-post-meta',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
             ['wp-i18n'],
-            TEKSTTV_VERSION,
+            Helpers::asset_version('assets/admin.js'),
             true
         );
         wp_enqueue_style(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
             [],
-            TEKSTTV_VERSION
+            Helpers::asset_version('assets/admin.css')
         );
 
         $preview_url = Helpers::get_preview_url();

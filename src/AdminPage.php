@@ -189,27 +189,27 @@ class AdminPage
             'teksttv-tomselect',
             TEKSTTV_PLUGIN_URL . 'assets/tom-select.default.min.css',
             [],
-            '2.5.2'
+            Helpers::asset_version('assets/tom-select.default.min.css')
         );
         wp_enqueue_script(
             'teksttv-tomselect',
             TEKSTTV_PLUGIN_URL . 'assets/tom-select.complete.min.js',
             [],
-            '2.5.2',
+            Helpers::asset_version('assets/tom-select.complete.min.js'),
             true
         );
         wp_enqueue_script(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
             ['teksttv-tomselect'],
-            (string) filemtime(TEKSTTV_PLUGIN_DIR . 'assets/admin.js'),
+            Helpers::asset_version('assets/admin.js'),
             true
         );
         wp_enqueue_style(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
             ['teksttv-tomselect'],
-            (string) filemtime(TEKSTTV_PLUGIN_DIR . 'assets/admin.css')
+            Helpers::asset_version('assets/admin.css')
         );
     }
 
