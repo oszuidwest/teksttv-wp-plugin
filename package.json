@@ -7,9 +7,10 @@
         "build:css": "bun build resources/css/admin.css --outdir assets --minify",
         "build:static": "cp resources/ts/tinymce-separator.js assets/ && cp resources/css/tinymce-content.css assets/ && cp node_modules/tom-select/dist/css/tom-select.default.min.css assets/ && cp node_modules/tom-select/dist/js/tom-select.complete.min.js assets/",
         "dev": "bun run build:js -- --watch & bun run build:css -- --watch",
-        "lint": "bun run lint:php && bun run lint:js",
+        "check": "bun run lint:php && bun run lint:js",
+        "lint": "biome check resources/",
         "lint:php": "vendor/bin/phpcs",
-        "lint:js": "bunx biome check resources/",
+        "lint:js": "biome check resources/",
         "lint:fix": "vendor/bin/phpcbf; bunx biome check --write resources/",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "test": "vendor/bin/phpunit"

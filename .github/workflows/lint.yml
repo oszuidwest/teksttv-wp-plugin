@@ -1,38 +1,33 @@
+---
 name: Lint
 
 on:
   push:
     branches: [main]
+    paths:
+      - '**/*.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'phpcs.xml'
+      - 'phpcs.xml.dist'
+      - 'phpstan.neon'
+      - 'phpstan-bootstrap.php'
+      - 'languages/**'
   pull_request:
-    branches: [main]
+    paths:
+      - '**/*.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'phpcs.xml'
+      - 'phpcs.xml.dist'
+      - 'phpstan.neon'
+      - 'phpstan-bootstrap.php'
+      - 'languages/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  php:
-    name: PHP (PHPCS + PHPStan)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.1"
-
-      - uses: ramsey/composer-install@v3
-
-      - run: vendor/bin/phpcs
-
-      - run: vendor/bin/phpstan analyse --memory-limit=1G
-
-  typescript:
-    name: TypeScript (Biome + tsc)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-
-      - run: bun install
-
-      - run: bunx biome check resources/
-
-      - run: bunx tsc --noEmit
+  lint:
+    uses: oszuidwest/.github-templates/.github/workflows/wp-ci.yml@v2
