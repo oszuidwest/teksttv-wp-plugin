@@ -131,32 +131,6 @@ class TickerHeadlinesBlockTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    public function test_build_skips_posts_restricted_by_day(): void
-    {
-        $this->setupTickerHeadlines([10], [
-            '10:_teksttv_days' => ['1', '3'],
-        ]);
-
-        $item = ['count' => 5];
-        $result = TickerHeadlinesBlock::build($item, 'tv1');
-
-        $this->assertSame([], $result);
-    }
-
-    public function test_build_skips_posts_outside_date_range(): void
-    {
-        $this->setupTickerHeadlines([10], [
-            '10:_teksttv_days' => '',
-            '10:_teksttv_date_start' => '2026-05-01',
-            '10:_teksttv_date_end' => '2026-05-31',
-        ]);
-
-        $item = ['count' => 5];
-        $result = TickerHeadlinesBlock::build($item, 'tv1');
-
-        $this->assertSame([], $result);
-    }
-
     public function test_build_skips_empty_titles(): void
     {
         $this->setupTickerHeadlines([10], [
@@ -173,7 +147,7 @@ class TickerHeadlinesBlockTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    public function test_build_mixes_scheduled_and_unscheduled(): void
+    public function test_build_includes_all_posts_regardless_of_teksttv_scheduling(): void
     {
         $this->setupTickerHeadlines([10, 20, 30], [
             '10:_teksttv_days' => '',
@@ -181,8 +155,8 @@ class TickerHeadlinesBlockTest extends TestCase
             '10:_teksttv_date_end' => '',
             '20:_teksttv_days' => ['1'],
             '30:_teksttv_days' => '',
-            '30:_teksttv_date_start' => '',
-            '30:_teksttv_date_end' => '',
+            '30:_teksttv_date_start' => '2026-05-01',
+            '30:_teksttv_date_end' => '2026-05-31',
         ]);
 
         Functions\when('get_the_title')->alias(fn ($id) => 'Post ' . $id);
@@ -190,9 +164,10 @@ class TickerHeadlinesBlockTest extends TestCase
         $item = ['count' => 10];
         $result = TickerHeadlinesBlock::build($item, 'tv1');
 
-        $this->assertCount(2, $result);
+        $this->assertCount(3, $result);
         $this->assertSame('Post 10', $result[0]['message']);
-        $this->assertSame('Post 30', $result[1]['message']);
+        $this->assertSame('Post 20', $result[1]['message']);
+        $this->assertSame('Post 30', $result[2]['message']);
     }
 
     public function test_build_passes_posts_with_no_day_restrictions(): void

@@ -102,11 +102,6 @@ final class TickerHeadlinesBlock implements TickerBlock
             'post_status' => 'publish',
             'no_found_rows' => true,
             'fields' => 'ids',
-            'meta_query' => [
-                'relation' => 'AND',
-                ['key' => '_teksttv_active', 'value' => '1', 'compare' => '='],
-                Helpers::get_date_end_meta_query(),
-            ],
         ];
 
         $max_age = (int) get_option('teksttv_max_post_age', 30);
@@ -125,19 +120,6 @@ final class TickerHeadlinesBlock implements TickerBlock
         $messages = [];
 
         foreach ($query->posts as $post_id) {
-            $days = get_post_meta($post_id, '_teksttv_days', true);
-            if (!empty($days) && is_array($days)) {
-                if (!Helpers::is_allowed_on_day($days)) {
-                    continue;
-                }
-            }
-
-            $date_start = get_post_meta($post_id, '_teksttv_date_start', true);
-            $date_end = get_post_meta($post_id, '_teksttv_date_end', true);
-            if (!Helpers::is_within_date_range($date_start, $date_end)) {
-                continue;
-            }
-
             $title = get_the_title($post_id);
             if (!empty($title)) {
                 $message = !empty($item_prefix) ? $item_prefix . ' ' . $title : $title;
