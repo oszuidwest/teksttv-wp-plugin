@@ -49,20 +49,7 @@ class PostMeta
             return;
         }
 
-        wp_enqueue_media();
-        wp_enqueue_script(
-            'teksttv-post-meta',
-            TEKSTTV_PLUGIN_URL . 'assets/admin.js',
-            ['wp-i18n'],
-            Helpers::asset_version('assets/admin.js'),
-            true
-        );
-        wp_enqueue_style(
-            'teksttv-admin',
-            TEKSTTV_PLUGIN_URL . 'assets/admin.css',
-            [],
-            Helpers::asset_version('assets/admin.css')
-        );
+        Helpers::enqueue_admin_script();
 
         $preview_url = Helpers::get_preview_url();
         $post_id = get_the_ID();
@@ -96,7 +83,7 @@ class PostMeta
 
         $ai_supported = Helpers::has_feature('ai_generate') && function_exists('wp_supports_ai') && wp_supports_ai();
 
-        wp_localize_script('teksttv-post-meta', 'teksttvPost', [
+        wp_localize_script('teksttv-admin', 'teksttvPost', [
             'previewUrl' => $preview_url,
             'nonce' => wp_create_nonce('teksttv_meta'),
             'restNonce' => wp_create_nonce('wp_rest'),

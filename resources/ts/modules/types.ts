@@ -94,12 +94,20 @@ interface WPGlobal {
     media(options: WPMediaOptions): WPMediaFrame;
 }
 
+/** Underscore.js subset used by wp.media */
+interface WPUnderscore {
+    defaults(object: Record<string, unknown>, ...sources: Record<string, unknown>[]): Record<string, unknown>;
+}
+
 declare global {
     const wp: WPGlobal;
     interface Window {
         teksttvPost?: TeksttvPostConfig;
         tinymce?: WPTinyMCE;
         TomSelect: typeof import('tom-select').default;
+        /** Set by PHP inline script on the `underscore` handle. */
+        wpUnderscore?: WPUnderscore;
+        _: WPUnderscore;
     }
 
     const teksttvPost: TeksttvPostConfig | undefined;

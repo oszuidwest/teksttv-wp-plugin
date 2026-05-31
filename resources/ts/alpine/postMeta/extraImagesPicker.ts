@@ -1,5 +1,6 @@
 import type { WPMediaAttachment, WPMediaFrame } from '../../modules/types';
 import { escAttr } from '../../modules/utils';
+import { wpMedia } from '../../modules/wpMedia';
 
 /** Per post-meta Alpine instance: één hergebruikt wp.media frame voor extra afbeeldingen. */
 export function createExtraImagesOpener(): (e: Event) => void {
@@ -10,7 +11,7 @@ export function createExtraImagesOpener(): (e: Event) => void {
             mediaFrame.open();
             return;
         }
-        mediaFrame = wp.media({
+        mediaFrame = wpMedia({
             title: 'Afbeeldingen selecteren',
             button: { text: 'Toevoegen' },
             multiple: true,

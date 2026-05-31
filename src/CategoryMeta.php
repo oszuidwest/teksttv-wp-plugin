@@ -26,20 +26,7 @@ class CategoryMeta
             return;
         }
 
-        wp_enqueue_media();
-        wp_enqueue_script(
-            'teksttv-admin',
-            TEKSTTV_PLUGIN_URL . 'assets/admin.js',
-            [],
-            Helpers::asset_version('assets/admin.js'),
-            true
-        );
-        wp_enqueue_style(
-            'teksttv-admin',
-            TEKSTTV_PLUGIN_URL . 'assets/admin.css',
-            [],
-            Helpers::asset_version('assets/admin.css')
-        );
+        Helpers::enqueue_admin_script();
     }
 
     public static function render_add_form_field(): void

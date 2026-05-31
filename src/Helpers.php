@@ -334,6 +334,66 @@ class Helpers
     }
 
     /**
+     * Script dependencies for admin.js (uses wp.media, which requires Underscore on `_`).
+     *
+     * @return list<string>
+     */
+    public static function admin_script_dependencies(): array
+    {
+        return ['jquery', 'underscore', 'media-editor', 'wp-i18n'];
+    }
+
+    /**
+     * Enqueue admin.js and its styles. Call wp_enqueue_media() first.
+     *
+     * @param list<string> $extra_deps Additional script handles to load before admin.js.
+     * @param list<string> $style_deps Additional style handles to load before admin.css.
+     */
+    public static function enqueue_admin_script(array $extra_deps = [], array $style_deps = []): void
+    {
+        wp_enqueue_media();
+
+        $deps = array_merge(self::admin_script_dependencies(), $extra_deps);
+
+        wp_enqueue_script(
+            'teksttv-admin',
+            TEKSTTV_PLUGIN_URL . 'assets/admin.js',
+            $deps,
+            self::asset_version('assets/admin.js'),
+            true
+        );
+
+        wp_enqueue_style(
+            'teksttv-admin',
+            TEKSTTV_PLUGIN_URL . 'assets/admin.css',
+            $style_deps,
+            self::asset_version('assets/admin.css')
+        );
+
+        if (wp_script_is('underscore', 'registered')) {
+            wp_add_inline_script(
+                'underscore',
+                'if(typeof window._!=="undefined"&&typeof window._.defaults==="function"){window.wpUnderscore=window._;}',
+                'after'
+            );
+        }
+    }
+
+    /**
+     * Restore Underscore on `_` after late-loading scripts (e.g. Yoast SEO) clobber it.
+     */
+    public static function print_underscore_restore(): void
+    {
+        if (!wp_script_is('teksttv-admin', 'enqueued')) {
+            return;
+        }
+
+        wp_print_inline_script_tag(
+            '(function(){var u=window.wpUnderscore;if(u&&typeof window._.defaults!=="function"){window._=u;}})();'
+        );
+    }
+
+    /**
      * WordPress script/style version string from file mtime (cache bust on deploy/edit).
      *
      * @param string $relative_path Path under the plugin root, e.g. assets/admin.js

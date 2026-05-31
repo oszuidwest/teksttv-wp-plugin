@@ -184,7 +184,6 @@ class AdminPage
             return;
         }
 
-        wp_enqueue_media();
         wp_enqueue_style(
             'teksttv-tomselect',
             TEKSTTV_PLUGIN_URL . 'assets/tom-select.default.min.css',
@@ -198,19 +197,7 @@ class AdminPage
             Helpers::asset_version('assets/tom-select.complete.min.js'),
             true
         );
-        wp_enqueue_script(
-            'teksttv-admin',
-            TEKSTTV_PLUGIN_URL . 'assets/admin.js',
-            ['teksttv-tomselect'],
-            Helpers::asset_version('assets/admin.js'),
-            true
-        );
-        wp_enqueue_style(
-            'teksttv-admin',
-            TEKSTTV_PLUGIN_URL . 'assets/admin.css',
-            ['teksttv-tomselect'],
-            Helpers::asset_version('assets/admin.css')
-        );
+        Helpers::enqueue_admin_script(['teksttv-tomselect'], ['teksttv-tomselect']);
     }
 
     /**

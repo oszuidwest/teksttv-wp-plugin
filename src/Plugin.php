@@ -20,5 +20,7 @@ class Plugin
         PostMeta::init();
         CategoryMeta::init();
         RestApi::init();
+
+        add_action('admin_print_footer_scripts', [Helpers::class, 'print_underscore_restore'], 99);
     }
 }

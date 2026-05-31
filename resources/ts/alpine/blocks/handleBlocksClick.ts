@@ -1,6 +1,7 @@
 import { slideToggle, slideUp } from '../../modules/dom';
 import type { WPMediaAttachment } from '../../modules/types';
 import { escAttr } from '../../modules/utils';
+import { wpMedia } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
 /**
@@ -42,7 +43,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         const list = section?.querySelector<HTMLElement>('.teksttv-campaign-slides');
         const baseName = list?.dataset.name;
         if (!list || !baseName) return;
-        const frame = wp.media({ multiple: true, library: { type: 'image' } });
+        const frame = wpMedia({ multiple: true, library: { type: 'image' } });
         frame.on('select', () => {
             const attachments: WPMediaAttachment[] = frame.state().get('selection').toJSON();
             attachments.forEach((att) => {
@@ -65,7 +66,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         e.preventDefault();
         const field = imgSel.closest('.teksttv-block-field, .teksttv-block-image-fields');
         if (!field) return;
-        const mediaFrame = wp.media({ multiple: false, library: { type: 'image' } });
+        const mediaFrame = wpMedia({ multiple: false, library: { type: 'image' } });
         mediaFrame.on('select', () => {
             const att: WPMediaAttachment = mediaFrame.state().get('selection').first().toJSON();
             const url = att.sizes?.medium?.url ?? att.url;

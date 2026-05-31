@@ -1,4 +1,5 @@
 import type { ImageData, TeksttvPostConfig, WPMediaAttachment, WPMediaFrame } from '../../modules/types';
+import { wpMedia } from '../../modules/wpMedia';
 import { applySidebarCardState } from './sidebarCard';
 
 /** Custom sidebar-afbeelding via media library + optionele REST-metadata. */
@@ -14,7 +15,7 @@ export function createSidebarCustomPicker(
             sidebarFrame.open();
             return;
         }
-        sidebarFrame = wp.media({ multiple: false, library: { type: 'image' } });
+        sidebarFrame = wpMedia({ multiple: false, library: { type: 'image' } });
         sidebarFrame.on('select', () => {
             if (!sidebarFrame) return;
             const att: WPMediaAttachment = sidebarFrame.state().get('selection').first().toJSON();
