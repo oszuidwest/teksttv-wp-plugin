@@ -30,7 +30,8 @@ export function createChannelsSettingsPage() {
         },
 
         channelsClick(e: MouseEvent): void {
-            const tgt = e.target?.closest('.teksttv-remove-channel');
+            if (!(e.target instanceof Element)) return;
+            const tgt = e.target.closest('.teksttv-remove-channel');
             if (!(tgt instanceof HTMLElement) || !channelsTbody?.contains(tgt)) return;
             tgt.closest('tr')?.remove();
             reindexChannels();

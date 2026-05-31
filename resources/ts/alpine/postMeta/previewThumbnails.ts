@@ -29,7 +29,7 @@ export function updatePreviewThumbnails(
             const newSrc = `${baseUrl}?data=${encodeURIComponent(encodeSlideData(slides[idx]))}`;
             const iframeEl = el.querySelector<HTMLIFrameElement>('iframe');
             el.classList.toggle('is-active', idx === activeIndex);
-            if (iframeEl?.getAttribute('src') !== newSrc) {
+            if (iframeEl && iframeEl.getAttribute('src') !== newSrc) {
                 iframeEl.setAttribute('src', newSrc);
             }
         });

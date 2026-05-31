@@ -210,7 +210,8 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         },
 
         groupsClick(e: MouseEvent): void {
-            const tgt = e.target?.closest('.teksttv-remove-group');
+            if (!(e.target instanceof Element)) return;
+            const tgt = e.target.closest('.teksttv-remove-group');
             if (!(tgt instanceof HTMLElement) || !groupsTbody?.contains(tgt)) return;
             tgt.closest('tr')?.remove();
         },

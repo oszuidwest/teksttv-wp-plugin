@@ -185,7 +185,8 @@ export function createPostMetaPage() {
         openExtraImages,
 
         onExtraImagesClick(e: MouseEvent): void {
-            const tgt = e.target?.closest('.teksttv-remove-image');
+            if (!(e.target instanceof Element)) return;
+            const tgt = e.target.closest('.teksttv-remove-image');
             const item = tgt?.closest('.teksttv-image-item');
             if (item instanceof HTMLElement) {
                 fadeOutRemove(item, 150);
@@ -238,7 +239,8 @@ export function createPostMetaPage() {
         },
 
         onPreviewThumbClick(e: MouseEvent): void {
-            const el = e.target?.closest('.teksttv-preview-thumb');
+            if (!(e.target instanceof Element)) return;
+            const el = e.target.closest('.teksttv-preview-thumb');
             if (!(el instanceof HTMLElement)) return;
             const idx = parseInt(el.dataset.index ?? '', 10);
             slides = getSlides();
