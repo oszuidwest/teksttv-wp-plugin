@@ -4,3 +4,6 @@ assets/
 *.tsbuildinfo
 .cache
 .phpunit.cache
+
+*.md
+!README.md

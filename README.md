@@ -1,90 +1,85 @@
 # TekstTV (WordPress plugin)
 
-WordPress plugin to manage **text-TV slides** and expose them through a **public REST API** for the **[TekstTV playout app](https://github.com/oszuidwest/teksttv)**. In the **Tekst TV** admin menu you configure **channels**, build each **loop** from blocks (posts, images, campaigns, weather, ticker items), and manage settings, campaigns, and optional AI-assisted content.
+WordPress plugin to manage text-TV slides and serve them as JSON to the [TekstTV playout app](https://github.com/oszuidwest/teksttv-frontend). In the Tekst TV admin menu you set up channels, build the broadcast loop from blocks (posts, images, campaigns, weather, ticker items), and manage settings, campaigns and optional AI-assisted content.
 
-## How this fits with the frontend
+## How it fits with the frontend
 
-The playout in [oszuidwest/teksttv](https://github.com/oszuidwest/teksttv) is intentionally a **thin client**: it periodically fetches a **JSON playlist** and renders slides plus the ticker bar. **This plugin** is the typical **content source**: editorial workflow in WordPress, slide/ticker assembly in PHP, delivery via `GET /wp-json/teksttv/v1/slides`. Another CMS can play the same role as long as the API and slide shape match what the frontend expects (see e.g. `src/types.ts` and the frontend README schema).
+The playout in [oszuidwest/teksttv-frontend](https://github.com/oszuidwest/teksttv-frontend) is a thin client: it polls a JSON playlist on a timer and renders the slides plus the ticker bar. This plugin is the usual content source: editing in WordPress, slide and ticker assembly in PHP, delivery via `GET /wp-json/teksttv/v1/slides`. A different CMS can fill the same role, provided it returns the same payload shape (see `src/types.ts` and the schema in the frontend README).
 
 ## Requirements
 
-- **WordPress** 6.5 or newer  
-- **PHP** 8.1 or newer  
+- WordPress 6.5 or newer
+- PHP 8.1 or newer
 
-For **development** from Git you also need [Composer](https://getcomposer.org/) and [Bun](https://bun.sh/) (admin assets and scripts).
+For development from a Git checkout you also need [Composer](https://getcomposer.org/) and [Bun](https://bun.sh/).
 
 ## Installation
 
-### Ready-made package (recommended)
+### Pre-built zip (recommended)
 
-On `main` / version tags, GitHub Actions builds **`teksttv.zip`** (`composer install --no-dev`, asset build, zip containing `src/`, `assets/`, `vendor/`, bootstrap files). Upload it under **Plugins → Add New → Upload Plugin**, then activate.
+GitHub Actions builds `teksttv.zip` on `main` and on version tags: `composer install --no-dev`, asset build, zip with `src/`, `assets/`, `vendor/` and the bootstrap files. Upload it under Plugins → Add New → Upload Plugin and activate.
 
 ### Build from source
 
-1. Place the folder under `wp-content/plugins/` (any folder name, e.g. `teksttv`).
+1. Drop the folder in `wp-content/plugins/` (any folder name, `teksttv` is fine).
 2. Install PHP dependencies:
 
    ```bash
    composer install --no-dev --optimize-autoloader
    ```
 
-3. Install JS/CSS deps and compile assets:
+3. Install JS/CSS dependencies and compile:
 
    ```bash
    bun install
    bun run build
    ```
 
-4. Activate **TekstTV** in **Plugins**.
+4. Activate TekstTV under Plugins.
 
-Without `vendor/` and built `assets/` the plugin will not load correctly (`vendor/autoload.php` and admin assets will be missing).
+Without `vendor/` and a built `assets/` the plugin won't load: `vendor/autoload.php` and the admin assets are missing.
 
 ## Capabilities after activation
 
-Activation registers among others:
+| Role          | Capabilities |
+|---------------|--------------|
+| Administrator | `manage_teksttv`, `manage_teksttv_campaigns`, `manage_teksttv_content`, `edit_teksttv` |
+| Editor        | `edit_teksttv` (TekstTV fields on posts) |
 
-| Role            | Capabilities (summary) |
-|----------------|-------------------------|
-| **Administrator** | Full control (`manage_teksttv`), campaigns (`manage_teksttv_campaigns`), content/AI settings (`manage_teksttv_content`), post metabox (`edit_teksttv`) |
-| **Editor**       | Only `edit_teksttv` (TekstTV fields on posts) |
+If you need a different distribution, use a capability plugin.
 
-Adjust roles via a capability plugin if you need a different setup.
+## Usage
 
-## Usage (overview)
+- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, campaign and weather. The ticker is configured separately.
+- Settings: channel slugs (`tv1`, `tv2`, …), display duration for text and images, OpenWeather API key, feature toggles (TinyMCE, AI, scheduling), preview URL.
+- Campaigns: campaign blocks and groups used in the loop.
+- Content & AI / AI Audit, when AI generation is enabled: prompts and audit log. Uses WordPress AI when available (`wp_supports_ai()`).
 
-- **Tekst TV → Loop** (per configured channel): order and composition of the broadcast loop; block types include posts, image, campaign, weather; separate ticker configuration.  
-- **Settings**: channel slugs (`tv1`, `tv2`, …), text/image display duration, OpenWeather API key, feature toggles (TinyMCE / AI / scheduling / etc.), preview URL, etc.  
-- **Campaigns**: campaign blocks and groups used in the loop.  
-- **Content & AI / AI Audit** (when *AI generation* is enabled): prompts and audit trail; integrates with WordPress AI when available (`wp_supports_ai()`).
-
-If no channels are stored yet, at least **`tv1`** is assumed by default.
+If no channels are stored, `tv1` is assumed.
 
 ## REST API
 
-Public endpoint (no login required for the playout frontend):
+Public endpoint, no login required:
 
 ```http
 GET /wp-json/teksttv/v1/slides?channel=<channel-slug>
 ```
 
-The payload includes `slides` (main loop) and `ticker` entries. `channel` must match a configured channel slug (`validate_channel`). Responses are briefly **cached** with `Cache-Control` headers. The [TekstTV playout app](https://github.com/oszuidwest/teksttv) consumes this shape of data and refreshes on a timer (see *Auto-Refresh* in the frontend README).
+The payload contains `slides` (the loop) and `ticker` entries. `channel` must match a configured slug (`validate_channel`). Responses carry short `Cache-Control` headers. The [playout app](https://github.com/oszuidwest/teksttv-frontend) consumes this shape on a timer (see Auto-Refresh in its README).
 
-Editor-only endpoints (e.g. image metadata, generation):
-
-- Requires a user with **`edit_teksttv`**  
-- See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php) under the **`teksttv/v1`** namespace.
+Editor-only endpoints (image metadata, generation, …) need a user with `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
 
 ## Development scripts
 
 From [`package.json`](package.json):
 
-| Command           | Purpose |
-|-------------------|---------|
-| `bun run build`    | Minify JS/CSS to `assets/`, copy TinyMCE / tom-select vendor files |
-| `bun run dev`      | Watch mode for JS and CSS |
-| `bun run lint`     | PHPCS (`vendor/bin/phpcs`) + Biome (`resources/`) |
+| Command            | Purpose |
+|--------------------|---------|
+| `bun run build`    | Minify JS/CSS to `assets/`, copy TinyMCE and tom-select vendor files |
+| `bun run dev`      | Watch JS and CSS |
+| `bun run lint`     | PHPCS + Biome on `resources/` |
 | `bun run lint:fix` | PHPCBF + Biome `--write` |
-| `bun run analyse` | PHPStan |
+| `bun run analyse`  | PHPStan |
 | `bun run test`     | PHPUnit |
 
 CI runs lint and the plugin artifact build; see [`.github/workflows/`](.github/workflows/).
