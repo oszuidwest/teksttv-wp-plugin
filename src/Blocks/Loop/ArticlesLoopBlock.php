@@ -178,7 +178,7 @@ final class ArticlesLoopBlock implements LoopBlock
             $images = get_post_meta($post_id, '_teksttv_images', true);
             if (!empty($images) && is_array($images)) {
                 foreach ($images as $attachment_id) {
-                    $image_data = Helpers::get_image_data((int) $attachment_id);
+                    $image_data = Helpers::get_image_data((int) $attachment_id, 'large', 'image_slide');
                     if ($image_data) {
                         $slides[] = array_merge([
                             'type' => 'image',
@@ -252,7 +252,7 @@ final class ArticlesLoopBlock implements LoopBlock
             return null;
         }
         if ($override_id) {
-            $data = Helpers::get_image_data((int) $override_id);
+            $data = Helpers::get_image_data((int) $override_id, 'large', 'text_sidebar');
             if ($data) {
                 return $data;
             }
@@ -277,7 +277,7 @@ final class ArticlesLoopBlock implements LoopBlock
 
         $thumb_id = get_post_thumbnail_id($post_id);
         if ($thumb_id) {
-            return Helpers::get_image_data((int) $thumb_id);
+            return Helpers::get_image_data((int) $thumb_id, 'large', 'text_sidebar');
         }
 
         return null;
@@ -293,6 +293,6 @@ final class ArticlesLoopBlock implements LoopBlock
             return null;
         }
 
-        return Helpers::get_image_data((int) $image_id);
+        return Helpers::get_image_data((int) $image_id, 'large', 'text_sidebar');
     }
 }

@@ -86,7 +86,7 @@ final class ImageLoopBlock implements LoopBlock
             return [];
         }
 
-        $image_data = Helpers::get_image_data($image_id);
+        $image_data = Helpers::get_image_data($image_id, 'large', 'image_slide');
         if (!$image_data) {
             return [];
         }

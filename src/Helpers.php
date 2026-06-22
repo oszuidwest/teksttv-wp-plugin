@@ -299,16 +299,32 @@ class Helpers
     /**
      * Build image data for an attachment (url, caption, attribution).
      *
-     * @param int    $attachment_id The attachment post ID.
-     * @param string $size          Image size to retrieve.
+     * When the caller passes a `$slot` identifying which template slot the
+     * image will fill, the `teksttv_image_url` filter is applied so the
+     * active theme can return a slot-appropriate (e.g. focal-point-aware,
+     * pre-cropped) variant. The plugin stays template-agnostic — pixel
+     * dimensions live in the theme that owns the layout.
+     *
+     * Known slots:
+     *   - `image_slide`   full-screen image slide
+     *   - `text_sidebar`  sidebar image on a text slide
+     *
+     * @param int         $attachment_id The attachment post ID.
+     * @param string      $size          Fallback WP image size used when no theme handles the slot.
+     * @param string|null $slot          Optional semantic slot identifier (see list above).
      * @return array<string, string>|null Image data array or null if not found.
      */
-    public static function get_image_data(int $attachment_id, string $size = 'large'): ?array
-    {
+    public static function get_image_data(
+        int $attachment_id,
+        string $size = 'large',
+        ?string $slot = null
+    ): ?array {
         $url = wp_get_attachment_image_url($attachment_id, $size);
         if (!$url) {
             return null;
         }
+
+        $url = (string) apply_filters('teksttv_image_url', $url, $attachment_id, $slot);
 
         $data = ['url' => $url];
 
