@@ -28,6 +28,11 @@ class RestApi
                     'type' => 'integer',
                     'sanitize_callback' => 'absint',
                 ],
+                'slot' => [
+                    'required' => false,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_key',
+                ],
             ],
         ]);
 
@@ -81,7 +86,8 @@ class RestApi
     public static function get_image_data(WP_REST_Request $request): WP_REST_Response
     {
         $id = $request->get_param('id');
-        $data = Helpers::get_image_data($id);
+        $slot = $request->get_param('slot') ?: null;
+        $data = Helpers::get_image_data($id, 'large', $slot);
         if (!$data) {
             return new WP_REST_Response(['error' => __('Bijlage niet gevonden.', 'teksttv')], 404);
         }

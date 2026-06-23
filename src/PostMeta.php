@@ -59,7 +59,7 @@ class PostMeta
         if ($post_id) {
             $thumb_id = get_post_thumbnail_id($post_id);
             if ($thumb_id) {
-                $fallback_image = Helpers::get_image_data((int) $thumb_id);
+                $fallback_image = Helpers::get_image_data((int) $thumb_id, 'large', 'text_sidebar');
             }
         }
 
@@ -68,7 +68,7 @@ class PostMeta
         if ($post_id) {
             $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
             if ($sidebar_id) {
-                $custom_image = Helpers::get_image_data((int) $sidebar_id);
+                $custom_image = Helpers::get_image_data((int) $sidebar_id, 'large', 'text_sidebar');
             }
         }
 

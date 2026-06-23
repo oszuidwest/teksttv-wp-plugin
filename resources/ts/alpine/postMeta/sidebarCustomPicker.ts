@@ -31,7 +31,7 @@ export function createSidebarCustomPicker(
             placeholder?.classList.add('is-hidden');
 
             if (config?.imageDataUrl) {
-                void fetch(`${config.imageDataUrl}?${new URLSearchParams({ id: String(att.id) })}`, {
+                void fetch(`${config.imageDataUrl}?${new URLSearchParams({ id: String(att.id), slot: 'text_sidebar' })}`, {
                     headers: { 'X-WP-Nonce': config.restNonce },
                     credentials: 'same-origin',
                 })
