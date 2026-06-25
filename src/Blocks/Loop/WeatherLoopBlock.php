@@ -19,7 +19,7 @@ final class WeatherLoopBlock implements LoopBlock
     public static function register(): void
     {
         BlockRegistry::register('weather', [
-            'label' => __('Weer', 'teksttv'),
+            'label' => __('Weer', 'teksttv-wp-plugin'),
             'icon' => 'cloud',
             'color' => '#72aee6',
             'context' => 'loop',
@@ -93,15 +93,15 @@ final class WeatherLoopBlock implements LoopBlock
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Locatie', 'teksttv'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Breda,NL', 'teksttv'); ?>" />
+                <label><?php esc_html_e('Locatie', 'teksttv-wp-plugin'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Breda,NL', 'teksttv-wp-plugin'); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Titel', 'teksttv'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Het weer', 'teksttv'); ?>" />
+                <label><?php esc_html_e('Titel', 'teksttv-wp-plugin'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Het weer', 'teksttv-wp-plugin'); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Duur', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Duur', 'teksttv-wp-plugin'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="15" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>

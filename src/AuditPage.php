@@ -19,8 +19,8 @@ class AuditPage
 
         add_submenu_page(
             'teksttv',
-            __('AI Audit', 'teksttv'),
-            __('AI Audit', 'teksttv'),
+            __('AI Audit', 'teksttv-wp-plugin'),
+            __('AI Audit', 'teksttv-wp-plugin'),
             'manage_teksttv',
             'teksttv-audit',
             [self::class, 'render_page']
@@ -46,41 +46,41 @@ class AuditPage
         $stats = self::compute_stats($posts);
 
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('AI Audit', 'teksttv') . '</h1>';
+        echo '<h1>' . esc_html__('AI Audit', 'teksttv-wp-plugin') . '</h1>';
 
         ?>
         <div class="teksttv-tab-content">
             <div class="teksttv-audit-stats">
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $total_posts); ?></span>
-                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Posts met AI', 'teksttv'); ?></span>
+                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Posts met AI', 'teksttv-wp-plugin'); ?></span>
                 </div>
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['title_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Koppen bewerkt', 'teksttv'); ?></span>
+                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Koppen bewerkt', 'teksttv-wp-plugin'); ?></span>
                 </div>
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['body_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Teksten bewerkt', 'teksttv'); ?></span>
+                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Teksten bewerkt', 'teksttv-wp-plugin'); ?></span>
                 </div>
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['any_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Totaal bewerkt', 'teksttv'); ?></span>
+                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Totaal bewerkt', 'teksttv-wp-plugin'); ?></span>
                 </div>
             </div>
 
             <?php if (empty($posts)) : ?>
                 <div class="teksttv-card">
-                    <p><?php esc_html_e('Nog geen posts met AI-gegenereerde content.', 'teksttv'); ?></p>
+                    <p><?php esc_html_e('Nog geen posts met AI-gegenereerde content.', 'teksttv-wp-plugin'); ?></p>
                 </div>
             <?php else : ?>
                 <table class="widefat teksttv-audit-table">
                     <thead>
                         <tr>
-                            <th><?php esc_html_e('Post', 'teksttv'); ?></th>
-                            <th><?php esc_html_e('Kop', 'teksttv'); ?></th>
-                            <th><?php esc_html_e('Tekst', 'teksttv'); ?></th>
-                            <th><?php esc_html_e('Datum', 'teksttv'); ?></th>
+                            <th><?php esc_html_e('Post', 'teksttv-wp-plugin'); ?></th>
+                            <th><?php esc_html_e('Kop', 'teksttv-wp-plugin'); ?></th>
+                            <th><?php esc_html_e('Tekst', 'teksttv-wp-plugin'); ?></th>
+                            <th><?php esc_html_e('Datum', 'teksttv-wp-plugin'); ?></th>
                             <th></th>
                         </tr>
                     </thead>
@@ -91,7 +91,7 @@ class AuditPage
                             <td><?php echo self::render_status_badge($post_data['title_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
                             <td><?php echo self::render_status_badge($post_data['body_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
                             <td><?php echo esc_html($post_data['date']); ?></td>
-                            <td><a href="<?php echo esc_url(admin_url('admin.php?page=teksttv-audit&post_id=' . $post_data['id'])); ?>" class="button button-small"><?php esc_html_e('Bekijk', 'teksttv'); ?></a></td>
+                            <td><a href="<?php echo esc_url(admin_url('admin.php?page=teksttv-audit&post_id=' . $post_data['id'])); ?>" class="button button-small"><?php esc_html_e('Bekijk', 'teksttv-wp-plugin'); ?></a></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -99,7 +99,7 @@ class AuditPage
                 <?php if ($total_pages > 1) : ?>
                 <div class="tablenav bottom">
                     <div class="tablenav-pages">
-                        <span class="displaying-num"><?php echo esc_html(sprintf(/* translators: %d: number of items */ __('%d items', 'teksttv'), $total_posts)); ?></span>
+                        <span class="displaying-num"><?php echo esc_html(sprintf(/* translators: %d: number of items */ __('%d items', 'teksttv-wp-plugin'), $total_posts)); ?></span>
                         <?php
                         echo paginate_links([
                             'base' => add_query_arg('paged', '%#%'),
@@ -124,14 +124,14 @@ class AuditPage
     {
         $post = get_post($post_id);
         if (!$post) {
-            echo '<div class="wrap"><h1>' . esc_html__('Post niet gevonden', 'teksttv') . '</h1></div>';
+            echo '<div class="wrap"><h1>' . esc_html__('Post niet gevonden', 'teksttv-wp-plugin') . '</h1></div>';
             return;
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only toggle, no action taken
         $split = !isset($_GET['view']) || $_GET['view'] !== 'inline';
         $toggle_view = $split ? 'inline' : 'split';
-        $toggle_label = $split ? __('Inline weergave', 'teksttv') : __('Side-by-side weergave', 'teksttv');
+        $toggle_label = $split ? __('Inline weergave', 'teksttv-wp-plugin') : __('Side-by-side weergave', 'teksttv-wp-plugin');
         $toggle_url = admin_url('admin.php?page=teksttv-audit&post_id=' . $post_id . '&view=' . $toggle_view);
 
         $ai_title = get_post_meta($post_id, '_teksttv_ai_title', true);
@@ -142,28 +142,28 @@ class AuditPage
         echo '<div class="wrap">';
         echo '<h1>AI Audit: ' . esc_html($post->post_title) . '</h1>';
         echo '<p>';
-        echo '<a href="' . esc_url(admin_url('admin.php?page=teksttv-audit')) . '">&larr; ' . esc_html__('Terug naar overzicht', 'teksttv') . '</a>';
-        echo ' | <a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html__('Post bewerken', 'teksttv') . '</a>';
+        echo '<a href="' . esc_url(admin_url('admin.php?page=teksttv-audit')) . '">&larr; ' . esc_html__('Terug naar overzicht', 'teksttv-wp-plugin') . '</a>';
+        echo ' | <a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html__('Post bewerken', 'teksttv-wp-plugin') . '</a>';
         echo ' | <a href="' . esc_url($toggle_url) . '">' . esc_html($toggle_label) . '</a>';
         echo '</p>';
 
         ?>
         <div class="teksttv-tab-content">
             <div class="teksttv-card">
-                <h3><?php esc_html_e('Kop', 'teksttv'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></h3>
+                <h3><?php esc_html_e('Kop', 'teksttv-wp-plugin'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></h3>
                 <?php
                 $title_diff = self::render_diff($ai_title ?: '', $current_title ?: '', $split);
                 if ($title_diff) {
                     // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- output from wp_text_diff
                     echo $title_diff;
                 } else {
-                    echo '<p class="description">' . esc_html__('Geen wijzigingen.', 'teksttv') . '</p>';
+                    echo '<p class="description">' . esc_html__('Geen wijzigingen.', 'teksttv-wp-plugin') . '</p>';
                 }
                 ?>
             </div>
 
             <div class="teksttv-card">
-                <h3><?php esc_html_e('Tekst', 'teksttv'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></h3>
+                <h3><?php esc_html_e('Tekst', 'teksttv-wp-plugin'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></h3>
                 <?php
                 $body_diff = self::render_diff(
                     wp_strip_all_tags($ai_body ?: ''),
@@ -174,7 +174,7 @@ class AuditPage
                     // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- output from wp_text_diff
                     echo $body_diff;
                 } else {
-                    echo '<p class="description">' . esc_html__('Geen wijzigingen.', 'teksttv') . '</p>';
+                    echo '<p class="description">' . esc_html__('Geen wijzigingen.', 'teksttv-wp-plugin') . '</p>';
                 }
                 ?>
             </div>
@@ -191,8 +191,8 @@ class AuditPage
         }
 
         return wp_text_diff($left, $right, [
-            'title_left' => __('AI-versie', 'teksttv'),
-            'title_right' => __('Huidige versie', 'teksttv'),
+            'title_left' => __('AI-versie', 'teksttv-wp-plugin'),
+            'title_right' => __('Huidige versie', 'teksttv-wp-plugin'),
             'show_split_view' => $split_view,
         ]);
     }
@@ -291,11 +291,11 @@ class AuditPage
     {
         switch ($status) {
             case 'unmodified':
-                return '<span class="teksttv-audit-badge teksttv-audit-badge--ok">' . esc_html__('Ongewijzigd', 'teksttv') . '</span>';
+                return '<span class="teksttv-audit-badge teksttv-audit-badge--ok">' . esc_html__('Ongewijzigd', 'teksttv-wp-plugin') . '</span>';
             case 'modified':
-                return '<span class="teksttv-audit-badge teksttv-audit-badge--edited">' . esc_html__('Bewerkt', 'teksttv') . '</span>';
+                return '<span class="teksttv-audit-badge teksttv-audit-badge--edited">' . esc_html__('Bewerkt', 'teksttv-wp-plugin') . '</span>';
             default:
-                return '<span class="teksttv-audit-badge teksttv-audit-badge--none">' . esc_html__('Geen AI', 'teksttv') . '</span>';
+                return '<span class="teksttv-audit-badge teksttv-audit-badge--none">' . esc_html__('Geen AI', 'teksttv-wp-plugin') . '</span>';
         }
     }
 }

@@ -11,7 +11,7 @@ final class ImageLoopBlock implements LoopBlock
     public static function register(): void
     {
         BlockRegistry::register('image', [
-            'label' => __('Afbeelding', 'teksttv'),
+            'label' => __('Afbeelding', 'teksttv-wp-plugin'),
             'icon' => 'format-image',
             'color' => '#8c8f94',
             'context' => 'loop',
@@ -39,12 +39,12 @@ final class ImageLoopBlock implements LoopBlock
             <div class="teksttv-block-image-fields">
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][image_id]" value="<?php echo esc_attr((string) $image_id); ?>" class="teksttv-block-image-id" />
                 <p>
-                    <button type="button" class="button teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Afbeelding kiezen', 'teksttv'); ?></button>
-                    <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
+                    <button type="button" class="button teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Afbeelding kiezen', 'teksttv-wp-plugin'); ?></button>
+                    <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
                 </p>
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
-                        <label><?php esc_html_e('Duur', 'teksttv'); ?></label>
+                        <label><?php esc_html_e('Duur', 'teksttv-wp-plugin'); ?></label>
                         <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>

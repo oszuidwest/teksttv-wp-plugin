@@ -18,8 +18,8 @@ class AdminPage
         $first_channel = $channels[0]['slug'] ?? '';
 
         add_menu_page(
-            __('Tekst TV', 'teksttv'),
-            __('Tekst TV', 'teksttv'),
+            __('Tekst TV', 'teksttv-wp-plugin'),
+            __('Tekst TV', 'teksttv-wp-plugin'),
             'manage_teksttv',
             'teksttv',
             $first_channel ? [self::class, 'render_loop_page'] : [self::class, 'render_settings_page'],
@@ -29,7 +29,7 @@ class AdminPage
 
         // Submenu per channel loop
         foreach ($channels as $ch) {
-            $loop_label = count($channels) > 1 ? sprintf(__('Loop: %s', 'teksttv'), $ch['label']) : __('Loop', 'teksttv');
+            $loop_label = count($channels) > 1 ? sprintf(__('Loop: %s', 'teksttv-wp-plugin'), $ch['label']) : __('Loop', 'teksttv-wp-plugin');
             add_submenu_page(
                 'teksttv',
                 $loop_label,
@@ -43,8 +43,8 @@ class AdminPage
         // Settings submenu
         add_submenu_page(
             'teksttv',
-            __('Instellingen', 'teksttv'),
-            __('Instellingen', 'teksttv'),
+            __('Instellingen', 'teksttv-wp-plugin'),
+            __('Instellingen', 'teksttv-wp-plugin'),
             'manage_teksttv',
             'teksttv-settings',
             [self::class, 'render_settings_page']
@@ -54,8 +54,8 @@ class AdminPage
         if (Helpers::has_feature('ai_generate')) {
             add_submenu_page(
                 'teksttv',
-                __('Content & AI', 'teksttv'),
-                __('Content & AI', 'teksttv'),
+                __('Content & AI', 'teksttv-wp-plugin'),
+                __('Content & AI', 'teksttv-wp-plugin'),
                 'manage_teksttv_content',
                 'teksttv-content',
                 [self::class, 'render_prompts_page']
@@ -224,8 +224,8 @@ class AdminPage
     {
         $channel_slug = self::get_current_channel();
         if (empty($channel_slug)) {
-            echo '<div class="wrap"><h1>' . esc_html__('Tekst TV', 'teksttv') . '</h1>';
-            echo '<p>' . wp_kses(sprintf(__('Ga naar <a href="%s">Instellingen</a> om eerst een kanaal toe te voegen.', 'teksttv'), esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]) . '</p>';
+            echo '<div class="wrap"><h1>' . esc_html__('Tekst TV', 'teksttv-wp-plugin') . '</h1>';
+            echo '<p>' . wp_kses(sprintf(__('Ga naar <a href="%s">Instellingen</a> om eerst een kanaal toe te voegen.', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]) . '</p>';
             echo '</div>';
             return;
         }
@@ -247,7 +247,7 @@ class AdminPage
 
         $blocks = Helpers::get_loop_config($channel_slug);
         $api_url = rest_url('teksttv/v1/slides?channel=' . $channel_slug);
-        $page_title = count($channels) > 1 ? sprintf(__('Loop: %s', 'teksttv'), $channel_label) : __('Loop', 'teksttv');
+        $page_title = count($channels) > 1 ? sprintf(__('Loop: %s', 'teksttv-wp-plugin'), $channel_label) : __('Loop', 'teksttv-wp-plugin');
         $ticker_items = get_option('teksttv_ticker_' . $channel_slug, []);
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
@@ -375,20 +375,20 @@ class AdminPage
         <div class="teksttv-block-scheduling-toggle">
             <label>
                 <input type="checkbox" class="teksttv-scheduling-checkbox" <?php checked($has_scheduling); ?> />
-                <?php esc_html_e('Planning inschakelen', 'teksttv'); ?>
+                <?php esc_html_e('Planning inschakelen', 'teksttv-wp-plugin'); ?>
             </label>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Vanaf', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Vanaf', 'teksttv-wp-plugin'); ?></label>
                 <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Tot en met', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Tot en met', 'teksttv-wp-plugin'); ?></label>
                 <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Dagen', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
                 <div class="teksttv-days-row">
                     <?php foreach ($day_labels as $num => $label) : ?>
                     <label class="teksttv-day-toggle">
@@ -458,7 +458,7 @@ class AdminPage
 
         RestApi::invalidate_slides_cache($channel);
 
-        add_settings_error('teksttv', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv'), 'success');
+        add_settings_error('teksttv-wp-plugin', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
     }
 
     /**

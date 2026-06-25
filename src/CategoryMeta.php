@@ -34,16 +34,16 @@ class CategoryMeta
         wp_nonce_field('teksttv_category_image', 'teksttv_category_nonce');
         ?>
         <div class="form-field">
-            <label for="teksttv-cat-image-id"><?php esc_html_e('Tekst TV afbeelding', 'teksttv'); ?></label>
+            <label for="teksttv-cat-image-id"><?php esc_html_e('Tekst TV afbeelding', 'teksttv-wp-plugin'); ?></label>
             <div x-data="teksttvCategoryMedia">
             <p>
                 <input type="hidden" name="teksttv_category_image" id="teksttv-cat-image-id" value="" />
                 <img id="teksttv-cat-image-preview" class="teksttv-cat-image-preview is-hidden" src="" />
                 <br />
-                <button type="button" class="button" id="teksttv-cat-image-select" @click="pickImage($event)"><?php esc_html_e('Afbeelding kiezen', 'teksttv'); ?></button>
-                <button type="button" class="button is-hidden" id="teksttv-cat-image-remove" @click="clearImage($event)"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
+                <button type="button" class="button" id="teksttv-cat-image-select" @click="pickImage($event)"><?php esc_html_e('Afbeelding kiezen', 'teksttv-wp-plugin'); ?></button>
+                <button type="button" class="button is-hidden" id="teksttv-cat-image-remove" @click="clearImage($event)"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
             </p>
-            <p class="description"><?php esc_html_e('Sidebar-afbeelding voor artikelen in deze categorie op Tekst TV.', 'teksttv'); ?></p>
+            <p class="description"><?php esc_html_e('Sidebar-afbeelding voor artikelen in deze categorie op Tekst TV.', 'teksttv-wp-plugin'); ?></p>
             </div>
         </div>
         <?php
@@ -57,15 +57,15 @@ class CategoryMeta
         wp_nonce_field('teksttv_category_image', 'teksttv_category_nonce');
         ?>
         <tr class="form-field">
-            <th scope="row"><label for="teksttv-cat-image-id"><?php esc_html_e('Tekst TV afbeelding', 'teksttv'); ?></label></th>
+            <th scope="row"><label for="teksttv-cat-image-id"><?php esc_html_e('Tekst TV afbeelding', 'teksttv-wp-plugin'); ?></label></th>
             <td>
                 <div x-data="teksttvCategoryMedia">
                 <input type="hidden" name="teksttv_category_image" id="teksttv-cat-image-id" value="<?php echo esc_attr($image_id); ?>" />
                 <img id="teksttv-cat-image-preview" class="teksttv-cat-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>" src="<?php echo esc_url($image_url); ?>" />
                 <br />
-                <button type="button" class="button" id="teksttv-cat-image-select" @click="pickImage($event)"><?php esc_html_e('Afbeelding kiezen', 'teksttv'); ?></button>
-                <button type="button" class="button <?php echo $image_url ? '' : 'is-hidden'; ?>" id="teksttv-cat-image-remove" @click="clearImage($event)"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
-                <p class="description"><?php esc_html_e('Sidebar-afbeelding voor artikelen in deze categorie op Tekst TV.', 'teksttv'); ?></p>
+                <button type="button" class="button" id="teksttv-cat-image-select" @click="pickImage($event)"><?php esc_html_e('Afbeelding kiezen', 'teksttv-wp-plugin'); ?></button>
+                <button type="button" class="button <?php echo $image_url ? '' : 'is-hidden'; ?>" id="teksttv-cat-image-remove" @click="clearImage($event)"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
+                <p class="description"><?php esc_html_e('Sidebar-afbeelding voor artikelen in deze categorie op Tekst TV.', 'teksttv-wp-plugin'); ?></p>
                 </div>
             </td>
         </tr>

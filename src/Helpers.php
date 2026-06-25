@@ -18,13 +18,13 @@ class Helpers
     public static function get_day_labels(): array
     {
         return [
-            '1' => __('Ma', 'teksttv'),
-            '2' => __('Di', 'teksttv'),
-            '3' => __('Wo', 'teksttv'),
-            '4' => __('Do', 'teksttv'),
-            '5' => __('Vr', 'teksttv'),
-            '6' => __('Za', 'teksttv'),
-            '7' => __('Zo', 'teksttv'),
+            '1' => __('Ma', 'teksttv-wp-plugin'),
+            '2' => __('Di', 'teksttv-wp-plugin'),
+            '3' => __('Wo', 'teksttv-wp-plugin'),
+            '4' => __('Do', 'teksttv-wp-plugin'),
+            '5' => __('Vr', 'teksttv-wp-plugin'),
+            '6' => __('Za', 'teksttv-wp-plugin'),
+            '7' => __('Zo', 'teksttv-wp-plugin'),
         ];
     }
 
@@ -103,7 +103,7 @@ class Helpers
     public static function get_category_options(): array
     {
         $categories = get_categories(['hide_empty' => false]);
-        $options = [0 => __('Alle categorieën', 'teksttv')];
+        $options = [0 => __('Alle categorieën', 'teksttv-wp-plugin')];
         foreach ($categories as $cat) {
             $options[$cat->term_id] = $cat->name;
         }
@@ -119,7 +119,7 @@ class Helpers
     {
         $channels = get_option('teksttv_channels', []);
         if (empty($channels)) {
-            return [['slug' => 'tv1', 'label' => __('TV 1', 'teksttv')]];
+            return [['slug' => 'tv1', 'label' => __('TV 1', 'teksttv-wp-plugin')]];
         }
         return $channels;
     }

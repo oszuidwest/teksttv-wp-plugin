@@ -13,7 +13,7 @@ final class CampaignLoopBlock implements LoopBlock
     public static function register(): void
     {
         BlockRegistry::register('campaign', [
-            'label' => __('Campagne', 'teksttv'),
+            'label' => __('Campagne', 'teksttv-wp-plugin'),
             'icon' => 'megaphone',
             'color' => '#d63638',
             'context' => 'loop',
@@ -39,41 +39,41 @@ final class CampaignLoopBlock implements LoopBlock
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Groep(en)', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Groep(en)', 'teksttv-wp-plugin'); ?></label>
                 <?php if (!empty($available_groups)) : ?>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv'); ?>" multiple>
+                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv-wp-plugin'); ?>" multiple>
                     <?php foreach ($available_groups as $group_label) : ?>
                     <option value="<?php echo esc_attr($group_label); ?>" <?php echo in_array($group_label, $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_label); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
-                <p class="description"><?php echo wp_kses(sprintf(__('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', 'teksttv'), esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
+                <p class="description"><?php echo wp_kses(sprintf(__('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Max. slides', 'teksttv'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv'); ?>" />
-                <p class="description"><?php esc_html_e('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.', 'teksttv'); ?></p>
+                <label><?php esc_html_e('Max. slides', 'teksttv-wp-plugin'); ?></label>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv-wp-plugin'); ?>" />
+                <p class="description"><?php esc_html_e('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.', 'teksttv-wp-plugin'); ?></p>
             </div>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--transitions">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Intro afbeelding', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Intro afbeelding', 'teksttv-wp-plugin'); ?></label>
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][intro_image_id]" value="<?php echo esc_attr((string) $intro_id); ?>" class="teksttv-block-image-id" />
                 <div class="teksttv-block-image-preview <?php echo $intro_url ? '' : 'is-hidden'; ?>">
                     <img src="<?php echo esc_url($intro_url); ?>" alt="" class="teksttv-block-image-thumb" />
                 </div>
-                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv'); ?></button>
-                <button type="button" class="button-link teksttv-block-image-remove <?php echo $intro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
+                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv-wp-plugin'); ?></button>
+                <button type="button" class="button-link teksttv-block-image-remove <?php echo $intro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Outro afbeelding', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Outro afbeelding', 'teksttv-wp-plugin'); ?></label>
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][outro_image_id]" value="<?php echo esc_attr((string) $outro_id); ?>" class="teksttv-block-image-id" />
                 <div class="teksttv-block-image-preview <?php echo $outro_url ? '' : 'is-hidden'; ?>">
                     <img src="<?php echo esc_url($outro_url); ?>" alt="" class="teksttv-block-image-thumb" />
                 </div>
-                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv'); ?></button>
-                <button type="button" class="button-link teksttv-block-image-remove <?php echo $outro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv'); ?></button>
+                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv-wp-plugin'); ?></button>
+                <button type="button" class="button-link teksttv-block-image-remove <?php echo $outro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
             </div>
         </div>
         <?php

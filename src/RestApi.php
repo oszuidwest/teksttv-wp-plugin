@@ -89,7 +89,7 @@ class RestApi
         $slot = $request->get_param('slot') ?: null;
         $data = Helpers::get_image_data($id, 'large', $slot);
         if (!$data) {
-            return new WP_REST_Response(['error' => __('Bijlage niet gevonden.', 'teksttv')], 404);
+            return new WP_REST_Response(['error' => __('Bijlage niet gevonden.', 'teksttv-wp-plugin')], 404);
         }
 
         return new WP_REST_Response($data, 200);
@@ -99,7 +99,7 @@ class RestApi
     {
         if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
             return new WP_REST_Response(
-                ['error' => __('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.', 'teksttv')],
+                ['error' => __('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.', 'teksttv-wp-plugin')],
                 503
             );
         }
@@ -115,19 +115,19 @@ class RestApi
         $rate_count = (int) get_transient($rate_key);
         if ($rate_count >= $rate_limit) {
             return new WP_REST_Response(
-                ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv')],
+                ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
                 429
             );
         }
         set_transient($rate_key, $rate_count + 1, 60);
 
         if (!current_user_can('edit_post', $post_id)) {
-            return new WP_REST_Response(['error' => __('Onvoldoende rechten.', 'teksttv')], 403);
+            return new WP_REST_Response(['error' => __('Onvoldoende rechten.', 'teksttv-wp-plugin')], 403);
         }
 
         $post = get_post($post_id);
         if (!$post) {
-            return new WP_REST_Response(['error' => __('Post niet gevonden.', 'teksttv')], 404);
+            return new WP_REST_Response(['error' => __('Post niet gevonden.', 'teksttv-wp-plugin')], 404);
         }
 
         // Clean post content for AI input
@@ -135,7 +135,7 @@ class RestApi
         $post_title = $post->post_title;
 
         if (empty($post_text) && empty($post_title)) {
-            return new WP_REST_Response(['error' => __('Post heeft geen content om samen te vatten.', 'teksttv')], 422);
+            return new WP_REST_Response(['error' => __('Post heeft geen content om samen te vatten.', 'teksttv-wp-plugin')], 422);
         }
 
         $prompts = Helpers::get_ai_prompts();
@@ -145,7 +145,7 @@ class RestApi
             if ($word_count < $min_words) {
                 return new WP_REST_Response(
                     // translators: %1$d: actual word count, %2$d: minimum required words
-                    ['error' => sprintf(__('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', 'teksttv'), $word_count, $min_words)],
+                    ['error' => sprintf(__('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', 'teksttv-wp-plugin'), $word_count, $min_words)],
                     422
                 );
             }
@@ -160,7 +160,7 @@ class RestApi
             if (is_wp_error($result)) {
                 return new WP_REST_Response(
                     // translators: %s: error message from AI provider
-                    ['error' => sprintf(__('AI-generatie mislukt: %s', 'teksttv'), $result->get_error_message())],
+                    ['error' => sprintf(__('AI-generatie mislukt: %s', 'teksttv-wp-plugin'), $result->get_error_message())],
                     500
                 );
             }
@@ -320,7 +320,7 @@ class RestApi
             if ($is_last_attempt) {
                 // translators: %1$d: actual character count, %2$d: maximum allowed characters
                 return sprintf(
-                    __('Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.', 'teksttv'),
+                    __('Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.', 'teksttv-wp-plugin'),
                     mb_strlen($content),
                     $prompts['title_char_limit']
                 );
@@ -334,7 +334,7 @@ class RestApi
             if ($is_last_attempt) {
                 // translators: %1$d: actual word count, %2$d: minimum words, %3$d: maximum words
                 return sprintf(
-                    __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv'),
+                    __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv-wp-plugin'),
                     $count,
                     $min_words,
                     $prompts['word_limit']

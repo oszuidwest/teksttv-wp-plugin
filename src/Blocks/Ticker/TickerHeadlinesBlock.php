@@ -14,7 +14,7 @@ final class TickerHeadlinesBlock implements TickerBlock
     public static function register(): void
     {
         BlockRegistry::register('ticker_headlines', [
-            'label' => __('Koppen', 'teksttv'),
+            'label' => __('Koppen', 'teksttv-wp-plugin'),
             'icon' => 'list-view',
             'color' => '#2271b1',
             'context' => 'ticker',
@@ -40,12 +40,12 @@ final class TickerHeadlinesBlock implements TickerBlock
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Aantal', 'teksttv'); ?></label>
+                <label><?php esc_html_e('Aantal', 'teksttv-wp-plugin'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="20" class="small-text" />
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Prefix', 'teksttv'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][prefix]" value="<?php echo esc_attr((string) $item_prefix); ?>" class="regular-text" placeholder="<?php echo esc_attr__('bijv. Nieuws:', 'teksttv'); ?>" />
+                <label><?php esc_html_e('Prefix', 'teksttv-wp-plugin'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][prefix]" value="<?php echo esc_attr((string) $item_prefix); ?>" class="regular-text" placeholder="<?php echo esc_attr__('bijv. Nieuws:', 'teksttv-wp-plugin'); ?>" />
             </div>
             <?php foreach ($taxonomies as $tax) :
                 $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));
