@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('ABSPATH') && PHP_SAPI !== 'cli') {
+    exit;
+}
+
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 // Define WP constants used throughout the plugin

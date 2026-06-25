@@ -10,6 +10,8 @@
 
 namespace TekstTV;
 
+defined('ABSPATH') || exit;
+
 echo '<div class="wrap">';
 echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>';
 

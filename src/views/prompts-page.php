@@ -9,6 +9,8 @@
 
 namespace TekstTV;
 
+defined('ABSPATH') || exit;
+
 echo '<div class="wrap">';
 echo '<h1>' . esc_html__('Content & AI', 'teksttv-wp-plugin') . '</h1>';
 
@@ -134,7 +136,7 @@ echo '<h1>' . esc_html__('Content & AI', 'teksttv-wp-plugin') . '</h1>';
                 </tr>
             </table>
             <?php else : ?>
-            <p class="description"><?php echo wp_kses(sprintf(__('Geen AI-providers beschikbaar. Configureer een provider via <a href="%s">WordPress Connectors</a>.', 'teksttv-wp-plugin'), esc_url(admin_url('options-connectors.php'))), ['a' => ['href' => []]]); ?></p>
+            <p class="description"><?php echo wp_kses(sprintf(/* translators: %s: WordPress Connectors admin URL */ __('Geen AI-providers beschikbaar. Configureer een provider via <a href="%s">WordPress Connectors</a>.', 'teksttv-wp-plugin'), esc_url(admin_url('options-connectors.php'))), ['a' => ['href' => []]]); ?></p>
             <?php endif; ?>
             <h4><?php esc_html_e('Model parameters', 'teksttv-wp-plugin'); ?></h4>
             <table class="form-table teksttv-form-table">

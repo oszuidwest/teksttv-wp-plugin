@@ -9,6 +9,8 @@
 
 namespace TekstTV;
 
+defined('ABSPATH') || exit;
+
 echo '<div class="wrap">';
 echo '<h1>' . esc_html__('Campagnes', 'teksttv-wp-plugin') . '</h1>';
 settings_errors('teksttv_campaigns');

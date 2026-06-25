@@ -47,7 +47,7 @@ final class CampaignLoopBlock implements LoopBlock
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
-                <p class="description"><?php echo wp_kses(sprintf(__('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
+                <p class="description"><?php echo wp_kses(sprintf(/* translators: %s: campaigns admin page URL */ __('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
             <div class="teksttv-block-field">

@@ -29,7 +29,7 @@ class AdminPage
 
         // Submenu per channel loop
         foreach ($channels as $ch) {
-            $loop_label = count($channels) > 1 ? sprintf(__('Loop: %s', 'teksttv-wp-plugin'), $ch['label']) : __('Loop', 'teksttv-wp-plugin');
+            $loop_label = count($channels) > 1 ? sprintf(/* translators: %s: channel label */ __('Loop: %s', 'teksttv-wp-plugin'), $ch['label']) : __('Loop', 'teksttv-wp-plugin');
             add_submenu_page(
                 'teksttv',
                 $loop_label,
@@ -225,7 +225,7 @@ class AdminPage
         $channel_slug = self::get_current_channel();
         if (empty($channel_slug)) {
             echo '<div class="wrap"><h1>' . esc_html__('Tekst TV', 'teksttv-wp-plugin') . '</h1>';
-            echo '<p>' . wp_kses(sprintf(__('Ga naar <a href="%s">Instellingen</a> om eerst een kanaal toe te voegen.', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]) . '</p>';
+            echo '<p>' . wp_kses(sprintf(/* translators: %s: settings page URL */ __('Ga naar <a href="%s">Instellingen</a> om eerst een kanaal toe te voegen.', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]) . '</p>';
             echo '</div>';
             return;
         }
@@ -247,7 +247,7 @@ class AdminPage
 
         $blocks = Helpers::get_loop_config($channel_slug);
         $api_url = rest_url('teksttv/v1/slides?channel=' . $channel_slug);
-        $page_title = count($channels) > 1 ? sprintf(__('Loop: %s', 'teksttv-wp-plugin'), $channel_label) : __('Loop', 'teksttv-wp-plugin');
+        $page_title = count($channels) > 1 ? sprintf(/* translators: %s: channel label */ __('Loop: %s', 'teksttv-wp-plugin'), $channel_label) : __('Loop', 'teksttv-wp-plugin');
         $ticker_items = get_option('teksttv_ticker_' . $channel_slug, []);
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';

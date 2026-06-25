@@ -13,6 +13,8 @@
 
 namespace TekstTV;
 
+defined('ABSPATH') || exit;
+
 // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- all output is escaped inline
 
 echo '<div class="wrap">';

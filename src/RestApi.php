@@ -318,8 +318,8 @@ class RestApi
                 return '';
             }
             if ($is_last_attempt) {
-                // translators: %1$d: actual character count, %2$d: maximum allowed characters
                 return sprintf(
+                    /* translators: %1$d: actual character count, %2$d: maximum allowed characters */
                     __('Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.', 'teksttv-wp-plugin'),
                     mb_strlen($content),
                     $prompts['title_char_limit']
@@ -332,8 +332,8 @@ class RestApi
                 return '';
             }
             if ($is_last_attempt) {
-                // translators: %1$d: actual word count, %2$d: minimum words, %3$d: maximum words
                 return sprintf(
+                    /* translators: %1$d: actual word count, %2$d: minimum words, %3$d: maximum words */
                     __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv-wp-plugin'),
                     $count,
                     $min_words,

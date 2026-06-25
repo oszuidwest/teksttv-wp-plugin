@@ -18,6 +18,8 @@
 
 namespace TekstTV;
 
+defined('ABSPATH') || exit;
+
 ?>
 <div class="teksttv-meta-box" x-data="teksttvPostMetaPage">
     <div class="teksttv-toggle-bar">
@@ -235,7 +237,7 @@ namespace TekstTV;
                     </div>
                 <?php else : ?>
                     <div class="teksttv-no-preview">
-                        <?php echo wp_kses(sprintf(__('Stel een preview URL in bij <a href="%s">Tekst TV &rarr; Instellingen</a> om live preview te activeren.', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv&tab=settings'))), ['a' => ['href' => []]]); ?>
+                        <?php echo wp_kses(sprintf(/* translators: %s: settings page URL */ __('Stel een preview URL in bij <a href="%s">Tekst TV &rarr; Instellingen</a> om live preview te activeren.', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv&tab=settings'))), ['a' => ['href' => []]]); ?>
                     </div>
                 <?php endif; ?>
             </div>
