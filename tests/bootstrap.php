@@ -1,8 +1,11 @@
 <?php
 
-if (!defined('ABSPATH') && PHP_SAPI !== 'cli') {
-    exit;
+// Bootstrap file is loaded by PHPUnit from the CLI; synthesize ABSPATH
+// so the direct-access guard below stays satisfied during test runs.
+if (PHP_SAPI === 'cli' && !defined('ABSPATH')) {
+    define('ABSPATH', dirname(__DIR__) . '/');
 }
+defined('ABSPATH') || exit;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
