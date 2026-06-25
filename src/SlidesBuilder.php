@@ -2,6 +2,8 @@
 
 namespace TekstTV;
 
+use TekstTV\Blocks\BuildContext;
+
 class SlidesBuilder
 {
     /**
@@ -15,6 +17,8 @@ class SlidesBuilder
         if (empty($items) || !is_array($items)) {
             return [];
         }
+
+        BuildContext::reset();
 
         $messages = [];
         foreach ($items as $item) {
@@ -41,6 +45,8 @@ class SlidesBuilder
         if (empty($blocks)) {
             return [];
         }
+
+        BuildContext::reset();
 
         $slides = [];
 

@@ -79,6 +79,9 @@ if (!class_exists('WP_Query')) {
         /** @var list<object> Posts to return from the stub. Set this in your test. */
         public static array $stubPosts = [];
 
+        /** @var WP_Query|null Last instance constructed — inspect query_vars from tests. */
+        public static ?WP_Query $lastInstance = null;
+
         /** @var array<string, mixed> The query args passed to the constructor. */
         public array $query_vars = [];
 
@@ -93,8 +96,22 @@ if (!class_exists('WP_Query')) {
         public function __construct(array $args = [])
         {
             $this->query_vars = $args;
-            $this->posts = self::$stubPosts;
+
+            $exclude = (array) ($args['post__not_in'] ?? []);
+            if (!empty($exclude)) {
+                $this->posts = array_values(array_filter(
+                    self::$stubPosts,
+                    function ($post) use ($exclude) {
+                        $id = is_object($post) ? ($post->ID ?? null) : $post;
+                        return !in_array($id, $exclude, true);
+                    }
+                ));
+            } else {
+                $this->posts = self::$stubPosts;
+            }
+
             $this->found_posts = count($this->posts);
+            self::$lastInstance = $this;
         }
 
         public function have_posts(): bool
@@ -117,6 +134,7 @@ if (!class_exists('WP_Query')) {
         public static function reset(): void
         {
             self::$stubPosts = [];
+            self::$lastInstance = null;
         }
     }
 }

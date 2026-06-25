@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit\Blocks\Ticker;
 
 use Brain\Monkey\Functions;
+use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Ticker\TickerHeadlinesBlock;
 use TekstTV\Tests\Unit\TestCase;
 
@@ -12,6 +13,7 @@ class TickerHeadlinesBlockTest extends TestCase
     {
         parent::setUp();
         \WP_Query::reset();
+        BuildContext::reset();
     }
 
     public function test_save_defaults(): void
@@ -184,5 +186,41 @@ class TickerHeadlinesBlockTest extends TestCase
         $result = TickerHeadlinesBlock::build($item, 'tv1');
 
         $this->assertCount(1, $result);
+    }
+
+    public function test_build_marks_returned_post_ids_as_seen(): void
+    {
+        $this->setupTickerHeadlines([10, 20]);
+        Functions\when('get_the_title')->alias(fn ($id) => 'Titel ' . $id);
+
+        TickerHeadlinesBlock::build(['count' => 5], 'tv1');
+
+        $this->assertSame([10, 20], BuildContext::get_seen_post_ids());
+    }
+
+    public function test_build_excludes_already_seen_post_ids(): void
+    {
+        BuildContext::mark_post_seen(10);
+        BuildContext::mark_post_seen(20);
+
+        $this->setupTickerHeadlines([10, 20, 30, 40]);
+        Functions\when('get_the_title')->alias(fn ($id) => 'Titel ' . $id);
+
+        $result = TickerHeadlinesBlock::build(['count' => 5], 'tv1');
+
+        $this->assertSame([10, 20], \WP_Query::$lastInstance->query_vars['post__not_in']);
+        $this->assertCount(2, $result);
+        $this->assertSame('Titel 30', $result[0]['message']);
+        $this->assertSame('Titel 40', $result[1]['message']);
+    }
+
+    public function test_build_omits_post_not_in_when_nothing_seen(): void
+    {
+        $this->setupTickerHeadlines([10]);
+        Functions\when('get_the_title')->justReturn('Titel');
+
+        TickerHeadlinesBlock::build(['count' => 5], 'tv1');
+
+        $this->assertArrayNotHasKey('post__not_in', \WP_Query::$lastInstance->query_vars);
     }
 }

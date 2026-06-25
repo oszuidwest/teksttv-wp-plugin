@@ -4,6 +4,7 @@ namespace TekstTV\Blocks\Loop;
 
 use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Common\TaxonomyFilters;
 use TekstTV\Blocks\Contracts\LoopBlock;
 use TekstTV\Helpers;
@@ -121,6 +122,11 @@ final class ArticlesLoopBlock implements LoopBlock
             ],
         ];
 
+        $exclude = BuildContext::get_seen_post_ids();
+        if (!empty($exclude)) {
+            $args['post__not_in'] = $exclude;
+        }
+
         $max_age = (int) get_option('teksttv_max_post_age', 30);
         if ($max_age > 0) {
             $args['date_query'] = [
@@ -151,6 +157,8 @@ final class ArticlesLoopBlock implements LoopBlock
             if (!Helpers::is_within_date_range($date_start, $date_end)) {
                 continue;
             }
+
+            BuildContext::mark_post_seen((int) $post_id);
 
             $custom_title = get_post_meta($post_id, '_teksttv_title', true);
             $title = !empty($custom_title) ? $custom_title : get_the_title();

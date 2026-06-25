@@ -4,6 +4,7 @@ namespace TekstTV\Blocks\Ticker;
 
 use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Common\TaxonomyFilters;
 use TekstTV\Blocks\Contracts\TickerBlock;
 use TekstTV\Helpers;
@@ -104,6 +105,11 @@ final class TickerHeadlinesBlock implements TickerBlock
             'fields' => 'ids',
         ];
 
+        $exclude = BuildContext::get_seen_post_ids();
+        if (!empty($exclude)) {
+            $args['post__not_in'] = $exclude;
+        }
+
         $max_age = (int) get_option('teksttv_max_post_age', 30);
         if ($max_age > 0) {
             $args['date_query'] = [
@@ -124,6 +130,7 @@ final class TickerHeadlinesBlock implements TickerBlock
             if (!empty($title)) {
                 $message = !empty($item_prefix) ? $item_prefix . ' ' . $title : $title;
                 $messages[] = ['message' => $message];
+                BuildContext::mark_post_seen((int) $post_id);
             }
         }
 

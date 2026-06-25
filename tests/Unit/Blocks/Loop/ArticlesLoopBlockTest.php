@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit\Blocks\Loop;
 
 use Brain\Monkey\Functions;
+use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Loop\ArticlesLoopBlock;
 use TekstTV\Tests\Unit\TestCase;
 
@@ -12,6 +13,7 @@ class ArticlesLoopBlockTest extends TestCase
     {
         parent::setUp();
         \WP_Query::reset();
+        BuildContext::reset();
     }
 
     public function test_save_defaults(): void
@@ -514,6 +516,47 @@ class ArticlesLoopBlockTest extends TestCase
         ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertTrue(true);
+    }
+
+    public function test_build_marks_emitted_post_ids_as_seen(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '0',
+            '10:_teksttv_images' => '',
+        ]);
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+
+        ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertSame([10], BuildContext::get_seen_post_ids());
+    }
+
+    public function test_build_does_not_mark_post_filtered_by_scheduling(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_days' => '',
+            '10:_teksttv_date_start' => '2026-05-01',
+            '10:_teksttv_date_end' => '2026-05-31',
+        ]);
+
+        ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertSame([], BuildContext::get_seen_post_ids());
+    }
+
+    public function test_build_excludes_already_seen_post_ids(): void
+    {
+        BuildContext::mark_post_seen(99);
+
+        $this->setupArticleSlides([], []);
+
+        ArticlesLoopBlock::build(['count' => 3], 'tv1');
+
+        $this->assertSame([99], \WP_Query::$lastInstance->query_vars['post__not_in']);
     }
 
     public function test_build_multiple_posts(): void
