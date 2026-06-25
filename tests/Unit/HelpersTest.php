@@ -411,9 +411,9 @@ class HelpersTest extends TestCase
         Functions\expect('wp_get_attachment_caption')
             ->with(42)
             ->andReturn('');
-        Functions\expect('apply_filters')
-            ->with('teksttv_image_attribution', '', 42)
-            ->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $result = Helpers::get_image_data(42);
 
@@ -463,7 +463,9 @@ class HelpersTest extends TestCase
             ->with(42, 'thumbnail')
             ->andReturn('https://example.com/thumb.jpg');
         Functions\expect('wp_get_attachment_caption')->andReturn('');
-        Functions\expect('apply_filters')->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $result = Helpers::get_image_data(42, 'thumbnail');
 

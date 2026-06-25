@@ -171,7 +171,9 @@ class ArticlesLoopBlockTest extends TestCase
             ->andReturn('42');
         Functions\expect('wp_get_attachment_image_url')->with(42, 'large')->andReturn('https://example.com/custom.jpg');
         Functions\expect('wp_get_attachment_caption')->with(42)->andReturn('');
-        Functions\expect('apply_filters')->with('teksttv_image_attribution', '', 42)->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $result = ArticlesLoopBlock::get_sidebar_image_data(1);
         $this->assertSame('https://example.com/custom.jpg', $result['url']);
@@ -183,19 +185,15 @@ class ArticlesLoopBlockTest extends TestCase
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
 
-        Functions\expect('apply_filters')
-            ->with('teksttv_primary_category', \Mockery::any(), 1)
-            ->andReturn('');
-
         Functions\expect('wp_get_post_categories')->with(1)->andReturn([10, 20]);
         Functions\expect('get_term_meta')
             ->with(10, '_teksttv_category_image', true)
             ->andReturn('55');
         Functions\expect('wp_get_attachment_image_url')->with(55, 'large')->andReturn('https://example.com/cat.jpg');
         Functions\expect('wp_get_attachment_caption')->with(55)->andReturn('');
-        Functions\expect('apply_filters')
-            ->with('teksttv_image_attribution', '', 55)
-            ->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $result = ArticlesLoopBlock::get_sidebar_image_data(1);
         $this->assertSame('https://example.com/cat.jpg', $result['url']);
@@ -207,10 +205,6 @@ class ArticlesLoopBlockTest extends TestCase
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
 
-        Functions\expect('apply_filters')
-            ->with('teksttv_primary_category', \Mockery::any(), 1)
-            ->andReturn('');
-
         Functions\expect('wp_get_post_categories')->with(1)->andReturn([10]);
         Functions\expect('get_term_meta')
             ->with(10, '_teksttv_category_image', true)
@@ -219,9 +213,9 @@ class ArticlesLoopBlockTest extends TestCase
         Functions\expect('get_post_thumbnail_id')->with(1)->andReturn(77);
         Functions\expect('wp_get_attachment_image_url')->with(77, 'large')->andReturn('https://example.com/thumb.jpg');
         Functions\expect('wp_get_attachment_caption')->with(77)->andReturn('');
-        Functions\expect('apply_filters')
-            ->with('teksttv_image_attribution', '', 77)
-            ->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $result = ArticlesLoopBlock::get_sidebar_image_data(1);
         $this->assertSame('https://example.com/thumb.jpg', $result['url']);
@@ -250,17 +244,18 @@ class ArticlesLoopBlockTest extends TestCase
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
 
-        Functions\expect('apply_filters')
-            ->with('teksttv_primary_category', \Mockery::any(), 1)
-            ->andReturn(10);
         Functions\expect('get_term_meta')
             ->with(10, '_teksttv_category_image', true)
             ->andReturn('88');
         Functions\expect('wp_get_attachment_image_url')->with(88, 'large')->andReturn('https://example.com/primary.jpg');
         Functions\expect('wp_get_attachment_caption')->with(88)->andReturn('');
-        Functions\expect('apply_filters')
-            ->with('teksttv_image_attribution', '', 88)
-            ->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return match ($tag) {
+                'teksttv_primary_category' => 10,
+                'teksttv_image_url' => $value,
+                default => '',
+            };
+        });
 
         $result = ArticlesLoopBlock::get_sidebar_image_data(1);
         $this->assertSame('https://example.com/primary.jpg', $result['url']);
@@ -380,7 +375,9 @@ class ArticlesLoopBlockTest extends TestCase
         Functions\expect('get_the_title')->andReturn('Titel');
         Functions\expect('wp_get_attachment_image_url')->with(42, 'large')->andReturn('https://example.com/sidebar.jpg');
         Functions\expect('wp_get_attachment_caption')->with(42)->andReturn('');
-        Functions\expect('apply_filters')->with('teksttv_image_attribution', '', 42)->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $block = ['count' => 1];
         $result = ArticlesLoopBlock::build($block, 'tv1');
@@ -423,7 +420,9 @@ class ArticlesLoopBlockTest extends TestCase
         Functions\expect('wp_get_attachment_image_url')
             ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
         Functions\expect('wp_get_attachment_caption')->andReturn('');
-        Functions\expect('apply_filters')->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $block = ['count' => 1];
         $result = ArticlesLoopBlock::build($block, 'tv1');

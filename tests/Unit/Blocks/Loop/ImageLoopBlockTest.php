@@ -60,7 +60,9 @@ class ImageLoopBlockTest extends TestCase
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('wp_get_attachment_image_url')->with(42, 'large')->andReturn('https://example.com/image.jpg');
         Functions\expect('wp_get_attachment_caption')->with(42)->andReturn('');
-        Functions\expect('apply_filters')->with('teksttv_image_attribution', '', 42)->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
 
         $block = ['image_id' => 42, 'duration' => 10];
         $result = ImageLoopBlock::build($block);
