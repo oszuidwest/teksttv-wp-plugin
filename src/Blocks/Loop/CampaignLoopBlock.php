@@ -135,7 +135,7 @@ final class CampaignLoopBlock implements LoopBlock
                 $url = wp_get_attachment_url((int) $attachment_id);
                 if ($url) {
                     $slides[] = [
-                        'type' => 'campaign',
+                        'type' => 'commercial',
                         'duration' => $duration,
                         'url' => $url,
                     ];
@@ -159,7 +159,7 @@ final class CampaignLoopBlock implements LoopBlock
                 $intro_url = wp_get_attachment_url($intro_id);
                 if ($intro_url) {
                     array_unshift($slides, [
-                        'type' => 'campaign_transition',
+                        'type' => 'commercial_transition',
                         'duration' => self::TRANSITION_DURATION,
                         'url' => $intro_url,
                     ]);
@@ -171,7 +171,7 @@ final class CampaignLoopBlock implements LoopBlock
                 $outro_url = wp_get_attachment_url($outro_id);
                 if ($outro_url) {
                     $slides[] = [
-                        'type' => 'campaign_transition',
+                        'type' => 'commercial_transition',
                         'duration' => self::TRANSITION_DURATION,
                         'url' => $outro_url,
                     ];

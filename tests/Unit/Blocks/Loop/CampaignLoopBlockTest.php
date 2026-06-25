@@ -110,7 +110,7 @@ class CampaignLoopBlockTest extends TestCase
         $result = CampaignLoopBlock::build($block, 'tv1');
 
         $this->assertCount(2, $result);
-        $this->assertSame('campaign', $result[0]['type']);
+        $this->assertSame('commercial', $result[0]['type']);
         $this->assertSame(5000, $result[0]['duration']);
         $this->assertSame('https://example.com/img-100.jpg', $result[0]['url']);
         $this->assertSame('https://example.com/img-101.jpg', $result[1]['url']);
@@ -186,10 +186,10 @@ class CampaignLoopBlockTest extends TestCase
         $result = CampaignLoopBlock::build($block, 'tv1');
 
         $this->assertCount(3, $result);
-        $this->assertSame('campaign_transition', $result[0]['type']);
+        $this->assertSame('commercial_transition', $result[0]['type']);
         $this->assertSame(5000, $result[0]['duration']);
-        $this->assertSame('campaign', $result[1]['type']);
-        $this->assertSame('campaign_transition', $result[2]['type']);
+        $this->assertSame('commercial', $result[1]['type']);
+        $this->assertSame('commercial_transition', $result[2]['type']);
     }
 
     public function test_build_no_intro_outro_when_no_matching_campaigns(): void
