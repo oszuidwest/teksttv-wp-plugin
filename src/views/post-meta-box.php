@@ -9,7 +9,7 @@
  * @var string $date_end
  * @var list<string> $days
  * @var list<int> $images
- * @var array<string, string> $day_labels
+ * @var array<int, string> $day_labels
  * @var string $preview_url
  * @var bool $ai_enabled
  * @var list<string> $toolbar_items

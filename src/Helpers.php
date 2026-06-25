@@ -8,6 +8,47 @@ use DateTimeInterface;
 class Helpers
 {
     /**
+     * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
+     *
+     * Keys are PHP-normalised to ints; callers that need string ISO day
+     * identifiers should cast with `(string) $num`.
+     *
+     * @return array<int, string>
+     */
+    public static function get_day_labels(): array
+    {
+        return [
+            '1' => __('Ma', 'teksttv'),
+            '2' => __('Di', 'teksttv'),
+            '3' => __('Wo', 'teksttv'),
+            '4' => __('Do', 'teksttv'),
+            '5' => __('Vr', 'teksttv'),
+            '6' => __('Za', 'teksttv'),
+            '7' => __('Zo', 'teksttv'),
+        ];
+    }
+
+    /**
+     * Sanitize a raw days-of-week input (typically from a $_POST checkbox array)
+     * into a list of valid ISO-8601 day strings.
+     *
+     * Returns null when no restriction should be saved (all 7 days checked or
+     * non-array input). An empty array means "no days selected".
+     *
+     * @param mixed $raw
+     * @return list<string>|null
+     */
+    public static function sanitize_days_input(mixed $raw): ?array
+    {
+        if (!is_array($raw)) {
+            return null;
+        }
+        $valid = ['1', '2', '3', '4', '5', '6', '7'];
+        $days = array_values(array_intersect(array_map('sanitize_text_field', $raw), $valid));
+        return count($days) < 7 ? $days : null;
+    }
+
+    /**
      * Check if content should be displayed on the given day.
      *
      * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
@@ -240,11 +281,8 @@ class Helpers
                 return false;
             }
 
-            // Must be within date range
-            return self::is_within_date_range(
-                $campaign['date_start'] ?? null,
-                $campaign['date_end'] ?? null
-            );
+            // Must pass date range + day-of-week scheduling
+            return self::is_block_scheduled($campaign);
         });
     }
 

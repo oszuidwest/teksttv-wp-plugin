@@ -369,11 +369,7 @@ class AdminPage
         $date_end = $block['date_end'] ?? '';
         $days = $block['days'] ?? [];
         $has_scheduling = !empty($date_start) || !empty($date_end) || !empty($days);
-
-        $day_labels = [
-            '1' => __('Ma', 'teksttv'), '2' => __('Di', 'teksttv'), '3' => __('Wo', 'teksttv'), '4' => __('Do', 'teksttv'),
-            '5' => __('Vr', 'teksttv'), '6' => __('Za', 'teksttv'), '7' => __('Zo', 'teksttv'),
-        ];
+        $day_labels = Helpers::get_day_labels();
 
         ?>
         <div class="teksttv-block-scheduling-toggle">
@@ -484,13 +480,9 @@ class AdminPage
             $fields['date_end'] = $de;
         }
 
-        $valid_days = ['1', '2', '3', '4', '5', '6', '7'];
-        $block_days = $raw['days'] ?? [];
-        if (is_array($block_days)) {
-            $block_days = array_values(array_intersect(array_map('sanitize_text_field', $block_days), $valid_days));
-            if (count($block_days) < 7) {
-                $fields['days'] = $block_days;
-            }
+        $sanitized_days = Helpers::sanitize_days_input($raw['days'] ?? null);
+        if ($sanitized_days !== null) {
+            $fields['days'] = $sanitized_days;
         }
 
         return $fields;

@@ -341,6 +341,27 @@ class HelpersTest extends TestCase
         $this->assertNotContains('Future', $names);
     }
 
+    public function test_get_active_campaigns_filters_by_days_of_week(): void
+    {
+        // 2026-04-07 is a Tuesday (ISO day 2).
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+        Functions\expect('get_option')
+            ->with('teksttv_campaigns', [])
+            ->andReturn([
+                ['channels' => ['tv1'], 'name' => 'TueOnly', 'days' => ['2']],
+                ['channels' => ['tv1'], 'name' => 'WeekendOnly', 'days' => ['6', '7']],
+                ['channels' => ['tv1'], 'name' => 'NoDays'],
+            ]);
+
+        $result = Helpers::get_active_campaigns('tv1');
+        $names = array_column($result, 'name');
+
+        $this->assertContains('TueOnly', $names);
+        $this->assertContains('NoDays', $names);
+        $this->assertNotContains('WeekendOnly', $names);
+    }
+
     public function test_get_active_campaigns_includes_campaigns_without_dates(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));

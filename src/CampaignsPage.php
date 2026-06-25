@@ -48,9 +48,11 @@ class CampaignsPage
         $group = (string) ($campaign['group'] ?? '');
         $date_start = $campaign['date_start'] ?? '';
         $date_end = $campaign['date_end'] ?? '';
+        $days = $campaign['days'] ?? [];
         $duration = $campaign['duration'] ?? '';
         $slides = $campaign['slides'] ?? [];
         $default_duration = (int) get_option('teksttv_duration_image', 7);
+        $day_labels = Helpers::get_day_labels();
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
@@ -91,6 +93,17 @@ class CampaignsPage
                     <div class="teksttv-block-field">
                         <label><?php esc_html_e('Tot en met', 'teksttv'); ?></label>
                         <input type="date" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
+                    </div>
+                    <div class="teksttv-block-field">
+                        <label><?php esc_html_e('Dagen', 'teksttv'); ?></label>
+                        <div class="teksttv-days-row">
+                            <?php foreach ($day_labels as $num => $label) : ?>
+                            <label class="teksttv-day-toggle">
+                                <input type="checkbox" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][days][]" value="<?php echo esc_attr((string) $num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
+                                <span><?php echo esc_html($label); ?></span>
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
                 <?php if (count($channels) > 1) : ?>
@@ -190,6 +203,12 @@ class CampaignsPage
             }
             if ($de !== '') {
                 $saved['date_end'] = $de;
+            }
+
+            // Days of week (ISO 1=Mon..7=Sun). Omit when all 7 are checked.
+            $sanitized_days = Helpers::sanitize_days_input($item['days'] ?? null);
+            if ($sanitized_days !== null) {
+                $saved['days'] = $sanitized_days;
             }
 
             // Slides (attachment IDs)

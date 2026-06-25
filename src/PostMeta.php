@@ -131,10 +131,7 @@ class PostMeta
             }
         }
 
-        $day_labels = [
-            '1' => __('Ma', 'teksttv'), '2' => __('Di', 'teksttv'), '3' => __('Wo', 'teksttv'), '4' => __('Do', 'teksttv'),
-            '5' => __('Vr', 'teksttv'), '6' => __('Za', 'teksttv'), '7' => __('Zo', 'teksttv'),
-        ];
+        $day_labels = Helpers::get_day_labels();
 
         $preview_url = Helpers::get_preview_url();
         $ai_enabled = Helpers::has_feature('ai_generate') && function_exists('wp_supports_ai') && wp_supports_ai();
