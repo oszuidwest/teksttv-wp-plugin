@@ -21,7 +21,7 @@
         "tom-select": "^2.6.1"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.5.0",
+        "@biomejs/biome": "^2.5.1",
         "@types/sortablejs": "^1.15.9"
     }
 }
