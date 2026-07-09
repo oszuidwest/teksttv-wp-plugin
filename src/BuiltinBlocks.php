@@ -4,6 +4,7 @@ namespace TekstTV;
 
 use TekstTV\Blocks\Loop\ArticlesLoopBlock;
 use TekstTV\Blocks\Loop\CampaignLoopBlock;
+use TekstTV\Blocks\Loop\IframeLoopBlock;
 use TekstTV\Blocks\Loop\ImageLoopBlock;
 use TekstTV\Blocks\Loop\WeatherLoopBlock;
 use TekstTV\Blocks\Ticker\TickerHeadlinesBlock;
@@ -23,6 +24,7 @@ class BuiltinBlocks
     {
         ArticlesLoopBlock::register();
         ImageLoopBlock::register();
+        IframeLoopBlock::register();
         CampaignLoopBlock::register();
         WeatherLoopBlock::register();
         TickerTextBlock::register();

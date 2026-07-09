@@ -34,6 +34,8 @@ export function updateBlockSummaries(blocksEl: HTMLElement): void {
             parts.push(groups.length ? groups.join(', ') : 'Geen groep');
             if (limit) parts.push(`max ${limit}`);
             summary = parts.join(' · ');
+        } else if (type === 'iframe') {
+            summary = blockEl.querySelector<HTMLInputElement>('input[type="text"]')?.value?.trim() ?? '';
         } else if (type === 'weather') {
             const rawW = blockEl.querySelector<HTMLInputElement>('input[type="text"]')?.value?.trim() ?? '';
             summary = rawW || 'Geen locatie';

@@ -104,6 +104,12 @@ class AdminPage
             'default' => 7,
         ]);
 
+        register_setting('teksttv_settings', 'teksttv_duration_iframe', [
+            'type' => 'integer',
+            'sanitize_callback' => 'absint',
+            'default' => 30,
+        ]);
+
         register_setting('teksttv_settings', 'teksttv_openweather_api_key', [
             'type' => 'string',
             'sanitize_callback' => 'sanitize_text_field',

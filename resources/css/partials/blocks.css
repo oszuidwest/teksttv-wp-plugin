@@ -138,6 +138,15 @@
     min-width: 100px;
 }
 
+.teksttv-block-body .teksttv-block-field-wide {
+    flex-basis: 100%;
+}
+
+.teksttv-block-body .teksttv-block-field-wide input[type="url"] {
+    width: 100%;
+    max-width: 480px;
+}
+
 /* Tom Select overrides — match WP admin input styling */
 .teksttv-block-field .ts-wrapper {
     min-width: 200px;
