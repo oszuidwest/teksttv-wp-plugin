@@ -1,6 +1,6 @@
 import Sortable from 'sortablejs';
 import { fadeOutRemove, hide, show, slideDown, slideUp } from '../modules/dom';
-import type { ImageData, Slide, TeksttvPostConfig } from '../modules/types';
+import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
 import { encodeSlideData } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom } from './postMeta/buildSlides';
@@ -118,17 +118,20 @@ export function createPostMetaPage() {
             updateTeksttvCharCount(config);
 
             if (typeof tinymce !== 'undefined') {
+                const bindEditor = (editor: WPTinyMCEEditor): void => {
+                    editor.on('input change keyup', () => {
+                        updatePreview();
+                        updateTeksttvWordCount(config);
+                    });
+                    editor.on('SetContent', () => {
+                        updatePreview();
+                        updateTeksttvWordCount(config);
+                    });
+                };
+                const existing = tinymce.get('teksttv_content');
+                if (existing) bindEditor(existing);
                 tinymce.on('AddEditor', (e) => {
-                    if (e.editor.id === 'teksttv_content') {
-                        e.editor.on('input change keyup', () => {
-                            updatePreview();
-                            updateTeksttvWordCount(config);
-                        });
-                        e.editor.on('SetContent', () => {
-                            updatePreview();
-                            updateTeksttvWordCount(config);
-                        });
-                    }
+                    if (e.editor.id === 'teksttv_content') bindEditor(e.editor);
                 });
             }
 
@@ -152,7 +155,7 @@ export function createPostMetaPage() {
                                 const bothBtn = document.querySelector<HTMLButtonElement>(
                                     '.teksttv-generate-btn[data-field="both"]',
                                 );
-                                if (bothBtn) requestAiGeneration(config, bothBtn, 'both');
+                                if (bothBtn) requestAiGeneration(config, bothBtn, 'both', updatePreview);
                             }
                         }, 300);
                     });
@@ -267,7 +270,7 @@ export function createPostMetaPage() {
                 }
             }
 
-            requestAiGeneration(config, btn, field);
+            requestAiGeneration(config, btn, field, updatePreview);
         },
 
         onTitleInputMeta(): void {

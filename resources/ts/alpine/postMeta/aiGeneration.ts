@@ -30,7 +30,12 @@ export function applyTeksttvBody(content: string): void {
     dispatchInput(ta);
 }
 
-export function requestAiGeneration(config: TeksttvPostConfig, btn: HTMLButtonElement, field: string): void {
+export function requestAiGeneration(
+    config: TeksttvPostConfig,
+    btn: HTMLButtonElement,
+    field: string,
+    onApplied?: () => void,
+): void {
     const statusEl = document.querySelector('#teksttv-generate-status');
     const originalHtml = btn.innerHTML;
     const loadingMessages = [
@@ -76,6 +81,8 @@ export function requestAiGeneration(config: TeksttvPostConfig, btn: HTMLButtonEl
             } else if (field === 'body' && data.content) {
                 applyTeksttvBody(data.content);
             }
+
+            onApplied?.();
 
             let badge = document.querySelector('#teksttv-ai-badge');
             const afterTarget = document.querySelector('#teksttv-generate-status');
