@@ -3,10 +3,10 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
+use TekstTV\Blocks\Contracts\BlockType;
 use TekstTV\Helpers;
 
-final class IframeLoopBlock implements LoopBlock
+final class IframeLoopBlock implements BlockType
 {
     public static function register(): void
     {
@@ -35,7 +35,7 @@ final class IframeLoopBlock implements LoopBlock
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field teksttv-block-field-wide">
                 <label><?php esc_html_e('Naam', 'teksttv-wp-plugin'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php esc_attr_e('bijv. Weerdashboard', 'teksttv-wp-plugin'); ?>" />
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php esc_attr_e('bijv. Weerdashboard', 'teksttv-wp-plugin'); ?>" data-summary />
                 <p class="description"><?php esc_html_e('Alleen ter herkenning in dit beheerscherm. Wordt niet uitgezonden.', 'teksttv-wp-plugin'); ?></p>
             </div>
             <div class="teksttv-block-field teksttv-block-field-wide">

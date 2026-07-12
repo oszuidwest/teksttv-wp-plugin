@@ -65,7 +65,7 @@ class CampaignsPage
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
                         <label><?php esc_html_e('Naam', 'teksttv-wp-plugin'); ?></label>
-                        <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Bijv. Sponsor X', 'teksttv-wp-plugin'); ?>" />
+                        <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Bijv. Sponsor X', 'teksttv-wp-plugin'); ?>" data-summary data-summary-empty="<?php echo esc_attr__('Naamloze campagne', 'teksttv-wp-plugin'); ?>" />
                     </div>
                     <div class="teksttv-block-field">
                         <label><?php esc_html_e('Groep', 'teksttv-wp-plugin'); ?></label>

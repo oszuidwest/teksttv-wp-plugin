@@ -3,10 +3,10 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
+use TekstTV\Blocks\Contracts\BlockType;
 use TekstTV\Helpers;
 
-final class CampaignLoopBlock implements LoopBlock
+final class CampaignLoopBlock implements BlockType
 {
     private const TRANSITION_DURATION = 5000;
 
@@ -41,7 +41,7 @@ final class CampaignLoopBlock implements LoopBlock
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Groep(en)', 'teksttv-wp-plugin'); ?></label>
                 <?php if (!empty($available_groups)) : ?>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv-wp-plugin'); ?>" multiple>
+                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv-wp-plugin'); ?>" data-summary data-summary-empty="<?php echo esc_attr__('Geen groep', 'teksttv-wp-plugin'); ?>" multiple>
                     <?php foreach ($available_groups as $group_option) : ?>
                     <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
                     <?php endforeach; ?>
@@ -52,7 +52,7 @@ final class CampaignLoopBlock implements LoopBlock
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Max. slides', 'teksttv-wp-plugin'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv-wp-plugin'); ?>" />
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv-wp-plugin'); ?>" data-summary="max %s" />
                 <p class="description"><?php esc_html_e('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.', 'teksttv-wp-plugin'); ?></p>
             </div>
         </div>

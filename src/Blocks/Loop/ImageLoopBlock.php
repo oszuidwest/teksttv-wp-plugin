@@ -3,10 +3,10 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
+use TekstTV\Blocks\Contracts\BlockType;
 use TekstTV\Helpers;
 
-final class ImageLoopBlock implements LoopBlock
+final class ImageLoopBlock implements BlockType
 {
     public static function register(): void
     {
@@ -37,7 +37,7 @@ final class ImageLoopBlock implements LoopBlock
                 <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" />
             </div>
             <div class="teksttv-block-image-fields">
-                <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][image_id]" value="<?php echo esc_attr((string) $image_id); ?>" class="teksttv-block-image-id" />
+                <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][image_id]" value="<?php echo esc_attr((string) $image_id); ?>" class="teksttv-block-image-id" data-summary data-summary-label="<?php echo esc_attr__('Afbeelding', 'teksttv-wp-plugin'); ?>" data-summary-empty="<?php echo esc_attr__('Geen afbeelding', 'teksttv-wp-plugin'); ?>" />
                 <p>
                     <button type="button" class="button teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Afbeelding kiezen', 'teksttv-wp-plugin'); ?></button>
                     <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
