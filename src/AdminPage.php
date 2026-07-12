@@ -133,29 +133,7 @@ class AdminPage
 
         register_setting('teksttv_content', 'teksttv_ai_prompts', [
             'type' => 'array',
-            'sanitize_callback' => function ($input) {
-                if (!is_array($input)) {
-                    return [];
-                }
-                return [
-                    'system' => sanitize_textarea_field($input['system'] ?? ''),
-                    'prompt_title' => sanitize_textarea_field($input['prompt_title'] ?? ''),
-                    'prompt_body' => sanitize_textarea_field($input['prompt_body'] ?? ''),
-                    'word_limit' => Helpers::clamp_int($input['word_limit'] ?? 100, 10, 500),
-                    // 0 means "inherit word_limit"; any positive value is capped at the UI max.
-                    'word_limit_photo' => min(500, absint($input['word_limit_photo'] ?? 0)),
-                    'title_char_limit' => Helpers::clamp_int($input['title_char_limit'] ?? 40, 10, 100),
-                    'min_input_words' => Helpers::clamp_int($input['min_input_words'] ?? 50, 0, 500),
-                    'max_retries' => max(1, min(5, absint($input['max_retries'] ?? 3))),
-                    'rate_limit' => max(1, min(60, absint($input['rate_limit'] ?? 10))),
-                    'region_taxonomy' => sanitize_key($input['region_taxonomy'] ?? ''),
-                    'provider' => sanitize_key($input['provider'] ?? ''),
-                    'model' => sanitize_text_field($input['model'] ?? ''),
-                    'temperature' => $input['temperature'] !== '' ? max(0, min(2, (float) $input['temperature'])) : '',
-                    'top_p' => $input['top_p'] !== '' ? max(0, min(1, (float) $input['top_p'])) : '',
-                    'max_tokens' => max(64, min(8192, absint($input['max_tokens'] ?? 2048))),
-                ];
-            },
+            'sanitize_callback' => [self::class, 'sanitize_ai_prompts'],
             'default' => [],
         ]);
 
@@ -205,6 +183,50 @@ class AdminPage
             $channels[] = ['slug' => $slug, 'label' => $label];
         }
         return $channels;
+    }
+
+    /**
+     * Sanitize the AI prompts option.
+     *
+     * Merges submitted values over the stored option so a partial form — e.g.
+     * one rendered without the region/technical sections for a role lacking
+     * manage_teksttv — cannot silently clear fields it never displayed.
+     *
+     * @param mixed $input
+     * @return array<string, mixed>
+     */
+    public static function sanitize_ai_prompts(mixed $input): array
+    {
+        $current = get_option('teksttv_ai_prompts', []);
+        if (!is_array($current)) {
+            $current = [];
+        }
+        if (!is_array($input)) {
+            return $current;
+        }
+
+        $merged = array_merge($current, $input);
+        $temperature = $merged['temperature'] ?? '';
+        $top_p = $merged['top_p'] ?? '';
+
+        return [
+            'system' => sanitize_textarea_field($merged['system'] ?? ''),
+            'prompt_title' => sanitize_textarea_field($merged['prompt_title'] ?? ''),
+            'prompt_body' => sanitize_textarea_field($merged['prompt_body'] ?? ''),
+            'word_limit' => Helpers::clamp_int($merged['word_limit'] ?? 100, 10, 500),
+            // 0 means "inherit word_limit"; any positive value is capped at the UI max.
+            'word_limit_photo' => min(500, absint($merged['word_limit_photo'] ?? 0)),
+            'title_char_limit' => Helpers::clamp_int($merged['title_char_limit'] ?? 40, 10, 100),
+            'min_input_words' => Helpers::clamp_int($merged['min_input_words'] ?? 50, 0, 500),
+            'max_retries' => max(1, min(5, absint($merged['max_retries'] ?? 3))),
+            'rate_limit' => max(1, min(60, absint($merged['rate_limit'] ?? 10))),
+            'region_taxonomy' => sanitize_key($merged['region_taxonomy'] ?? ''),
+            'provider' => sanitize_key($merged['provider'] ?? ''),
+            'model' => sanitize_text_field($merged['model'] ?? ''),
+            'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
+            'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
+            'max_tokens' => max(64, min(8192, absint($merged['max_tokens'] ?? 2048))),
+        ];
     }
 
     public static function enqueue_assets(string $hook): void

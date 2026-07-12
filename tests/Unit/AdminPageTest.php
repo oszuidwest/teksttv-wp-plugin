@@ -7,6 +7,47 @@ use TekstTV\AdminPage;
 
 class AdminPageTest extends TestCase
 {
+    public function test_sanitize_ai_prompts_preserves_omitted_technical_fields(): void
+    {
+        Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);
+
+        $stored = [
+            'provider' => 'openai',
+            'model' => 'openai/gpt-5',
+            'region_taxonomy' => 'regio',
+            'temperature' => 0.7,
+            'top_p' => 0.9,
+            'max_tokens' => 4096,
+            'system' => 'Oude system prompt',
+        ];
+        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
+
+        // Partial submission: only the editorial prompt fields are present,
+        // as rendered for a role without the region/technical sections.
+        $result = AdminPage::sanitize_ai_prompts([
+            'system' => 'Nieuwe system prompt',
+            'prompt_title' => 'Titel prompt',
+            'prompt_body' => 'Body prompt',
+        ]);
+
+        // Submitted field updates...
+        $this->assertSame('Nieuwe system prompt', $result['system']);
+        // ...omitted technical/region fields keep their stored values.
+        $this->assertSame('openai', $result['provider']);
+        $this->assertSame('openai/gpt-5', $result['model']);
+        $this->assertSame('regio', $result['region_taxonomy']);
+        $this->assertSame(0.7, $result['temperature']);
+        $this->assertSame(4096, $result['max_tokens']);
+    }
+
+    public function test_sanitize_ai_prompts_non_array_input_keeps_current(): void
+    {
+        $stored = ['provider' => 'openai', 'model' => 'openai/gpt-5'];
+        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
+
+        $this->assertSame($stored, AdminPage::sanitize_ai_prompts('not an array'));
+    }
+
     public function test_sanitize_channels_deduplicates_slug_keeping_first(): void
     {
         Functions\when('add_settings_error')->justReturn(null);
