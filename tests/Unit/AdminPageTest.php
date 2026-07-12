@@ -2,10 +2,29 @@
 
 namespace TekstTV\Tests\Unit;
 
+use Brain\Monkey\Functions;
 use TekstTV\AdminPage;
 
 class AdminPageTest extends TestCase
 {
+    public function test_sanitize_channels_deduplicates_slug_keeping_first(): void
+    {
+        Functions\when('add_settings_error')->justReturn(null);
+
+        $input = [
+            ['slug' => 'tv1', 'label' => 'TV 1'],
+            ['slug' => 'tv1', 'label' => 'Duplicaat'],
+            ['slug' => 'tv2', 'label' => 'TV 2'],
+        ];
+
+        $result = AdminPage::sanitize_channels($input);
+
+        $this->assertCount(2, $result);
+        $this->assertSame('tv1', $result[0]['slug']);
+        $this->assertSame('TV 1', $result[0]['label']);
+        $this->assertSame('tv2', $result[1]['slug']);
+    }
+
     // =========================================================================
     // sanitize_channels()
     // =========================================================================

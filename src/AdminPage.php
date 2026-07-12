@@ -178,12 +178,30 @@ class AdminPage
         }
 
         $channels = [];
+        $seen = [];
         foreach ($input as $channel) {
             $slug = sanitize_key($channel['slug'] ?? '');
             $label = sanitize_text_field($channel['label'] ?? '');
-            if (!empty($slug) && !empty($label)) {
-                $channels[] = ['slug' => $slug, 'label' => $label];
+            if (empty($slug) || empty($label)) {
+                continue;
             }
+            // Loop/ticker option names are keyed by slug, so a duplicate slug
+            // would make two channels share storage. Keep the first, reject the rest.
+            if (isset($seen[$slug])) {
+                add_settings_error(
+                    'teksttv-wp-plugin',
+                    'duplicate_channel_slug',
+                    sprintf(
+                        /* translators: %s: the duplicate channel slug */
+                        __('Kanaal-slug "%s" komt meerdere keren voor; alleen de eerste is bewaard.', 'teksttv-wp-plugin'),
+                        $slug
+                    ),
+                    'error'
+                );
+                continue;
+            }
+            $seen[$slug] = true;
+            $channels[] = ['slug' => $slug, 'label' => $label];
         }
         return $channels;
     }
