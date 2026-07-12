@@ -108,7 +108,7 @@ echo '<h1>' . esc_html__('Content & AI', 'teksttv-wp-plugin') . '</h1>';
         <?php if (current_user_can('manage_teksttv')) : ?>
         <div class="teksttv-card">
             <h3><?php esc_html_e('Regio-prefix', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php echo wp_kses(__('Voeg automatisch een regio-prefix toe aan de gegenereerde kop, bijv. <code>LEIDEN - Kop hier</code>.', 'teksttv-wp-plugin'), ['code' => []]); ?></p>
+            <p class="description"><?php echo wp_kses(__('Voeg automatisch een regio-prefix toe aan de gegenereerde tekst, bijv. <code>LEIDEN - Tekst hier</code>.', 'teksttv-wp-plugin'), ['code' => []]); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
                     <th scope="row"><label for="teksttv_ai_region_taxonomy"><?php esc_html_e('Taxonomy', 'teksttv-wp-plugin'); ?></label></th>
