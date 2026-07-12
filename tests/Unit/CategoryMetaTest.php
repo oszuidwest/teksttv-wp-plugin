@@ -8,49 +8,6 @@ use TekstTV\CategoryMeta;
 class CategoryMetaTest extends TestCase
 {
     // =========================================================================
-    // get_image_url()
-    // =========================================================================
-
-    public function test_get_image_url_returns_url_when_image_exists(): void
-    {
-        Functions\expect('get_term_meta')
-            ->with(10, '_teksttv_category_image', true)
-            ->andReturn('42');
-        Functions\expect('wp_get_attachment_image_url')
-            ->with(42, 'large')
-            ->andReturn('https://example.com/image.jpg');
-
-        $result = CategoryMeta::get_image_url(10);
-
-        $this->assertSame('https://example.com/image.jpg', $result);
-    }
-
-    public function test_get_image_url_returns_null_when_no_meta(): void
-    {
-        Functions\expect('get_term_meta')
-            ->with(10, '_teksttv_category_image', true)
-            ->andReturn('');
-
-        $result = CategoryMeta::get_image_url(10);
-
-        $this->assertNull($result);
-    }
-
-    public function test_get_image_url_returns_null_when_attachment_missing(): void
-    {
-        Functions\expect('get_term_meta')
-            ->with(10, '_teksttv_category_image', true)
-            ->andReturn('99');
-        Functions\expect('wp_get_attachment_image_url')
-            ->with(99, 'large')
-            ->andReturn(false);
-
-        $result = CategoryMeta::get_image_url(10);
-
-        $this->assertNull($result);
-    }
-
-    // =========================================================================
     // save_term_meta()
     // =========================================================================
 

@@ -4,6 +4,7 @@ namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
 use TekstTV\AdminPage;
+use TekstTV\Helpers;
 
 class AdminPageTest extends TestCase
 {
@@ -195,7 +196,7 @@ class AdminPageTest extends TestCase
     }
 
     // =========================================================================
-    // extract_scheduling_fields() — private, via reflection
+    // Helpers::extract_scheduling_fields() — shared by loop and campaigns saves
     // =========================================================================
 
     public function test_extract_scheduling_fields_with_dates(): void
@@ -205,7 +206,7 @@ class AdminPageTest extends TestCase
             'date_end' => '2026-04-30',
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertSame('2026-04-01', $result['date_start']);
         $this->assertSame('2026-04-30', $result['date_end']);
@@ -218,7 +219,7 @@ class AdminPageTest extends TestCase
             'date_end' => '',
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertArrayNotHasKey('date_start', $result);
         $this->assertArrayNotHasKey('date_end', $result);
@@ -230,7 +231,7 @@ class AdminPageTest extends TestCase
             'days' => ['1', '3', '5'],
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertSame(['1', '3', '5'], $result['days']);
     }
@@ -241,7 +242,7 @@ class AdminPageTest extends TestCase
             'days' => ['1', '2', '3', '4', '5', '6', '7'],
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         // All 7 days = no restriction, should not be saved
         $this->assertArrayNotHasKey('days', $result);
@@ -253,14 +254,14 @@ class AdminPageTest extends TestCase
             'days' => ['1', '8', 'abc', '5'],
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertSame(['1', '5'], $result['days']);
     }
 
     public function test_extract_scheduling_fields_empty_input(): void
     {
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [[]]);
+        $result = Helpers::extract_scheduling_fields([]);
 
         // Empty days array passes is_array but has count 0 < 7, so it's included
         $this->assertArrayNotHasKey('date_start', $result);

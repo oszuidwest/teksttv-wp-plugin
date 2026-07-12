@@ -680,26 +680,6 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // get_category_options()
-    // =========================================================================
-
-    public function test_get_category_options_includes_all_option(): void
-    {
-        $cat1 = (object) ['term_id' => 1, 'name' => 'Nieuws'];
-        $cat2 = (object) ['term_id' => 2, 'name' => 'Sport'];
-
-        Functions\expect('get_categories')
-            ->with(['hide_empty' => false])
-            ->andReturn([$cat1, $cat2]);
-
-        $result = Helpers::get_category_options();
-
-        $this->assertSame('Alle categorieën', $result[0]);
-        $this->assertSame('Nieuws', $result[1]);
-        $this->assertSame('Sport', $result[2]);
-    }
-
-    // =========================================================================
     // get_loop_config()
     // =========================================================================
 

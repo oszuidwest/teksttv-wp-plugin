@@ -39,7 +39,7 @@ class AdminPage
     public static function render_preview_origin_notice(): void
     {
         $screen = get_current_screen();
-        if (!$screen || strpos($screen->id, 'teksttv') === false) {
+        if (!$screen || !str_contains($screen->id, 'teksttv')) {
             return;
         }
         if (!self::preview_url_shares_site_origin(Helpers::get_preview_url(), home_url())) {
@@ -169,7 +169,7 @@ class AdminPage
                 }
                 return array_map('sanitize_key', $input);
             },
-            'default' => ['custom_title', 'sidebar_image', 'extra_images', 'scheduling', 'page_separator', 'bold', 'italic', 'underline', 'lists'],
+            'default' => Helpers::DEFAULT_FEATURES,
         ]);
 
         register_setting('teksttv_content', 'teksttv_ai_prompts', [
@@ -259,21 +259,21 @@ class AdminPage
             'word_limit_photo' => min(500, absint($merged['word_limit_photo'] ?? 0)),
             'title_char_limit' => Helpers::clamp_int($merged['title_char_limit'] ?? 40, 10, 100),
             'min_input_words' => Helpers::clamp_int($merged['min_input_words'] ?? 50, 0, 500),
-            'max_retries' => max(1, min(5, absint($merged['max_retries'] ?? 3))),
-            'rate_limit' => max(1, min(60, absint($merged['rate_limit'] ?? 10))),
+            'max_retries' => Helpers::clamp_int($merged['max_retries'] ?? 3, 1, 5),
+            'rate_limit' => Helpers::clamp_int($merged['rate_limit'] ?? 10, 1, 60),
             'region_taxonomy' => sanitize_key($merged['region_taxonomy'] ?? ''),
             'provider' => sanitize_key($merged['provider'] ?? ''),
             'model' => sanitize_text_field($merged['model'] ?? ''),
             'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
             'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
-            'max_tokens' => max(64, min(8192, absint($merged['max_tokens'] ?? 2048))),
+            'max_tokens' => Helpers::clamp_int($merged['max_tokens'] ?? 2048, 64, 8192),
         ];
     }
 
     public static function enqueue_assets(string $hook): void
     {
         // Load on any Tekst TV admin page
-        if (strpos($hook, 'teksttv') === false) {
+        if (!str_contains($hook, 'teksttv')) {
             return;
         }
 
@@ -330,18 +330,12 @@ class AdminPage
         }
 
         $channels = Helpers::get_channels();
-        $channel_label = '';
-        foreach ($channels as $ch) {
-            if ($ch['slug'] === $channel_slug) {
-                $channel_label = $ch['label'];
-                break;
-            }
-        }
+        $channel_label = array_column($channels, 'label', 'slug')[$channel_slug] ?? '';
 
         $blocks = Helpers::get_loop_config($channel_slug);
         $api_url = rest_url('teksttv/v1/slides?channel=' . $channel_slug);
         $page_title = count($channels) > 1 ? sprintf(/* translators: %s: channel label */ __('Loop: %s', 'teksttv-wp-plugin'), $channel_label) : __('Loop', 'teksttv-wp-plugin');
-        $ticker_items = get_option('teksttv_ticker_' . $channel_slug, []);
+        $ticker_items = Helpers::get_ticker_config($channel_slug);
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
     }
@@ -398,24 +392,22 @@ class AdminPage
                 continue;
             }
 
+            // Only id => name is needed; skips hydrating full WP_Term objects
+            // (post_tag alone can be thousands of terms on a news site).
             $terms = get_terms([
                 'taxonomy' => $tax->name,
                 'hide_empty' => false,
+                'fields' => 'id=>name',
             ]);
 
             if (is_wp_error($terms) || empty($terms)) {
                 continue;
             }
 
-            $term_options = [];
-            foreach ($terms as $term) {
-                $term_options[$term->term_id] = $term->name;
-            }
-
             $result[] = [
                 'name' => $tax->name,
                 'label' => $tax->labels->singular_name,
-                'terms' => $term_options,
+                'terms' => $terms,
             ];
         }
 
@@ -455,23 +447,29 @@ class AdminPage
         <?php
     }
 
-    /** @param array<string, mixed> $block */
-    private static function render_scheduling_fields(int|string $index, array $block, string $prefix = 'teksttv_blocks'): void
+    /**
+     * Render the date-range + weekday scheduling fields for a block-shaped item.
+     * Also used by the campaigns page ($with_toggle = false: always visible,
+     * without the enable checkbox or the --scheduling styling hook).
+     *
+     * @param array<string, mixed> $block
+     */
+    public static function render_scheduling_fields(int|string $index, array $block, string $prefix = 'teksttv_blocks', bool $with_toggle = true): void
     {
         $date_start = $block['date_start'] ?? '';
         $date_end = $block['date_end'] ?? '';
         $days = $block['days'] ?? [];
         $has_scheduling = !empty($date_start) || !empty($date_end) || !empty($days);
-        $day_labels = Helpers::get_day_labels();
 
-        ?>
+        if ($with_toggle) : ?>
         <div class="teksttv-block-scheduling-toggle">
             <label>
                 <input type="checkbox" class="teksttv-scheduling-checkbox" <?php checked($has_scheduling); ?> />
                 <?php esc_html_e('Planning inschakelen', 'teksttv-wp-plugin'); ?>
             </label>
         </div>
-        <div class="teksttv-block-fields teksttv-block-fields--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
+        <?php endif; ?>
+        <div class="teksttv-block-fields<?php echo $with_toggle ? ' teksttv-block-fields--scheduling' : ''; ?>" <?php echo (!$with_toggle || $has_scheduling) ? '' : 'style="display:none;"'; ?>>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Vanaf', 'teksttv-wp-plugin'); ?></label>
                 <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
@@ -482,15 +480,28 @@ class AdminPage
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
-                <div class="teksttv-days-row">
-                    <?php foreach ($day_labels as $num => $label) : ?>
-                    <label class="teksttv-day-toggle">
-                        <input type="checkbox" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][days][]" value="<?php echo esc_attr((string) $num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
-                        <span><?php echo esc_html($label); ?></span>
-                    </label>
-                    <?php endforeach; ?>
-                </div>
+                <?php self::render_days_row($prefix . '[' . $index . '][days][]', (array) $days); ?>
             </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render the weekday checkbox row. An empty $days list means "all days":
+     * every checkbox renders checked.
+     *
+     * @param list<string> $days Selected ISO day numbers ('1'..'7').
+     */
+    public static function render_days_row(string $field_name, array $days): void
+    {
+        ?>
+        <div class="teksttv-days-row">
+            <?php foreach (Helpers::get_day_labels() as $num => $label) : ?>
+            <label class="teksttv-day-toggle">
+                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
+                <span><?php echo esc_html($label); ?></span>
+            </label>
+            <?php endforeach; ?>
         </div>
         <?php
     }
@@ -515,8 +526,7 @@ class AdminPage
         }
 
         // Validate channel exists
-        $valid_slugs = array_column(Helpers::get_channels(), 'slug');
-        if (!in_array($channel, $valid_slugs, true)) {
+        if (!in_array($channel, Helpers::channel_slugs(), true)) {
             return;
         }
 
@@ -528,7 +538,7 @@ class AdminPage
             $type = sanitize_key($block['type'] ?? '');
             $saved = BlockRegistry::save($type, $block);
             if ($saved) {
-                $saved = array_merge($saved, self::extract_scheduling_fields($block));
+                $saved = array_merge($saved, Helpers::extract_scheduling_fields($block));
                 $blocks[] = $saved;
             }
         }
@@ -543,7 +553,7 @@ class AdminPage
             $type = sanitize_key($item['type'] ?? '');
             $saved_ticker = BlockRegistry::save($type, $item);
             if ($saved_ticker) {
-                $saved_ticker = array_merge($saved_ticker, self::extract_scheduling_fields($item));
+                $saved_ticker = array_merge($saved_ticker, Helpers::extract_scheduling_fields($item));
                 $ticker[] = $saved_ticker;
             }
         }
@@ -552,32 +562,5 @@ class AdminPage
         RestApi::invalidate_slides_cache($channel);
 
         add_settings_error('teksttv-wp-plugin', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
-    }
-
-    /**
-     * Extract and save scheduling fields (date_start, date_end, days) from a block.
-     *
-     * @param array<string, mixed> $raw
-     * @return array<string, mixed>
-     */
-    private static function extract_scheduling_fields(array $raw): array
-    {
-        $fields = [];
-
-        $ds = sanitize_text_field($raw['date_start'] ?? '');
-        $de = sanitize_text_field($raw['date_end'] ?? '');
-        if ($ds !== '') {
-            $fields['date_start'] = $ds;
-        }
-        if ($de !== '') {
-            $fields['date_end'] = $de;
-        }
-
-        $sanitized_days = Helpers::sanitize_days_input($raw['days'] ?? null);
-        if ($sanitized_days !== null) {
-            $fields['days'] = $sanitized_days;
-        }
-
-        return $fields;
     }
 }

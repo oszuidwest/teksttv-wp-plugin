@@ -77,10 +77,6 @@ final class ImageLoopBlock implements LoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
-        if (!Helpers::is_block_scheduled($block)) {
-            return [];
-        }
-
         $image_id = (int) ($block['image_id'] ?? 0);
         if (!$image_id) {
             return [];
@@ -91,11 +87,9 @@ final class ImageLoopBlock implements LoopBlock
             return [];
         }
 
-        $duration = !empty($block['duration']) ? (int) $block['duration'] * 1000 : (int) get_option('teksttv_duration_image', 7) * 1000;
-
         return [array_merge([
             'type' => 'image',
-            'duration' => $duration,
+            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_image', 7),
         ], $image_data)
         ];
     }

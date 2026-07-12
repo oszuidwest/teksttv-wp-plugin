@@ -26,7 +26,6 @@ export type Slide = TextSlide | ImageSlide;
 /** Config passed from PHP via wp_localize_script */
 export interface TeksttvPostConfig {
     previewUrl: string;
-    nonce: string;
     restNonce: string;
     imageDataUrl: string;
     defaultEndDate: string;
@@ -39,7 +38,6 @@ export interface TeksttvPostConfig {
     titleCharLimit: number;
     wordLimit: number;
     wordLimitPhoto: number;
-    hasAiContent: boolean;
 }
 
 /** WordPress TinyMCE editor instance (partial) */

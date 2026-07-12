@@ -10,7 +10,7 @@ use TekstTV\WeatherProvider;
 
 final class WeatherLoopBlock implements LoopBlock
 {
-    private const WEATHER_DURATION = 15000;
+    private const DEFAULT_DURATION_SECONDS = 15;
 
     private static ?WeatherProvider $weather_provider = null;
 
@@ -133,10 +133,6 @@ final class WeatherLoopBlock implements LoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
-        if (!Helpers::is_block_scheduled($block)) {
-            return [];
-        }
-
         $location = $block['location'] ?? '';
         $title = $block['title'] ?? '';
         if (empty($location)) {
@@ -157,7 +153,7 @@ final class WeatherLoopBlock implements LoopBlock
             return [];
         }
 
-        $duration = !empty($block['duration']) ? (int) $block['duration'] * 1000 : self::WEATHER_DURATION;
+        $duration = Helpers::duration_ms($block['duration'] ?? null, '', self::DEFAULT_DURATION_SECONDS);
 
         $days_output = [];
         foreach ($weather['days'] as $index => $day) {

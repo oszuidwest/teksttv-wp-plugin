@@ -1,5 +1,5 @@
-import type { WPMediaAttachment, WPMediaFrame } from '../modules/types';
-import { wpMedia } from '../modules/wpMedia';
+import type { WPMediaFrame } from '../modules/types';
+import { pickSingleImage } from '../modules/wpMedia';
 
 /** Category add/edit: pick or clear Tekst TV image. */
 export function createCategoryMediaPage() {
@@ -12,10 +12,7 @@ export function createCategoryMediaPage() {
                 frame.open();
                 return;
             }
-            frame = wpMedia({ multiple: false, library: { type: 'image' } });
-            frame.on('select', () => {
-                if (!frame) return;
-                const att: WPMediaAttachment = frame.state().get('selection').first().toJSON();
+            frame = pickSingleImage((att) => {
                 const thumbUrl = att.sizes?.thumbnail?.url ?? att.url;
                 const idInput = document.querySelector<HTMLInputElement>('#teksttv-cat-image-id');
                 const preview = document.querySelector<HTMLImageElement>('#teksttv-cat-image-preview');
@@ -27,7 +24,6 @@ export function createCategoryMediaPage() {
                 }
                 removeBtn?.classList.remove('is-hidden');
             });
-            frame.open();
         },
 
         clearImage(e: Event): void {

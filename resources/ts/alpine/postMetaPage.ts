@@ -1,7 +1,7 @@
 import Sortable from 'sortablejs';
 import { fadeOutRemove, hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
-import { encodeSlideData } from '../modules/utils';
+import { previewSlideUrl } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
@@ -55,11 +55,13 @@ export function createPostMetaPage() {
     }
 
     function updatePreview(): void {
-        const iframe = document.querySelector<HTMLIFrameElement>('#teksttv-preview-iframe');
-        if (!(previewUrl && iframe)) return;
-
         clearTimeout(debounceTimer);
         debounceTimer = window.setTimeout(() => {
+            refreshWordCount();
+
+            const iframe = document.querySelector<HTMLIFrameElement>('#teksttv-preview-iframe');
+            if (!(previewUrl && iframe)) return;
+
             slides = getSlides();
             if (currentSlideIndex >= slides.length) currentSlideIndex = slides.length - 1;
             if (currentSlideIndex < 0) currentSlideIndex = 0;
@@ -80,10 +82,7 @@ export function createPostMetaPage() {
             }
             iframeLoadHandler = () => container?.classList.remove('is-loading');
             iframe.addEventListener('load', iframeLoadHandler, { once: true });
-            iframe.setAttribute(
-                'src',
-                `${previewUrl}?data=${encodeURIComponent(encodeSlideData(slides[currentSlideIndex]))}`,
-            );
+            iframe.setAttribute('src', previewSlideUrl(previewUrl, slides[currentSlideIndex]));
         }, 400);
     }
 
@@ -128,14 +127,8 @@ export function createPostMetaPage() {
 
             if (typeof tinymce !== 'undefined') {
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
-                    editor.on('input change keyup', () => {
-                        updatePreview();
-                        refreshWordCount();
-                    });
-                    editor.on('SetContent', () => {
-                        updatePreview();
-                        refreshWordCount();
-                    });
+                    // `updatePreview` debounces and also refreshes the word count.
+                    editor.on('input change SetContent', updatePreview);
                 };
                 const existing = tinymce.get('teksttv_content');
                 if (existing) bindEditor(existing);
@@ -148,7 +141,6 @@ export function createPostMetaPage() {
                 const t = e.target;
                 if (!(t instanceof Element && t.matches('#teksttv_content'))) return;
                 updatePreview();
-                refreshWordCount();
             });
 
             document.querySelector('#title')?.addEventListener('input', updatePreview);
@@ -179,10 +171,7 @@ export function createPostMetaPage() {
                 }
             }
 
-            window.setTimeout(() => {
-                updatePreview();
-                refreshWordCount();
-            }, 500);
+            window.setTimeout(updatePreviewAndWordCount, 500);
         },
 
         onActiveChange(): void {

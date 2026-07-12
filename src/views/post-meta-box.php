@@ -9,7 +9,6 @@
  * @var string $date_end
  * @var list<string> $days
  * @var list<int> $images
- * @var array<int, string> $day_labels
  * @var string $preview_url
  * @var bool $ai_enabled
  * @var list<string> $toolbar_items
@@ -201,14 +200,7 @@ defined('ABSPATH') || exit;
                         </div>
                         <div class="teksttv-scheduling-group">
                             <h4><?php esc_html_e('Weekdagen', 'teksttv-wp-plugin'); ?></h4>
-                            <div class="teksttv-days-row">
-                                <?php foreach ($day_labels as $num => $label) : ?>
-                                <label class="teksttv-day-toggle">
-                                    <input type="checkbox" name="teksttv_days[]" value="<?php echo esc_attr((string) $num); ?>" <?php checked(in_array((string) $num, $days, true)); ?> />
-                                    <span><?php echo esc_html($label); ?></span>
-                                </label>
-                                <?php endforeach; ?>
-                            </div>
+                            <?php AdminPage::render_days_row('teksttv_days[]', $days); ?>
                             <p class="description"><?php esc_html_e('Bericht wordt alleen op geselecteerde dagen getoond.', 'teksttv-wp-plugin'); ?></p>
                         </div>
                     </div>

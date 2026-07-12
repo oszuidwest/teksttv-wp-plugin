@@ -49,6 +49,34 @@ class Helpers
     }
 
     /**
+     * Extract sanitized scheduling fields (date_start, date_end, days) from a
+     * raw POST payload. Empty values are omitted so unscheduled items stay lean.
+     *
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>
+     */
+    public static function extract_scheduling_fields(array $raw): array
+    {
+        $fields = [];
+
+        $ds = sanitize_text_field($raw['date_start'] ?? '');
+        $de = sanitize_text_field($raw['date_end'] ?? '');
+        if ($ds !== '') {
+            $fields['date_start'] = $ds;
+        }
+        if ($de !== '') {
+            $fields['date_end'] = $de;
+        }
+
+        $sanitized_days = self::sanitize_days_input($raw['days'] ?? null);
+        if ($sanitized_days !== null) {
+            $fields['days'] = $sanitized_days;
+        }
+
+        return $fields;
+    }
+
+    /**
      * Check if content should be displayed on the given day.
      *
      * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
@@ -96,21 +124,6 @@ class Helpers
     }
 
     /**
-     * Get all WP categories as id => name array for use in dropdowns.
-     *
-     * @return array<int, string>
-     */
-    public static function get_category_options(): array
-    {
-        $categories = get_categories(['hide_empty' => false]);
-        $options = [0 => __('Alle categorieën', 'teksttv-wp-plugin')];
-        foreach ($categories as $cat) {
-            $options[$cat->term_id] = $cat->name;
-        }
-        return $options;
-    }
-
-    /**
      * Get the stored channels list.
      *
      * @return list<array{slug: string, label: string}>
@@ -125,18 +138,42 @@ class Helpers
     }
 
     /**
+     * Get the configured channel slugs.
+     *
+     * @return list<string>
+     */
+    public static function channel_slugs(): array
+    {
+        return array_column(self::get_channels(), 'slug');
+    }
+
+    /**
+     * Features enabled when the option has never been saved. Also the default
+     * for the registered setting — keep both reads on this single list.
+     */
+    public const DEFAULT_FEATURES = [
+        'custom_title', 'sidebar_image', 'extra_images',
+        'scheduling', 'page_separator',
+        'bold', 'italic', 'underline', 'lists',
+        'ai_generate',
+    ];
+
+    /**
      * Get the enabled features.
      *
      * @return list<string> Array of feature slugs
      */
     public static function get_features(): array
     {
-        return get_option('teksttv_features', [
-            'custom_title', 'sidebar_image', 'extra_images',
-            'scheduling', 'page_separator',
-            'bold', 'italic', 'underline', 'lists',
-            'ai_generate',
-        ]);
+        return get_option('teksttv_features', self::DEFAULT_FEATURES);
+    }
+
+    /**
+     * Whether AI generation is enabled and the WP AI Client is available.
+     */
+    public static function ai_supported(): bool
+    {
+        return self::has_feature('ai_generate') && function_exists('wp_supports_ai') && wp_supports_ai();
     }
 
     /**
@@ -161,6 +198,23 @@ class Helpers
     }
 
     /**
+     * Resolve a slide duration in milliseconds from an optional per-block
+     * override (in seconds), falling back to a duration option (in seconds).
+     *
+     * @param mixed $override_seconds Stored block value; empty means "use the option".
+     * @param string $option_name Duration option to read, or '' to use $default_seconds directly.
+     */
+    public static function duration_ms(mixed $override_seconds, string $option_name, int $default_seconds): int
+    {
+        if (!empty($override_seconds)) {
+            return (int) $override_seconds * 1000;
+        }
+
+        $seconds = $option_name !== '' ? (int) get_option($option_name, $default_seconds) : $default_seconds;
+        return $seconds * 1000;
+    }
+
+    /**
      * Get the AI prompt configuration with defaults.
      *
      * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
@@ -173,8 +227,8 @@ class Helpers
         $word_limit_photo = $word_limit_photo >= 1 ? $word_limit_photo : $word_limit;
         $title_char_limit = max(10, (int) ($saved['title_char_limit'] ?? 40));
         $min_input = max(0, (int) ($saved['min_input_words'] ?? 50));
-        $max_retries = max(1, min(5, (int) ($saved['max_retries'] ?? 3)));
-        $rate_limit = max(1, min(60, (int) ($saved['rate_limit'] ?? 10)));
+        $max_retries = self::clamp_int($saved['max_retries'] ?? 3, 1, 5);
+        $rate_limit = self::clamp_int($saved['rate_limit'] ?? 10, 1, 60);
 
         $defaults = [
             'system' => 'Je bent een eindredacteur voor tekst-tv. Schrijf in natuurlijk, vloeiend Nederlands voor een breed publiek. Gebruik korte, heldere zinnen. Schrijf alleen in het Nederlands en gebruik geen gedachtestreepjes.',
@@ -248,6 +302,17 @@ class Helpers
     public static function get_loop_config(string $channel_slug): array
     {
         return get_option('teksttv_loop_' . sanitize_key($channel_slug), []);
+    }
+
+    /**
+     * Get the ticker configuration for a channel.
+     *
+     * @return list<array<string, mixed>> Array of ticker item definitions
+     */
+    public static function get_ticker_config(string $channel_slug): array
+    {
+        $items = get_option('teksttv_ticker_' . sanitize_key($channel_slug), []);
+        return is_array($items) ? $items : [];
     }
 
     /**
