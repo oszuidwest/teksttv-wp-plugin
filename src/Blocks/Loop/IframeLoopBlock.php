@@ -3,10 +3,10 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
+use TekstTV\Blocks\Contracts\BlockType;
 use TekstTV\Helpers;
 
-final class IframeLoopBlock implements LoopBlock
+final class IframeLoopBlock implements BlockType
 {
     public static function register(): void
     {
@@ -29,13 +29,13 @@ final class IframeLoopBlock implements LoopBlock
         $name = $block['name'] ?? '';
         $url = $block['url'] ?? '';
         $duration = $block['duration'] ?? '';
-        $default_duration = (int) get_option('teksttv_duration_iframe', 30);
+        $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['iframe']);
 
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field teksttv-block-field-wide">
                 <label><?php esc_html_e('Naam', 'teksttv-wp-plugin'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php esc_attr_e('bijv. Weerdashboard', 'teksttv-wp-plugin'); ?>" />
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php esc_attr_e('bijv. Weerdashboard', 'teksttv-wp-plugin'); ?>" data-summary />
                 <p class="description"><?php esc_html_e('Alleen ter herkenning in dit beheerscherm. Wordt niet uitgezonden.', 'teksttv-wp-plugin'); ?></p>
             </div>
             <div class="teksttv-block-field teksttv-block-field-wide">
@@ -84,7 +84,7 @@ final class IframeLoopBlock implements LoopBlock
         return [[
             'type' => 'iframe',
             'url' => $url,
-            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_iframe', 30),
+            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['iframe']),
         ]
         ];
     }

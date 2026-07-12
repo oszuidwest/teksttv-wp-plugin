@@ -11,52 +11,47 @@ function getSchedulingSuffix(block: HTMLElement): string {
     return '';
 }
 
-/** Header summary line per `.teksttv-block` inside the blocks container. */
+function fieldSummaryValue(el: Element): string {
+    if (el instanceof HTMLSelectElement) {
+        return Array.from(el.selectedOptions)
+            .filter((opt) => opt.value)
+            .map((opt) => opt.text)
+            .join(', ');
+    }
+    if (el instanceof HTMLInputElement) return el.value.trim();
+    return '';
+}
+
+/**
+ * Header summary line per `.teksttv-block`, driven by `data-summary` markers
+ * that each block's PHP `render()` puts on its own fields — this module has no
+ * knowledge of block types, so registry-registered blocks work automatically.
+ *
+ * Field contract:
+ * - `data-summary`         — include this field; the attribute value is an
+ *                            optional format with `%s` (e.g. `%sx`, `max %s`).
+ * - `data-summary-label`   — show this text instead of the value when filled.
+ * - `data-summary-empty`   — show this text when the field is empty; identical
+ *                            parts are deduplicated (e.g. several taxonomy
+ *                            filters that all fall back to 'alle').
+ */
 export function updateBlockSummaries(blocksEl: HTMLElement): void {
     blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((blockEl) => {
         if (!(blockEl instanceof HTMLElement)) return;
-        const type = blockEl.dataset.type ?? '';
-        const scheduling = getSchedulingSuffix(blockEl);
-        let summary = '';
 
-        if (type === 'image') {
-            const imageId = blockEl.querySelector<HTMLInputElement>('.teksttv-block-image-id')?.value ?? '';
-            summary = imageId && imageId !== '0' ? 'Afbeelding' : 'Geen afbeelding';
-        } else if (type === 'campaign') {
-            const groups: string[] = [];
-            blockEl.querySelectorAll('select').forEach((select) => {
-                select.querySelectorAll<HTMLOptionElement>('option:checked').forEach((opt) => {
-                    if (opt.value) groups.push(opt.text ?? '');
-                });
-            });
-            const limit = blockEl.querySelector<HTMLInputElement>('input[name$="[limit]"]')?.value ?? '';
-            const parts: string[] = [];
-            parts.push(groups.length ? groups.join(', ') : 'Geen groep');
-            if (limit) parts.push(`max ${limit}`);
-            summary = parts.join(' · ');
-        } else if (type === 'iframe') {
-            summary = blockEl.querySelector<HTMLInputElement>('input[type="text"]')?.value?.trim() ?? '';
-        } else if (type === 'weather') {
-            const rawW = blockEl.querySelector<HTMLInputElement>('input[type="text"]')?.value?.trim() ?? '';
-            summary = rawW || 'Geen locatie';
-        } else if (type === 'campaign_item') {
-            const rawC = blockEl.querySelector<HTMLInputElement>('input[type="text"]')?.value?.trim() ?? '';
-            summary = rawC || 'Naamloze campagne';
-        } else {
-            const count = blockEl.querySelector<HTMLInputElement>('input[type="number"]')?.value ?? '?';
-            const parts = [`${count}x`];
-            blockEl.querySelectorAll('select').forEach((select) => {
-                const names: string[] = [];
-                select.querySelectorAll<HTMLOptionElement>('option:checked').forEach((opt) => {
-                    if (opt.value) names.push(opt.text ?? '');
-                });
-                if (names.length) parts.push(names.join(', '));
-            });
-            if (parts.length === 1) parts.push('alle');
-            summary = parts.join(' · ');
-        }
+        const parts: string[] = [];
+        blockEl.querySelectorAll<HTMLElement>('[data-summary]').forEach((field) => {
+            const value = fieldSummaryValue(field);
+            if (value !== '') {
+                const format = field.dataset.summary ?? '';
+                parts.push(field.dataset.summaryLabel ?? (format ? format.replace('%s', value) : value));
+            } else if (field.dataset.summaryEmpty) {
+                parts.push(field.dataset.summaryEmpty);
+            }
+        });
 
+        const summary = [...new Set(parts)].join(' · ');
         const sumEl = blockEl.querySelector('.teksttv-block-summary');
-        if (sumEl) sumEl.textContent = summary + scheduling;
+        if (sumEl) sumEl.textContent = summary + getSchedulingSuffix(blockEl);
     });
 }

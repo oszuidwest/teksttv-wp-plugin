@@ -2,7 +2,7 @@
 
 namespace TekstTV\Blocks\Common;
 
-use TekstTV\AdminPage;
+use TekstTV\Helpers;
 
 /**
  * Shared render + sanitization for taxonomy_filters in block admin forms.
@@ -16,16 +16,15 @@ final class TaxonomyFilters
      */
     public static function render_selects(int|string $index, array $filters, string $prefix): void
     {
-        $enabled_tax = get_option('teksttv_enabled_taxonomies', ['category']);
-        $all_taxonomies = AdminPage::get_post_taxonomies_static();
-        $taxonomies = array_filter($all_taxonomies, fn ($t) => in_array($t['name'], $enabled_tax, true));
+        $enabled_tax = Helpers::enabled_taxonomies();
+        $taxonomies = array_filter(Helpers::get_post_taxonomies(), fn ($t) => in_array($t['name'], $enabled_tax, true));
 
         foreach ($taxonomies as $tax) :
             $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));
             ?>
         <div class="teksttv-block-field">
             <label><?php echo esc_html($tax['label']); ?></label>
-            <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="Filter..." multiple>
+            <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="Filter..." data-summary data-summary-empty="<?php echo esc_attr__('alle', 'teksttv-wp-plugin'); ?>" multiple>
                 <?php foreach ($tax['terms'] as $term_id => $term_name) : ?>
                 <option value="<?php echo esc_attr((string) $term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
                 <?php endforeach; ?>

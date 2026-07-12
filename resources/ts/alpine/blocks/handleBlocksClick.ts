@@ -1,7 +1,6 @@
 import { slideToggle, slideUp } from '../../modules/dom';
-import type { WPMediaAttachment } from '../../modules/types';
 import { imageItemHtml } from '../../modules/utils';
-import { pickSingleImage, wpMedia } from '../../modules/wpMedia';
+import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
 /** Toggle the accordion body of the block owning `header`. */
@@ -55,14 +54,11 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         const list = section?.querySelector<HTMLElement>('.teksttv-campaign-slides');
         const baseName = list?.dataset.name;
         if (!list || !baseName) return;
-        const frame = wpMedia({ multiple: true, library: { type: 'image' } });
-        frame.on('select', () => {
-            const attachments: WPMediaAttachment[] = frame.state().get('selection').toJSON();
+        pickImages((attachments) => {
             attachments.forEach((att) => {
                 list.insertAdjacentHTML('beforeend', imageItemHtml(att, baseName));
             });
         });
-        frame.open();
         return;
     }
 

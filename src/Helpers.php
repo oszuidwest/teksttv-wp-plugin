@@ -148,6 +148,16 @@ class Helpers
     }
 
     /**
+     * Default slide durations in seconds per kind. Also the defaults for the
+     * registered settings — keep every read of these numbers on this single map.
+     */
+    public const DURATION_DEFAULTS = [
+        'text' => 20,
+        'image' => 7,
+        'iframe' => 30,
+    ];
+
+    /**
      * Features enabled when the option has never been saved. Also the default
      * for the registered setting — keep both reads on this single list.
      */
@@ -398,14 +408,72 @@ class Helpers
      */
     public static function is_block_scheduled(array $block): bool
     {
+        $days = $block['days'] ?? [];
+        // Unscheduled blocks are the common case; skip the datetime work entirely.
+        if (empty($block['date_start']) && empty($block['date_end']) && empty($days)) {
+            return true;
+        }
         if (!self::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
             return false;
         }
-        $days = $block['days'] ?? [];
         if (!empty($days) && !self::is_allowed_on_day($days)) {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Get all public taxonomies that apply to posts. Cached per request.
+     *
+     * @return list<array{name: string, label: string, terms: array<int, string>}>
+     */
+    public static function get_post_taxonomies(): array
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $tax_names = get_object_taxonomies('post');
+        $result = [];
+
+        foreach ($tax_names as $tax_name) {
+            $tax = get_taxonomy($tax_name);
+            if (!$tax || !$tax->public || $tax->name === 'post_format') {
+                continue;
+            }
+
+            // Only id => name is needed; skips hydrating full WP_Term objects
+            // (post_tag alone can be thousands of terms on a news site).
+            $terms = get_terms([
+                'taxonomy' => $tax->name,
+                'hide_empty' => false,
+                'fields' => 'id=>name',
+            ]);
+
+            if (is_wp_error($terms) || empty($terms)) {
+                continue;
+            }
+
+            $result[] = [
+                'name' => $tax->name,
+                'label' => $tax->labels->singular_name,
+                'terms' => $terms,
+            ];
+        }
+
+        $cache = $result;
+        return $result;
+    }
+
+    /**
+     * Taxonomy names enabled for block filters in the settings.
+     *
+     * @return list<string>
+     */
+    public static function enabled_taxonomies(): array
+    {
+        return get_option('teksttv_enabled_taxonomies', ['category']);
     }
 
     /**

@@ -738,4 +738,77 @@ class HelpersTest extends TestCase
         // Invalid format should not block
         $this->assertTrue(Helpers::is_within_date_range('not-a-date', ''));
     }
+
+    // =========================================================================
+    // extract_scheduling_fields() — shared by loop and campaigns saves
+    // =========================================================================
+
+    public function test_extract_scheduling_fields_with_dates(): void
+    {
+        $raw = [
+            'date_start' => '2026-04-01',
+            'date_end' => '2026-04-30',
+        ];
+
+        $result = Helpers::extract_scheduling_fields($raw);
+
+        $this->assertSame('2026-04-01', $result['date_start']);
+        $this->assertSame('2026-04-30', $result['date_end']);
+    }
+
+    public function test_extract_scheduling_fields_omits_empty_dates(): void
+    {
+        $raw = [
+            'date_start' => '',
+            'date_end' => '',
+        ];
+
+        $result = Helpers::extract_scheduling_fields($raw);
+
+        $this->assertArrayNotHasKey('date_start', $result);
+        $this->assertArrayNotHasKey('date_end', $result);
+    }
+
+    public function test_extract_scheduling_fields_with_days(): void
+    {
+        $raw = [
+            'days' => ['1', '3', '5'],
+        ];
+
+        $result = Helpers::extract_scheduling_fields($raw);
+
+        $this->assertSame(['1', '3', '5'], $result['days']);
+    }
+
+    public function test_extract_scheduling_fields_omits_all_seven_days(): void
+    {
+        $raw = [
+            'days' => ['1', '2', '3', '4', '5', '6', '7'],
+        ];
+
+        $result = Helpers::extract_scheduling_fields($raw);
+
+        // All 7 days = no restriction, should not be saved
+        $this->assertArrayNotHasKey('days', $result);
+    }
+
+    public function test_extract_scheduling_fields_filters_invalid_days(): void
+    {
+        $raw = [
+            'days' => ['1', '8', 'abc', '5'],
+        ];
+
+        $result = Helpers::extract_scheduling_fields($raw);
+
+        $this->assertSame(['1', '5'], $result['days']);
+    }
+
+    public function test_extract_scheduling_fields_empty_input(): void
+    {
+        $result = Helpers::extract_scheduling_fields([]);
+
+        // Empty days array passes is_array but has count 0 < 7, so it's included
+        $this->assertArrayNotHasKey('date_start', $result);
+        $this->assertArrayNotHasKey('date_end', $result);
+    }
 }

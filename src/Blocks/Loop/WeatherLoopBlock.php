@@ -3,12 +3,12 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
+use TekstTV\Blocks\Contracts\BlockType;
 use TekstTV\Helpers;
 use TekstTV\OpenWeatherProvider;
 use TekstTV\WeatherProvider;
 
-final class WeatherLoopBlock implements LoopBlock
+final class WeatherLoopBlock implements BlockType
 {
     private const DEFAULT_DURATION_SECONDS = 15;
 
@@ -94,7 +94,7 @@ final class WeatherLoopBlock implements LoopBlock
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Locatie', 'teksttv-wp-plugin'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Breda,NL', 'teksttv-wp-plugin'); ?>" />
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Breda,NL', 'teksttv-wp-plugin'); ?>" data-summary data-summary-empty="<?php echo esc_attr__('Geen locatie', 'teksttv-wp-plugin'); ?>" />
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Titel', 'teksttv-wp-plugin'); ?></label>
