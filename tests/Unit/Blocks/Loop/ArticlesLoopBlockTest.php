@@ -583,8 +583,8 @@ class ArticlesLoopBlockTest extends TestCase
     }
 
     // =========================================================================
-    // H1: features are runtime-authoritative — disabling one stops its stored
-    // meta from acting, even though the values remain in the database.
+    // Features are runtime-authoritative — disabling one stops its stored meta
+    // from acting, even though the values remain in the database.
     // =========================================================================
 
     public function test_build_ignores_custom_title_when_feature_disabled(): void

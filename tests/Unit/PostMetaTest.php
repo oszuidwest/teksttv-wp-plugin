@@ -258,7 +258,7 @@ class PostMetaTest extends TestCase
     }
 
     // =========================================================================
-    // M7: broader slides-cache invalidation
+    // Broader slides-cache invalidation on editorial changes
     // =========================================================================
 
     public function test_invalidate_on_terms_change_clears_cache_for_post(): void

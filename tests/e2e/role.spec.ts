@@ -3,8 +3,7 @@ import { login } from './helpers';
 
 /**
  * A role holding only the intended TekstTV capabilities (no manage_options)
- * must be able to open and save the settings page. This is the end-to-end
- * guard for the custom-capability save path (#13).
+ * must be able to open and save the settings page.
  */
 test('custom-capability role can open and save settings', async ({ page }) => {
     await login(page, 'teksttv_editor', 'password');
