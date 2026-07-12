@@ -140,19 +140,19 @@ class AdminPage
         register_setting('teksttv_settings', 'teksttv_duration_text', [
             'type' => 'integer',
             'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
-            'default' => 20,
+            'default' => Helpers::DURATION_DEFAULTS['text'],
         ]);
 
         register_setting('teksttv_settings', 'teksttv_duration_image', [
             'type' => 'integer',
             'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
-            'default' => 7,
+            'default' => Helpers::DURATION_DEFAULTS['image'],
         ]);
 
         register_setting('teksttv_settings', 'teksttv_duration_iframe', [
             'type' => 'integer',
             'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
-            'default' => 30,
+            'default' => Helpers::DURATION_DEFAULTS['iframe'],
         ]);
 
         register_setting('teksttv_settings', 'teksttv_openweather_api_key', [
@@ -348,8 +348,8 @@ class AdminPage
     {
         $channels = Helpers::get_channels();
         $features = Helpers::get_features();
-        $all_taxonomies = self::get_post_taxonomies_static();
-        $enabled_taxonomies = get_option('teksttv_enabled_taxonomies', ['category']);
+        $all_taxonomies = Helpers::get_post_taxonomies();
+        $enabled_taxonomies = Helpers::enabled_taxonomies();
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/settings-page.php';
     }
@@ -361,7 +361,7 @@ class AdminPage
     public static function render_prompts_page(): void
     {
         $prompts = Helpers::get_ai_prompts();
-        $all_taxonomies = self::get_post_taxonomies_static();
+        $all_taxonomies = Helpers::get_post_taxonomies();
         $ai_models = Helpers::get_ai_models();
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/prompts-page.php';
@@ -370,50 +370,6 @@ class AdminPage
     // =========================================================================
     // Block rendering
     // =========================================================================
-
-    /**
-     * Get all public taxonomies that apply to posts. Cached per request.
-     *
-     * @return list<array{name: string, label: string, terms: array<int, string>}>
-     */
-    public static function get_post_taxonomies_static(): array
-    {
-        static $cache = null;
-        if ($cache !== null) {
-            return $cache;
-        }
-
-        $tax_names = get_object_taxonomies('post');
-        $result = [];
-
-        foreach ($tax_names as $tax_name) {
-            $tax = get_taxonomy($tax_name);
-            if (!$tax || !$tax->public || $tax->name === 'post_format') {
-                continue;
-            }
-
-            // Only id => name is needed; skips hydrating full WP_Term objects
-            // (post_tag alone can be thousands of terms on a news site).
-            $terms = get_terms([
-                'taxonomy' => $tax->name,
-                'hide_empty' => false,
-                'fields' => 'id=>name',
-            ]);
-
-            if (is_wp_error($terms) || empty($terms)) {
-                continue;
-            }
-
-            $result[] = [
-                'name' => $tax->name,
-                'label' => $tax->labels->singular_name,
-                'terms' => $terms,
-            ];
-        }
-
-        $cache = $result;
-        return $result;
-    }
 
     /**
      * Render a loop or ticker block using the registry.

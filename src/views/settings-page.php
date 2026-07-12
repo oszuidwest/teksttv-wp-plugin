@@ -109,19 +109,19 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
                 <tr>
                     <th scope="row"><label for="teksttv_duration_text"><?php esc_html_e('Tekstslide', 'teksttv-wp-plugin'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_text" name="teksttv_duration_text" value="<?php echo esc_attr(get_option('teksttv_duration_text', 20)); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
+                        <input type="number" id="teksttv_duration_text" name="teksttv_duration_text" value="<?php echo esc_attr(get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['text'])); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="teksttv_duration_image"><?php esc_html_e('Afbeeldingslide', 'teksttv-wp-plugin'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_image" name="teksttv_duration_image" value="<?php echo esc_attr(get_option('teksttv_duration_image', 7)); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
+                        <input type="number" id="teksttv_duration_image" name="teksttv_duration_image" value="<?php echo esc_attr(get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['image'])); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="teksttv_duration_iframe"><?php esc_html_e('Iframe-slide', 'teksttv-wp-plugin'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_iframe" name="teksttv_duration_iframe" value="<?php echo esc_attr(get_option('teksttv_duration_iframe', 30)); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
+                        <input type="number" id="teksttv_duration_iframe" name="teksttv_duration_iframe" value="<?php echo esc_attr(get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['iframe'])); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
                     </td>
                 </tr>
             </table>

@@ -44,13 +44,85 @@ class AiGenerator
     }
 
     /**
-     * Generate a single field (title or body) using the WP AI Client.
+     * Generate the requested field(s) for a post, persist the audit-trail meta,
+     * and apply the region prefix to the body.
      *
-     * @return array{content: string, warning?: string}|\WP_Error
+     * Validation errors and provider failures are returned as WP_Error with a
+     * `status` entry in the error data for HTTP mapping.
+     *
+     * @param string $field 'title', 'body', or 'both'.
+     * @return array{fields: array<string, string>, warning: string}|\WP_Error
      */
-    public static function generate_single_field(string $field, string $post_title, string $post_text, bool $has_photo = false)
+    public static function generate_for_post(\WP_Post $post, string $field, bool $has_photo = false)
     {
         $prompts = Helpers::get_ai_prompts();
+        $post_text = self::prepare_content($post->post_content);
+        $post_title = $post->post_title;
+
+        if (empty($post_text) && empty($post_title)) {
+            return new \WP_Error(
+                'teksttv_no_content',
+                __('Post heeft geen content om samen te vatten.', 'teksttv-wp-plugin'),
+                ['status' => 422]
+            );
+        }
+
+        $min_words = $prompts['min_input_words'];
+        if ($min_words > 0) {
+            $word_count = Helpers::count_words($post_text);
+            if ($word_count < $min_words) {
+                return new \WP_Error(
+                    'teksttv_input_too_short',
+                    // translators: %1$d: actual word count, %2$d: minimum required words
+                    sprintf(__('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', 'teksttv-wp-plugin'), $word_count, $min_words),
+                    ['status' => 422]
+                );
+            }
+        }
+
+        $fields = [];
+        $warnings = [];
+        foreach ($field === 'both' ? ['title', 'body'] : [$field] as $current_field) {
+            $result = self::generate_single_field($current_field, $post_title, $post_text, $prompts, $has_photo);
+            if (is_wp_error($result)) {
+                return new \WP_Error(
+                    'teksttv_generation_failed',
+                    // translators: %s: error message from AI provider
+                    sprintf(__('AI-generatie mislukt: %s', 'teksttv-wp-plugin'), $result->get_error_message()),
+                    ['status' => 500]
+                );
+            }
+            $fields[$current_field] = $result['content'];
+            if (!empty($result['warning'])) {
+                $warnings[] = $result['warning'];
+            }
+        }
+
+        // Save AI output as post meta for audit trail (before prefix, for clean comparison)
+        if (isset($fields['title'])) {
+            update_post_meta($post->ID, '_teksttv_ai_title', $fields['title']);
+        }
+        if (isset($fields['body'])) {
+            update_post_meta($post->ID, '_teksttv_ai_body', $fields['body']);
+
+            // Apply region prefix to body (after save, so audit trail stays clean)
+            $region_prefix = self::get_region_prefix($post->ID, $prompts['region_taxonomy']);
+            if (!empty($region_prefix)) {
+                $fields['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $fields['body']));
+            }
+        }
+
+        return ['fields' => $fields, 'warning' => implode(' ', $warnings)];
+    }
+
+    /**
+     * Generate a single field (title or body) using the WP AI Client.
+     *
+     * @param array<string, mixed> $prompts Config from Helpers::get_ai_prompts().
+     * @return array{content: string, warning?: string}|\WP_Error
+     */
+    public static function generate_single_field(string $field, string $post_title, string $post_text, array $prompts, bool $has_photo = false)
+    {
         [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $prompts, $has_photo);
 
         $last_content = '';
@@ -141,7 +213,7 @@ class AiGenerator
      * @param array<string, mixed> $prompts
      * @return string|\WP_Error
      */
-    public static function call_ai(string $user_prompt, string $system, array $prompts)
+    private static function call_ai(string $user_prompt, string $system, array $prompts)
     {
         $builder = wp_ai_client_prompt($user_prompt)
             ->using_system_instruction($system)
@@ -233,13 +305,10 @@ class AiGenerator
     }
 
     /**
-     * Build a region prefix from the post's taxonomy terms.
+     * Build a region prefix from the post's terms in the configured taxonomy.
      */
-    public static function get_region_prefix(int $post_id): string
+    public static function get_region_prefix(int $post_id, string $taxonomy): string
     {
-        $prompts = Helpers::get_ai_prompts();
-        $taxonomy = $prompts['region_taxonomy'];
-
         if (empty($taxonomy) || !taxonomy_exists($taxonomy)) {
             return '';
         }

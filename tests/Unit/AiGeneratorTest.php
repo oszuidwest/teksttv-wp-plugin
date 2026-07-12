@@ -7,6 +7,33 @@ use TekstTV\AiGenerator;
 
 class AiGeneratorTest extends TestCase
 {
+    /**
+     * Complete prompts config as produced by Helpers::get_ai_prompts().
+     *
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private static function aiPrompts(array $overrides = []): array
+    {
+        return $overrides + [
+            'system' => 'Test',
+            'prompt_title' => 'Schrijf kop',
+            'prompt_body' => 'Vat samen',
+            'word_limit' => 100,
+            'word_limit_photo' => 100,
+            'title_char_limit' => 40,
+            'min_input_words' => 0,
+            'max_retries' => 1,
+            'rate_limit' => 10,
+            'region_taxonomy' => '',
+            'provider' => '',
+            'model' => '',
+            'temperature' => '',
+            'top_p' => '',
+            'max_tokens' => 2048,
+        ];
+    }
+
     // =========================================================================
     // within_rate_limit()
     // =========================================================================
@@ -230,32 +257,22 @@ class AiGeneratorTest extends TestCase
 
     public function test_get_region_prefix_returns_empty_when_no_taxonomy_configured(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['region_taxonomy' => '']);
-
-        $result = AiGenerator::get_region_prefix(1);
+        $result = AiGenerator::get_region_prefix(1, '');
         $this->assertSame('', $result);
     }
 
     public function test_get_region_prefix_returns_empty_when_taxonomy_not_exists(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['region_taxonomy' => 'regio']);
         Functions\expect('taxonomy_exists')
             ->with('regio')
             ->andReturn(false);
 
-        $result = AiGenerator::get_region_prefix(1);
+        $result = AiGenerator::get_region_prefix(1, 'regio');
         $this->assertSame('', $result);
     }
 
     public function test_get_region_prefix_returns_uppercase_term_name(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['region_taxonomy' => 'regio']);
         Functions\expect('taxonomy_exists')
             ->with('regio')
             ->andReturn(true);
@@ -264,49 +281,40 @@ class AiGeneratorTest extends TestCase
             ->andReturn(['Leiden']);
         Functions\expect('is_wp_error')->andReturn(false);
 
-        $result = AiGenerator::get_region_prefix(1);
+        $result = AiGenerator::get_region_prefix(1, 'regio');
         $this->assertSame('LEIDEN', $result);
     }
 
     public function test_get_region_prefix_joins_multiple_terms(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['region_taxonomy' => 'regio']);
         Functions\expect('taxonomy_exists')->andReturn(true);
         Functions\expect('wp_get_post_terms')
             ->andReturn(['Den Haag', 'Leiden']);
         Functions\expect('is_wp_error')->andReturn(false);
 
-        $result = AiGenerator::get_region_prefix(1);
+        $result = AiGenerator::get_region_prefix(1, 'regio');
         $this->assertSame('DEN HAAG / LEIDEN', $result);
     }
 
     public function test_get_region_prefix_returns_empty_when_no_terms(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['region_taxonomy' => 'regio']);
         Functions\expect('taxonomy_exists')->andReturn(true);
         Functions\expect('wp_get_post_terms')->andReturn([]);
         Functions\expect('is_wp_error')->andReturn(false);
 
-        $result = AiGenerator::get_region_prefix(1);
+        $result = AiGenerator::get_region_prefix(1, 'regio');
         $this->assertSame('', $result);
     }
 
     public function test_get_region_prefix_returns_empty_on_wp_error(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['region_taxonomy' => 'regio']);
         Functions\expect('taxonomy_exists')->andReturn(true);
 
         $error = \Mockery::mock('WP_Error');
         Functions\expect('wp_get_post_terms')->andReturn($error);
         Functions\expect('is_wp_error')->with($error)->andReturn(true);
 
-        $result = AiGenerator::get_region_prefix(1);
+        $result = AiGenerator::get_region_prefix(1, 'regio');
         $this->assertSame('', $result);
     }
 
@@ -357,21 +365,6 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_returns_body_with_wpautop(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn([
-                'system' => 'Test',
-                'prompt_body' => 'Vat samen',
-                'word_limit' => 100,
-                'title_char_limit' => 40,
-                'max_retries' => 1,
-                'max_tokens' => 2048,
-                'temperature' => '',
-                'top_p' => '',
-                'model' => '',
-                'provider' => '',
-            ]);
-
         // Mock wp_ai_client_prompt chain
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
@@ -382,7 +375,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
 
-        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst hier');
+        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst hier', self::aiPrompts());
 
         $this->assertArrayHasKey('content', $result);
         $this->assertStringStartsWith('<p>', $result['content']);
@@ -391,21 +384,6 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_returns_title_without_wpautop(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn([
-                'system' => 'Test',
-                'prompt_title' => 'Schrijf kop',
-                'word_limit' => 100,
-                'title_char_limit' => 40,
-                'max_retries' => 1,
-                'max_tokens' => 2048,
-                'temperature' => '',
-                'top_p' => '',
-                'model' => '',
-                'provider' => '',
-            ]);
-
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
         $builder->shouldReceive('using_max_tokens')->andReturnSelf();
@@ -413,28 +391,13 @@ class AiGeneratorTest extends TestCase
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
 
-        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst');
+        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiPrompts());
 
         $this->assertSame('Korte kop', $result['content']);
     }
 
     public function test_generate_single_field_returns_wp_error_on_failure(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn([
-                'system' => 'Test',
-                'prompt_body' => 'Vat samen',
-                'word_limit' => 100,
-                'title_char_limit' => 40,
-                'max_retries' => 1,
-                'max_tokens' => 2048,
-                'temperature' => '',
-                'top_p' => '',
-                'model' => '',
-                'provider' => '',
-            ]);
-
         $wp_error = \Mockery::mock('WP_Error');
         $wp_error->shouldReceive('get_error_message')->andReturn('API timeout');
 
@@ -447,28 +410,13 @@ class AiGeneratorTest extends TestCase
         Functions\expect('is_wp_error')->with($wp_error)->andReturn(true);
         Functions\expect('error_log')->andReturn(true);
 
-        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst');
+        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst', self::aiPrompts());
 
         $this->assertSame($wp_error, $result);
     }
 
     public function test_generate_single_field_retries_on_length_violation(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn([
-                'system' => 'Test',
-                'prompt_body' => 'Vat samen',
-                'word_limit' => 10,
-                'title_char_limit' => 40,
-                'max_retries' => 2,
-                'max_tokens' => 2048,
-                'temperature' => '',
-                'top_p' => '',
-                'model' => '',
-                'provider' => '',
-            ]);
-
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
         $builder->shouldReceive('using_max_tokens')->andReturnSelf();
@@ -481,11 +429,146 @@ class AiGeneratorTest extends TestCase
         Functions\expect('is_wp_error')->andReturn(false);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
 
-        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst');
+        $result = AiGenerator::generate_single_field(
+            'body',
+            'Titel',
+            'Tekst',
+            self::aiPrompts(['word_limit' => 10, 'word_limit_photo' => 10, 'max_retries' => 2])
+        );
 
         // Should have a warning because both attempts exceeded limit
         $this->assertArrayHasKey('warning', $result);
         $this->assertNotSame('retry', $result['warning']);
+    }
+
+    // =========================================================================
+    // generate_for_post()
+    // =========================================================================
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private static function makePost(array $overrides = []): \WP_Post
+    {
+        $post = new \WP_Post();
+        $post->ID = 42;
+        $post->post_title = $overrides['post_title'] ?? 'Titel';
+        $post->post_content = $overrides['post_content'] ?? '<p>' . implode(' ', array_fill(0, 60, 'woord')) . '</p>';
+        return $post;
+    }
+
+    public function test_generate_for_post_rejects_empty_post(): void
+    {
+        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn([]);
+
+        $result = AiGenerator::generate_for_post(
+            self::makePost(['post_title' => '', 'post_content' => '']),
+            'body'
+        );
+
+        $this->assertInstanceOf(\WP_Error::class, $result);
+        $this->assertSame('teksttv_no_content', $result->get_error_code());
+        $this->assertSame(422, $result->get_error_data()['status']);
+    }
+
+    public function test_generate_for_post_rejects_too_short_input(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn(['min_input_words' => 50]);
+
+        $result = AiGenerator::generate_for_post(
+            self::makePost(['post_content' => '<p>veel te kort</p>']),
+            'body'
+        );
+
+        $this->assertInstanceOf(\WP_Error::class, $result);
+        $this->assertSame('teksttv_input_too_short', $result->get_error_code());
+        $this->assertSame(422, $result->get_error_data()['status']);
+    }
+
+    public function test_generate_for_post_saves_audit_meta_before_region_prefix(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn(['region_taxonomy' => 'regio', 'min_input_words' => 0, 'max_retries' => 1]);
+
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('generate_text')
+            ->andReturn(implode(' ', array_fill(0, 50, 'woord')));
+
+        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
+        Functions\expect('is_wp_error')->andReturn(false);
+        Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
+
+        // The audit meta must receive the body WITHOUT the region prefix.
+        Functions\expect('update_post_meta')
+            ->once()
+            ->with(42, '_teksttv_ai_body', \Mockery::on(fn($body) => !str_contains($body, 'LEIDEN')));
+
+        Functions\expect('taxonomy_exists')->with('regio')->andReturn(true);
+        Functions\expect('wp_get_post_terms')->andReturn(['Leiden']);
+        Functions\when('esc_html')->returnArg();
+
+        $result = AiGenerator::generate_for_post(self::makePost(), 'body');
+
+        $this->assertIsArray($result);
+        $this->assertStringStartsWith('<p>LEIDEN - ', $result['fields']['body']);
+        $this->assertSame('', $result['warning']);
+    }
+
+    public function test_generate_for_post_generates_both_fields(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn(['min_input_words' => 0, 'max_retries' => 1]);
+
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('generate_text')
+            ->andReturn('Korte kop', implode(' ', array_fill(0, 50, 'woord')));
+
+        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
+        Functions\expect('is_wp_error')->andReturn(false);
+        Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
+
+        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_title', 'Korte kop');
+        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_body', \Mockery::type('string'));
+
+        $result = AiGenerator::generate_for_post(self::makePost(), 'both');
+
+        $this->assertIsArray($result);
+        $this->assertSame('Korte kop', $result['fields']['title']);
+        $this->assertStringStartsWith('<p>', $result['fields']['body']);
+    }
+
+    public function test_generate_for_post_maps_provider_failure_to_500(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn(['min_input_words' => 0, 'max_retries' => 1]);
+
+        $wp_error = \Mockery::mock('WP_Error');
+        $wp_error->shouldReceive('get_error_message')->andReturn('API timeout');
+
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('generate_text')->andReturn($wp_error);
+
+        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
+        Functions\expect('is_wp_error')->andReturnUsing(fn($v) => $v === $wp_error);
+        Functions\expect('error_log')->andReturn(true);
+
+        $result = AiGenerator::generate_for_post(self::makePost(), 'body');
+
+        $this->assertInstanceOf(\WP_Error::class, $result);
+        $this->assertSame('teksttv_generation_failed', $result->get_error_code());
+        $this->assertSame(500, $result->get_error_data()['status']);
+        $this->assertStringContainsString('API timeout', $result->get_error_message());
     }
 
     // =========================================================================

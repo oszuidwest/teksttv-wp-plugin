@@ -34,6 +34,22 @@ export function pickSingleImage(onSelect: (att: WPMediaAttachment) => void): WPM
 }
 
 /**
+ * Open a multi-image media frame and call `onSelect` with the chosen attachments.
+ * Callers that want to reuse the frame on later opens can hold the returned frame.
+ */
+export function pickImages(
+    onSelect: (atts: WPMediaAttachment[]) => void,
+    options: Omit<WPMediaOptions, 'multiple' | 'library'> = {},
+): WPMediaFrame {
+    const frame = wpMedia({ ...options, multiple: true, library: { type: 'image' } });
+    frame.on('select', () => {
+        onSelect(frame.state().get('selection').toJSON());
+    });
+    frame.open();
+    return frame;
+}
+
+/**
  * Gutenberg and third-party plugins open the media library outside our wpMedia wrapper.
  * Restore `_` on interaction and after late scripts (Yoast SEO) finish loading.
  */

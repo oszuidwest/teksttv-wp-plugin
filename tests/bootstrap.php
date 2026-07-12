@@ -79,6 +79,49 @@ if (!function_exists('wp_strip_all_tags')) {
     }
 }
 
+// Minimal WP_Error stub so domain code can construct errors in unit tests.
+if (!class_exists('WP_Error')) {
+    class WP_Error
+    {
+        /**
+         * @param mixed $data
+         */
+        public function __construct(
+            public string $code = '',
+            public string $message = '',
+            public $data = null
+        ) {
+        }
+
+        public function get_error_code(): string
+        {
+            return $this->code;
+        }
+
+        public function get_error_message(): string
+        {
+            return $this->message;
+        }
+
+        /** @return mixed */
+        public function get_error_data()
+        {
+            return $this->data;
+        }
+    }
+}
+
+// Minimal WP_Post stub for passing typed posts into domain methods.
+if (!class_exists('WP_Post')) {
+    #[\AllowDynamicProperties]
+    class WP_Post
+    {
+        public int $ID = 0;
+        public string $post_title = '';
+        public string $post_content = '';
+    }
+}
+
 // Minimal WP_REST_Response stub so REST callbacks can be unit tested without
 // pulling in WordPress. Captures data and status for assertions.
 if (!class_exists('WP_REST_Response')) {

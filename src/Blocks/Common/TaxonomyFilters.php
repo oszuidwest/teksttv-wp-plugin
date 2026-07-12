@@ -2,7 +2,7 @@
 
 namespace TekstTV\Blocks\Common;
 
-use TekstTV\AdminPage;
+use TekstTV\Helpers;
 
 /**
  * Shared render + sanitization for taxonomy_filters in block admin forms.
@@ -16,9 +16,8 @@ final class TaxonomyFilters
      */
     public static function render_selects(int|string $index, array $filters, string $prefix): void
     {
-        $enabled_tax = get_option('teksttv_enabled_taxonomies', ['category']);
-        $all_taxonomies = AdminPage::get_post_taxonomies_static();
-        $taxonomies = array_filter($all_taxonomies, fn ($t) => in_array($t['name'], $enabled_tax, true));
+        $enabled_tax = Helpers::enabled_taxonomies();
+        $taxonomies = array_filter(Helpers::get_post_taxonomies(), fn ($t) => in_array($t['name'], $enabled_tax, true));
 
         foreach ($taxonomies as $tax) :
             $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));

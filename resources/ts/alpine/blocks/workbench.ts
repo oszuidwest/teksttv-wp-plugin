@@ -1,6 +1,6 @@
 import Sortable from 'sortablejs';
 import { hide, show, slideDown, slideUp, tmplHtml } from '../../modules/dom';
-import { initTomSelectIn } from '../../modules/utils';
+import { debounce, initTomSelectIn } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
 import { handleBlocksClick, removeClosestBlock, toggleBlockOpen } from './handleBlocksClick';
 import { reindexBlocks as reindexBlocksDom, reindexTicker as reindexTickerDom } from './reindex';
@@ -26,16 +26,11 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     }
 
     function refreshSummaries(): void {
-        if (!blocksEl) return;
-        updateBlockSummaries(blocksEl);
+        if (blocksEl) updateBlockSummaries(blocksEl);
+        if (tickerEl) updateBlockSummaries(tickerEl);
     }
 
-    let summariesTimer: ReturnType<typeof setTimeout> | undefined;
-
-    function scheduleSummaries(): void {
-        clearTimeout(summariesTimer);
-        summariesTimer = window.setTimeout(refreshSummaries, 150);
-    }
+    const scheduleSummaries = debounce(refreshSummaries, 150);
 
     /** Insert a block from a template, expand it, and optionally init TomSelect / focus its first text input. */
     function insertBlockFromTemplate(
@@ -125,10 +120,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
-            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, {
-                tomSelect: true,
-                focusText: true,
-            });
+            if (
+                insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, {
+                    tomSelect: true,
+                    focusText: true,
+                })
+            ) {
+                refreshSummaries();
+            }
         },
 
         expandAllBlocks(): void {
@@ -188,6 +187,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!(t instanceof HTMLElement) || !tickerEl?.contains(t)) return;
             if (t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
                 applySchedulingToggle(t);
+            }
+            if (t.closest('.teksttv-block-body')) {
+                scheduleSummaries();
             }
         },
 

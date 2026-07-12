@@ -1,12 +1,21 @@
 import type { Slide, WPMediaAttachment } from './types';
 
 /** Escape a string for safe insertion into an HTML attribute. */
-export function escAttr(value: string | number): string {
+function escAttr(value: string | number): string {
     return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Debounce a zero-argument function: only the last call within `ms` runs. */
+export function debounce(fn: () => void, ms: number): () => void {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    return () => {
+        clearTimeout(timer);
+        timer = window.setTimeout(fn, ms);
+    };
+}
+
 /** Encode a slide object to a base64 string for the preview URL. */
-export function encodeSlideData(slide: Slide): string {
+function encodeSlideData(slide: Slide): string {
     const json = JSON.stringify(slide);
     const bytes = new TextEncoder().encode(json);
     let binary = '';

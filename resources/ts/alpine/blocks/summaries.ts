@@ -13,11 +13,10 @@ function getSchedulingSuffix(block: HTMLElement): string {
 
 function fieldSummaryValue(el: Element): string {
     if (el instanceof HTMLSelectElement) {
-        const names: string[] = [];
-        el.querySelectorAll<HTMLOptionElement>('option:checked').forEach((opt) => {
-            if (opt.value) names.push(opt.text ?? '');
-        });
-        return names.join(', ');
+        return Array.from(el.selectedOptions)
+            .filter((opt) => opt.value)
+            .map((opt) => opt.text)
+            .join(', ');
     }
     if (el instanceof HTMLInputElement) return el.value.trim();
     return '';
@@ -31,8 +30,7 @@ function fieldSummaryValue(el: Element): string {
  * Field contract:
  * - `data-summary`         — include this field; the attribute value is an
  *                            optional format with `%s` (e.g. `%sx`, `max %s`).
- * - `data-summary-label`   — show this text instead of the value when filled;
- *                            a value of '0' counts as empty (image-id inputs).
+ * - `data-summary-label`   — show this text instead of the value when filled.
  * - `data-summary-empty`   — show this text when the field is empty; identical
  *                            parts are deduplicated (e.g. several taxonomy
  *                            filters that all fall back to 'alle').
@@ -43,8 +41,7 @@ export function updateBlockSummaries(blocksEl: HTMLElement): void {
 
         const parts: string[] = [];
         blockEl.querySelectorAll<HTMLElement>('[data-summary]').forEach((field) => {
-            let value = fieldSummaryValue(field);
-            if (field.dataset.summaryLabel !== undefined && value === '0') value = '';
+            const value = fieldSummaryValue(field);
             if (value !== '') {
                 const format = field.dataset.summary ?? '';
                 parts.push(field.dataset.summaryLabel ?? (format ? format.replace('%s', value) : value));

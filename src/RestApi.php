@@ -113,12 +113,9 @@ class RestApi
 
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
-        $has_photo = (bool) $request->get_param('has_photo');
 
         // Rate limiting per user
-        $prompts = Helpers::get_ai_prompts();
-        $user_id = get_current_user_id();
-        if (!AiGenerator::within_rate_limit($user_id, $prompts['rate_limit'])) {
+        if (!AiGenerator::within_rate_limit(get_current_user_id(), Helpers::get_ai_prompts()['rate_limit'])) {
             return new WP_REST_Response(
                 ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
                 429
@@ -134,66 +131,18 @@ class RestApi
             return new WP_REST_Response(['error' => __('Post niet gevonden.', 'teksttv-wp-plugin')], 404);
         }
 
-        // Clean post content for AI input
-        $post_text = AiGenerator::prepare_content($post->post_content);
-        $post_title = $post->post_title;
-
-        if (empty($post_text) && empty($post_title)) {
-            return new WP_REST_Response(['error' => __('Post heeft geen content om samen te vatten.', 'teksttv-wp-plugin')], 422);
-        }
-
-        $min_words = $prompts['min_input_words'];
-        if ($min_words > 0) {
-            $word_count = Helpers::count_words($post_text);
-            if ($word_count < $min_words) {
-                return new WP_REST_Response(
-                    // translators: %1$d: actual word count, %2$d: minimum required words
-                    ['error' => sprintf(__('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', 'teksttv-wp-plugin'), $word_count, $min_words)],
-                    422
-                );
-            }
-        }
-
-        $fields_to_generate = $field === 'both' ? ['title', 'body'] : [$field];
-        $response_data = [];
-        $warnings = [];
-
-        foreach ($fields_to_generate as $current_field) {
-            $result = AiGenerator::generate_single_field($current_field, $post_title, $post_text, $has_photo);
-            if (is_wp_error($result)) {
-                return new WP_REST_Response(
-                    // translators: %s: error message from AI provider
-                    ['error' => sprintf(__('AI-generatie mislukt: %s', 'teksttv-wp-plugin'), $result->get_error_message())],
-                    500
-                );
-            }
-            $response_data[$current_field] = $result['content'];
-            if (!empty($result['warning'])) {
-                $warnings[] = $result['warning'];
-            }
-        }
-
-        // Save AI output as post meta for audit trail (before prefix, for clean comparison)
-        if (isset($response_data['title'])) {
-            update_post_meta($post_id, '_teksttv_ai_title', $response_data['title']);
-        }
-        if (isset($response_data['body'])) {
-            update_post_meta($post_id, '_teksttv_ai_body', $response_data['body']);
-        }
-
-        // Apply region prefix to body (after save, so audit trail stays clean)
-        if (isset($response_data['body'])) {
-            $region_prefix = AiGenerator::get_region_prefix($post_id);
-            if (!empty($region_prefix)) {
-                $response_data['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $response_data['body']));
-            }
+        $result = AiGenerator::generate_for_post($post, $field, (bool) $request->get_param('has_photo'));
+        if (is_wp_error($result)) {
+            $data = $result->get_error_data();
+            $status = is_array($data) && isset($data['status']) ? (int) $data['status'] : 500;
+            return new WP_REST_Response(['error' => $result->get_error_message()], $status);
         }
 
         // For single field requests, keep backward-compatible response
-        $response = $field !== 'both' ? ['content' => $response_data[$field]] : $response_data;
+        $response = $field !== 'both' ? ['content' => $result['fields'][$field]] : $result['fields'];
 
-        if (!empty($warnings)) {
-            $response['warning'] = implode(' ', $warnings);
+        if ($result['warning'] !== '') {
+            $response['warning'] = $result['warning'];
         }
 
         return new WP_REST_Response($response, 200);

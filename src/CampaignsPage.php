@@ -48,7 +48,7 @@ class CampaignsPage
         $group = (string) ($campaign['group'] ?? '');
         $duration = $campaign['duration'] ?? '';
         $slides = $campaign['slides'] ?? [];
-        $default_duration = (int) get_option('teksttv_duration_image', 7);
+        $default_duration = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['image']);
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
