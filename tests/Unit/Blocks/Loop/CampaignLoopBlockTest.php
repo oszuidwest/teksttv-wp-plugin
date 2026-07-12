@@ -50,6 +50,16 @@ class CampaignLoopBlockTest extends TestCase
         $this->assertArrayNotHasKey('limit', $result);
     }
 
+    public function test_save_clamps_limit_to_ui_max(): void
+    {
+        $result = CampaignLoopBlock::save([
+            'groups' => ['A'],
+            'limit' => '9999',
+        ]);
+
+        $this->assertSame(100, $result['limit']);
+    }
+
     public function test_save_empty_groups_defaults(): void
     {
         $result = CampaignLoopBlock::save([]);

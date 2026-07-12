@@ -148,6 +148,19 @@ class Helpers
     }
 
     /**
+     * Clamp a raw numeric input into an inclusive integer range.
+     *
+     * The UI enforces min/max via input attributes, but a crafted POST can
+     * bypass those; this is the authoritative server-side clamp.
+     *
+     * @param mixed $value
+     */
+    public static function clamp_int(mixed $value, int $min, int $max): int
+    {
+        return max($min, min($max, absint($value)));
+    }
+
+    /**
      * Get the AI prompt configuration with defaults.
      *
      * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}

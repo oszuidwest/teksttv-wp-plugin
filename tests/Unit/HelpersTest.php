@@ -8,6 +8,31 @@ use TekstTV\Helpers;
 class HelpersTest extends TestCase
 {
     // =========================================================================
+    // clamp_int()
+    // =========================================================================
+
+    public function test_clamp_int_returns_value_within_range(): void
+    {
+        $this->assertSame(50, Helpers::clamp_int('50', 1, 120));
+    }
+
+    public function test_clamp_int_caps_at_max(): void
+    {
+        $this->assertSame(120, Helpers::clamp_int('9999', 1, 120));
+    }
+
+    public function test_clamp_int_raises_to_min(): void
+    {
+        $this->assertSame(10, Helpers::clamp_int('0', 10, 500));
+    }
+
+    public function test_clamp_int_handles_negative_via_absint(): void
+    {
+        // absint() takes the absolute value first, then the range is applied.
+        $this->assertSame(120, Helpers::clamp_int('-9999', 1, 120));
+    }
+
+    // =========================================================================
     // is_allowed_on_day()
     // =========================================================================
 

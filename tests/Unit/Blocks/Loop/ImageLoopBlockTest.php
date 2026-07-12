@@ -26,6 +26,12 @@ class ImageLoopBlockTest extends TestCase
         $this->assertArrayNotHasKey('duration', $result);
     }
 
+    public function test_save_clamps_duration_to_ui_max(): void
+    {
+        $result = ImageLoopBlock::save(['image_id' => '42', 'duration' => '9999']);
+        $this->assertSame(120, $result['duration']);
+    }
+
     public function test_save_defaults_to_zero(): void
     {
         $result = ImageLoopBlock::save([]);

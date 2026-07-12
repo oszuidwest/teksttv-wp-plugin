@@ -29,6 +29,22 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame(10, $result['count']);
     }
 
+    public function test_save_clamps_count_to_ui_max(): void
+    {
+        $result = ArticlesLoopBlock::save(['count' => '9999']);
+        $this->assertSame(50, $result['count']);
+    }
+
+    public function test_save_clamps_durations_to_ui_max(): void
+    {
+        $result = ArticlesLoopBlock::save([
+            'duration_text' => '9999',
+            'duration_image' => '9999',
+        ]);
+        $this->assertSame(120, $result['duration_text']);
+        $this->assertSame(120, $result['duration_image']);
+    }
+
     public function test_save_with_durations(): void
     {
         $result = ArticlesLoopBlock::save([

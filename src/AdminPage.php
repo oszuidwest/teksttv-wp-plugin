@@ -86,31 +86,31 @@ class AdminPage
 
         register_setting('teksttv_settings', 'teksttv_default_end_days', [
             'type' => 'integer',
-            'sanitize_callback' => 'absint',
+            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 0, 365),
             'default' => 7,
         ]);
 
         register_setting('teksttv_settings', 'teksttv_max_post_age', [
             'type' => 'integer',
-            'sanitize_callback' => 'absint',
+            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 0, 365),
             'default' => 30,
         ]);
 
         register_setting('teksttv_settings', 'teksttv_duration_text', [
             'type' => 'integer',
-            'sanitize_callback' => 'absint',
+            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
             'default' => 20,
         ]);
 
         register_setting('teksttv_settings', 'teksttv_duration_image', [
             'type' => 'integer',
-            'sanitize_callback' => 'absint',
+            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
             'default' => 7,
         ]);
 
         register_setting('teksttv_settings', 'teksttv_duration_iframe', [
             'type' => 'integer',
-            'sanitize_callback' => 'absint',
+            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
             'default' => 30,
         ]);
 
@@ -141,10 +141,11 @@ class AdminPage
                     'system' => sanitize_textarea_field($input['system'] ?? ''),
                     'prompt_title' => sanitize_textarea_field($input['prompt_title'] ?? ''),
                     'prompt_body' => sanitize_textarea_field($input['prompt_body'] ?? ''),
-                    'word_limit' => max(10, absint($input['word_limit'] ?? 100)),
-                    'word_limit_photo' => absint($input['word_limit_photo'] ?? 0),
-                    'title_char_limit' => max(10, absint($input['title_char_limit'] ?? 40)),
-                    'min_input_words' => max(0, absint($input['min_input_words'] ?? 50)),
+                    'word_limit' => Helpers::clamp_int($input['word_limit'] ?? 100, 10, 500),
+                    // 0 means "inherit word_limit"; any positive value is capped at the UI max.
+                    'word_limit_photo' => min(500, absint($input['word_limit_photo'] ?? 0)),
+                    'title_char_limit' => Helpers::clamp_int($input['title_char_limit'] ?? 40, 10, 100),
+                    'min_input_words' => Helpers::clamp_int($input['min_input_words'] ?? 50, 0, 500),
                     'max_retries' => max(1, min(5, absint($input['max_retries'] ?? 3))),
                     'rate_limit' => max(1, min(60, absint($input['rate_limit'] ?? 10))),
                     'region_taxonomy' => sanitize_key($input['region_taxonomy'] ?? ''),

@@ -38,6 +38,16 @@ class WeatherLoopBlockTest extends TestCase
         $this->assertStringNotContainsString('<script>', $result['location']);
     }
 
+    public function test_save_clamps_duration_to_ui_max(): void
+    {
+        $result = WeatherLoopBlock::save([
+            'location' => 'Breda,NL',
+            'duration' => '9999',
+        ]);
+
+        $this->assertSame(120, $result['duration']);
+    }
+
     public function test_save_omits_empty_duration(): void
     {
         $result = WeatherLoopBlock::save([

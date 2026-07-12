@@ -192,7 +192,7 @@ class CampaignsPage
             // Duration
             $dur = $item['duration'] ?? '';
             if ($dur !== '') {
-                $saved['duration'] = absint($dur);
+                $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
             }
 
             // Dates

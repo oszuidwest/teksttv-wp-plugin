@@ -121,7 +121,7 @@ final class WeatherLoopBlock implements LoopBlock
 
         $dur = $raw['duration'] ?? '';
         if ($dur !== '') {
-            $saved['duration'] = absint($dur);
+            $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
         }
 
         return $saved;

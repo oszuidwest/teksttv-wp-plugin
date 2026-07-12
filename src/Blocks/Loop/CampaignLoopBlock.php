@@ -99,7 +99,7 @@ final class CampaignLoopBlock implements LoopBlock
 
         $limit = $raw['limit'] ?? '';
         if ($limit !== '') {
-            $saved['limit'] = absint($limit);
+            $saved['limit'] = Helpers::clamp_int($limit, 1, 100);
         }
 
         return $saved;

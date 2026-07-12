@@ -80,17 +80,17 @@ final class ArticlesLoopBlock implements LoopBlock
     public static function save(array $raw): array
     {
         $saved = [
-            'count' => absint($raw['count'] ?? 3),
+            'count' => Helpers::clamp_int($raw['count'] ?? 3, 1, 50),
             'taxonomy_filters' => TaxonomyFilters::sanitize_from_post($raw),
         ];
 
         $dt = $raw['duration_text'] ?? '';
         $di = $raw['duration_image'] ?? '';
         if ($dt !== '') {
-            $saved['duration_text'] = absint($dt);
+            $saved['duration_text'] = Helpers::clamp_int($dt, 1, 120);
         }
         if ($di !== '') {
-            $saved['duration_image'] = absint($di);
+            $saved['duration_image'] = Helpers::clamp_int($di, 1, 120);
         }
 
         return $saved;
@@ -107,7 +107,9 @@ final class ArticlesLoopBlock implements LoopBlock
         }
 
         $slides = [];
-        $count = $block['count'] ?? 3;
+        // Clamp at runtime too: values stored before the save-time clamp existed
+        // could still be unbounded and would otherwise size the WP_Query.
+        $count = Helpers::clamp_int($block['count'] ?? 3, 1, 50);
         $taxonomy_filters = $block['taxonomy_filters'] ?? [];
 
         $args = [
