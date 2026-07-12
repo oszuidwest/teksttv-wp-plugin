@@ -1,9 +1,14 @@
 node_modules/
 vendor/
 assets/
+release/
+*.zip
 *.tsbuildinfo
 .cache
 .phpunit.cache
+test-results/
+playwright-report/
+.playwright/
 
 *.md
 !README.md

@@ -80,6 +80,22 @@ From [`package.json`](package.json):
 | `bun run lint`     | PHPCS + Biome on `resources/` |
 | `bun run lint:fix` | PHPCBF + Biome `--write` |
 | `bun run analyse`  | PHPStan |
-| `bun run test`     | PHPUnit |
+| `bun run test`     | PHPUnit (unit) |
+| `bun run env:start`| Build + package the artifact and boot WordPress via [`wp-env`](https://www.npmjs.com/package/@wordpress/env) (needs Docker) |
+| `bun run test:e2e:fixtures` | Seed the running site with channels, a post, a loop/ticker config and a custom-role user |
+| `bun run test:e2e` | Playwright smoke suite against the running site |
 
-CI runs lint and the plugin artifact build; see [`.github/workflows/`](.github/workflows/).
+### End-to-end smoke suite
+
+The e2e suite installs the **built plugin artifact** (not the raw checkout)
+into a real WordPress and checks activation, administrator and custom-role
+settings saves, admin screen rendering, and the `/slides` REST shape. Locally:
+
+```bash
+bun run env:start            # Docker required
+bun run test:e2e:fixtures
+bun run test:e2e
+bun run env:stop
+```
+
+CI runs lint, the plugin artifact build, and the e2e suite; see [`.github/workflows/`](.github/workflows/).

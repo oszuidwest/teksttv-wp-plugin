@@ -13,7 +13,12 @@
         "lint:js": "biome check resources/",
         "lint:fix": "vendor/bin/phpcbf; bunx biome check --write resources/",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
-        "test": "vendor/bin/phpunit"
+        "test": "vendor/bin/phpunit",
+        "build:package": "bun run build && bash bin/package-plugin.sh",
+        "env:start": "bun run build:package && wp-env start",
+        "env:stop": "wp-env stop",
+        "test:e2e:fixtures": "wp-env run cli wp eval-file wp-content/e2e/fixtures.php",
+        "test:e2e": "playwright test"
     },
     "dependencies": {
         "alpinejs": "^3.15.12",
@@ -22,6 +27,8 @@
     },
     "devDependencies": {
         "@biomejs/biome": "^2.5.2",
-        "@types/sortablejs": "^1.15.9"
+        "@playwright/test": "^1.61.1",
+        "@types/sortablejs": "^1.15.9",
+        "@wordpress/env": "^11.10.0"
     }
 }
