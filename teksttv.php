@@ -9,7 +9,7 @@
  * License: GPL-2.0-or-later
  * Text Domain: teksttv-wp-plugin
  * Requires at least: 7.0
- * Requires PHP: 8.1
+ * Requires PHP: 8.3
  */
 
 if (!defined('ABSPATH')) {
