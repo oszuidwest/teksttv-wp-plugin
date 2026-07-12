@@ -31,7 +31,7 @@ export function createPostMetaPage() {
     function refreshWordCount(): void {
         updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
     }
-    
+
     function updatePreviewAndWordCount(): void {
         updatePreview();
         refreshWordCount();
