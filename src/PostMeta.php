@@ -282,9 +282,12 @@ class PostMeta
             'sidebar_image' => sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? '')),
         ];
 
-        // No cache invalidation here: the save_post_post hook
-        // (invalidate_on_post_save) already fires for this same save.
         self::process_save($post_id, $data);
+
+        // save_post_post also invalidates for this save, but it fires BEFORE
+        // this callback writes the meta. A concurrent /slides request in that
+        // window can re-cache the old meta, so invalidate again after writing.
+        RestApi::invalidate_slides_cache();
     }
 
     /**

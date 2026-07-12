@@ -21,7 +21,11 @@ export function previewSlideUrl(baseUrl: string, slide: Slide): string {
     return `${baseUrl}?data=${encodeURIComponent(encodeSlideData(slide))}`;
 }
 
-/** Split editor HTML on page separators (mirrors PHP ArticlesLoopBlock::split_pages). */
+/**
+ * Split editor HTML on page separators. Uses the same separator regex as PHP
+ * ArticlesLoopBlock::split_pages, but unlike PHP it keeps empty/untrimmed
+ * segments — callers filter or count as needed.
+ */
 export function splitPages(html: string): string[] {
     return html.split(/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i);
 }
