@@ -268,8 +268,6 @@ class PostMetaTest extends TestCase
 
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('wp_unslash')->alias(fn ($v) => $v);
-        Functions\when('sanitize_text_field')->alias(fn ($v) => $v);
-        Functions\when('absint')->alias(fn ($v) => abs((int) $v));
         Functions\when('current_user_can')->justReturn(true);
         $this->setupProcessSave();
 
