@@ -247,24 +247,26 @@ class RestApi
     public static function build_ai_prompt(string $field, string $post_title, string $post_text, array $prompts): array
     {
         if ($field === 'title') {
+            $tokens = ['{{chars}}' => (string) $prompts['title_char_limit']];
             $user_prompt = sprintf(
                 "%s\n\nTitel: %s\n\n%s",
-                $prompts['prompt_title'],
+                strtr($prompts['prompt_title'], $tokens),
                 $post_title,
                 mb_substr($post_text, 0, 2000)
             );
-            $system = $prompts['system'] . sprintf(
+            $system = strtr($prompts['system'], $tokens) . sprintf(
                 ' De kop mag maximaal %d tekens lang zijn.',
                 $prompts['title_char_limit']
             );
         } else {
+            $tokens = ['{{words}}' => (string) $prompts['word_limit']];
             $user_prompt = sprintf(
                 "%s\n\nTitel: %s\n\n%s",
-                $prompts['prompt_body'],
+                strtr($prompts['prompt_body'], $tokens),
                 $post_title,
                 mb_substr($post_text, 0, 4000)
             );
-            $system = $prompts['system'] . sprintf(
+            $system = strtr($prompts['system'], $tokens) . sprintf(
                 ' De samenvatting moet tussen de %d en %d woorden zijn.',
                 (int) ceil($prompts['word_limit'] * 0.2),
                 $prompts['word_limit']

@@ -163,14 +163,8 @@ class Helpers
 
         $defaults = [
             'system' => 'Je bent een eindredacteur voor tekst-tv. Schrijf in natuurlijk, vloeiend Nederlands voor een breed publiek. Gebruik korte, heldere zinnen. Schrijf alleen in het Nederlands en gebruik geen gedachtestreepjes.',
-            'prompt_title' => sprintf(
-                'Schrijf een korte, pakkende kop voor tekst-tv (maximaal %d tekens) gebaseerd op dit artikel. Geef alleen de kop terug, zonder aanhalingstekens.',
-                $title_char_limit
-            ),
-            'prompt_body' => sprintf(
-                'Vat dit nieuwsartikel samen voor tekst-tv in maximaal %d woorden. Schrijf in vloeiende, korte zinnen zonder HTML-opmaak.',
-                $word_limit
-            ),
+            'prompt_title' => 'Schrijf een korte, pakkende kop voor tekst-tv (maximaal {{chars}} tekens) gebaseerd op dit artikel. Geef alleen de kop terug, zonder aanhalingstekens.',
+            'prompt_body' => 'Vat dit nieuwsartikel samen voor tekst-tv in maximaal {{words}} woorden. Schrijf in vloeiende, korte zinnen zonder HTML-opmaak.',
         ];
 
         return [

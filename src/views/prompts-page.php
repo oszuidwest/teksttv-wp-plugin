@@ -27,7 +27,16 @@ echo '<h1>' . esc_html__('Content & AI', 'teksttv-wp-plugin') . '</h1>';
 
         <div class="teksttv-card">
             <h3><?php esc_html_e('Prompt: Kop', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Instructie voor het genereren van de titel. De artikeltitel en inhoud worden automatisch toegevoegd.', 'teksttv-wp-plugin'); ?></p>
+            <p class="description">
+                <?php esc_html_e('Instructie voor het genereren van de titel. De artikeltitel en inhoud worden automatisch toegevoegd.', 'teksttv-wp-plugin'); ?>
+                <?php
+                printf(
+                    /* translators: %s: placeholder token, e.g. {{chars}} */
+                    esc_html__('Gebruik %s om de tekenlimiet in te vullen.', 'teksttv-wp-plugin'),
+                    '<code>{{chars}}</code>'
+                );
+                ?>
+            </p>
             <textarea name="teksttv_ai_prompts[prompt_title]" rows="3" class="large-text"><?php echo esc_textarea($prompts['prompt_title']); ?></textarea>
             <table class="form-table teksttv-form-table">
                 <tr>
@@ -41,7 +50,16 @@ echo '<h1>' . esc_html__('Content & AI', 'teksttv-wp-plugin') . '</h1>';
 
         <div class="teksttv-card">
             <h3><?php esc_html_e('Prompt: Tekst', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Instructie voor het genereren van de body tekst. De artikeltitel en inhoud worden automatisch toegevoegd.', 'teksttv-wp-plugin'); ?></p>
+            <p class="description">
+                <?php esc_html_e('Instructie voor het genereren van de body tekst. De artikeltitel en inhoud worden automatisch toegevoegd.', 'teksttv-wp-plugin'); ?>
+                <?php
+                printf(
+                    /* translators: %s: placeholder token, e.g. {{words}} */
+                    esc_html__('Gebruik %s om de woordlimiet in te vullen.', 'teksttv-wp-plugin'),
+                    '<code>{{words}}</code>'
+                );
+                ?>
+            </p>
             <textarea name="teksttv_ai_prompts[prompt_body]" rows="3" class="large-text"><?php echo esc_textarea($prompts['prompt_body']); ?></textarea>
             <table class="form-table teksttv-form-table">
                 <tr>
