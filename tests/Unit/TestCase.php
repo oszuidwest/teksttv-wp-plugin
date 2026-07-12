@@ -31,7 +31,6 @@ abstract class TestCase extends PHPUnitTestCase
     protected static function callPrivate(string $class, string $method, array $args = []): mixed
     {
         $ref = new \ReflectionMethod($class, $method);
-        $ref->setAccessible(true);
         return $ref->invokeArgs(null, $args);
     }
 }

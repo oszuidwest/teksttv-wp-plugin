@@ -12,7 +12,6 @@ class BlockRegistryTest extends TestCase
 
         // Reset the static $types array before each test
         $ref = new \ReflectionProperty(BlockRegistry::class, 'types');
-        $ref->setAccessible(true);
         $ref->setValue(null, []);
     }
 

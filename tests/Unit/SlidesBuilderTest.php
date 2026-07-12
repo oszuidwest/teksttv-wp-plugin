@@ -15,7 +15,6 @@ class SlidesBuilderTest extends TestCase
     {
         parent::setUp();
         $ref = new \ReflectionProperty(BlockRegistry::class, 'types');
-        $ref->setAccessible(true);
         $ref->setValue(null, []);
     }
 
