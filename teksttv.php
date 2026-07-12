@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TekstTV
  * Description: Beheer tekst-tv slides en lever ze via een REST API voor de TekstTV frontend.
- * Version: 0.0.2
+ * Version: 0.0.3
  * Author: ZuidWest
  * Author URI: https://www.zuidwesttv.nl/
  * Plugin URI: https://github.com/oszuidwest/teksttv-wp-plugin
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('TEKSTTV_VERSION', '0.0.2');
+define('TEKSTTV_VERSION', '0.0.3');
 define('TEKSTTV_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('TEKSTTV_PLUGIN_URL', plugin_dir_url(__FILE__));
 

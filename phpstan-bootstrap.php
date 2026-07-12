@@ -10,6 +10,6 @@ if (PHP_SAPI === 'cli' && !defined('ABSPATH')) {
 }
 defined('ABSPATH') || exit;
 
-define('TEKSTTV_VERSION', '0.0.2');
+define('TEKSTTV_VERSION', '0.0.3');
 define('TEKSTTV_PLUGIN_DIR', __DIR__ . '/');
 define('TEKSTTV_PLUGIN_URL', '/');
