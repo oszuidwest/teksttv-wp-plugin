@@ -7,6 +7,41 @@ use TekstTV\AdminPage;
 
 class AdminPageTest extends TestCase
 {
+    public function test_preview_url_shares_site_origin_true_for_same_host(): void
+    {
+        Functions\when('wp_parse_url')->alias(fn ($url, $comp) => parse_url($url, $comp));
+
+        $this->assertTrue(AdminPage::preview_url_shares_site_origin(
+            'https://bredanu.nl/preview',
+            'https://bredanu.nl'
+        ));
+    }
+
+    public function test_preview_url_shares_site_origin_false_for_separate_host(): void
+    {
+        Functions\when('wp_parse_url')->alias(fn ($url, $comp) => parse_url($url, $comp));
+
+        $this->assertFalse(AdminPage::preview_url_shares_site_origin(
+            'https://bredanu.teksttv.pages.dev/bredanu/preview',
+            'https://bredanu.nl'
+        ));
+    }
+
+    public function test_preview_url_shares_site_origin_false_when_empty(): void
+    {
+        $this->assertFalse(AdminPage::preview_url_shares_site_origin('', 'https://bredanu.nl'));
+    }
+
+    public function test_preview_url_shares_site_origin_ignores_host_case(): void
+    {
+        Functions\when('wp_parse_url')->alias(fn ($url, $comp) => parse_url($url, $comp));
+
+        $this->assertTrue(AdminPage::preview_url_shares_site_origin(
+            'https://BredaNU.nl/preview',
+            'https://bredanu.nl'
+        ));
+    }
+
     public function test_sanitize_ai_prompts_preserves_omitted_technical_fields(): void
     {
         Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);

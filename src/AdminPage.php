@@ -9,6 +9,47 @@ class AdminPage
         add_action('admin_menu', [self::class, 'register_menu']);
         add_action('admin_init', [self::class, 'register_settings']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
+        add_action('admin_notices', [self::class, 'render_preview_origin_notice']);
+    }
+
+    /**
+     * Whether the preview URL shares the site's origin (host).
+     *
+     * The preview iframes run with sandbox="allow-scripts allow-same-origin",
+     * which is safe for a preview app on a separate origin but effectively
+     * disables the sandbox when the preview is same-origin as WordPress.
+     */
+    public static function preview_url_shares_site_origin(string $preview_url, string $site_url): bool
+    {
+        if ($preview_url === '') {
+            return false;
+        }
+        $preview_host = wp_parse_url($preview_url, PHP_URL_HOST);
+        $site_host = wp_parse_url($site_url, PHP_URL_HOST);
+        if (!is_string($preview_host) || !is_string($site_host) || $preview_host === '' || $site_host === '') {
+            return false;
+        }
+        return strtolower($preview_host) === strtolower($site_host);
+    }
+
+    /**
+     * Warn admins when the configured preview URL is same-origin as the site,
+     * which weakens the preview iframe sandbox.
+     */
+    public static function render_preview_origin_notice(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || strpos($screen->id, 'teksttv') === false) {
+            return;
+        }
+        if (!self::preview_url_shares_site_origin(Helpers::get_preview_url(), home_url())) {
+            return;
+        }
+
+        printf(
+            '<div class="notice notice-warning"><p>%s</p></div>',
+            esc_html__('De TekstTV preview-URL draait op dezelfde origin als deze site. Gebruik een aparte origin voor de preview, anders is de iframe-sandbox effectief uitgeschakeld (XSS/CSRF-risico).', 'teksttv-wp-plugin')
+        );
     }
 
     public static function register_menu(): void
