@@ -8,6 +8,22 @@ use TekstTV\RestApi;
 class RestApiTest extends TestCase
 {
     // =========================================================================
+    // generate_content() — feature toggle enforcement
+    // =========================================================================
+
+    public function test_generate_content_returns_403_when_ai_generate_disabled(): void
+    {
+        // ai_generate is absent from the enabled features list.
+        Functions\when('get_option')->justReturn(['custom_title', 'scheduling']);
+
+        $request = \Mockery::mock('WP_REST_Request');
+
+        $response = RestApi::generate_content($request);
+
+        $this->assertSame(403, $response->get_status());
+    }
+
+    // =========================================================================
     // validate_ai_output()
     // =========================================================================
 
@@ -322,6 +338,28 @@ class RestApiTest extends TestCase
 
         $result = RestApi::get_region_prefix(1);
         $this->assertSame('', $result);
+    }
+
+    // =========================================================================
+    // apply_region_prefix() — prefix belongs on the headline, not the body
+    // =========================================================================
+
+    public function test_apply_region_prefix_prepends_to_title(): void
+    {
+        $result = RestApi::apply_region_prefix('Kop hier', 'LEIDEN');
+        $this->assertSame('LEIDEN - Kop hier', $result);
+    }
+
+    public function test_apply_region_prefix_returns_title_unchanged_without_prefix(): void
+    {
+        $result = RestApi::apply_region_prefix('Kop hier', '');
+        $this->assertSame('Kop hier', $result);
+    }
+
+    public function test_apply_region_prefix_joins_multiple_regions(): void
+    {
+        $result = RestApi::apply_region_prefix('Kop hier', 'DEN HAAG / LEIDEN');
+        $this->assertSame('DEN HAAG / LEIDEN - Kop hier', $result);
     }
 
     // =========================================================================

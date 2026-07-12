@@ -71,6 +71,42 @@ if (!function_exists('wp_strip_all_tags')) {
     }
 }
 
+// Minimal WP_REST_Response stub so REST callbacks can be unit tested without
+// pulling in WordPress. Captures data and status for assertions.
+if (!class_exists('WP_REST_Response')) {
+    class WP_REST_Response
+    {
+        /** @var mixed */
+        public $data;
+        public int $status;
+
+        /** @var array<string, string> */
+        public array $headers = [];
+
+        public function __construct($data = null, int $status = 200)
+        {
+            $this->data = $data;
+            $this->status = $status;
+        }
+
+        public function get_status(): int
+        {
+            return $this->status;
+        }
+
+        /** @return mixed */
+        public function get_data()
+        {
+            return $this->data;
+        }
+
+        public function header(string $key, string $value): void
+        {
+            $this->headers[$key] = $value;
+        }
+    }
+}
+
 // Minimal WP_Query stub for unit testing methods that instantiate WP_Query.
 // Tests set WP_Query::$stubPosts before calling the method under test.
 if (!class_exists('WP_Query')) {

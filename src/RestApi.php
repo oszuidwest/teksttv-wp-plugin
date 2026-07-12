@@ -103,6 +103,13 @@ class RestApi
 
     public static function generate_content(WP_REST_Request $request): WP_REST_Response
     {
+        if (!Helpers::has_feature('ai_generate')) {
+            return new WP_REST_Response(
+                ['error' => __('AI-generatie is uitgeschakeld.', 'teksttv-wp-plugin')],
+                403
+            );
+        }
+
         if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
             return new WP_REST_Response(
                 ['error' => __('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.', 'teksttv-wp-plugin')],
@@ -185,12 +192,12 @@ class RestApi
             update_post_meta($post_id, '_teksttv_ai_body', $response_data['body']);
         }
 
-        // Apply region prefix to body (after save, so audit trail stays clean)
-        if (isset($response_data['body'])) {
-            $region_prefix = self::get_region_prefix($post_id);
-            if (!empty($region_prefix)) {
-                $response_data['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $response_data['body']));
-            }
+        // Apply region prefix to the headline (after save, so audit trail stays clean)
+        if (isset($response_data['title'])) {
+            $response_data['title'] = self::apply_region_prefix(
+                $response_data['title'],
+                self::get_region_prefix($post_id)
+            );
         }
 
         // For single field requests, keep backward-compatible response
@@ -410,6 +417,19 @@ class RestApi
         }
 
         return implode(' / ', array_map('mb_strtoupper', $terms));
+    }
+
+    /**
+     * Prepend a region prefix to the generated headline, e.g. "LEIDEN - Kop hier".
+     * Returns the title unchanged when no prefix is configured.
+     */
+    public static function apply_region_prefix(string $title, string $region_prefix): string
+    {
+        if ($region_prefix === '') {
+            return $title;
+        }
+
+        return $region_prefix . ' - ' . $title;
     }
 
     private const SLIDES_CACHE_TTL = 180; // 3 minutes
