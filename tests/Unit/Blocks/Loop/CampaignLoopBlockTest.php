@@ -10,13 +10,14 @@ class CampaignLoopBlockTest extends TestCase
 {
     public function test_save_with_groups(): void
     {
+        // Groups are stored by stable id, not by label.
         $result = CampaignLoopBlock::save([
-            'groups' => ['Sponsors', 'Partners'],
+            'groups' => ['grp_aaa111', 'grp_bbb222'],
             'intro_image_id' => '10',
             'outro_image_id' => '20',
         ]);
 
-        $this->assertSame(['Sponsors', 'Partners'], $result['groups']);
+        $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
         $this->assertSame(10, $result['intro_image_id']);
         $this->assertSame(20, $result['outro_image_id']);
     }
@@ -24,10 +25,10 @@ class CampaignLoopBlockTest extends TestCase
     public function test_save_filters_empty_groups(): void
     {
         $result = CampaignLoopBlock::save([
-            'groups' => ['Sponsors', '', 'Partners'],
+            'groups' => ['grp_aaa111', '', 'grp_bbb222'],
         ]);
 
-        $this->assertSame(['Sponsors', 'Partners'], $result['groups']);
+        $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
     }
 
     public function test_save_with_limit(): void

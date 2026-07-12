@@ -42,8 +42,8 @@ final class CampaignLoopBlock implements LoopBlock
                 <label><?php esc_html_e('Groep(en)', 'teksttv-wp-plugin'); ?></label>
                 <?php if (!empty($available_groups)) : ?>
                 <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv-wp-plugin'); ?>" multiple>
-                    <?php foreach ($available_groups as $group_label) : ?>
-                    <option value="<?php echo esc_attr($group_label); ?>" <?php echo in_array($group_label, $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_label); ?></option>
+                    <?php foreach ($available_groups as $group_option) : ?>
+                    <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
@@ -87,7 +87,8 @@ final class CampaignLoopBlock implements LoopBlock
     {
         $groups = [];
         if (!empty($raw['groups']) && is_array($raw['groups'])) {
-            $groups = array_map('sanitize_text_field', $raw['groups']);
+            // Groups are referenced by stable id, not by their mutable label.
+            $groups = array_map('sanitize_key', $raw['groups']);
             $groups = array_filter($groups, fn ($g) => $g !== '');
         }
 

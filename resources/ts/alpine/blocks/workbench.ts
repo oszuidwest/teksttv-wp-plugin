@@ -13,6 +13,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let blocksEl: HTMLElement | null = null;
     let tickerEl: HTMLElement | null = null;
     let groupsTbody: HTMLTableSectionElement | null = null;
+    let newGroupSeq = 0;
 
     function reindexBlocks(): void {
         if (!blocksEl) return;
@@ -201,9 +202,15 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addGroupRow(): void {
             if (!groupsTbody) return;
+            // New rows have an empty id; the server derives a stable id from the
+            // label on save. The index only needs to be unique within the form.
+            const key = `new-${newGroupSeq++}`;
             const row =
                 '<tr class="teksttv-group-row">' +
-                '<td><input type="text" name="teksttv_campaign_groups[]" value="" class="regular-text" required placeholder="Bijv. Campagne" /></td>' +
+                '<td>' +
+                `<input type="hidden" name="teksttv_campaign_groups[${key}][id]" value="" />` +
+                `<input type="text" name="teksttv_campaign_groups[${key}][label]" value="" class="regular-text" required placeholder="Bijv. Campagne" />` +
+                '</td>' +
                 '<td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group"><span class="dashicons dashicons-trash"></span></button></td>' +
                 '</tr>';
             groupsTbody.insertAdjacentHTML('beforeend', row);

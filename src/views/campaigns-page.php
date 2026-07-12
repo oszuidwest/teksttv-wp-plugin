@@ -4,7 +4,7 @@
  *
  * @var list<array<string, mixed>> $campaigns
  * @var list<array{slug: string, label: string}> $channels
- * @var list<string> $groups
+ * @var list<array{id: string, label: string}> $groups
  */
 
 namespace TekstTV;
@@ -31,9 +31,12 @@ settings_errors('teksttv_campaigns');
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($groups as $gi => $group_label) : ?>
+                <?php foreach ($groups as $gi => $group) : ?>
                 <tr class="teksttv-group-row">
-                    <td><input type="text" name="teksttv_campaign_groups[]" value="<?php echo esc_attr($group_label); ?>" class="regular-text" required placeholder="<?php echo esc_attr__('Bijv. Campagne', 'teksttv-wp-plugin'); ?>" /></td>
+                    <td>
+                        <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
+                        <input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr__('Bijv. Campagne', 'teksttv-wp-plugin'); ?>" />
+                    </td>
                     <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group"><span class="dashicons dashicons-trash"></span></button></td>
                 </tr>
                 <?php endforeach; ?>

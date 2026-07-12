@@ -619,13 +619,87 @@ class HelpersTest extends TestCase
     // get_campaign_groups()
     // =========================================================================
 
-    public function test_get_campaign_groups_returns_groups(): void
+    public function test_get_campaign_groups_returns_id_label_pairs(): void
+    {
+        $stored = [
+            ['id' => 'grp_aaa', 'label' => 'Sponsors'],
+            ['id' => 'grp_bbb', 'label' => 'Partners'],
+        ];
+        Functions\expect('get_option')
+            ->with('teksttv_campaign_groups', [])
+            ->andReturn($stored);
+
+        $this->assertSame($stored, Helpers::get_campaign_groups());
+    }
+
+    public function test_get_campaign_groups_normalizes_legacy_label_only_format(): void
     {
         Functions\expect('get_option')
             ->with('teksttv_campaign_groups', [])
             ->andReturn(['Sponsors', 'Partners']);
 
-        $this->assertSame(['Sponsors', 'Partners'], Helpers::get_campaign_groups());
+        $this->assertSame([
+            ['id' => Helpers::campaign_group_id('Sponsors'), 'label' => 'Sponsors'],
+            ['id' => Helpers::campaign_group_id('Partners'), 'label' => 'Partners'],
+        ], Helpers::get_campaign_groups());
+    }
+
+    public function test_campaign_group_id_is_stable_for_label(): void
+    {
+        $this->assertSame(
+            Helpers::campaign_group_id('Sponsors'),
+            Helpers::campaign_group_id('Sponsors')
+        );
+        $this->assertNotSame(
+            Helpers::campaign_group_id('Sponsors'),
+            Helpers::campaign_group_id('Partners')
+        );
+    }
+
+    public function test_migrate_campaign_groups_rewrites_option_and_references(): void
+    {
+        $sponsorsId = Helpers::campaign_group_id('Sponsors');
+
+        $options = [
+            'teksttv_campaign_groups' => ['Sponsors'],
+            'teksttv_campaigns' => [
+                ['id' => 'camp_1', 'group' => 'Sponsors'],
+                ['id' => 'camp_2', 'group' => ''],
+            ],
+            'teksttv_channels' => [['slug' => 'tv1', 'label' => 'TV 1']],
+            'teksttv_loop_tv1' => [
+                ['type' => 'campaign', 'groups' => ['Sponsors']],
+                ['type' => 'articles', 'count' => 3],
+            ],
+        ];
+        Functions\when('get_option')->alias(fn ($k, $d = false) => $options[$k] ?? $d);
+
+        $updates = [];
+        Functions\when('update_option')->alias(function ($k, $v) use (&$updates) {
+            $updates[$k] = $v;
+            return true;
+        });
+
+        Helpers::migrate_campaign_groups();
+
+        $this->assertSame([['id' => $sponsorsId, 'label' => 'Sponsors']], $updates['teksttv_campaign_groups']);
+        $this->assertSame($sponsorsId, $updates['teksttv_campaigns'][0]['group']);
+        $this->assertSame('', $updates['teksttv_campaigns'][1]['group']);
+        $this->assertSame([$sponsorsId], $updates['teksttv_loop_tv1'][0]['groups']);
+        // Non-campaign blocks are left untouched.
+        $this->assertSame('articles', $updates['teksttv_loop_tv1'][1]['type']);
+    }
+
+    public function test_migrate_campaign_groups_is_noop_for_new_format(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_campaign_groups', [])
+            ->andReturn([['id' => 'grp_x', 'label' => 'Sponsors']]);
+        Functions\expect('update_option')->never();
+
+        Helpers::migrate_campaign_groups();
+
+        $this->assertTrue(true);
     }
 
     public function test_get_campaign_groups_returns_empty_when_not_set(): void

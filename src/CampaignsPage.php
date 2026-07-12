@@ -7,6 +7,7 @@ class CampaignsPage
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
+        add_action('admin_init', [Helpers::class, 'migrate_campaign_groups']);
     }
 
     public static function register_menu(): void
@@ -38,7 +39,7 @@ class CampaignsPage
     /**
      * @param array<string, mixed> $campaign
      * @param list<array{slug: string, label: string}> $channels
-     * @param list<string> $groups Available group labels.
+     * @param list<array{id: string, label: string}> $groups Available groups.
      */
     public static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
     {
@@ -75,8 +76,8 @@ class CampaignsPage
                         <label><?php esc_html_e('Groep', 'teksttv-wp-plugin'); ?></label>
                         <select name="teksttv_campaigns[<?php echo esc_attr($index); ?>][group]" class="teksttv-campaign-group-select">
                             <option value=""><?php esc_html_e('— Geen groep —', 'teksttv-wp-plugin'); ?></option>
-                            <?php foreach ($groups as $group_label) : ?>
-                            <option value="<?php echo esc_attr($group_label); ?>" <?php selected($group, $group_label); ?>><?php echo esc_html($group_label); ?></option>
+                            <?php foreach ($groups as $group_option) : ?>
+                            <option value="<?php echo esc_attr($group_option['id']); ?>" <?php selected($group, $group_option['id']); ?>><?php echo esc_html($group_option['label']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -155,18 +156,9 @@ class CampaignsPage
         }
 
         // Save groups
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized below
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_groups()
         $raw_groups = isset($_POST['teksttv_campaign_groups']) ? wp_unslash($_POST['teksttv_campaign_groups']) : [];
-        $groups = [];
-        if (is_array($raw_groups)) {
-            foreach ($raw_groups as $label) {
-                $label = sanitize_text_field($label);
-                if ($label !== '') {
-                    $groups[] = $label;
-                }
-            }
-        }
-        update_option('teksttv_campaign_groups', array_values(array_unique($groups)));
+        update_option('teksttv_campaign_groups', self::sanitize_groups($raw_groups));
 
         // Save campaigns
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
@@ -177,7 +169,7 @@ class CampaignsPage
             $saved = [
                 'id' => sanitize_key($item['id'] ?? ('camp_' . time() . '_' . wp_rand())),
                 'name' => sanitize_text_field($item['name'] ?? ''),
-                'group' => sanitize_text_field($item['group'] ?? ''),
+                'group' => sanitize_key($item['group'] ?? ''),
             ];
 
             // Channels
@@ -226,5 +218,43 @@ class CampaignsPage
         RestApi::invalidate_slides_cache();
 
         add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv-wp-plugin'), 'success');
+    }
+
+    /**
+     * Sanitize submitted campaign groups into stable id/label pairs.
+     *
+     * Each row carries a hidden id so a rename preserves the id (and therefore
+     * every campaign/loop reference to it). Rows without an id — newly added in
+     * the browser — get a stable id derived from the label. Duplicate ids and
+     * empty labels are dropped.
+     *
+     * @param mixed $raw
+     * @return list<array{id: string, label: string}>
+     */
+    public static function sanitize_groups(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $groups = [];
+        $seen = [];
+        foreach ($raw as $row) {
+            $label = sanitize_text_field(is_array($row) ? ($row['label'] ?? '') : $row);
+            if ($label === '') {
+                continue;
+            }
+            $id = sanitize_key(is_array($row) ? ($row['id'] ?? '') : '');
+            if ($id === '' || isset($seen[$id])) {
+                $id = Helpers::campaign_group_id($label);
+            }
+            if (isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $groups[] = ['id' => $id, 'label' => $label];
+        }
+
+        return $groups;
     }
 }
