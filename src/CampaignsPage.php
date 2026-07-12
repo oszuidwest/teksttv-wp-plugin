@@ -7,7 +7,6 @@ class CampaignsPage
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
-        add_action('admin_init', [Helpers::class, 'migrate_campaign_groups']);
     }
 
     public static function register_menu(): void

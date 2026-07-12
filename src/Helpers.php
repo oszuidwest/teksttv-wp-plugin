@@ -251,11 +251,7 @@ class Helpers
     }
 
     /**
-     * Get configured campaign groups, normalized to id/label pairs.
-     *
-     * Tolerates the legacy label-only format (list of strings) on read by
-     * deriving a stable id, so callers always receive id/label pairs even
-     * before the one-time migration has run.
+     * Get configured campaign groups as id/label pairs.
      *
      * @return list<array{id: string, label: string}>
      */
@@ -268,103 +264,27 @@ class Helpers
 
         $normalized = [];
         foreach ($groups as $group) {
-            if (is_array($group)) {
-                $label = (string) ($group['label'] ?? '');
-                if ($label === '') {
-                    continue;
-                }
-                $id = (string) ($group['id'] ?? '');
-                $normalized[] = ['id' => $id !== '' ? $id : self::campaign_group_id($label), 'label' => $label];
-            } elseif (is_string($group) && $group !== '') {
-                // Legacy label-only entry.
-                $normalized[] = ['id' => self::campaign_group_id($group), 'label' => $group];
+            if (!is_array($group)) {
+                continue;
             }
+            $label = (string) ($group['label'] ?? '');
+            $id = (string) ($group['id'] ?? '');
+            if ($label === '' || $id === '') {
+                continue;
+            }
+            $normalized[] = ['id' => $id, 'label' => $label];
         }
 
         return $normalized;
     }
 
     /**
-     * Derive a stable group id from a label. Deterministic so the one-time
-     * migration can map existing label references to their new ids.
+     * Derive a stable id from a group label, used when a newly added group has
+     * no id yet.
      */
     public static function campaign_group_id(string $label): string
     {
         return 'grp_' . substr(md5($label), 0, 12);
-    }
-
-    /**
-     * One-time migration from label-keyed campaign groups to stable ids.
-     *
-     * Renaming a group used to disconnect every campaign and loop block that
-     * referenced it, because references stored the mutable label. This rewrites
-     * the groups option and every reference (campaign.group and campaign loop
-     * block group lists) to stable ids. Idempotent: only the legacy list-of-
-     * strings format triggers a rewrite.
-     */
-    public static function migrate_campaign_groups(): void
-    {
-        $groups = get_option('teksttv_campaign_groups', []);
-        if (!is_array($groups) || empty($groups)) {
-            return;
-        }
-        // Already migrated when entries are id/label arrays rather than strings.
-        if (!is_string(reset($groups))) {
-            return;
-        }
-
-        $map = [];
-        $new_groups = [];
-        foreach ($groups as $label) {
-            if (!is_string($label) || $label === '') {
-                continue;
-            }
-            $id = self::campaign_group_id($label);
-            $map[$label] = $id;
-            $new_groups[] = ['id' => $id, 'label' => $label];
-        }
-        update_option('teksttv_campaign_groups', $new_groups);
-
-        // Rewrite campaign.group label references to ids.
-        $campaigns = get_option('teksttv_campaigns', []);
-        if (is_array($campaigns)) {
-            $changed = false;
-            foreach ($campaigns as &$campaign) {
-                $group = $campaign['group'] ?? '';
-                if (is_string($group) && isset($map[$group])) {
-                    $campaign['group'] = $map[$group];
-                    $changed = true;
-                }
-            }
-            unset($campaign);
-            if ($changed) {
-                update_option('teksttv_campaigns', $campaigns);
-            }
-        }
-
-        // Rewrite campaign loop block group lists per channel.
-        foreach (self::get_channels() as $ch) {
-            $key = 'teksttv_loop_' . $ch['slug'];
-            $blocks = get_option($key, []);
-            if (!is_array($blocks)) {
-                continue;
-            }
-            $changed = false;
-            foreach ($blocks as &$block) {
-                if (($block['type'] ?? '') !== 'campaign' || empty($block['groups']) || !is_array($block['groups'])) {
-                    continue;
-                }
-                $block['groups'] = array_values(array_map(
-                    fn ($g) => is_string($g) && isset($map[$g]) ? $map[$g] : $g,
-                    $block['groups']
-                ));
-                $changed = true;
-            }
-            unset($block);
-            if ($changed) {
-                update_option($key, $blocks);
-            }
-        }
     }
 
     /**
