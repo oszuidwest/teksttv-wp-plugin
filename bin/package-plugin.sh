@@ -26,6 +26,10 @@ rsync -a "$ROOT/" "$DEST/" \
     --exclude='/resources/' \
     --exclude='/tests/' \
     --exclude='/bin/' \
+    --exclude='.phpunit.cache/' \
+    --exclude='.cache/' \
+    --exclude='test-results/' \
+    --exclude='playwright-report/' \
     --exclude='composer.json' \
     --exclude='composer.lock' \
     --exclude='package.json' \
