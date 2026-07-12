@@ -80,20 +80,6 @@ jobs:
           echo "release_needed=$DECISION" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Tag the new version
-        if: steps.decide.outputs.release_needed == 'true'
-        env:
-          VERSION: ${{ steps.decide.outputs.version }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
-            echo "Tag $VERSION already exists; reusing it (force path)."
-          else
-            git tag "$VERSION"
-            git push origin "refs/tags/$VERSION"
-          fi
-
       - name: Setup PHP
         if: steps.decide.outputs.release_needed == 'true'
         uses: shivammathur/setup-php@v2
@@ -154,6 +140,25 @@ jobs:
           (cd release && zip -r "../$ZIP" "$SLUG")
           ls -la "$ZIP"
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: Tag the built commit
+        if: steps.decide.outputs.release_needed == 'true'
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Tag only after the ZIP is proven, so a failed build never leaves an
+          # orphan tag. On the force path, move an existing tag to the built
+          # commit so the tag always matches the artifact just packaged.
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "::notice::Tag $VERSION already exists; moving it to built commit $(git rev-parse --short HEAD) (force path)."
+            git tag -f "$VERSION"
+            git push -f origin "refs/tags/$VERSION"
+          else
+            git tag "$VERSION"
+            git push origin "refs/tags/$VERSION"
+          fi
 
       - name: Create GitHub release
         if: steps.decide.outputs.release_needed == 'true'
