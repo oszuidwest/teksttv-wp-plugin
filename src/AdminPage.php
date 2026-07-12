@@ -138,6 +138,7 @@ class AdminPage
                     'prompt_title' => sanitize_textarea_field($input['prompt_title'] ?? ''),
                     'prompt_body' => sanitize_textarea_field($input['prompt_body'] ?? ''),
                     'word_limit' => max(10, absint($input['word_limit'] ?? 100)),
+                    'word_limit_photo' => absint($input['word_limit_photo'] ?? 0),
                     'title_char_limit' => max(10, absint($input['title_char_limit'] ?? 40)),
                     'min_input_words' => max(0, absint($input['min_input_words'] ?? 50)),
                     'max_retries' => max(1, min(5, absint($input['max_retries'] ?? 3))),

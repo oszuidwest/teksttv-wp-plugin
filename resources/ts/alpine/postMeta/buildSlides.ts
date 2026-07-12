@@ -1,6 +1,26 @@
 import type { ImageData, Slide, TeksttvPostConfig, TextSlide } from '../../modules/types';
 import { getTeksttvEditorHtml } from './editorContent';
 
+export function resolveSidebarImage(
+    config: TeksttvPostConfig | undefined,
+    customImageData: ImageData | null,
+): ImageData | null {
+    const cards = document.querySelector('.teksttv-image-cards');
+    const activeState = (cards instanceof HTMLElement && cards.dataset.active) || 'default';
+    if (activeState === 'custom') {
+        return customImageData;
+    }
+    if (activeState === 'default') {
+        const fallback = config?.fallbackImage;
+        return fallback && typeof fallback === 'object' ? fallback : null;
+    }
+    return null;
+}
+
+export function hasSidebarPhoto(config: TeksttvPostConfig | undefined, customImageData: ImageData | null): boolean {
+    return resolveSidebarImage(config, customImageData) !== null;
+}
+
 /** Leest kop, body en afbeeldingslijst uit de DOM naar preview-slides. */
 export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, customImageData: ImageData | null): Slide[] {
     const customTitle = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
@@ -23,15 +43,7 @@ export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, custom
         }
     }
 
-    let sidebarImg: ImageData | null = null;
-    const cards = document.querySelector('.teksttv-image-cards');
-    const activeState = (cards instanceof HTMLElement && cards.dataset.active) || 'default';
-    if (activeState === 'custom' && customImageData) {
-        sidebarImg = customImageData;
-    } else if (activeState === 'default') {
-        const fallback = config?.fallbackImage;
-        sidebarImg = fallback && typeof fallback === 'object' ? fallback : null;
-    }
+    const sidebarImg = resolveSidebarImage(config, customImageData);
 
     for (const page of expandedPages) {
         const trimmed = page.trim();

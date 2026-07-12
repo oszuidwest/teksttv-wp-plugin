@@ -38,6 +38,7 @@ export interface TeksttvPostConfig {
     isNewPost: boolean;
     titleCharLimit: number;
     wordLimit: number;
+    wordLimitPhoto: number;
     hasAiContent: boolean;
 }
 

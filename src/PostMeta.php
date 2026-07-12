@@ -97,6 +97,7 @@ class PostMeta
             'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
             'titleCharLimit' => $ai_supported ? Helpers::get_ai_prompts()['title_char_limit'] : 0,
             'wordLimit' => $ai_supported ? Helpers::get_ai_prompts()['word_limit'] : 0,
+            'wordLimitPhoto' => $ai_supported ? Helpers::get_ai_prompts()['word_limit_photo'] : 0,
             'hasAiContent' => $post_id && (get_post_meta($post_id, '_teksttv_ai_title', true) || get_post_meta($post_id, '_teksttv_ai_body', true)),
         ]);
     }

@@ -17,7 +17,7 @@ export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): v
     }
 }
 
-export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined): void {
+export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined, hasPhoto = false): void {
     const content = getTeksttvEditorHtml();
     const wc = document.querySelector('#teksttv-wordcount');
     if (!(wc instanceof HTMLElement)) return;
@@ -29,7 +29,7 @@ export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined): v
     const pageCount = content.split(/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i).length;
     const totalWords = text ? text.split(/\s+/).length : 0;
 
-    const wordLimit = config?.wordLimit ?? 0;
+    const wordLimit = (hasPhoto ? config?.wordLimitPhoto : config?.wordLimit) ?? 0;
     let wordHtml: string;
     if (wordLimit > 0 && totalWords > 0) {
         const over = totalWords > wordLimit;

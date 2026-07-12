@@ -150,12 +150,14 @@ class Helpers
     /**
      * Get the AI prompt configuration with defaults.
      *
-     * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
+     * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
      */
     public static function get_ai_prompts(): array
     {
         $saved = get_option('teksttv_ai_prompts', []);
         $word_limit = max(10, (int) ($saved['word_limit'] ?? 100));
+        $word_limit_photo = (int) ($saved['word_limit_photo'] ?? 0);
+        $word_limit_photo = $word_limit_photo >= 1 ? $word_limit_photo : $word_limit;
         $title_char_limit = max(10, (int) ($saved['title_char_limit'] ?? 40));
         $min_input = max(0, (int) ($saved['min_input_words'] ?? 50));
         $max_retries = max(1, min(5, (int) ($saved['max_retries'] ?? 3)));
@@ -172,6 +174,7 @@ class Helpers
             'prompt_title' => !empty($saved['prompt_title']) ? $saved['prompt_title'] : $defaults['prompt_title'],
             'prompt_body' => !empty($saved['prompt_body']) ? $saved['prompt_body'] : $defaults['prompt_body'],
             'word_limit' => $word_limit,
+            'word_limit_photo' => $word_limit_photo,
             'title_char_limit' => $title_char_limit,
             'min_input_words' => $min_input,
             'max_retries' => $max_retries,

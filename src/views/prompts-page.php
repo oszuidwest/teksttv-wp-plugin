@@ -2,7 +2,7 @@
 /**
  * Content & AI settings page template.
  *
- * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int} $prompts
+ * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int} $prompts
  * @var list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
  * @var array<string, array{label: string, models: array<string, string>}> $ai_models
  */
@@ -63,9 +63,16 @@ echo '<h1>' . esc_html__('Content & AI', 'teksttv-wp-plugin') . '</h1>';
             <textarea name="teksttv_ai_prompts[prompt_body]" rows="3" class="large-text"><?php echo esc_textarea($prompts['prompt_body']); ?></textarea>
             <table class="form-table teksttv-form-table">
                 <tr>
-                    <th scope="row"><label for="teksttv_ai_word_limit"><?php esc_html_e('Woordlimiet', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_ai_word_limit"><?php esc_html_e('Woordlimiet zonder foto', 'teksttv-wp-plugin'); ?></label></th>
                     <td>
                         <input type="number" id="teksttv_ai_word_limit" name="teksttv_ai_prompts[word_limit]" value="<?php echo esc_attr((string) $prompts['word_limit']); ?>" min="10" max="500" class="small-text" /> <?php esc_html_e('woorden', 'teksttv-wp-plugin'); ?>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="teksttv_ai_word_limit_photo"><?php esc_html_e('Woordlimiet met foto', 'teksttv-wp-plugin'); ?></label></th>
+                    <td>
+                        <input type="number" id="teksttv_ai_word_limit_photo" name="teksttv_ai_prompts[word_limit_photo]" value="<?php echo esc_attr((string) $prompts['word_limit_photo']); ?>" min="10" max="500" class="small-text" /> <?php esc_html_e('woorden', 'teksttv-wp-plugin'); ?>
+                        <p class="description"><?php esc_html_e('Aantal woorden wanneer er een foto naast de tekst staat. De juiste limiet vult automatisch de {{words}}-placeholder.', 'teksttv-wp-plugin'); ?></p>
                     </td>
                 </tr>
             </table>

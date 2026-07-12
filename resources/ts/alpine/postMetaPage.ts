@@ -3,7 +3,7 @@ import { fadeOutRemove, hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
 import { encodeSlideData } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
-import { buildSlidesFromDom } from './postMeta/buildSlides';
+import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
@@ -26,6 +26,15 @@ export function createPostMetaPage() {
 
     function getSlides(): Slide[] {
         return buildSlidesFromDom(config, customImageData);
+    }
+
+    function refreshWordCount(): void {
+        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
+    }
+    
+    function updatePreviewAndWordCount(): void {
+        updatePreview();
+        refreshWordCount();
     }
 
     function updatePreviewNav(): void {
@@ -83,11 +92,11 @@ export function createPostMetaPage() {
         (d) => {
             customImageData = d;
         },
-        updatePreview,
+        updatePreviewAndWordCount,
     );
 
     function activateSidebarCard(state: string): void {
-        applySidebarCardState(state, updatePreview);
+        applySidebarCardState(state, updatePreviewAndWordCount);
     }
 
     return {
@@ -121,11 +130,11 @@ export function createPostMetaPage() {
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
                     editor.on('input change keyup', () => {
                         updatePreview();
-                        updateTeksttvWordCount(config);
+                        refreshWordCount();
                     });
                     editor.on('SetContent', () => {
                         updatePreview();
-                        updateTeksttvWordCount(config);
+                        refreshWordCount();
                     });
                 };
                 const existing = tinymce.get('teksttv_content');
@@ -139,7 +148,7 @@ export function createPostMetaPage() {
                 const t = e.target;
                 if (!(t instanceof Element && t.matches('#teksttv_content'))) return;
                 updatePreview();
-                updateTeksttvWordCount(config);
+                refreshWordCount();
             });
 
             document.querySelector('#title')?.addEventListener('input', updatePreview);
@@ -155,7 +164,15 @@ export function createPostMetaPage() {
                                 const bothBtn = document.querySelector<HTMLButtonElement>(
                                     '.teksttv-generate-btn[data-field="both"]',
                                 );
-                                if (bothBtn) requestAiGeneration(config, bothBtn, 'both', updatePreview);
+                                if (bothBtn) {
+                                    requestAiGeneration(
+                                        config,
+                                        bothBtn,
+                                        'both',
+                                        hasSidebarPhoto(config, customImageData),
+                                        updatePreview,
+                                    );
+                                }
                             }
                         }, 300);
                     });
@@ -164,7 +181,7 @@ export function createPostMetaPage() {
 
             window.setTimeout(() => {
                 updatePreview();
-                updateTeksttvWordCount(config);
+                refreshWordCount();
             }, 500);
         },
 
@@ -270,7 +287,7 @@ export function createPostMetaPage() {
                 }
             }
 
-            requestAiGeneration(config, btn, field, updatePreview);
+            requestAiGeneration(config, btn, field, hasSidebarPhoto(config, customImageData), updatePreview);
         },
 
         onTitleInputMeta(): void {

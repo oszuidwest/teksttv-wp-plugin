@@ -53,6 +53,12 @@ class RestApi
                     'type' => 'string',
                     'enum' => ['title', 'body', 'both'],
                 ],
+                'has_photo' => [
+                    'required' => false,
+                    'type' => 'boolean',
+                    'default' => false,
+                    'sanitize_callback' => 'rest_sanitize_boolean',
+                ],
             ],
         ]);
 
@@ -106,6 +112,7 @@ class RestApi
 
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
+        $has_photo = (bool) $request->get_param('has_photo');
 
         // Rate limiting per user
         $prompts_config = Helpers::get_ai_prompts();
@@ -156,7 +163,7 @@ class RestApi
         $warnings = [];
 
         foreach ($fields_to_generate as $current_field) {
-            $result = self::generate_single_field($current_field, $post_title, $post_text);
+            $result = self::generate_single_field($current_field, $post_title, $post_text, $has_photo);
             if (is_wp_error($result)) {
                 return new WP_REST_Response(
                     // translators: %s: error message from AI provider
@@ -201,10 +208,10 @@ class RestApi
      *
      * @return array{content: string, warning?: string}|\WP_Error
      */
-    public static function generate_single_field(string $field, string $post_title, string $post_text)
+    public static function generate_single_field(string $field, string $post_title, string $post_text, bool $has_photo = false)
     {
         $prompts = Helpers::get_ai_prompts();
-        [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $prompts);
+        [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $prompts, $has_photo);
 
         $last_content = '';
         $warning = '';
@@ -219,7 +226,7 @@ class RestApi
             }
 
             $last_content = trim($result);
-            $warning = self::validate_ai_output($field, $last_content, $prompts, $attempt === $prompts['max_retries']);
+            $warning = self::validate_ai_output($field, $last_content, $prompts, $attempt === $prompts['max_retries'], $has_photo);
 
             if (empty($warning)) {
                 break;
@@ -244,7 +251,7 @@ class RestApi
      * @param array<string, mixed> $prompts
      * @return array{0: string, 1: string} [user_prompt, system]
      */
-    public static function build_ai_prompt(string $field, string $post_title, string $post_text, array $prompts): array
+    public static function build_ai_prompt(string $field, string $post_title, string $post_text, array $prompts, bool $has_photo = false): array
     {
         if ($field === 'title') {
             $tokens = ['{{chars}}' => (string) $prompts['title_char_limit']];
@@ -259,7 +266,8 @@ class RestApi
                 $prompts['title_char_limit']
             );
         } else {
-            $tokens = ['{{words}}' => (string) $prompts['word_limit']];
+            $word_limit = self::effective_word_limit($prompts, $has_photo);
+            $tokens = ['{{words}}' => (string) $word_limit];
             $user_prompt = sprintf(
                 "%s\n\nTitel: %s\n\n%s",
                 strtr($prompts['prompt_body'], $tokens),
@@ -268,12 +276,23 @@ class RestApi
             );
             $system = strtr($prompts['system'], $tokens) . sprintf(
                 ' De samenvatting moet tussen de %d en %d woorden zijn.',
-                (int) ceil($prompts['word_limit'] * 0.2),
-                $prompts['word_limit']
+                (int) ceil($word_limit * 0.2),
+                $word_limit
             );
         }
 
         return [$user_prompt, $system];
+    }
+
+    /**
+     * Resolve the applicable word limit, using the photo-specific limit when a
+     * photo accompanies the text.
+     *
+     * @param array<string, mixed> $prompts
+     */
+    private static function effective_word_limit(array $prompts, bool $has_photo): int
+    {
+        return $has_photo ? (int) $prompts['word_limit_photo'] : (int) $prompts['word_limit'];
     }
 
     /**
@@ -313,7 +332,7 @@ class RestApi
      * @param array<string, mixed> $prompts
      * @return string Warning message if invalid, empty string if valid.
      */
-    public static function validate_ai_output(string $field, string $content, array $prompts, bool $is_last_attempt): string
+    public static function validate_ai_output(string $field, string $content, array $prompts, bool $is_last_attempt, bool $has_photo = false): string
     {
         if ($field === 'title') {
             if (mb_strlen($content) <= $prompts['title_char_limit']) {
@@ -328,9 +347,10 @@ class RestApi
                 );
             }
         } else {
+            $word_limit = self::effective_word_limit($prompts, $has_photo);
             $count = Helpers::count_words($content);
-            $min_words = (int) ceil($prompts['word_limit'] * 0.2);
-            if ($count >= $min_words && $count <= $prompts['word_limit']) {
+            $min_words = (int) ceil($word_limit * 0.2);
+            if ($count >= $min_words && $count <= $word_limit) {
                 return '';
             }
             if ($is_last_attempt) {
@@ -339,7 +359,7 @@ class RestApi
                     __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv-wp-plugin'),
                     $count,
                     $min_words,
-                    $prompts['word_limit']
+                    $word_limit
                 );
             }
         }

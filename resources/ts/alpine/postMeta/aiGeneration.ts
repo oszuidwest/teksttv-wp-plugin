@@ -34,6 +34,7 @@ export function requestAiGeneration(
     config: TeksttvPostConfig,
     btn: HTMLButtonElement,
     field: string,
+    hasPhoto: boolean,
     onApplied?: () => void,
 ): void {
     const statusEl = document.querySelector('#teksttv-generate-status');
@@ -63,7 +64,7 @@ export function requestAiGeneration(
             'Content-Type': 'application/json',
             'X-WP-Nonce': config.restNonce,
         },
-        body: JSON.stringify({ post_id: config.postId, field }),
+        body: JSON.stringify({ post_id: config.postId, field, has_photo: hasPhoto }),
     })
         .then((res) => res.json())
         .then((data: { title?: string; body?: string; content?: string; error?: string; warning?: string }) => {
