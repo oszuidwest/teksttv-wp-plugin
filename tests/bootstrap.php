@@ -20,6 +20,14 @@ if (!defined('TEKSTTV_VERSION')) {
     define('TEKSTTV_VERSION', '1.0.0-test');
 }
 
+// Common WordPress time constants used across the plugin.
+if (!defined('MINUTE_IN_SECONDS')) {
+    define('MINUTE_IN_SECONDS', 60);
+}
+if (!defined('WEEK_IN_SECONDS')) {
+    define('WEEK_IN_SECONDS', 604800);
+}
+
 // Provide global stubs for common WP functions that Brain\Monkey cannot
 // intercept when called via array_map() or similar PHP internals.
 if (!function_exists('sanitize_text_field')) {

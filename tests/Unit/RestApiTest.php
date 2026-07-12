@@ -24,6 +24,56 @@ class RestApiTest extends TestCase
     }
 
     // =========================================================================
+    // within_rate_limit()
+    // =========================================================================
+
+    public function test_within_rate_limit_uses_atomic_incr_with_object_cache(): void
+    {
+        Functions\when('wp_using_ext_object_cache')->justReturn(true);
+        Functions\when('wp_cache_add')->justReturn(true);
+        // Counter lands on the limit exactly — still allowed.
+        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7', 1, 'teksttv_ai_rate')->andReturn(10);
+
+        $this->assertTrue(RestApi::within_rate_limit(7, 10));
+    }
+
+    public function test_within_rate_limit_blocks_when_incr_exceeds_limit(): void
+    {
+        Functions\when('wp_using_ext_object_cache')->justReturn(true);
+        Functions\when('wp_cache_add')->justReturn(true);
+        Functions\expect('wp_cache_incr')->andReturn(11);
+
+        $this->assertFalse(RestApi::within_rate_limit(7, 10));
+    }
+
+    public function test_within_rate_limit_fails_open_when_incr_fails(): void
+    {
+        Functions\when('wp_using_ext_object_cache')->justReturn(true);
+        Functions\when('wp_cache_add')->justReturn(true);
+        Functions\expect('wp_cache_incr')->andReturn(false);
+
+        $this->assertTrue(RestApi::within_rate_limit(7, 10));
+    }
+
+    public function test_within_rate_limit_falls_back_to_transient_without_object_cache(): void
+    {
+        Functions\when('wp_using_ext_object_cache')->justReturn(false);
+        Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(3);
+        Functions\expect('set_transient')->once()->with('teksttv_ai_rate_7', 4, 60);
+
+        $this->assertTrue(RestApi::within_rate_limit(7, 10));
+    }
+
+    public function test_within_rate_limit_transient_blocks_at_limit(): void
+    {
+        Functions\when('wp_using_ext_object_cache')->justReturn(false);
+        Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(10);
+        Functions\expect('set_transient')->never();
+
+        $this->assertFalse(RestApi::within_rate_limit(7, 10));
+    }
+
+    // =========================================================================
     // validate_ai_output()
     // =========================================================================
 

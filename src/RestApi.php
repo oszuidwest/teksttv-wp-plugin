@@ -125,15 +125,12 @@ class RestApi
         $prompts_config = Helpers::get_ai_prompts();
         $rate_limit = $prompts_config['rate_limit'];
         $user_id = get_current_user_id();
-        $rate_key = 'teksttv_ai_rate_' . $user_id;
-        $rate_count = (int) get_transient($rate_key);
-        if ($rate_count >= $rate_limit) {
+        if (!self::within_rate_limit($user_id, $rate_limit)) {
             return new WP_REST_Response(
                 ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
                 429
             );
         }
-        set_transient($rate_key, $rate_count + 1, 60);
 
         if (!current_user_can('edit_post', $post_id)) {
             return new WP_REST_Response(['error' => __('Onvoldoende rechten.', 'teksttv-wp-plugin')], 403);
@@ -208,6 +205,41 @@ class RestApi
         }
 
         return new WP_REST_Response($response, 200);
+    }
+
+    /**
+     * Count one request against the per-user, per-minute AI generation limit.
+     *
+     * With a persistent object cache, wp_cache_incr() is atomic and avoids the
+     * read-then-write race where concurrent requests both pass the check before
+     * either writes back. Without one, fall back to a transient-backed counter
+     * (persistent but not atomic — acceptable for editor cost control).
+     *
+     * @return bool True when the request is allowed (and has been counted).
+     */
+    public static function within_rate_limit(int $user_id, int $rate_limit): bool
+    {
+        $key = 'teksttv_ai_rate_' . $user_id;
+
+        if (wp_using_ext_object_cache()) {
+            $group = 'teksttv_ai_rate';
+            // add() seeds the counter only if absent, so the TTL is set once per
+            // window; incr() then bumps it atomically.
+            wp_cache_add($key, 0, $group, MINUTE_IN_SECONDS);
+            $count = wp_cache_incr($key, 1, $group);
+            if ($count === false) {
+                // Cache backend hiccup: fail open rather than block the editor.
+                return true;
+            }
+            return $count <= $rate_limit;
+        }
+
+        $count = (int) get_transient($key);
+        if ($count >= $rate_limit) {
+            return false;
+        }
+        set_transient($key, $count + 1, MINUTE_IN_SECONDS);
+        return true;
     }
 
     /**
