@@ -1,101 +1,140 @@
-# TekstTV (WordPress plugin)
+# TekstTV WordPress plugin
 
-WordPress plugin to manage text-TV slides and serve them as JSON to the [TekstTV playout app](https://github.com/oszuidwest/teksttv-frontend). In the Tekst TV admin menu you set up channels, build the broadcast loop from blocks (posts, images, iframes, campaigns, weather, ticker items), and manage settings, campaigns and optional AI-assisted content.
-
-## How it fits with the frontend
-
-The playout in [oszuidwest/teksttv-frontend](https://github.com/oszuidwest/teksttv-frontend) is a thin client: it polls a JSON playlist on a timer and renders the slides plus the ticker bar. This plugin is the usual content source: editing in WordPress, slide and ticker assembly in PHP, delivery via `GET /wp-json/teksttv/v1/slides`. A different CMS can fill the same role, provided it returns the same payload shape (see `src/types.ts` and the schema in the frontend README).
+Manages TekstTV channels, slide loops and ticker messages in WordPress. The public REST endpoint is consumed by the [TekstTV playout app](https://github.com/oszuidwest/teksttv-frontend).
 
 ## Requirements
 
 - WordPress 7.0 or newer
-- PHP 8.1 or newer
-
-For development from a Git checkout you also need [Composer](https://getcomposer.org/) and [Bun](https://bun.sh/).
+- PHP 8.3 or newer
+- Composer and Bun when building from source
 
 ## Installation
 
-### Pre-built zip (recommended)
+Download a versioned ZIP from [GitHub Releases](https://github.com/oszuidwest/teksttv-wp-plugin/releases), upload it under Plugins → Add New → Upload Plugin, and activate it.
 
-GitHub Actions builds `teksttv.zip` on `main` and on version tags: `composer install --no-dev`, asset build, zip with `src/`, `assets/`, `vendor/` and the bootstrap files. Upload it under Plugins → Add New → Upload Plugin and activate.
+To build from source:
 
-### Build from source
+```bash
+composer install --no-dev --optimize-autoloader
+bun install --frozen-lockfile
+bun run build
+```
 
-1. Drop the folder in `wp-content/plugins/` (any folder name, `teksttv` is fine).
-2. Install PHP dependencies:
+Place the resulting checkout in `wp-content/plugins/` and activate TekstTV. `vendor/` is required for the plugin to load; `assets/` is required for the admin interface.
 
-   ```bash
-   composer install --no-dev --optimize-autoloader
-   ```
+## Configuration
 
-3. Install JS/CSS dependencies and compile:
+Configure TekstTV under Tekst TV → Settings:
 
-   ```bash
-   bun install
-   bun run build
-   ```
+- Channels and their slugs; `tv1` is used when no channels are stored.
+- Default durations for text, image and iframe slides.
+- Preview URL and content feature toggles.
+- Enabled taxonomies for article and headline filters.
+- Optional OpenWeather API key for weather slides.
 
-4. Activate TekstTV under Plugins.
+The loop screen is configured per channel. Available loop blocks are articles, images, iframes, campaigns and weather. The ticker supports manual text and recent headlines. Loop and ticker items can be restricted by date and weekday.
 
-Without `vendor/` and a built `assets/` the plugin won't load: `vendor/autoload.php` and the admin assets are missing.
-
-## Capabilities after activation
-
-| Role          | Capabilities |
-|---------------|--------------|
-| Administrator | `manage_teksttv`, `manage_teksttv_campaigns`, `manage_teksttv_content`, `edit_teksttv` |
-| Editor        | `edit_teksttv` (TekstTV fields on posts) |
-
-If you need a different distribution, use a capability plugin.
-
-## Usage
-
-- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, campaign and weather. The ticker is configured separately.
-- Settings: channel slugs (`tv1`, `tv2`, …), display duration for text and images, OpenWeather API key, feature toggles (TinyMCE, AI, scheduling), preview URL.
-- Campaigns: campaign blocks and groups used in the loop.
-- Content & AI / AI Audit, when AI generation is enabled: prompts and audit log. Uses WordPress AI when available (`wp_supports_ai()`).
-
-If no channels are stored, `tv1` is assumed.
+AI generation is optional. When enabled, it uses the WordPress AI API if `wp_supports_ai()` is available. Prompts are managed under Content & AI; generated content is recorded under AI Audit.
 
 ## REST API
 
-Public endpoint, no login required:
+The playout endpoint is public:
 
 ```http
 GET /wp-json/teksttv/v1/slides?channel=<channel-slug>
 ```
 
-The payload contains `slides` (the loop) and `ticker` entries. `channel` must match a configured slug (`validate_channel`). Responses carry short `Cache-Control` headers. The [playout app](https://github.com/oszuidwest/teksttv-frontend) consumes this shape on a timer (see Auto-Refresh in its README).
+`channel` must match a configured channel slug. A representative response is:
 
-Editor-only endpoints (image metadata, generation, …) need a user with `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
+```json
+{
+    "slides": [
+        {
+            "type": "text",
+            "duration": 20000,
+            "title": "Example",
+            "body": "Slide content"
+        }
+    ],
+    "ticker": [
+        {
+            "message": "Ticker message"
+        }
+    ]
+}
+```
 
-## Development scripts
+Responses are cached for 180 seconds. The response schema consumed by the playout is documented in the [frontend repository](https://github.com/oszuidwest/teksttv-frontend).
 
-From [`package.json`](package.json):
+The `GET /image-data` and `POST /generate` endpoints require `edit_teksttv`. Generation also checks whether the user may edit the requested post.
 
-| Command            | Purpose |
-|--------------------|---------|
-| `bun run build`    | Minify JS/CSS to `assets/`, copy TinyMCE and tom-select vendor files |
-| `bun run dev`      | Watch JS and CSS |
-| `bun run lint`     | PHPCS + Biome on `resources/` |
-| `bun run lint:fix` | PHPCBF + Biome `--write` |
-| `bun run analyse`  | PHPStan |
-| `bun run test`     | PHPUnit (unit) |
-| `bun run env:start`| Build + package the artifact and boot WordPress via [`wp-env`](https://www.npmjs.com/package/@wordpress/env) (needs Docker) |
-| `bun run test:e2e:fixtures` | Seed the running site with channels, a post, a loop/ticker config and a custom-role user |
-| `bun run test:e2e` | Playwright smoke suite against the running site |
+## Extending blocks and ticker types
 
-### End-to-end smoke suite
+`TekstTV\BlockRegistry` is the extension point for loop and ticker types. Register add-on types on `init`; built-in types register at priority 5. A type defines admin rendering, sanitization and REST output through `render`, `save` and `build` callbacks.
 
-The e2e suite installs the **built plugin artifact** (not the raw checkout)
-into a real WordPress and checks activation, administrator and custom-role
-settings saves, admin screen rendering, and the `/slides` REST shape. Locally:
+This minimal add-on registers a ticker type without additional fields:
+
+```php
+<?php
+/**
+ * Plugin Name: TekstTV Example Ticker
+ * Requires Plugins: teksttv
+ */
+
+add_action('init', static function (): void {
+    if (!class_exists(\TekstTV\BlockRegistry::class)) {
+        return;
+    }
+
+    \TekstTV\BlockRegistry::register('myplugin_ticker_example', [
+        'label' => 'Example',
+        'icon' => 'megaphone',
+        'color' => '#2271b1',
+        'context' => 'ticker',
+        'render' => static function (): void {
+        },
+        'save' => static fn(array $raw): array => [],
+        'build' => static fn(array $data, string $channel): array => [
+            ['message' => 'Example ticker message'],
+        ],
+    ]);
+}, 10);
+```
+
+The `Requires Plugins` header assumes the main plugin directory is `teksttv`; adjust it for source installations that use another directory name. Use a unique type slug. Ticker builders must return a list of `['message' => '...']` entries. Registered types automatically appear in the admin selector and use the existing scheduling, persistence and REST pipeline. The callback contract is documented in [`src/BlockRegistry.php`](src/BlockRegistry.php) and [`src/Blocks/Contracts/BlockType.php`](src/Blocks/Contracts/BlockType.php).
+
+The registry is a direct PHP extension API; there is currently no dedicated registration action or final ticker-output filter. If an add-on type is unavailable, its stored row cannot be rendered and may be removed the next time that channel is saved.
+
+## Capabilities
+
+| Role | Capabilities after activation |
+|---|---|
+| Administrator | `manage_teksttv`, `manage_teksttv_campaigns`, `manage_teksttv_content`, `edit_teksttv` |
+| Editor | `edit_teksttv` |
+
+Use a capability-management plugin when a different role distribution is required.
+
+## Development
+
+Install dependencies with `composer install` and `bun install`.
+
+| Command | Purpose |
+|---|---|
+| `bun run check` | Run PHPCS and Biome |
+| `bunx tsc --noEmit` | Check TypeScript types |
+| `bun run analyse` | Run PHPStan |
+| `bun run test` | Run PHPUnit unit tests |
+| `bun run build` | Build minified admin assets into `assets/` |
+| `bun run dev` | Watch JavaScript and CSS entry points |
+| `bun run build:package` | Build the installable artifact in `release/teksttv/` |
+
+The end-to-end suite requires Docker and tests the packaged plugin in `wp-env`:
 
 ```bash
-bun run env:start            # Docker required
+bun run env:start
 bun run test:e2e:fixtures
 bun run test:e2e
 bun run env:stop
 ```
 
-CI runs lint, the plugin artifact build, and the e2e suite; see [`.github/workflows/`](.github/workflows/).
+CI runs PHP linting and unit tests, Biome and TypeScript checks, the asset build, and the WordPress end-to-end suite. See [`.github/workflows/`](.github/workflows/).
