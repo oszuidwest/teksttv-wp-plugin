@@ -10,6 +10,62 @@ class PostMeta
         add_action('save_post', [self::class, 'save_meta'], 10, 2);
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
         add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
+
+        // Broader slides-cache invalidation for editorial changes that affect
+        // output but do not go through the Tekst TV meta box: quick edits,
+        // scheduled publishes, category assignments and media caption edits.
+        add_action('save_post_post', [self::class, 'invalidate_on_post_save'], 10, 2);
+        add_action('transition_post_status', [self::class, 'invalidate_on_status_transition'], 10, 3);
+        add_action('set_object_terms', [self::class, 'invalidate_on_terms_change'], 10, 1);
+        add_action('attachment_updated', [self::class, 'invalidate_on_attachment_update'], 10, 1);
+    }
+
+    /**
+     * Invalidate the slides cache when a post is created or edited outside the
+     * Tekst TV meta box (e.g. quick edit, block editor, REST).
+     */
+    public static function invalidate_on_post_save(int $post_id, \WP_Post $post): void
+    {
+        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+            return;
+        }
+        RestApi::invalidate_slides_cache();
+    }
+
+    /**
+     * Invalidate when a post enters or leaves the published state, which covers
+     * scheduled publishes that never fire save_post.
+     */
+    public static function invalidate_on_status_transition(string $new_status, string $old_status, \WP_Post $post): void
+    {
+        if ($post->post_type !== 'post' || $new_status === $old_status) {
+            return;
+        }
+        if ($new_status === 'publish' || $old_status === 'publish') {
+            RestApi::invalidate_slides_cache();
+        }
+    }
+
+    /**
+     * Invalidate when a post's terms change (e.g. category reassignment), which
+     * can change category-derived sidebar images and taxonomy-filtered loops.
+     *
+     * @param mixed $object_id
+     */
+    public static function invalidate_on_terms_change($object_id): void
+    {
+        if (get_post_type((int) $object_id) === 'post') {
+            RestApi::invalidate_slides_cache();
+        }
+    }
+
+    /**
+     * Invalidate when an attachment is updated, since caption/attribution flow
+     * into image slides.
+     */
+    public static function invalidate_on_attachment_update(int $post_id): void
+    {
+        RestApi::invalidate_slides_cache();
     }
 
     /**

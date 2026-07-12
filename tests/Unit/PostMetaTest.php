@@ -256,4 +256,64 @@ class PostMetaTest extends TestCase
 
         $this->assertEmpty($this->metaUpdates);
     }
+
+    // =========================================================================
+    // M7: broader slides-cache invalidation
+    // =========================================================================
+
+    public function test_invalidate_on_terms_change_clears_cache_for_post(): void
+    {
+        Functions\expect('get_post_type')->with(10)->andReturn('post');
+        Functions\when('get_option')->justReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1');
+
+        PostMeta::invalidate_on_terms_change(10);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_invalidate_on_terms_change_skips_non_post(): void
+    {
+        Functions\expect('get_post_type')->with(20)->andReturn('page');
+        Functions\expect('delete_transient')->never();
+
+        PostMeta::invalidate_on_terms_change(20);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_invalidate_on_post_save_skips_autosave(): void
+    {
+        Functions\expect('wp_is_post_autosave')->with(5)->andReturn(true);
+        Functions\when('wp_is_post_revision')->justReturn(false);
+        Functions\expect('delete_transient')->never();
+
+        $post = \Mockery::mock(\WP_Post::class);
+        PostMeta::invalidate_on_post_save(5, $post);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_invalidate_on_status_transition_clears_cache_on_publish(): void
+    {
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+        Functions\when('get_option')->justReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1');
+
+        PostMeta::invalidate_on_status_transition('publish', 'future', $post);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_invalidate_on_status_transition_skips_unchanged_and_non_publish(): void
+    {
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+        Functions\expect('delete_transient')->never();
+
+        PostMeta::invalidate_on_status_transition('draft', 'pending', $post);
+
+        $this->assertTrue(true);
+    }
 }

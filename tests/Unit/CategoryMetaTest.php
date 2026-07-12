@@ -103,6 +103,8 @@ class CategoryMetaTest extends TestCase
         Functions\expect('update_term_meta')
             ->once()
             ->with(10, '_teksttv_category_image', 42);
+        Functions\when('get_option')->justReturn([]);
+        Functions\when('delete_transient')->justReturn(true);
 
         CategoryMeta::save_term_meta(10);
     }
@@ -120,6 +122,8 @@ class CategoryMetaTest extends TestCase
         Functions\expect('delete_term_meta')
             ->once()
             ->with(10, '_teksttv_category_image');
+        Functions\when('get_option')->justReturn([]);
+        Functions\when('delete_transient')->justReturn(true);
 
         CategoryMeta::save_term_meta(10);
     }
