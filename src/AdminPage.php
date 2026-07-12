@@ -68,6 +68,10 @@ class AdminPage
 
     public static function register_settings(): void
     {
+        // Align the save capability (checked by options.php) with the view capability of each page
+        add_filter('option_page_capability_teksttv_settings', static fn() => 'manage_teksttv');
+        add_filter('option_page_capability_teksttv_content', static fn() => 'manage_teksttv_content');
+
         register_setting('teksttv_settings', 'teksttv_channels', [
             'type' => 'array',
             'sanitize_callback' => [self::class, 'sanitize_channels'],
