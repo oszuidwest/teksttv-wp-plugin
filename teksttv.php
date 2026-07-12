@@ -24,6 +24,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 TekstTV\Plugin::init();
 
+TekstTV\Updater::init(__FILE__);
+
 
 register_activation_hook(__FILE__, function () {
     $admin = get_role('administrator');
