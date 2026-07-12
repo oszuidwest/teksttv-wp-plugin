@@ -164,6 +164,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_sidebar_image_override_with_explicit_none(): void
     {
+        Functions\when('get_option')->justReturn(['sidebar_image']);
         Functions\expect('get_post_meta')
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('0');
@@ -174,6 +175,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_sidebar_image_override_with_integer_zero(): void
     {
+        Functions\when('get_option')->justReturn(['sidebar_image']);
         Functions\expect('get_post_meta')
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn(0);
@@ -184,6 +186,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_sidebar_image_custom_override(): void
     {
+        Functions\when('get_option')->justReturn(['sidebar_image']);
         Functions\expect('get_post_meta')
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('42');
@@ -199,6 +202,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_sidebar_image_falls_back_to_category_image(): void
     {
+        Functions\when('get_option')->justReturn(['sidebar_image']);
         Functions\expect('get_post_meta')
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
@@ -219,6 +223,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_sidebar_image_falls_back_to_post_thumbnail(): void
     {
+        Functions\when('get_option')->justReturn(['sidebar_image']);
         Functions\expect('get_post_meta')
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
@@ -241,6 +246,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_sidebar_image_returns_null_when_nothing_found(): void
     {
+        Functions\when('get_option')->justReturn(['sidebar_image']);
         Functions\expect('get_post_meta')
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
@@ -258,6 +264,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_sidebar_image_primary_category_takes_precedence(): void
     {
+        Functions\when('get_option')->justReturn(['sidebar_image']);
         Functions\expect('get_post_meta')
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
@@ -283,10 +290,21 @@ class ArticlesLoopBlockTest extends TestCase
      * @param list<object> $posts
      * @param array<string, mixed> $metaMap
      */
-    private function setupArticleSlides(array $posts, array $metaMap = []): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+    /**
+     * @param list<object> $posts
+     * @param array<string, mixed> $metaMap
+     * @param list<string> $features Enabled plugin features (feature-owned meta
+     *        only acts at runtime when its feature is enabled).
+     */
+    private function setupArticleSlides(
+        array $posts,
+        array $metaMap = [],
+        array $features = ['custom_title', 'sidebar_image', 'extra_images', 'scheduling', 'page_separator']
+    ): void {
+        // Stubs (not expectations): with scheduling disabled the date meta query
+        // is skipped, so current_datetime() may legitimately never be called.
+        Functions\when('current_datetime')->justReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
+        Functions\when('wp_timezone')->justReturn(new \DateTimeZone('UTC'));
 
         \WP_Query::$stubPosts = $posts;
 
@@ -300,12 +318,12 @@ class ArticlesLoopBlockTest extends TestCase
             return $metaMap[$post_id . ':' . $key] ?? '';
         });
 
-        Functions\when('get_option')->alias(function (string $name, $default = false) {
+        Functions\when('get_option')->alias(function (string $name, $default = false) use ($features) {
             return match ($name) {
                 'teksttv_max_post_age' => 30,
                 'teksttv_duration_text' => 20,
                 'teksttv_duration_image' => 7,
-                'teksttv_features' => ['page_separator'],
+                'teksttv_features' => $features,
                 default => $default,
             };
         });
@@ -562,6 +580,105 @@ class ArticlesLoopBlockTest extends TestCase
         ArticlesLoopBlock::build(['count' => 1], 'tv1');
 
         $this->assertSame([], BuildContext::get_seen_post_ids());
+    }
+
+    // =========================================================================
+    // H1: features are runtime-authoritative — disabling one stops its stored
+    // meta from acting, even though the values remain in the database.
+    // =========================================================================
+
+    public function test_build_ignores_custom_title_when_feature_disabled(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_title' => 'Aangepaste kop',
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '0',
+        ], ['sidebar_image', 'page_separator']); // custom_title disabled
+
+        Functions\expect('get_the_title')->andReturn('Echte titel');
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertSame('Echte titel', $result[0]['title']);
+    }
+
+    public function test_build_ignores_scheduling_when_feature_disabled(): void
+    {
+        // Day and date restrictions that would exclude this post if scheduling
+        // were active. With the feature off, the post must still be emitted.
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_days' => ['1', '3', '5'],
+            '10:_teksttv_date_start' => '2026-05-01',
+            '10:_teksttv_date_end' => '2026-05-31',
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '0',
+        ], ['sidebar_image', 'page_separator']); // scheduling disabled
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Titel', $result[0]['title']);
+    }
+
+    public function test_build_omits_date_meta_query_when_scheduling_disabled(): void
+    {
+        $this->setupArticleSlides([], [], ['page_separator']); // scheduling disabled
+
+        ArticlesLoopBlock::build(['count' => 3], 'tv1');
+
+        $meta_query = \WP_Query::$lastInstance->query_vars['meta_query'];
+        // Only relation + the _teksttv_active clause; no date_end sub-query.
+        $this->assertSame('AND', $meta_query['relation']);
+        $this->assertCount(2, $meta_query);
+        $this->assertSame('_teksttv_active', $meta_query[0]['key']);
+    }
+
+    public function test_build_ignores_extra_images_when_feature_disabled(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_images' => [50, 51],
+            '10:_teksttv_sidebar_image' => '0',
+        ], ['sidebar_image', 'page_separator']); // extra_images disabled
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        // Only the text slide; the stored extra images must not produce slides.
+        $this->assertCount(1, $result);
+        $this->assertSame('text', $result[0]['type']);
+    }
+
+    public function test_build_ignores_sidebar_override_when_feature_disabled(): void
+    {
+        // A stored '0' would suppress the sidebar if the feature were active.
+        // With it disabled, the override is ignored and the automatic fallback
+        // (here: post thumbnail) resolves the sidebar image instead.
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_content' => 'Tekst',
+            '10:_teksttv_sidebar_image' => '0',
+        ], ['page_separator']); // sidebar_image disabled
+
+        Functions\expect('get_the_title')->andReturn('Titel');
+        Functions\expect('wp_get_post_categories')->with(10)->andReturn([]);
+        Functions\expect('get_post_thumbnail_id')->with(10)->andReturn(77);
+        Functions\expect('wp_get_attachment_image_url')->with(77, 'large')->andReturn('https://example.com/thumb.jpg');
+        Functions\expect('wp_get_attachment_caption')->with(77)->andReturn('');
+        Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
+            return $tag === 'teksttv_image_url' ? $value : '';
+        });
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertArrayHasKey('image', $result[0]);
+        $this->assertSame('https://example.com/thumb.jpg', $result[0]['image']['url']);
     }
 
     public function test_build_excludes_already_seen_post_ids(): void

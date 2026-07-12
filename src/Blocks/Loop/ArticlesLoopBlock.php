@@ -112,16 +112,26 @@ final class ArticlesLoopBlock implements LoopBlock
         $count = Helpers::clamp_int($block['count'] ?? 3, 1, 50);
         $taxonomy_filters = $block['taxonomy_filters'] ?? [];
 
+        // Features are runtime-authoritative: disabling one must stop its stored
+        // meta from acting, even though the values remain in the database.
+        $scheduling = Helpers::has_feature('scheduling');
+        $custom_title = Helpers::has_feature('custom_title');
+        $extra_images = Helpers::has_feature('extra_images');
+
+        $meta_query = [
+            'relation' => 'AND',
+            ['key' => '_teksttv_active', 'value' => '1', 'compare' => '='],
+        ];
+        if ($scheduling) {
+            $meta_query[] = Helpers::get_date_end_meta_query();
+        }
+
         $args = [
             'post_type' => 'post',
             'posts_per_page' => $count,
             'post_status' => 'publish',
             'no_found_rows' => true,
-            'meta_query' => [
-                'relation' => 'AND',
-                ['key' => '_teksttv_active', 'value' => '1', 'compare' => '='],
-                Helpers::get_date_end_meta_query(),
-            ],
+            'meta_query' => $meta_query,
         ];
 
         $exclude = BuildContext::get_seen_post_ids();
@@ -147,23 +157,25 @@ final class ArticlesLoopBlock implements LoopBlock
             $query->the_post();
             $post_id = get_the_ID();
 
-            $days = get_post_meta($post_id, '_teksttv_days', true);
-            if (!empty($days) && is_array($days)) {
-                if (!Helpers::is_allowed_on_day($days)) {
+            if ($scheduling) {
+                $days = get_post_meta($post_id, '_teksttv_days', true);
+                if (!empty($days) && is_array($days)) {
+                    if (!Helpers::is_allowed_on_day($days)) {
+                        continue;
+                    }
+                }
+
+                $date_start = get_post_meta($post_id, '_teksttv_date_start', true);
+                $date_end = get_post_meta($post_id, '_teksttv_date_end', true);
+                if (!Helpers::is_within_date_range($date_start, $date_end)) {
                     continue;
                 }
             }
 
-            $date_start = get_post_meta($post_id, '_teksttv_date_start', true);
-            $date_end = get_post_meta($post_id, '_teksttv_date_end', true);
-            if (!Helpers::is_within_date_range($date_start, $date_end)) {
-                continue;
-            }
-
             BuildContext::mark_post_seen((int) $post_id);
 
-            $custom_title = get_post_meta($post_id, '_teksttv_title', true);
-            $title = !empty($custom_title) ? $custom_title : get_the_title();
+            $title_override = $custom_title ? get_post_meta($post_id, '_teksttv_title', true) : '';
+            $title = !empty($title_override) ? $title_override : get_the_title();
             $content = get_post_meta($post_id, '_teksttv_content', true);
             $sidebar_image = self::get_sidebar_image_data($post_id);
 
@@ -185,7 +197,7 @@ final class ArticlesLoopBlock implements LoopBlock
                 }
             }
 
-            $images = get_post_meta($post_id, '_teksttv_images', true);
+            $images = $extra_images ? get_post_meta($post_id, '_teksttv_images', true) : [];
             if (!empty($images) && is_array($images)) {
                 foreach ($images as $attachment_id) {
                     $image_data = Helpers::get_image_data((int) $attachment_id, 'large', 'image_slide');
@@ -257,14 +269,19 @@ final class ArticlesLoopBlock implements LoopBlock
      */
     public static function get_sidebar_image_data(int $post_id): ?array
     {
-        $override_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
-        if ($override_id === '0' || $override_id === 0) {
-            return null;
-        }
-        if ($override_id) {
-            $data = Helpers::get_image_data((int) $override_id, 'large', 'text_sidebar');
-            if ($data) {
-                return $data;
+        // The sidebar_image feature owns the per-post override (including the
+        // '0' suppression). When it is disabled, ignore the stored override and
+        // fall through to the automatic category/thumbnail resolution.
+        if (Helpers::has_feature('sidebar_image')) {
+            $override_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
+            if ($override_id === '0' || $override_id === 0) {
+                return null;
+            }
+            if ($override_id) {
+                $data = Helpers::get_image_data((int) $override_id, 'large', 'text_sidebar');
+                if ($data) {
+                    return $data;
+                }
             }
         }
 
