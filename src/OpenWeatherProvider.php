@@ -17,7 +17,7 @@ class OpenWeatherProvider implements WeatherProvider
     /** @return array<string, mixed>|null */
     public function fetch(string $location): ?array
     {
-        $cache_key = 'teksttv_weather_' . sanitize_title($location);
+        $cache_key = 'teksttv_weather_' . substr(md5($this->api_key), 0, 8) . '_' . sanitize_title($location);
         $cached = get_transient($cache_key);
         if ($cached !== false) {
             return $cached;
