@@ -67,12 +67,14 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         e.preventDefault();
         const field = imgSel.closest('.teksttv-block-field, .teksttv-block-image-fields');
         if (!field) return;
+        const picker = field.matches('.teksttv-block-image-fields') ? field.closest('.teksttv-block-image-row') : field;
+        if (!picker) return;
         pickSingleImage((att) => {
             const url = att.sizes?.medium?.url ?? att.url;
-            const idInput = field.querySelector<HTMLInputElement>('.teksttv-block-image-id');
-            const thumb = field.querySelector<HTMLImageElement>('.teksttv-block-image-thumb');
-            const previewBox = field.querySelector<HTMLElement>('.teksttv-block-image-preview');
-            const removeBtn = field.querySelector<HTMLElement>('.teksttv-block-image-remove');
+            const idInput = picker.querySelector<HTMLInputElement>('.teksttv-block-image-id');
+            const thumb = picker.querySelector<HTMLImageElement>('.teksttv-block-image-thumb');
+            const previewBox = picker.querySelector<HTMLElement>('.teksttv-block-image-preview');
+            const removeBtn = picker.querySelector<HTMLElement>('.teksttv-block-image-remove');
             if (idInput) idInput.value = String(att.id);
             if (thumb) thumb.src = url;
             previewBox?.classList.remove('is-hidden');
@@ -86,9 +88,12 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     if (imgRm && blocksRoot.contains(imgRm)) {
         const field = imgRm.closest('.teksttv-block-field, .teksttv-block-image-fields');
         if (!field) return;
-        const hid = field.querySelector<HTMLInputElement>('.teksttv-block-image-id');
+        const picker = field.matches('.teksttv-block-image-fields') ? field.closest('.teksttv-block-image-row') : field;
+        if (!picker) return;
+        const hid = picker.querySelector<HTMLInputElement>('.teksttv-block-image-id');
         if (hid) hid.value = '';
-        field.querySelector<HTMLElement>('.teksttv-block-image-preview')?.classList.add('is-hidden');
+        picker.querySelector<HTMLElement>('.teksttv-block-image-preview')?.classList.add('is-hidden');
+        picker.querySelector<HTMLImageElement>('.teksttv-block-image-thumb')?.removeAttribute('src');
         (imgRm as HTMLElement).classList.add('is-hidden');
         ctx.refreshSummaries();
     }

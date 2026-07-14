@@ -168,17 +168,16 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         tickerClick(e: MouseEvent): void {
             if (!(e.target instanceof Element) || !tickerEl) return;
 
-            const header = e.target.closest('.teksttv-block-header');
-            if (header && tickerEl.contains(header)) {
-                if (e.target.closest('.teksttv-remove-block')) return;
-                toggleBlockOpen(header);
-                return;
-            }
-
             const rem = e.target.closest('.teksttv-remove-block');
             if (rem && tickerEl.contains(rem)) {
                 e.stopPropagation();
                 removeClosestBlock(rem, reindexTicker);
+                return;
+            }
+
+            const header = e.target.closest('.teksttv-block-header');
+            if (header && tickerEl.contains(header)) {
+                toggleBlockOpen(header);
             }
         },
 
