@@ -51,11 +51,12 @@ class AiGenerator
      * `status` entry in the error data for HTTP mapping.
      *
      * @param string $field 'title', 'body', or 'both'.
+     * @param array<string, mixed>|null $prompts Config from Helpers::get_ai_prompts(); resolved here when null.
      * @return array{fields: array<string, string>, warning: string}|\WP_Error
      */
-    public static function generate_for_post(\WP_Post $post, string $field, bool $has_photo = false)
+    public static function generate_for_post(\WP_Post $post, string $field, bool $has_photo = false, ?array $prompts = null)
     {
-        $prompts = Helpers::get_ai_prompts();
+        $prompts ??= Helpers::get_ai_prompts();
         $post_text = self::prepare_content($post->post_content);
         $post_title = $post->post_title;
 

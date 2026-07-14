@@ -208,19 +208,24 @@ class Helpers
     }
 
     /**
+     * Configured duration in seconds for a slide kind (a DURATION_DEFAULTS key),
+     * falling back to the default when the option has never been saved.
+     */
+    public static function duration_seconds(string $kind): int
+    {
+        return (int) get_option('teksttv_duration_' . $kind, self::DURATION_DEFAULTS[$kind]);
+    }
+
+    /**
      * Resolve a slide duration in milliseconds from an optional per-block
-     * override (in seconds), falling back to a duration option (in seconds).
+     * override (in seconds), falling back to the configured duration for $kind.
      *
      * @param mixed $override_seconds Stored block value; empty means "use the option".
-     * @param string $option_name Duration option to read, or '' to use $default_seconds directly.
+     * @param string $kind A DURATION_DEFAULTS key ('text', 'image', 'iframe').
      */
-    public static function duration_ms(mixed $override_seconds, string $option_name, int $default_seconds): int
+    public static function duration_ms(mixed $override_seconds, string $kind): int
     {
-        if (!empty($override_seconds)) {
-            return (int) $override_seconds * 1000;
-        }
-
-        $seconds = $option_name !== '' ? (int) get_option($option_name, $default_seconds) : $default_seconds;
+        $seconds = !empty($override_seconds) ? (int) $override_seconds : self::duration_seconds($kind);
         return $seconds * 1000;
     }
 

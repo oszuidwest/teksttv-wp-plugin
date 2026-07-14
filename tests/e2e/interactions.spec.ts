@@ -1,29 +1,7 @@
 import { type Locator, type Page, expect, test } from '@playwright/test';
-import { login } from './helpers';
+import { addLoopBlock, addTickerBlock, login } from './helpers';
 
 const LOOP_URL = '/wp-admin/admin.php?page=teksttv-loop-tv1';
-
-async function addLoopBlock(page: Page, type: string): Promise<Locator> {
-    const blocks = page.locator('#teksttv-blocks > .teksttv-block');
-    const previousCount = await blocks.count();
-
-    await page.locator('#teksttv-add-block-toggle').click();
-    await page.locator(`#teksttv-add-block-menu button[data-type="${type}"]`).click();
-
-    await expect(blocks).toHaveCount(previousCount + 1);
-    return blocks.last();
-}
-
-async function addTickerBlock(page: Page, type: string): Promise<Locator> {
-    const ticker = page.locator('#teksttv-ticker > .teksttv-block');
-    const previousCount = await ticker.count();
-
-    await page.locator('#teksttv-add-ticker-toggle').click();
-    await page.locator(`#teksttv-add-ticker-menu button[data-type="${type}"]`).click();
-
-    await expect(ticker).toHaveCount(previousCount + 1);
-    return ticker.last();
-}
 
 async function expectSequentialNames(root: Locator, itemSelector: string, prefix: string): Promise<void> {
     const items = root.locator(itemSelector);
@@ -68,7 +46,8 @@ test.describe('admin interaction contracts', () => {
         const types = await page
             .locator('#teksttv-add-block-menu button[data-type]')
             .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('data-type')));
-        expect(types).toEqual(['articles', 'image', 'iframe', 'campaign', 'weather']);
+        // The menu is registry-driven; assert the built-ins are present without pinning order or forbidding add-ons.
+        expect(types).toEqual(expect.arrayContaining(['articles', 'image', 'iframe', 'campaign', 'weather']));
 
         const initialCount = await page.locator('#teksttv-blocks > .teksttv-block').count();
         for (const [offset, type] of types.entries()) {

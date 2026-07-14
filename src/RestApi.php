@@ -114,8 +114,10 @@ class RestApi
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
 
+        $prompts = Helpers::get_ai_prompts();
+
         // Rate limiting per user
-        if (!AiGenerator::within_rate_limit(get_current_user_id(), Helpers::get_ai_prompts()['rate_limit'])) {
+        if (!AiGenerator::within_rate_limit(get_current_user_id(), $prompts['rate_limit'])) {
             return new WP_REST_Response(
                 ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
                 429
@@ -131,7 +133,7 @@ class RestApi
             return new WP_REST_Response(['error' => __('Post niet gevonden.', 'teksttv-wp-plugin')], 404);
         }
 
-        $result = AiGenerator::generate_for_post($post, $field, (bool) $request->get_param('has_photo'));
+        $result = AiGenerator::generate_for_post($post, $field, (bool) $request->get_param('has_photo'), $prompts);
         if (is_wp_error($result)) {
             $data = $result->get_error_data();
             $status = is_array($data) && isset($data['status']) ? (int) $data['status'] : 500;

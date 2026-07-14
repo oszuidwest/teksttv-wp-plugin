@@ -62,12 +62,11 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         return;
     }
 
+    // `.teksttv-image-picker` wraps the id input, thumb/preview, and buttons — a contract with the PHP renderers.
     const imgSel = e.target.closest('.teksttv-block-image-select');
     if (imgSel && blocksRoot.contains(imgSel)) {
         e.preventDefault();
-        const field = imgSel.closest('.teksttv-block-field, .teksttv-block-image-fields');
-        if (!field) return;
-        const picker = field.matches('.teksttv-block-image-fields') ? field.closest('.teksttv-block-image-row') : field;
+        const picker = imgSel.closest('.teksttv-image-picker');
         if (!picker) return;
         pickSingleImage((att) => {
             const url = att.sizes?.medium?.url ?? att.url;
@@ -86,9 +85,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
 
     const imgRm = e.target.closest('.teksttv-block-image-remove');
     if (imgRm && blocksRoot.contains(imgRm)) {
-        const field = imgRm.closest('.teksttv-block-field, .teksttv-block-image-fields');
-        if (!field) return;
-        const picker = field.matches('.teksttv-block-image-fields') ? field.closest('.teksttv-block-image-row') : field;
+        const picker = imgRm.closest('.teksttv-image-picker');
         if (!picker) return;
         const hid = picker.querySelector<HTMLInputElement>('.teksttv-block-image-id');
         if (hid) hid.value = '';

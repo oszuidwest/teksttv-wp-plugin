@@ -1,5 +1,5 @@
-import { type Locator, type Page, expect, test } from '@playwright/test';
-import { login } from './helpers';
+import { type Page, expect, test } from '@playwright/test';
+import { addLoopBlock, login } from './helpers';
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
@@ -32,15 +32,6 @@ async function selectFixtureImage(page: Page): Promise<string> {
     return attachmentId;
 }
 
-async function addImageBlock(page: Page): Promise<Locator> {
-    const blocks = page.locator('#teksttv-blocks > .teksttv-block');
-    const previousCount = await blocks.count();
-    await page.locator('#teksttv-add-block-toggle').click();
-    await page.locator('#teksttv-add-block-menu button[data-type="image"]').click();
-    await expect(blocks).toHaveCount(previousCount + 1);
-    return blocks.last();
-}
-
 test.describe('media picker interactions', () => {
     test.beforeEach(async ({ page }) => {
         await login(page, 'admin', 'password');
@@ -48,7 +39,7 @@ test.describe('media picker interactions', () => {
 
     test('sets and clears an image block attachment and preview', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
-        const imageBlock = await addImageBlock(page);
+        const imageBlock = await addLoopBlock(page, 'image');
 
         const idInput = imageBlock.locator('.teksttv-block-image-id');
         const preview = imageBlock.locator('.teksttv-block-image-preview');
