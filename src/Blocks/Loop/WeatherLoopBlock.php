@@ -153,7 +153,8 @@ final class WeatherLoopBlock implements BlockType
             return [];
         }
 
-        $duration = Helpers::duration_ms($block['duration'] ?? null, '', self::DEFAULT_DURATION_SECONDS);
+        // Weather has no duration setting; the per-block override falls back to a fixed default.
+        $duration = (!empty($block['duration']) ? (int) $block['duration'] : self::DEFAULT_DURATION_SECONDS) * 1000;
 
         $days_output = [];
         foreach ($weather['days'] as $index => $day) {

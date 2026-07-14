@@ -33,8 +33,8 @@ final class ArticlesLoopBlock implements BlockType
         $count = $block['count'] ?? 3;
         $dur_text = $block['duration_text'] ?? '';
         $dur_image = $block['duration_image'] ?? '';
-        $default_text = (int) get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['text']);
-        $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['image']);
+        $default_text = Helpers::duration_seconds('text');
+        $default_image = Helpers::duration_seconds('image');
 
         ?>
         <div class="teksttv-block-fields">
@@ -110,6 +110,9 @@ final class ArticlesLoopBlock implements BlockType
             'meta_query' => $meta_query,
         ]));
 
+        $duration_text = Helpers::duration_ms($block['duration_text'] ?? null, 'text');
+        $duration_image = Helpers::duration_ms($block['duration_image'] ?? null, 'image');
+
         while ($query->have_posts()) {
             $query->the_post();
             $post_id = get_the_ID();
@@ -141,7 +144,7 @@ final class ArticlesLoopBlock implements BlockType
                 foreach ($pages as $page_content) {
                     $slide = [
                         'type' => 'text',
-                        'duration' => Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text', Helpers::DURATION_DEFAULTS['text']),
+                        'duration' => $duration_text,
                         'title' => $title,
                         'body' => wpautop($page_content),
                     ];
@@ -161,7 +164,7 @@ final class ArticlesLoopBlock implements BlockType
                     if ($image_data) {
                         $slides[] = array_merge([
                             'type' => 'image',
-                            'duration' => Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image', Helpers::DURATION_DEFAULTS['image']),
+                            'duration' => $duration_image,
                         ], $image_data);
                     }
                 }

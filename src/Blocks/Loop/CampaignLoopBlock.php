@@ -67,12 +67,13 @@ final class CampaignLoopBlock implements BlockType
 
     /**
      * Render one intro/outro image picker field. The class names are a contract
-     * with the image-select handler in the admin JS.
+     * with the image-select handler in the admin JS: `.teksttv-image-picker`
+     * must wrap the id input, preview/thumb, and select/remove buttons.
      */
     private static function render_transition_picker(string $label, string $field_name, int $image_id, string $image_url): void
     {
         ?>
-        <div class="teksttv-block-field">
+        <div class="teksttv-block-field teksttv-image-picker">
             <label><?php echo esc_html($label); ?></label>
             <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $image_id); ?>" class="teksttv-block-image-id" />
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
@@ -131,7 +132,7 @@ final class CampaignLoopBlock implements BlockType
                 continue;
             }
 
-            $duration = Helpers::duration_ms($campaign['duration'] ?? null, 'teksttv_duration_image', Helpers::DURATION_DEFAULTS['image']);
+            $duration = Helpers::duration_ms($campaign['duration'] ?? null, 'image');
 
             foreach ($campaign['slides'] ?? [] as $attachment_id) {
                 $url = wp_get_attachment_url((int) $attachment_id);

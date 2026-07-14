@@ -29,7 +29,7 @@ final class IframeLoopBlock implements BlockType
         $name = $block['name'] ?? '';
         $url = $block['url'] ?? '';
         $duration = $block['duration'] ?? '';
-        $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['iframe']);
+        $default_duration = Helpers::duration_seconds('iframe');
 
         ?>
         <div class="teksttv-block-fields">
@@ -84,7 +84,7 @@ final class IframeLoopBlock implements BlockType
         return [[
             'type' => 'iframe',
             'url' => $url,
-            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['iframe']),
+            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'iframe'),
         ]
         ];
     }

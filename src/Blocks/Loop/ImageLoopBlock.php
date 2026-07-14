@@ -28,11 +28,11 @@ final class ImageLoopBlock implements BlockType
     {
         $image_id = $block['image_id'] ?? 0;
         $duration = $block['duration'] ?? '';
-        $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['image']);
+        $default_image = Helpers::duration_seconds('image');
         $image_url = $image_id ? wp_get_attachment_image_url((int) $image_id, 'medium') : '';
 
         ?>
-        <div class="teksttv-block-image-row">
+        <div class="teksttv-block-image-row teksttv-image-picker">
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
                 <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" />
             </div>
@@ -89,7 +89,7 @@ final class ImageLoopBlock implements BlockType
 
         return [array_merge([
             'type' => 'image',
-            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_image', Helpers::DURATION_DEFAULTS['image']),
+            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'image'),
         ], $image_data)
         ];
     }
