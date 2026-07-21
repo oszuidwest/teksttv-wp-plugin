@@ -36,9 +36,9 @@ class HelpersTest extends TestCase
     // is_allowed_on_day()
     // =========================================================================
 
-    public function test_is_allowed_on_day_returns_true_for_empty_array(): void
+    public function test_is_allowed_on_day_returns_false_for_empty_array(): void
     {
-        $this->assertTrue(Helpers::is_allowed_on_day([]));
+        $this->assertFalse(Helpers::is_allowed_on_day([]));
     }
 
     public function test_is_allowed_on_day_returns_true_for_null(): void
@@ -79,6 +79,21 @@ class HelpersTest extends TestCase
         $monday = new \DateTimeImmutable('2026-04-06');
         // Even if array contains ints, they should be cast to string
         $this->assertTrue(Helpers::is_allowed_on_day([1, 2], $monday));
+    }
+
+    // =========================================================================
+    // sanitize_date_input()
+    // =========================================================================
+
+    public function test_sanitize_date_input_accepts_strict_calendar_date(): void
+    {
+        $this->assertSame('2026-07-23', Helpers::sanitize_date_input('2026-07-23'));
+    }
+
+    public function test_sanitize_date_input_rejects_invalid_calendar_date(): void
+    {
+        $this->assertSame('', Helpers::sanitize_date_input('2026-02-31'));
+        $this->assertSame('', Helpers::sanitize_date_input('not-a-date'));
     }
 
     // =========================================================================
@@ -198,6 +213,14 @@ class HelpersTest extends TestCase
         ];
 
         $this->assertFalse(Helpers::is_block_scheduled($block));
+    }
+
+    public function test_is_block_scheduled_returns_false_for_explicit_empty_days(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $this->assertFalse(Helpers::is_block_scheduled(['days' => []]));
     }
 
     public function test_is_block_scheduled_returns_true_when_in_range_and_correct_day(): void

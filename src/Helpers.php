@@ -44,13 +44,14 @@ class Helpers
             return null;
         }
         $valid = ['1', '2', '3', '4', '5', '6', '7'];
-        $days = array_values(array_intersect(array_map('sanitize_text_field', $raw), $valid));
+        $days = array_values(array_unique(array_intersect(array_map('sanitize_text_field', $raw), $valid)));
         return count($days) < 7 ? $days : null;
     }
 
     /**
      * Extract sanitized scheduling fields (date_start, date_end, days) from a
-     * raw POST payload. Empty values are omitted so unscheduled items stay lean.
+     * raw POST payload. Empty date values are omitted; an empty days list is
+     * retained to represent "no days selected".
      *
      * @param array<string, mixed> $raw
      * @return array<string, mixed>
@@ -59,8 +60,8 @@ class Helpers
     {
         $fields = [];
 
-        $ds = sanitize_text_field($raw['date_start'] ?? '');
-        $de = sanitize_text_field($raw['date_end'] ?? '');
+        $ds = self::sanitize_date_input($raw['date_start'] ?? '');
+        $de = self::sanitize_date_input($raw['date_end'] ?? '');
         if ($ds !== '') {
             $fields['date_start'] = $ds;
         }
@@ -68,7 +69,8 @@ class Helpers
             $fields['date_end'] = $de;
         }
 
-        $sanitized_days = self::sanitize_days_input($raw['days'] ?? null);
+        // Checkbox groups are absent from POST when every box is unchecked.
+        $sanitized_days = self::sanitize_days_input($raw['days'] ?? []);
         if ($sanitized_days !== null) {
             $fields['days'] = $sanitized_days;
         }
@@ -79,19 +81,36 @@ class Helpers
     /**
      * Check if content should be displayed on the given day.
      *
-     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
+     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun); null means all days, [] means none.
      * @param DateTimeInterface|null $date Date to check, defaults to current date
      */
     public static function is_allowed_on_day(?array $allowed_days, ?DateTimeInterface $date = null): bool
     {
-        if (empty($allowed_days)) {
+        if ($allowed_days === null) {
             return true;
+        }
+        if ($allowed_days === []) {
+            return false;
         }
 
         $date = $date ?? current_datetime();
         $current_day = $date->format('N');
 
         return in_array((string) $current_day, array_map('strval', $allowed_days), true);
+    }
+
+    /**
+     * Sanitize and strictly validate a Y-m-d date input.
+     */
+    public static function sanitize_date_input(mixed $raw): string
+    {
+        $date = sanitize_text_field((string) $raw);
+        if ($date === '') {
+            return '';
+        }
+
+        $parsed = DateTime::createFromFormat('!Y-m-d', $date);
+        return $parsed && $parsed->format('Y-m-d') === $date ? $date : '';
     }
 
     /**
@@ -401,9 +420,11 @@ class Helpers
         if (!self::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
             return false;
         }
-        $days = $block['days'] ?? [];
-        if (!empty($days) && !self::is_allowed_on_day($days)) {
-            return false;
+        if (array_key_exists('days', $block)) {
+            $days = is_array($block['days']) ? $block['days'] : [];
+            if (!self::is_allowed_on_day($days)) {
+                return false;
+            }
         }
         return true;
     }

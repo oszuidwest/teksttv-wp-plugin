@@ -172,7 +172,13 @@ class PostMeta
     private static function default_end_date(string $start_date): string
     {
         $default_days = (int) get_option('teksttv_default_end_days', 7);
-        return $default_days > 0 ? date('Y-m-d', strtotime($start_date . ' + ' . $default_days . ' days')) : '';
+        $start_date = Helpers::sanitize_date_input($start_date);
+        if ($default_days <= 0 || $start_date === '') {
+            return '';
+        }
+
+        $start = \DateTimeImmutable::createFromFormat('!Y-m-d', $start_date);
+        return $start ? $start->modify('+' . $default_days . ' days')->format('Y-m-d') : '';
     }
 
     public static function render_meta_box(\WP_Post $post): void
@@ -186,9 +192,9 @@ class PostMeta
         $days = get_post_meta($post->ID, '_teksttv_days', true);
         $images = get_post_meta($post->ID, '_teksttv_images', true);
 
-        // Empty days means "all days" and renders with every checkbox checked.
+        // Missing meta means "all days"; a stored empty array means "no days".
         if (!is_array($days)) {
-            $days = [];
+            $days = null;
         }
         if (!is_array($images)) {
             $images = [];
@@ -329,12 +335,15 @@ class PostMeta
 
         // Scheduling (only save if feature enabled)
         if (Helpers::has_feature('scheduling')) {
-            update_post_meta($post_id, '_teksttv_date_start', $data['date_start'] ?? '');
-            update_post_meta($post_id, '_teksttv_date_end', $data['date_end'] ?? '');
+            update_post_meta($post_id, '_teksttv_date_start', Helpers::sanitize_date_input($data['date_start'] ?? ''));
+            update_post_meta($post_id, '_teksttv_date_end', Helpers::sanitize_date_input($data['date_end'] ?? ''));
 
-            // null (all 7 days checked) and [] are both "no restriction".
-            $days = Helpers::sanitize_days_input($data['days'] ?? []) ?? [];
-            update_post_meta($post_id, '_teksttv_days', $days);
+            $days = Helpers::sanitize_days_input($data['days'] ?? []);
+            if ($days === null) {
+                delete_post_meta($post_id, '_teksttv_days');
+            } else {
+                update_post_meta($post_id, '_teksttv_days', $days);
+            }
         }
 
         // Extra images (only save if feature enabled)

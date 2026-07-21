@@ -472,6 +472,19 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame([], $result);
     }
 
+    public function test_build_skips_post_with_no_selected_days(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_days' => [],
+            '10:_teksttv_content' => 'Tekst',
+        ]);
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
     public function test_build_skips_post_outside_date_range(): void
     {
         $post = (object) ['ID' => 10];

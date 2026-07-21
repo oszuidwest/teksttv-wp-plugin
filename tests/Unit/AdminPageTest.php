@@ -225,6 +225,18 @@ class AdminPageTest extends TestCase
         $this->assertArrayNotHasKey('date_end', $result);
     }
 
+    public function test_extract_scheduling_fields_omits_invalid_dates(): void
+    {
+        $result = Helpers::extract_scheduling_fields([
+            'date_start' => '2026-02-31',
+            'date_end' => 'not-a-date',
+            'days' => ['1', '2', '3', '4', '5', '6', '7'],
+        ]);
+
+        $this->assertArrayNotHasKey('date_start', $result);
+        $this->assertArrayNotHasKey('date_end', $result);
+    }
+
     public function test_extract_scheduling_fields_with_days(): void
     {
         $raw = [
@@ -259,12 +271,52 @@ class AdminPageTest extends TestCase
         $this->assertSame(['1', '5'], $result['days']);
     }
 
+    public function test_extract_scheduling_fields_deduplicates_days(): void
+    {
+        $result = Helpers::extract_scheduling_fields(['days' => ['1', '1', '2']]);
+
+        $this->assertSame(['1', '2'], $result['days']);
+    }
+
     public function test_extract_scheduling_fields_empty_input(): void
     {
         $result = Helpers::extract_scheduling_fields([]);
 
-        // Empty days array passes is_array but has count 0 < 7, so it's included
         $this->assertArrayNotHasKey('date_start', $result);
         $this->assertArrayNotHasKey('date_end', $result);
+        $this->assertSame([], $result['days']);
+    }
+
+    public function test_render_days_row_checks_all_days_for_absent_restriction(): void
+    {
+        $this->assertSame(7, substr_count($this->renderDaysRow(null), 'checked="checked"'));
+    }
+
+    public function test_render_days_row_leaves_all_days_unchecked_for_empty_selection(): void
+    {
+        $this->assertStringNotContainsString('checked="checked"', $this->renderDaysRow([]));
+    }
+
+    /** @param list<string>|null $days */
+    private function renderDaysRow(?array $days): string
+    {
+        Functions\when('esc_attr')->alias(fn ($value) => $value);
+        Functions\when('esc_html')->alias(fn ($value) => $value);
+        Functions\when('checked')->alias(function ($checked, $current = true, $echo = true) {
+            $result = $checked === $current ? 'checked="checked"' : '';
+            if ($echo) {
+                echo $result;
+            }
+            return $result;
+        });
+
+        ob_start();
+        try {
+            AdminPage::render_days_row('days[]', $days);
+            return (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
     }
 }

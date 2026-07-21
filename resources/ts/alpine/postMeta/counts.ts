@@ -23,8 +23,13 @@ export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined, ha
     const wc = document.querySelector('#teksttv-wordcount');
     if (!(wc instanceof HTMLElement)) return;
 
-    const text = stripTags(content).replace(/\s+/g, ' ').trim();
-    const pageCount = splitPages(content).filter((page) => page.trim()).length;
+    const pages = splitPages(content);
+    const text = pages
+        .map((page) => stripTags(page))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const pageCount = pages.filter((page) => page.trim()).length;
     const totalWords = text ? text.split(/\s+/).length : 0;
 
     const wordLimit = (hasPhoto ? config?.wordLimitPhoto : config?.wordLimit) ?? 0;

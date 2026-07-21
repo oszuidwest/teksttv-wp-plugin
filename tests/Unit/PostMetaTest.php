@@ -161,6 +161,42 @@ class PostMetaTest extends TestCase
         $this->assertSame(['1', '5'], $this->findMetaUpdate('_teksttv_days'));
     }
 
+    public function test_process_save_preserves_explicit_empty_days(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, ['active' => true, 'content' => '', 'days' => []]);
+
+        $this->assertSame([], $this->findMetaUpdate('_teksttv_days'));
+        $this->assertFalse($this->wasMetaDeleted('_teksttv_days'));
+    }
+
+    public function test_process_save_deletes_days_meta_when_all_days_are_selected(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, [
+            'active' => true,
+            'content' => '',
+            'days' => ['1', '2', '3', '4', '5', '6', '7'],
+        ]);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertFalse($this->wasMetaUpdated('_teksttv_days'));
+    }
+
+    public function test_process_save_rejects_invalid_scheduling_dates(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, [
+            'active' => true,
+            'content' => '',
+            'date_start' => '2026-02-31',
+            'date_end' => 'not-a-date',
+        ]);
+
+        $this->assertSame('', $this->findMetaUpdate('_teksttv_date_start'));
+        $this->assertSame('', $this->findMetaUpdate('_teksttv_date_end'));
+    }
+
     // =========================================================================
     // Feature: extra_images
     // =========================================================================
@@ -239,6 +275,24 @@ class PostMetaTest extends TestCase
         $result = self::callPrivate(PostMeta::class, 'default_start_date', [null]);
 
         $this->assertSame('2026-07-23', $result);
+    }
+
+    public function test_default_end_date_rejects_invalid_start_date(): void
+    {
+        Functions\expect('get_option')->with('teksttv_default_end_days', 7)->andReturn(7);
+
+        $result = self::callPrivate(PostMeta::class, 'default_end_date', ['not-a-date']);
+
+        $this->assertSame('', $result);
+    }
+
+    public function test_default_end_date_adds_configured_days(): void
+    {
+        Functions\expect('get_option')->with('teksttv_default_end_days', 7)->andReturn(7);
+
+        $result = self::callPrivate(PostMeta::class, 'default_end_date', ['2026-07-23']);
+
+        $this->assertSame('2026-07-30', $result);
     }
 
     public function test_save_meta_returns_early_without_nonce(): void
