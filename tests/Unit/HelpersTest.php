@@ -223,6 +223,14 @@ class HelpersTest extends TestCase
         $this->assertFalse(Helpers::is_block_scheduled(['days' => []]));
     }
 
+    public function test_is_block_scheduled_returns_true_for_null_days(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $this->assertTrue(Helpers::is_block_scheduled(['days' => null]));
+    }
+
     public function test_is_block_scheduled_returns_true_when_in_range_and_correct_day(): void
     {
         $now = new \DateTimeImmutable('2026-04-07 12:00:00');

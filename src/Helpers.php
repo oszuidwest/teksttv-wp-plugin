@@ -421,7 +421,7 @@ class Helpers
             return false;
         }
         if (array_key_exists('days', $block)) {
-            $days = is_array($block['days']) ? $block['days'] : [];
+            $days = $block['days'] === null ? null : (is_array($block['days']) ? $block['days'] : []);
             if (!self::is_allowed_on_day($days)) {
                 return false;
             }

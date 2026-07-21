@@ -25,7 +25,7 @@ final class TaxonomyFilters
             ?>
         <div class="teksttv-block-field">
             <label><?php echo esc_html($tax['label']); ?></label>
-            <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="Filter..." multiple>
+            <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Filter...', 'teksttv-wp-plugin'); ?>" multiple>
                 <?php foreach ($tax['terms'] as $term_id => $term_name) : ?>
                 <option value="<?php echo esc_attr((string) $term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
                 <?php endforeach; ?>
