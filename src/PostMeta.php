@@ -162,7 +162,7 @@ class PostMeta
     private static function default_start_date(?\WP_Post $post): string
     {
         $pub_date = ($post && $post->post_date !== '0000-00-00 00:00:00') ? $post->post_date : '';
-        return $pub_date ? date('Y-m-d', strtotime($pub_date)) : date('Y-m-d');
+        return $pub_date ? date('Y-m-d', strtotime($pub_date)) : current_time('Y-m-d');
     }
 
     /**

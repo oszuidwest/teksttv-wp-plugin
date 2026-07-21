@@ -232,6 +232,15 @@ class PostMetaTest extends TestCase
     // Guard clauses (save_meta level, still using $_POST)
     // =========================================================================
 
+    public function test_default_start_date_uses_wordpress_local_date_without_publication_date(): void
+    {
+        Functions\expect('current_time')->once()->with('Y-m-d')->andReturn('2026-07-23');
+
+        $result = self::callPrivate(PostMeta::class, 'default_start_date', [null]);
+
+        $this->assertSame('2026-07-23', $result);
+    }
+
     public function test_save_meta_returns_early_without_nonce(): void
     {
         $_POST = [];

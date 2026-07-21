@@ -24,7 +24,7 @@ export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined, ha
     if (!(wc instanceof HTMLElement)) return;
 
     const text = stripTags(content).replace(/\s+/g, ' ').trim();
-    const pageCount = splitPages(content).length;
+    const pageCount = splitPages(content).filter((page) => page.trim()).length;
     const totalWords = text ? text.split(/\s+/).length : 0;
 
     const wordLimit = (hasPhoto ? config?.wordLimitPhoto : config?.wordLimit) ?? 0;
