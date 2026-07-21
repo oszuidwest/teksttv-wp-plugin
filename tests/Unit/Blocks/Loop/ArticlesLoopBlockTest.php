@@ -289,10 +289,6 @@ class ArticlesLoopBlockTest extends TestCase
     /**
      * @param list<object> $posts
      * @param array<string, mixed> $metaMap
-     */
-    /**
-     * @param list<object> $posts
-     * @param array<string, mixed> $metaMap
      * @param list<string> $features Enabled plugin features (feature-owned meta
      *        only acts at runtime when its feature is enabled).
      */
