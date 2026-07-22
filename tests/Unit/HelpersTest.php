@@ -667,6 +667,27 @@ class HelpersTest extends TestCase
         $this->assertSame(60, $result['rate_limit']);
     }
 
+    public function test_get_ai_prompts_clamps_legacy_generation_limits(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn([
+                'word_limit' => 9999,
+                'word_limit_photo' => 9999,
+                'title_char_limit' => 9999,
+                'min_input_words' => 9999,
+                'max_tokens' => 99999,
+            ]);
+
+        $result = Helpers::get_ai_prompts();
+
+        $this->assertSame(500, $result['word_limit']);
+        $this->assertSame(500, $result['word_limit_photo']);
+        $this->assertSame(100, $result['title_char_limit']);
+        $this->assertSame(500, $result['min_input_words']);
+        $this->assertSame(8192, $result['max_tokens']);
+    }
+
     // =========================================================================
     // get_campaign_groups()
     // =========================================================================

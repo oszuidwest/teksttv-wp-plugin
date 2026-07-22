@@ -242,11 +242,11 @@ class Helpers
     public static function get_ai_prompts(): array
     {
         $saved = get_option('teksttv_ai_prompts', []);
-        $word_limit = max(10, (int) ($saved['word_limit'] ?? 100));
-        $word_limit_photo = (int) ($saved['word_limit_photo'] ?? 0);
+        $word_limit = self::clamp_int($saved['word_limit'] ?? 100, 10, 500);
+        $word_limit_photo = min(500, absint($saved['word_limit_photo'] ?? 0));
         $word_limit_photo = $word_limit_photo >= 1 ? $word_limit_photo : $word_limit;
-        $title_char_limit = max(10, (int) ($saved['title_char_limit'] ?? 40));
-        $min_input = max(0, (int) ($saved['min_input_words'] ?? 50));
+        $title_char_limit = self::clamp_int($saved['title_char_limit'] ?? 40, 10, 100);
+        $min_input = self::clamp_int($saved['min_input_words'] ?? 50, 0, 500);
         $max_retries = self::clamp_int($saved['max_retries'] ?? 3, 1, 5);
         $rate_limit = self::clamp_int($saved['rate_limit'] ?? 10, 1, 60);
 
@@ -271,7 +271,7 @@ class Helpers
             'model' => $saved['model'] ?? '',
             'temperature' => $saved['temperature'] ?? '',
             'top_p' => $saved['top_p'] ?? '',
-            'max_tokens' => max(64, (int) ($saved['max_tokens'] ?? 2048)),
+            'max_tokens' => self::clamp_int($saved['max_tokens'] ?? 2048, 64, 8192),
         ];
     }
 
