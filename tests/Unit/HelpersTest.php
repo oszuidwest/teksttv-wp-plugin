@@ -676,6 +676,8 @@ class HelpersTest extends TestCase
                 'word_limit_photo' => 9999,
                 'title_char_limit' => 9999,
                 'min_input_words' => 9999,
+                'temperature' => 99,
+                'top_p' => 99,
                 'max_tokens' => 99999,
             ]);
 
@@ -685,6 +687,8 @@ class HelpersTest extends TestCase
         $this->assertSame(500, $result['word_limit_photo']);
         $this->assertSame(100, $result['title_char_limit']);
         $this->assertSame(500, $result['min_input_words']);
+        $this->assertSame(2, $result['temperature']);
+        $this->assertSame(1, $result['top_p']);
         $this->assertSame(8192, $result['max_tokens']);
     }
 

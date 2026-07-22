@@ -249,6 +249,8 @@ class Helpers
         $min_input = self::clamp_int($saved['min_input_words'] ?? 50, 0, 500);
         $max_retries = self::clamp_int($saved['max_retries'] ?? 3, 1, 5);
         $rate_limit = self::clamp_int($saved['rate_limit'] ?? 10, 1, 60);
+        $temperature = $saved['temperature'] ?? '';
+        $top_p = $saved['top_p'] ?? '';
 
         $defaults = [
             'system' => 'Je bent een eindredacteur voor tekst-tv. Schrijf in natuurlijk, vloeiend Nederlands voor een breed publiek. Gebruik korte, heldere zinnen. Schrijf alleen in het Nederlands en gebruik geen gedachtestreepjes.',
@@ -269,8 +271,8 @@ class Helpers
             'region_taxonomy' => $saved['region_taxonomy'] ?? '',
             'provider' => $saved['provider'] ?? '',
             'model' => $saved['model'] ?? '',
-            'temperature' => $saved['temperature'] ?? '',
-            'top_p' => $saved['top_p'] ?? '',
+            'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
+            'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
             'max_tokens' => self::clamp_int($saved['max_tokens'] ?? 2048, 64, 8192),
         ];
     }
