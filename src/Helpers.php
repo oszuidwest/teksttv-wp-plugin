@@ -226,11 +226,12 @@ class Helpers
     public static function duration_ms(mixed $override_seconds, string $option_name, int $default_seconds): int
     {
         if (!empty($override_seconds)) {
-            return (int) $override_seconds * 1000;
+            $seconds = (int) $override_seconds;
+        } else {
+            $seconds = $option_name !== '' ? (int) get_option($option_name, $default_seconds) : $default_seconds;
         }
 
-        $seconds = $option_name !== '' ? (int) get_option($option_name, $default_seconds) : $default_seconds;
-        return $seconds * 1000;
+        return self::clamp_int($seconds, 1, 120) * 1000;
     }
 
     /**

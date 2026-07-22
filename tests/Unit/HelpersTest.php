@@ -33,6 +33,27 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
+    // duration_ms()
+    // =========================================================================
+
+    public function test_duration_ms_clamps_legacy_override(): void
+    {
+        $this->assertSame(120000, Helpers::duration_ms('9999', 'unused_option', 20));
+    }
+
+    public function test_duration_ms_clamps_legacy_option(): void
+    {
+        Functions\expect('get_option')->with('duration_option', 20)->andReturn(0);
+
+        $this->assertSame(1000, Helpers::duration_ms(null, 'duration_option', 20));
+    }
+
+    public function test_duration_ms_clamps_direct_default(): void
+    {
+        $this->assertSame(120000, Helpers::duration_ms(null, '', 9999));
+    }
+
+    // =========================================================================
     // is_allowed_on_day()
     // =========================================================================
 
