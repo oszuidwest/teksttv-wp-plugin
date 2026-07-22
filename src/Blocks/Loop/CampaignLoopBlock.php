@@ -57,24 +57,29 @@ final class CampaignLoopBlock implements LoopBlock
             </div>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--transitions">
-            <div class="teksttv-block-field">
-                <label><?php esc_html_e('Intro afbeelding', 'teksttv-wp-plugin'); ?></label>
-                <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][intro_image_id]" value="<?php echo esc_attr((string) $intro_id); ?>" class="teksttv-block-image-id" />
-                <div class="teksttv-block-image-preview <?php echo $intro_url ? '' : 'is-hidden'; ?>">
-                    <img src="<?php echo esc_url($intro_url); ?>" alt="" class="teksttv-block-image-thumb" />
-                </div>
-                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv-wp-plugin'); ?></button>
-                <button type="button" class="button-link teksttv-block-image-remove <?php echo $intro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
+            <?php
+            self::render_transition_picker(__('Intro afbeelding', 'teksttv-wp-plugin'), $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
+            self::render_transition_picker(__('Outro afbeelding', 'teksttv-wp-plugin'), $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');
+            ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render one intro/outro image picker field. The class names are a contract
+     * with the image-select handler in the admin JS.
+     */
+    private static function render_transition_picker(string $label, string $field_name, int $image_id, string $image_url): void
+    {
+        ?>
+        <div class="teksttv-block-field">
+            <label><?php echo esc_html($label); ?></label>
+            <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $image_id); ?>" class="teksttv-block-image-id" />
+            <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
+                <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" />
             </div>
-            <div class="teksttv-block-field">
-                <label><?php esc_html_e('Outro afbeelding', 'teksttv-wp-plugin'); ?></label>
-                <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][outro_image_id]" value="<?php echo esc_attr((string) $outro_id); ?>" class="teksttv-block-image-id" />
-                <div class="teksttv-block-image-preview <?php echo $outro_url ? '' : 'is-hidden'; ?>">
-                    <img src="<?php echo esc_url($outro_url); ?>" alt="" class="teksttv-block-image-thumb" />
-                </div>
-                <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv-wp-plugin'); ?></button>
-                <button type="button" class="button-link teksttv-block-image-remove <?php echo $outro_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
-            </div>
+            <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv-wp-plugin'); ?></button>
+            <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
         </div>
         <?php
     }
@@ -112,10 +117,6 @@ final class CampaignLoopBlock implements LoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
-        if (!Helpers::is_block_scheduled($block)) {
-            return [];
-        }
-
         $groups = (array) ($block['groups'] ?? []);
         if (empty($groups)) {
             return [];
@@ -130,7 +131,7 @@ final class CampaignLoopBlock implements LoopBlock
                 continue;
             }
 
-            $duration = !empty($campaign['duration']) ? (int) $campaign['duration'] * 1000 : (int) get_option('teksttv_duration_image', 7) * 1000;
+            $duration = Helpers::duration_ms($campaign['duration'] ?? null, 'teksttv_duration_image', 7);
 
             foreach ($campaign['slides'] ?? [] as $attachment_id) {
                 $url = wp_get_attachment_url((int) $attachment_id);
@@ -155,31 +156,34 @@ final class CampaignLoopBlock implements LoopBlock
         }
 
         if (!empty($slides)) {
-            $intro_id = (int) ($block['intro_image_id'] ?? 0);
-            if ($intro_id) {
-                $intro_url = wp_get_attachment_url($intro_id);
-                if ($intro_url) {
-                    array_unshift($slides, [
-                        'type' => 'commercial_transition',
-                        'duration' => self::TRANSITION_DURATION,
-                        'url' => $intro_url,
-                    ]);
-                }
+            $intro = self::transition_slide((int) ($block['intro_image_id'] ?? 0));
+            if ($intro) {
+                array_unshift($slides, $intro);
             }
 
-            $outro_id = (int) ($block['outro_image_id'] ?? 0);
-            if ($outro_id) {
-                $outro_url = wp_get_attachment_url($outro_id);
-                if ($outro_url) {
-                    $slides[] = [
-                        'type' => 'commercial_transition',
-                        'duration' => self::TRANSITION_DURATION,
-                        'url' => $outro_url,
-                    ];
-                }
+            $outro = self::transition_slide((int) ($block['outro_image_id'] ?? 0));
+            if ($outro) {
+                $slides[] = $outro;
             }
         }
 
         return $slides;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function transition_slide(int $attachment_id): ?array
+    {
+        $url = $attachment_id ? wp_get_attachment_url($attachment_id) : false;
+        if (!$url) {
+            return null;
+        }
+
+        return [
+            'type' => 'commercial_transition',
+            'duration' => self::TRANSITION_DURATION,
+            'url' => $url,
+        ];
     }
 }

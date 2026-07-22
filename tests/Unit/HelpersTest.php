@@ -33,12 +33,33 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
+    // duration_ms()
+    // =========================================================================
+
+    public function test_duration_ms_clamps_legacy_override(): void
+    {
+        $this->assertSame(120000, Helpers::duration_ms('9999', 'unused_option', 20));
+    }
+
+    public function test_duration_ms_clamps_legacy_option(): void
+    {
+        Functions\expect('get_option')->with('duration_option', 20)->andReturn(0);
+
+        $this->assertSame(1000, Helpers::duration_ms(null, 'duration_option', 20));
+    }
+
+    public function test_duration_ms_clamps_direct_default(): void
+    {
+        $this->assertSame(120000, Helpers::duration_ms(null, '', 9999));
+    }
+
+    // =========================================================================
     // is_allowed_on_day()
     // =========================================================================
 
-    public function test_is_allowed_on_day_returns_true_for_empty_array(): void
+    public function test_is_allowed_on_day_returns_false_for_empty_array(): void
     {
-        $this->assertTrue(Helpers::is_allowed_on_day([]));
+        $this->assertFalse(Helpers::is_allowed_on_day([]));
     }
 
     public function test_is_allowed_on_day_returns_true_for_null(): void
@@ -79,6 +100,21 @@ class HelpersTest extends TestCase
         $monday = new \DateTimeImmutable('2026-04-06');
         // Even if array contains ints, they should be cast to string
         $this->assertTrue(Helpers::is_allowed_on_day([1, 2], $monday));
+    }
+
+    // =========================================================================
+    // sanitize_date_input()
+    // =========================================================================
+
+    public function test_sanitize_date_input_accepts_strict_calendar_date(): void
+    {
+        $this->assertSame('2026-07-23', Helpers::sanitize_date_input('2026-07-23'));
+    }
+
+    public function test_sanitize_date_input_rejects_invalid_calendar_date(): void
+    {
+        $this->assertSame('', Helpers::sanitize_date_input('2026-02-31'));
+        $this->assertSame('', Helpers::sanitize_date_input('not-a-date'));
     }
 
     // =========================================================================
@@ -198,6 +234,22 @@ class HelpersTest extends TestCase
         ];
 
         $this->assertFalse(Helpers::is_block_scheduled($block));
+    }
+
+    public function test_is_block_scheduled_returns_false_for_explicit_empty_days(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $this->assertFalse(Helpers::is_block_scheduled(['days' => []]));
+    }
+
+    public function test_is_block_scheduled_returns_true_for_null_days(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $this->assertTrue(Helpers::is_block_scheduled(['days' => null]));
     }
 
     public function test_is_block_scheduled_returns_true_when_in_range_and_correct_day(): void
@@ -615,6 +667,85 @@ class HelpersTest extends TestCase
         $this->assertSame(60, $result['rate_limit']);
     }
 
+    public function test_get_ai_prompts_clamps_legacy_generation_limits(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn([
+                'word_limit' => 9999,
+                'word_limit_photo' => 9999,
+                'title_char_limit' => 9999,
+                'min_input_words' => 9999,
+                'temperature' => 99,
+                'top_p' => 99,
+                'max_tokens' => 99999,
+            ]);
+
+        $result = Helpers::get_ai_prompts();
+
+        $this->assertSame(500, $result['word_limit']);
+        $this->assertSame(500, $result['word_limit_photo']);
+        $this->assertSame(100, $result['title_char_limit']);
+        $this->assertSame(500, $result['min_input_words']);
+        $this->assertSame(2, $result['temperature']);
+        $this->assertSame(1, $result['top_p']);
+        $this->assertSame(8192, $result['max_tokens']);
+    }
+
+    public function test_normalize_ai_prompt_limits_preserves_photo_inheritance_marker(): void
+    {
+        $limits = Helpers::normalize_ai_prompt_limits([
+            'word_limit' => 250,
+            'word_limit_photo' => 0,
+        ]);
+
+        $this->assertSame(250, $limits['word_limit']);
+        $this->assertSame(0, $limits['word_limit_photo']);
+    }
+
+    // =========================================================================
+    // get_post_taxonomies()
+    // =========================================================================
+
+    public function test_post_taxonomy_cache_can_be_reset(): void
+    {
+        $taxonomy_name = 'category';
+        $taxonomy_label = 'Category';
+        $terms = [1 => 'Nieuws'];
+
+        Functions\when('get_object_taxonomies')->alias(function () use (&$taxonomy_name): array {
+            return [$taxonomy_name];
+        });
+        Functions\when('get_taxonomy')->alias(function () use (&$taxonomy_name, &$taxonomy_label): object {
+            return (object) [
+                'public' => true,
+                'name' => $taxonomy_name,
+                'labels' => (object) ['singular_name' => $taxonomy_label],
+            ];
+        });
+        Functions\when('get_terms')->alias(function () use (&$terms): array {
+            return $terms;
+        });
+        Functions\when('is_wp_error')->justReturn(false);
+
+        $first = Helpers::get_post_taxonomies();
+        $taxonomy_name = 'post_tag';
+        $taxonomy_label = 'Tag';
+        $terms = [2 => 'Sport'];
+
+        $this->assertSame($first, Helpers::get_post_taxonomies());
+
+        Helpers::reset_post_taxonomies_cache();
+
+        $this->assertSame([
+            [
+                'name' => 'post_tag',
+                'label' => 'Tag',
+                'terms' => [2 => 'Sport'],
+            ],
+        ], Helpers::get_post_taxonomies());
+    }
+
     // =========================================================================
     // get_campaign_groups()
     // =========================================================================
@@ -677,26 +808,6 @@ class HelpersTest extends TestCase
             ->andReturn(false);
 
         $this->assertSame([], Helpers::get_campaign_groups());
-    }
-
-    // =========================================================================
-    // get_category_options()
-    // =========================================================================
-
-    public function test_get_category_options_includes_all_option(): void
-    {
-        $cat1 = (object) ['term_id' => 1, 'name' => 'Nieuws'];
-        $cat2 = (object) ['term_id' => 2, 'name' => 'Sport'];
-
-        Functions\expect('get_categories')
-            ->with(['hide_empty' => false])
-            ->andReturn([$cat1, $cat2]);
-
-        $result = Helpers::get_category_options();
-
-        $this->assertSame('Alle categorieën', $result[0]);
-        $this->assertSame('Nieuws', $result[1]);
-        $this->assertSame('Sport', $result[2]);
     }
 
     // =========================================================================

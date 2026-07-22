@@ -80,13 +80,7 @@ class RestApi
 
     public static function validate_channel(string $value): bool
     {
-        $channels = Helpers::get_channels();
-        foreach ($channels as $channel) {
-            if ($channel['slug'] === $value) {
-                return true;
-            }
-        }
-        return false;
+        return in_array($value, Helpers::channel_slugs(), true);
     }
 
     public static function get_image_data(WP_REST_Request $request): WP_REST_Response
@@ -122,10 +116,9 @@ class RestApi
         $has_photo = (bool) $request->get_param('has_photo');
 
         // Rate limiting per user
-        $prompts_config = Helpers::get_ai_prompts();
-        $rate_limit = $prompts_config['rate_limit'];
+        $prompts = Helpers::get_ai_prompts();
         $user_id = get_current_user_id();
-        if (!self::within_rate_limit($user_id, $rate_limit)) {
+        if (!self::within_rate_limit($user_id, $prompts['rate_limit'])) {
             return new WP_REST_Response(
                 ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
                 429
@@ -149,7 +142,6 @@ class RestApi
             return new WP_REST_Response(['error' => __('Post heeft geen content om samen te vatten.', 'teksttv-wp-plugin')], 422);
         }
 
-        $prompts = Helpers::get_ai_prompts();
         $min_words = $prompts['min_input_words'];
         if ($min_words > 0) {
             $word_count = Helpers::count_words($post_text);

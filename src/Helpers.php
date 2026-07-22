@@ -7,6 +7,9 @@ use DateTimeInterface;
 
 class Helpers
 {
+    /** @var list<array{name: string, label: string, terms: array<int, string>}>|null */
+    private static ?array $post_taxonomies_cache = null;
+
     /**
      * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
      *
@@ -44,26 +47,73 @@ class Helpers
             return null;
         }
         $valid = ['1', '2', '3', '4', '5', '6', '7'];
-        $days = array_values(array_intersect(array_map('sanitize_text_field', $raw), $valid));
+        $days = array_values(array_unique(array_intersect(array_map('sanitize_text_field', $raw), $valid)));
         return count($days) < 7 ? $days : null;
+    }
+
+    /**
+     * Extract sanitized scheduling fields (date_start, date_end, days) from a
+     * raw POST payload. Empty date values are omitted; an empty days list is
+     * retained to represent "no days selected".
+     *
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>
+     */
+    public static function extract_scheduling_fields(array $raw): array
+    {
+        $fields = [];
+
+        $ds = self::sanitize_date_input($raw['date_start'] ?? '');
+        $de = self::sanitize_date_input($raw['date_end'] ?? '');
+        if ($ds !== '') {
+            $fields['date_start'] = $ds;
+        }
+        if ($de !== '') {
+            $fields['date_end'] = $de;
+        }
+
+        // Checkbox groups are absent from POST when every box is unchecked.
+        $sanitized_days = self::sanitize_days_input($raw['days'] ?? []);
+        if ($sanitized_days !== null) {
+            $fields['days'] = $sanitized_days;
+        }
+
+        return $fields;
     }
 
     /**
      * Check if content should be displayed on the given day.
      *
-     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
+     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun); null means all days, [] means none.
      * @param DateTimeInterface|null $date Date to check, defaults to current date
      */
     public static function is_allowed_on_day(?array $allowed_days, ?DateTimeInterface $date = null): bool
     {
-        if (empty($allowed_days)) {
+        if ($allowed_days === null) {
             return true;
+        }
+        if ($allowed_days === []) {
+            return false;
         }
 
         $date = $date ?? current_datetime();
         $current_day = $date->format('N');
 
         return in_array((string) $current_day, array_map('strval', $allowed_days), true);
+    }
+
+    /**
+     * Sanitize and strictly validate a Y-m-d date input.
+     */
+    public static function sanitize_date_input(mixed $raw): string
+    {
+        $date = sanitize_text_field((string) $raw);
+        if ($date === '') {
+            return '';
+        }
+
+        $parsed = DateTime::createFromFormat('!Y-m-d', $date);
+        return $parsed && $parsed->format('Y-m-d') === $date ? $date : '';
     }
 
     /**
@@ -96,21 +146,6 @@ class Helpers
     }
 
     /**
-     * Get all WP categories as id => name array for use in dropdowns.
-     *
-     * @return array<int, string>
-     */
-    public static function get_category_options(): array
-    {
-        $categories = get_categories(['hide_empty' => false]);
-        $options = [0 => __('Alle categorieën', 'teksttv-wp-plugin')];
-        foreach ($categories as $cat) {
-            $options[$cat->term_id] = $cat->name;
-        }
-        return $options;
-    }
-
-    /**
      * Get the stored channels list.
      *
      * @return list<array{slug: string, label: string}>
@@ -125,18 +160,42 @@ class Helpers
     }
 
     /**
+     * Get the configured channel slugs.
+     *
+     * @return list<string>
+     */
+    public static function channel_slugs(): array
+    {
+        return array_column(self::get_channels(), 'slug');
+    }
+
+    /**
+     * Features enabled when the option has never been saved. Also the default
+     * for the registered setting — keep both reads on this single list.
+     */
+    public const DEFAULT_FEATURES = [
+        'custom_title', 'sidebar_image', 'extra_images',
+        'scheduling', 'page_separator',
+        'bold', 'italic', 'underline', 'lists',
+        'ai_generate',
+    ];
+
+    /**
      * Get the enabled features.
      *
      * @return list<string> Array of feature slugs
      */
     public static function get_features(): array
     {
-        return get_option('teksttv_features', [
-            'custom_title', 'sidebar_image', 'extra_images',
-            'scheduling', 'page_separator',
-            'bold', 'italic', 'underline', 'lists',
-            'ai_generate',
-        ]);
+        return get_option('teksttv_features', self::DEFAULT_FEATURES);
+    }
+
+    /**
+     * Whether AI generation is enabled and the WP AI Client is available.
+     */
+    public static function ai_supported(): bool
+    {
+        return self::has_feature('ai_generate') && function_exists('wp_supports_ai') && wp_supports_ai();
     }
 
     /**
@@ -161,6 +220,52 @@ class Helpers
     }
 
     /**
+     * Resolve a slide duration in milliseconds from an optional per-block
+     * override (in seconds), falling back to a duration option (in seconds).
+     *
+     * @param mixed $override_seconds Stored block value; empty means "use the option".
+     * @param string $option_name Duration option to read, or '' to use $default_seconds directly.
+     */
+    public static function duration_ms(mixed $override_seconds, string $option_name, int $default_seconds): int
+    {
+        if (!empty($override_seconds)) {
+            $seconds = (int) $override_seconds;
+        } else {
+            $seconds = $option_name !== '' ? (int) get_option($option_name, $default_seconds) : $default_seconds;
+        }
+
+        return self::clamp_int($seconds, 1, 120) * 1000;
+    }
+
+    /**
+     * Normalize the bounded numeric AI prompt settings used by both storage
+     * sanitization and runtime reads.
+     *
+     * A zero word_limit_photo remains the stored "inherit word_limit" marker;
+     * get_ai_prompts() resolves it to the effective word limit at read time.
+     *
+     * @param array<string, mixed> $settings
+     * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, temperature: string|float, top_p: string|float, max_tokens: int}
+     */
+    public static function normalize_ai_prompt_limits(array $settings): array
+    {
+        $temperature = $settings['temperature'] ?? '';
+        $top_p = $settings['top_p'] ?? '';
+
+        return [
+            'word_limit' => self::clamp_int($settings['word_limit'] ?? 100, 10, 500),
+            'word_limit_photo' => min(500, absint($settings['word_limit_photo'] ?? 0)),
+            'title_char_limit' => self::clamp_int($settings['title_char_limit'] ?? 40, 10, 100),
+            'min_input_words' => self::clamp_int($settings['min_input_words'] ?? 50, 0, 500),
+            'max_retries' => self::clamp_int($settings['max_retries'] ?? 3, 1, 5),
+            'rate_limit' => self::clamp_int($settings['rate_limit'] ?? 10, 1, 60),
+            'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
+            'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
+            'max_tokens' => self::clamp_int($settings['max_tokens'] ?? 2048, 64, 8192),
+        ];
+    }
+
+    /**
      * Get the AI prompt configuration with defaults.
      *
      * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
@@ -168,13 +273,9 @@ class Helpers
     public static function get_ai_prompts(): array
     {
         $saved = get_option('teksttv_ai_prompts', []);
-        $word_limit = max(10, (int) ($saved['word_limit'] ?? 100));
-        $word_limit_photo = (int) ($saved['word_limit_photo'] ?? 0);
-        $word_limit_photo = $word_limit_photo >= 1 ? $word_limit_photo : $word_limit;
-        $title_char_limit = max(10, (int) ($saved['title_char_limit'] ?? 40));
-        $min_input = max(0, (int) ($saved['min_input_words'] ?? 50));
-        $max_retries = max(1, min(5, (int) ($saved['max_retries'] ?? 3)));
-        $rate_limit = max(1, min(60, (int) ($saved['rate_limit'] ?? 10)));
+        $saved = is_array($saved) ? $saved : [];
+        $limits = self::normalize_ai_prompt_limits($saved);
+        $word_limit_photo = $limits['word_limit_photo'] >= 1 ? $limits['word_limit_photo'] : $limits['word_limit'];
 
         $defaults = [
             'system' => 'Je bent een eindredacteur voor tekst-tv. Schrijf in natuurlijk, vloeiend Nederlands voor een breed publiek. Gebruik korte, heldere zinnen. Schrijf alleen in het Nederlands en gebruik geen gedachtestreepjes.',
@@ -186,18 +287,18 @@ class Helpers
             'system' => !empty($saved['system']) ? $saved['system'] : $defaults['system'],
             'prompt_title' => !empty($saved['prompt_title']) ? $saved['prompt_title'] : $defaults['prompt_title'],
             'prompt_body' => !empty($saved['prompt_body']) ? $saved['prompt_body'] : $defaults['prompt_body'],
-            'word_limit' => $word_limit,
+            'word_limit' => $limits['word_limit'],
             'word_limit_photo' => $word_limit_photo,
-            'title_char_limit' => $title_char_limit,
-            'min_input_words' => $min_input,
-            'max_retries' => $max_retries,
-            'rate_limit' => $rate_limit,
+            'title_char_limit' => $limits['title_char_limit'],
+            'min_input_words' => $limits['min_input_words'],
+            'max_retries' => $limits['max_retries'],
+            'rate_limit' => $limits['rate_limit'],
             'region_taxonomy' => $saved['region_taxonomy'] ?? '',
             'provider' => $saved['provider'] ?? '',
             'model' => $saved['model'] ?? '',
-            'temperature' => $saved['temperature'] ?? '',
-            'top_p' => $saved['top_p'] ?? '',
-            'max_tokens' => max(64, (int) ($saved['max_tokens'] ?? 2048)),
+            'temperature' => $limits['temperature'],
+            'top_p' => $limits['top_p'],
+            'max_tokens' => $limits['max_tokens'],
         ];
     }
 
@@ -248,6 +349,17 @@ class Helpers
     public static function get_loop_config(string $channel_slug): array
     {
         return get_option('teksttv_loop_' . sanitize_key($channel_slug), []);
+    }
+
+    /**
+     * Get the ticker configuration for a channel.
+     *
+     * @return list<array<string, mixed>> Array of ticker item definitions
+     */
+    public static function get_ticker_config(string $channel_slug): array
+    {
+        $items = get_option('teksttv_ticker_' . sanitize_key($channel_slug), []);
+        return is_array($items) ? $items : [];
     }
 
     /**
@@ -336,11 +448,61 @@ class Helpers
         if (!self::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
             return false;
         }
-        $days = $block['days'] ?? [];
-        if (!empty($days) && !self::is_allowed_on_day($days)) {
-            return false;
+        if (array_key_exists('days', $block)) {
+            $days = $block['days'] === null ? null : (is_array($block['days']) ? $block['days'] : []);
+            if (!self::is_allowed_on_day($days)) {
+                return false;
+            }
         }
         return true;
+    }
+
+    /**
+     * Get all public taxonomies that apply to posts. Cached per request.
+     *
+     * @return list<array{name: string, label: string, terms: array<int, string>}>
+     */
+    public static function get_post_taxonomies(): array
+    {
+        if (self::$post_taxonomies_cache !== null) {
+            return self::$post_taxonomies_cache;
+        }
+
+        $result = [];
+        foreach (get_object_taxonomies('post') as $tax_name) {
+            $tax = get_taxonomy($tax_name);
+            if (!$tax || !$tax->public || $tax->name === 'post_format') {
+                continue;
+            }
+
+            // Only id => name is needed; skips hydrating full WP_Term objects
+            // (post_tag alone can be thousands of terms on a news site).
+            $terms = get_terms([
+                'taxonomy' => $tax->name,
+                'hide_empty' => false,
+                'fields' => 'id=>name',
+            ]);
+            if (is_wp_error($terms) || empty($terms)) {
+                continue;
+            }
+
+            $result[] = [
+                'name' => $tax->name,
+                'label' => $tax->labels->singular_name,
+                'terms' => $terms,
+            ];
+        }
+
+        self::$post_taxonomies_cache = $result;
+        return $result;
+    }
+
+    /**
+     * Clear the request-local post taxonomy cache.
+     */
+    public static function reset_post_taxonomies_cache(): void
+    {
+        self::$post_taxonomies_cache = null;
     }
 
     /**

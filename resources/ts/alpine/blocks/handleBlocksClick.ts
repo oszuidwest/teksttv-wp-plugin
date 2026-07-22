@@ -1,8 +1,27 @@
 import { slideToggle, slideUp } from '../../modules/dom';
 import type { WPMediaAttachment } from '../../modules/types';
-import { escAttr } from '../../modules/utils';
-import { wpMedia } from '../../modules/wpMedia';
+import { imageItemHtml } from '../../modules/utils';
+import { pickSingleImage, wpMedia } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
+
+/** Toggle the accordion body of the block owning `header`. */
+export function toggleBlockOpen(header: Element): void {
+    const block = header.closest('.teksttv-block');
+    if (!(block instanceof HTMLElement)) return;
+    block.classList.toggle('is-expanded');
+    const body = block.querySelector<HTMLElement>('.teksttv-block-body');
+    if (body) slideToggle(body, 150);
+}
+
+/** Slide up and remove the block owning `trigger`, then run `onRemoved`. */
+export function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
+    const block = trigger.closest('.teksttv-block');
+    if (!(block instanceof HTMLElement)) return;
+    slideUp(block, 200, () => {
+        block.remove();
+        onRemoved();
+    });
+}
 
 /**
  * Delegated `#teksttv-blocks` / `#teksttv-campaigns` clicks: remove, accordion, campaign slides, image pickers.
@@ -15,10 +34,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     const rem = e.target.closest('.teksttv-remove-block');
     if (rem && blocksRoot.contains(rem)) {
         e.stopPropagation();
-        const block = rem.closest('.teksttv-block');
-        if (!(block instanceof HTMLElement)) return;
-        slideUp(block, 200, () => {
-            block.remove();
+        removeClosestBlock(rem, () => {
             ctx.reindexBlocks();
             ctx.refreshSummaries();
         });
@@ -28,11 +44,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     const header = e.target.closest('.teksttv-block-header');
     if (header && blocksRoot.contains(header)) {
         if (e.target.closest('.teksttv-remove-block')) return;
-        const block = header.closest('.teksttv-block');
-        if (!(block instanceof HTMLElement)) return;
-        block.classList.toggle('is-expanded');
-        const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-        if (body) slideToggle(body, 150);
+        toggleBlockOpen(header);
         return;
     }
 
@@ -47,14 +59,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         frame.on('select', () => {
             const attachments: WPMediaAttachment[] = frame.state().get('selection').toJSON();
             attachments.forEach((att) => {
-                const thumbUrl = att.sizes?.thumbnail?.url ?? att.url;
-                const fragment =
-                    `<div class="teksttv-image-item" data-id="${escAttr(att.id)}">` +
-                    `<img src="${escAttr(thumbUrl)}" alt="" />` +
-                    `<input type="hidden" name="${escAttr(baseName)}" value="${escAttr(att.id)}" />` +
-                    '<button type="button" class="button-link teksttv-remove-image"><span class="dashicons dashicons-no-alt"></span></button>' +
-                    '</div>';
-                list.insertAdjacentHTML('beforeend', fragment);
+                list.insertAdjacentHTML('beforeend', imageItemHtml(att, baseName));
             });
         });
         frame.open();
@@ -66,9 +71,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         e.preventDefault();
         const field = imgSel.closest('.teksttv-block-field, .teksttv-block-image-fields');
         if (!field) return;
-        const mediaFrame = wpMedia({ multiple: false, library: { type: 'image' } });
-        mediaFrame.on('select', () => {
-            const att: WPMediaAttachment = mediaFrame.state().get('selection').first().toJSON();
+        pickSingleImage((att) => {
             const url = att.sizes?.medium?.url ?? att.url;
             const idInput = field.querySelector<HTMLInputElement>('.teksttv-block-image-id');
             const thumb = field.querySelector<HTMLImageElement>('.teksttv-block-image-thumb');
@@ -80,7 +83,6 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
             removeBtn?.classList.remove('is-hidden');
             ctx.refreshSummaries();
         });
-        mediaFrame.open();
         return;
     }
 

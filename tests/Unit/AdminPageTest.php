@@ -4,6 +4,7 @@ namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
 use TekstTV\AdminPage;
+use TekstTV\Helpers;
 
 class AdminPageTest extends TestCase
 {
@@ -195,7 +196,7 @@ class AdminPageTest extends TestCase
     }
 
     // =========================================================================
-    // extract_scheduling_fields() — private, via reflection
+    // Helpers::extract_scheduling_fields() — shared by loop and campaigns saves
     // =========================================================================
 
     public function test_extract_scheduling_fields_with_dates(): void
@@ -205,7 +206,7 @@ class AdminPageTest extends TestCase
             'date_end' => '2026-04-30',
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertSame('2026-04-01', $result['date_start']);
         $this->assertSame('2026-04-30', $result['date_end']);
@@ -218,7 +219,19 @@ class AdminPageTest extends TestCase
             'date_end' => '',
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
+
+        $this->assertArrayNotHasKey('date_start', $result);
+        $this->assertArrayNotHasKey('date_end', $result);
+    }
+
+    public function test_extract_scheduling_fields_omits_invalid_dates(): void
+    {
+        $result = Helpers::extract_scheduling_fields([
+            'date_start' => '2026-02-31',
+            'date_end' => 'not-a-date',
+            'days' => ['1', '2', '3', '4', '5', '6', '7'],
+        ]);
 
         $this->assertArrayNotHasKey('date_start', $result);
         $this->assertArrayNotHasKey('date_end', $result);
@@ -230,7 +243,7 @@ class AdminPageTest extends TestCase
             'days' => ['1', '3', '5'],
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertSame(['1', '3', '5'], $result['days']);
     }
@@ -241,7 +254,7 @@ class AdminPageTest extends TestCase
             'days' => ['1', '2', '3', '4', '5', '6', '7'],
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         // All 7 days = no restriction, should not be saved
         $this->assertArrayNotHasKey('days', $result);
@@ -253,17 +266,84 @@ class AdminPageTest extends TestCase
             'days' => ['1', '8', 'abc', '5'],
         ];
 
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [$raw]);
+        $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertSame(['1', '5'], $result['days']);
     }
 
+    public function test_extract_scheduling_fields_deduplicates_days(): void
+    {
+        $result = Helpers::extract_scheduling_fields(['days' => ['1', '1', '2']]);
+
+        $this->assertSame(['1', '2'], $result['days']);
+    }
+
     public function test_extract_scheduling_fields_empty_input(): void
     {
-        $result = self::callPrivate(AdminPage::class, 'extract_scheduling_fields', [[]]);
+        $result = Helpers::extract_scheduling_fields([]);
 
-        // Empty days array passes is_array but has count 0 < 7, so it's included
         $this->assertArrayNotHasKey('date_start', $result);
         $this->assertArrayNotHasKey('date_end', $result);
+        $this->assertSame([], $result['days']);
+    }
+
+    public function test_render_days_row_checks_all_days_for_absent_restriction(): void
+    {
+        $this->assertSame(7, substr_count($this->renderDaysRow(null), 'checked="checked"'));
+    }
+
+    public function test_render_days_row_leaves_all_days_unchecked_for_empty_selection(): void
+    {
+        $this->assertStringNotContainsString('checked="checked"', $this->renderDaysRow([]));
+    }
+
+    public function test_render_scheduling_fields_preserves_explicit_null_days(): void
+    {
+        Functions\when('esc_attr')->alias(fn ($value) => $value);
+        Functions\when('esc_html')->alias(fn ($value) => $value);
+        Functions\when('esc_html_e')->alias(function ($value): void {
+            echo $value;
+        });
+        Functions\when('checked')->alias(function ($checked, $current = true, $echo = true) {
+            $result = $checked === $current ? 'checked="checked"' : '';
+            if ($echo) {
+                echo $result;
+            }
+            return $result;
+        });
+
+        ob_start();
+        try {
+            AdminPage::render_scheduling_fields(0, ['days' => null], 'blocks', false);
+            $html = (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
+
+        $this->assertSame(7, substr_count($html, 'checked="checked"'));
+    }
+
+    /** @param list<string>|null $days */
+    private function renderDaysRow(?array $days): string
+    {
+        Functions\when('esc_attr')->alias(fn ($value) => $value);
+        Functions\when('esc_html')->alias(fn ($value) => $value);
+        Functions\when('checked')->alias(function ($checked, $current = true, $echo = true) {
+            $result = $checked === $current ? 'checked="checked"' : '';
+            if ($echo) {
+                echo $result;
+            }
+            return $result;
+        });
+
+        ob_start();
+        try {
+            AdminPage::render_days_row('days[]', $days);
+            return (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
     }
 }

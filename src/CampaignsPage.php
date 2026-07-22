@@ -42,17 +42,13 @@ class CampaignsPage
      */
     public static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
     {
-        $id = $campaign['id'] ?? 'camp_' . time() . '_' . wp_rand();
+        $id = $campaign['id'] ?? self::new_campaign_id();
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
         $group = (string) ($campaign['group'] ?? '');
-        $date_start = $campaign['date_start'] ?? '';
-        $date_end = $campaign['date_end'] ?? '';
-        $days = $campaign['days'] ?? [];
         $duration = $campaign['duration'] ?? '';
         $slides = $campaign['slides'] ?? [];
         $default_duration = (int) get_option('teksttv_duration_image', 7);
-        $day_labels = Helpers::get_day_labels();
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
@@ -85,27 +81,7 @@ class CampaignsPage
                         <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>
-                <div class="teksttv-block-fields">
-                    <div class="teksttv-block-field">
-                        <label><?php esc_html_e('Vanaf', 'teksttv-wp-plugin'); ?></label>
-                        <input type="date" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
-                    </div>
-                    <div class="teksttv-block-field">
-                        <label><?php esc_html_e('Tot en met', 'teksttv-wp-plugin'); ?></label>
-                        <input type="date" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
-                    </div>
-                    <div class="teksttv-block-field">
-                        <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
-                        <div class="teksttv-days-row">
-                            <?php foreach ($day_labels as $num => $label) : ?>
-                            <label class="teksttv-day-toggle">
-                                <input type="checkbox" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][days][]" value="<?php echo esc_attr((string) $num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
-                                <span><?php echo esc_html($label); ?></span>
-                            </label>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
+                <?php AdminPage::render_scheduling_fields($index, $campaign, 'teksttv_campaigns', false); ?>
                 <?php if (count($channels) > 1) : ?>
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
@@ -163,10 +139,11 @@ class CampaignsPage
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         $campaigns = [];
+        $valid_slugs = Helpers::channel_slugs();
 
         foreach ($raw as $item) {
             $saved = [
-                'id' => sanitize_key($item['id'] ?? ('camp_' . time() . '_' . wp_rand())),
+                'id' => sanitize_key($item['id'] ?? self::new_campaign_id()),
                 'name' => sanitize_text_field($item['name'] ?? ''),
                 'group' => sanitize_key($item['group'] ?? ''),
             ];
@@ -175,7 +152,6 @@ class CampaignsPage
             $saved_channels = [];
             if (!empty($item['channels']) && is_array($item['channels'])) {
                 $saved_channels = array_map('sanitize_key', $item['channels']);
-                $valid_slugs = array_column(Helpers::get_channels(), 'slug');
                 $saved_channels = array_values(array_intersect($saved_channels, $valid_slugs));
             }
             $saved['channels'] = $saved_channels;
@@ -186,21 +162,7 @@ class CampaignsPage
                 $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
             }
 
-            // Dates
-            $ds = sanitize_text_field($item['date_start'] ?? '');
-            $de = sanitize_text_field($item['date_end'] ?? '');
-            if ($ds !== '') {
-                $saved['date_start'] = $ds;
-            }
-            if ($de !== '') {
-                $saved['date_end'] = $de;
-            }
-
-            // Days of week (ISO 1=Mon..7=Sun). Omit when all 7 are checked.
-            $sanitized_days = Helpers::sanitize_days_input($item['days'] ?? null);
-            if ($sanitized_days !== null) {
-                $saved['days'] = $sanitized_days;
-            }
+            $saved = array_merge($saved, Helpers::extract_scheduling_fields($item));
 
             // Slides (attachment IDs)
             $saved_slides = [];
@@ -217,6 +179,14 @@ class CampaignsPage
         RestApi::invalidate_slides_cache();
 
         add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv-wp-plugin'), 'success');
+    }
+
+    /**
+     * Fallback id for a campaign row that reaches the server without one.
+     */
+    private static function new_campaign_id(): string
+    {
+        return 'camp_' . time() . '_' . wp_rand();
     }
 
     /**

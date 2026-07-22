@@ -5,37 +5,13 @@ import { createCategoryMediaPage } from './categoryMedia';
 import { createChannelsSettingsPage } from './channelsSettings';
 import { createPostMetaPage } from './postMetaPage';
 
-function wrapWorkbenchInit(opts: Parameters<typeof createBlocksWorkbench>[0]) {
-    const wb = createBlocksWorkbench(opts);
-    const { init: wbInit, ...rest } = wb;
+/** Wrap a component's `init` so TomSelect is initialized after it runs. */
+function withTomSelect<T extends { init(this: unknown): void }>(component: T): T {
+    const originalInit = component.init;
     return {
-        ...rest,
+        ...component,
         init(this: unknown): void {
-            wbInit.call(this);
-            initTomSelectIn(document);
-        },
-    };
-}
-
-function wrapChannelsInit() {
-    const ch = createChannelsSettingsPage();
-    const { init: chInit, ...rest } = ch;
-    return {
-        ...rest,
-        init(this: unknown): void {
-            chInit.call(this);
-            initTomSelectIn(document);
-        },
-    };
-}
-
-function wrapPostMetaInit() {
-    const page = createPostMetaPage();
-    const { init: pageInit, ...rest } = page;
-    return {
-        ...rest,
-        init(this: unknown): void {
-            pageInit.call(this);
+            originalInit.call(this);
             initTomSelectIn(document);
         },
     };
@@ -46,13 +22,17 @@ function wrapPostMetaInit() {
  * methods missen). Zware logika zit in losse TS-modules onder `alpine/blocks/` e.d.
  */
 export function registerTeksttvAlpine(): void {
-    Alpine.data('teksttvLoopPage', () => wrapWorkbenchInit({ ticker: true, groups: false, campaignAdd: false }));
+    Alpine.data('teksttvLoopPage', () =>
+        withTomSelect(createBlocksWorkbench({ ticker: true, groups: false, campaignAdd: false })),
+    );
 
-    Alpine.data('teksttvCampaignsPage', () => wrapWorkbenchInit({ ticker: false, groups: true, campaignAdd: true }));
+    Alpine.data('teksttvCampaignsPage', () =>
+        withTomSelect(createBlocksWorkbench({ ticker: false, groups: true, campaignAdd: true })),
+    );
 
-    Alpine.data('teksttvSettingsPage', () => wrapChannelsInit());
+    Alpine.data('teksttvSettingsPage', () => withTomSelect(createChannelsSettingsPage()));
 
-    Alpine.data('teksttvPostMetaPage', () => wrapPostMetaInit());
+    Alpine.data('teksttvPostMetaPage', () => withTomSelect(createPostMetaPage()));
 
     Alpine.data('teksttvCategoryMedia', () => createCategoryMediaPage());
 }

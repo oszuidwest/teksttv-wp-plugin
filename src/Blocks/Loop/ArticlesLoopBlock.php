@@ -2,9 +2,9 @@
 
 namespace TekstTV\Blocks\Loop;
 
-use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
+use TekstTV\Blocks\Common\RecentPostsQuery;
 use TekstTV\Blocks\Common\TaxonomyFilters;
 use TekstTV\Blocks\Contracts\LoopBlock;
 use TekstTV\Helpers;
@@ -31,15 +31,10 @@ final class ArticlesLoopBlock implements LoopBlock
     public static function render_fields(int|string $index, array $block, string $prefix): void
     {
         $count = $block['count'] ?? 3;
-        $filters = $block['taxonomy_filters'] ?? [];
         $dur_text = $block['duration_text'] ?? '';
         $dur_image = $block['duration_image'] ?? '';
         $default_text = (int) get_option('teksttv_duration_text', 20);
         $default_image = (int) get_option('teksttv_duration_image', 7);
-
-        $enabled_tax = get_option('teksttv_enabled_taxonomies', ['category']);
-        $all_taxonomies = AdminPage::get_post_taxonomies_static();
-        $taxonomies = array_filter($all_taxonomies, fn ($t) => in_array($t['name'], $enabled_tax, true));
 
         ?>
         <div class="teksttv-block-fields">
@@ -47,18 +42,7 @@ final class ArticlesLoopBlock implements LoopBlock
                 <label><?php esc_html_e('Aantal', 'teksttv-wp-plugin'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" />
             </div>
-            <?php foreach ($taxonomies as $tax) :
-                $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));
-                ?>
-            <div class="teksttv-block-field">
-                <label><?php echo esc_html($tax['label']); ?></label>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="Filter..." multiple>
-                    <?php foreach ($tax['terms'] as $term_id => $term_name) : ?>
-                    <option value="<?php echo esc_attr((string) $term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <?php endforeach; ?>
+            <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--duration">
             <div class="teksttv-block-field">
@@ -102,10 +86,6 @@ final class ArticlesLoopBlock implements LoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
-        if (!Helpers::is_block_scheduled($block)) {
-            return [];
-        }
-
         $slides = [];
         // Clamp at runtime too: values stored before the save-time clamp existed
         // could still be unbounded and would otherwise size the WP_Query.
@@ -126,32 +106,9 @@ final class ArticlesLoopBlock implements LoopBlock
             $meta_query[] = Helpers::get_date_end_meta_query();
         }
 
-        $args = [
-            'post_type' => 'post',
-            'posts_per_page' => $count,
-            'post_status' => 'publish',
-            'no_found_rows' => true,
+        $query = new WP_Query(RecentPostsQuery::args($count, $taxonomy_filters, [
             'meta_query' => $meta_query,
-        ];
-
-        $exclude = BuildContext::get_seen_post_ids();
-        if (!empty($exclude)) {
-            $args['post__not_in'] = $exclude;
-        }
-
-        $max_age = (int) get_option('teksttv_max_post_age', 30);
-        if ($max_age > 0) {
-            $args['date_query'] = [
-                ['after' => $max_age . ' days ago'],
-            ];
-        }
-
-        $tax_query = Helpers::build_tax_query($taxonomy_filters);
-        if (!empty($tax_query)) {
-            $args['tax_query'] = $tax_query;
-        }
-
-        $query = new WP_Query($args);
+        ]));
 
         while ($query->have_posts()) {
             $query->the_post();
@@ -159,10 +116,8 @@ final class ArticlesLoopBlock implements LoopBlock
 
             if ($scheduling) {
                 $days = get_post_meta($post_id, '_teksttv_days', true);
-                if (!empty($days) && is_array($days)) {
-                    if (!Helpers::is_allowed_on_day($days)) {
-                        continue;
-                    }
+                if (is_array($days) && !Helpers::is_allowed_on_day($days)) {
+                    continue;
                 }
 
                 $date_start = get_post_meta($post_id, '_teksttv_date_start', true);
@@ -184,7 +139,7 @@ final class ArticlesLoopBlock implements LoopBlock
                 foreach ($pages as $page_content) {
                     $slide = [
                         'type' => 'text',
-                        'duration' => self::get_duration_text($block),
+                        'duration' => Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text', 20),
                         'title' => $title,
                         'body' => wpautop($page_content),
                     ];
@@ -204,7 +159,7 @@ final class ArticlesLoopBlock implements LoopBlock
                     if ($image_data) {
                         $slides[] = array_merge([
                             'type' => 'image',
-                            'duration' => self::get_duration_image($block),
+                            'duration' => Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image', 7),
                         ], $image_data);
                     }
                 }
@@ -214,28 +169,6 @@ final class ArticlesLoopBlock implements LoopBlock
         wp_reset_postdata();
 
         return $slides;
-    }
-
-    /**
-     * @param array<string, mixed> $block
-     */
-    private static function get_duration_text(array $block): int
-    {
-        if (!empty($block['duration_text'])) {
-            return (int) $block['duration_text'] * 1000;
-        }
-        return (int) get_option('teksttv_duration_text', 20) * 1000;
-    }
-
-    /**
-     * @param array<string, mixed> $block
-     */
-    private static function get_duration_image(array $block): int
-    {
-        if (!empty($block['duration_image'])) {
-            return (int) $block['duration_image'] * 1000;
-        }
-        return (int) get_option('teksttv_duration_image', 7) * 1000;
     }
 
     /**
@@ -251,7 +184,7 @@ final class ArticlesLoopBlock implements LoopBlock
             return $trimmed !== '' ? [$trimmed] : [];
         }
 
-        $parts = preg_split('/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i', $content);
+        $parts = preg_split('/<p[^>]*>\s*-{3,}\s*<\/p>|(?:^|\R)[ \t]*-{3,}[ \t]*(?=\R|$)/i', $content);
         $pages = [];
         foreach ($parts as $part) {
             $part = trim($part);
@@ -294,9 +227,11 @@ final class ArticlesLoopBlock implements LoopBlock
             }
         }
 
-        $categories = wp_get_post_categories($post_id);
-        foreach ($categories as $cat_id) {
-            $data = self::get_category_image_data($cat_id);
+        // get_the_terms() reads the object-term cache primed by the articles
+        // WP_Query; wp_get_post_categories() would issue a fresh query per post.
+        $categories = get_the_terms($post_id, 'category');
+        foreach (is_array($categories) ? $categories : [] as $cat) {
+            $data = self::get_category_image_data((int) $cat->term_id);
             if ($data) {
                 return $data;
             }

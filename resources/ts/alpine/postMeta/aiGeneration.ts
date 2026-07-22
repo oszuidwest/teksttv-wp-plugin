@@ -1,12 +1,11 @@
 import { dispatchInput } from '../../modules/dom';
 import type { TeksttvPostConfig } from '../../modules/types';
+import { stripTags } from '../../modules/utils';
 import { getTeksttvEditorHtml } from './editorContent';
 
 export function teksttvHasExistingGeneratedContent(): boolean {
     const title = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
-    const body = getTeksttvEditorHtml()
-        .replace(/<[^>]+>/g, '')
-        .trim();
+    const body = stripTags(getTeksttvEditorHtml()).trim();
     return title.length > 0 || body.length > 0;
 }
 
@@ -86,13 +85,12 @@ export function requestAiGeneration(
             onApplied?.();
 
             let badge = document.querySelector('#teksttv-ai-badge');
-            const afterTarget = document.querySelector('#teksttv-generate-status');
-            if (!badge && afterTarget) {
+            if (!badge && statusEl) {
                 const span = document.createElement('span');
                 span.className = 'teksttv-ai-badge';
                 span.id = 'teksttv-ai-badge';
                 span.innerHTML = '<span class="dashicons dashicons-admin-generic"></span> AI gegenereerd';
-                afterTarget.insertAdjacentElement('afterend', span);
+                statusEl.insertAdjacentElement('afterend', span);
                 badge = span;
             }
 

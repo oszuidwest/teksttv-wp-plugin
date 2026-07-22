@@ -1,33 +1,5 @@
 /** Helpers to replace lightweight jQuery-style patterns in WP admin scripts. */
 
-export function ready(callback: () => void): void {
-    if (document.readyState !== 'loading') {
-        callback();
-    } else {
-        document.addEventListener('DOMContentLoaded', callback, { once: true });
-    }
-}
-
-export function delegate(
-    root: Document | HTMLElement,
-    eventType: string,
-    selector: string,
-    handler: (event: Event, matched: HTMLElement) => void,
-    options?: AddEventListenerOptions,
-): void {
-    root.addEventListener(
-        eventType,
-        (event: Event) => {
-            const t = event.target;
-            if (!t || !(t instanceof Element)) return;
-            const matched = t.closest(selector);
-            if (!(matched instanceof HTMLElement) || !root.contains(matched)) return;
-            handler(event, matched);
-        },
-        options,
-    );
-}
-
 export function hide(el: HTMLElement): void {
     el.style.display = 'none';
 }
@@ -97,4 +69,19 @@ export function tmplHtml(templateId: string): string | null {
 
 export function dispatchInput(el: Element): void {
     el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/**
+ * Rewrite indexed `name` attributes on inputs/selects after reorder or delete.
+ * `pattern` must capture the name prefix in group 1; each match becomes `$1[<item index>]`.
+ */
+export function reindexNames(container: HTMLElement, itemSelector: string, pattern: RegExp): void {
+    container.querySelectorAll(itemSelector).forEach((item, i) => {
+        item.querySelectorAll('input, select').forEach((input) => {
+            const name = input.getAttribute('name');
+            if (name) {
+                input.setAttribute('name', name.replace(pattern, `$1[${i}]`));
+            }
+        });
+    });
 }

@@ -2,9 +2,9 @@
 
 namespace TekstTV\Blocks\Ticker;
 
-use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
+use TekstTV\Blocks\Common\RecentPostsQuery;
 use TekstTV\Blocks\Common\TaxonomyFilters;
 use TekstTV\Blocks\Contracts\TickerBlock;
 use TekstTV\Helpers;
@@ -32,11 +32,6 @@ final class TickerHeadlinesBlock implements TickerBlock
     {
         $count = $item['count'] ?? 5;
         $item_prefix = $item['prefix'] ?? '';
-        $filters = $item['taxonomy_filters'] ?? [];
-
-        $enabled_tax = get_option('teksttv_enabled_taxonomies', ['category']);
-        $all_taxonomies = AdminPage::get_post_taxonomies_static();
-        $taxonomies = array_filter($all_taxonomies, fn ($t) => in_array($t['name'], $enabled_tax, true));
 
         ?>
         <div class="teksttv-block-fields">
@@ -48,18 +43,7 @@ final class TickerHeadlinesBlock implements TickerBlock
                 <label><?php esc_html_e('Prefix', 'teksttv-wp-plugin'); ?></label>
                 <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][prefix]" value="<?php echo esc_attr((string) $item_prefix); ?>" class="regular-text" placeholder="<?php echo esc_attr__('bijv. Nieuws:', 'teksttv-wp-plugin'); ?>" />
             </div>
-            <?php foreach ($taxonomies as $tax) :
-                $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));
-                ?>
-            <div class="teksttv-block-field">
-                <label><?php echo esc_html($tax['label']); ?></label>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="Filter..." multiple>
-                    <?php foreach ($tax['terms'] as $term_id => $term_name) : ?>
-                    <option value="<?php echo esc_attr((string) $term_id); ?>" <?php echo in_array($term_id, $selected_terms, true) ? 'selected' : ''; ?>><?php echo esc_html($term_name); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <?php endforeach; ?>
+            <?php TaxonomyFilters::render_selects($index, (array) ($item['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
         <?php
     }
@@ -71,7 +55,7 @@ final class TickerHeadlinesBlock implements TickerBlock
     public static function save(array $raw): array
     {
         $saved = [
-            'count' => max(1, min(20, absint($raw['count'] ?? 5))),
+            'count' => Helpers::clamp_int($raw['count'] ?? 5, 1, 20),
         ];
 
         $item_prefix = sanitize_text_field($raw['prefix'] ?? '');
@@ -97,40 +81,20 @@ final class TickerHeadlinesBlock implements TickerBlock
         $item_prefix = $item['prefix'] ?? '';
         $taxonomy_filters = $item['taxonomy_filters'] ?? [];
 
-        $args = [
-            'post_type' => 'post',
-            'posts_per_page' => $count,
-            'post_status' => 'publish',
-            'no_found_rows' => true,
-            'fields' => 'ids',
-        ];
-
-        $exclude = BuildContext::get_seen_post_ids();
-        if (!empty($exclude)) {
-            $args['post__not_in'] = $exclude;
-        }
-
-        $max_age = (int) get_option('teksttv_max_post_age', 30);
-        if ($max_age > 0) {
-            $args['date_query'] = [
-                ['after' => $max_age . ' days ago'],
-            ];
-        }
-
-        $tax_query = Helpers::build_tax_query($taxonomy_filters);
-        if (!empty($tax_query)) {
-            $args['tax_query'] = $tax_query;
-        }
-
-        $query = new WP_Query($args);
+        // Full post objects (not fields => ids) so get_the_title() reads from
+        // the primed cache instead of issuing one get_post() query per ID.
+        $query = new WP_Query(RecentPostsQuery::args($count, $taxonomy_filters, [
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
+        ]));
         $messages = [];
 
-        foreach ($query->posts as $post_id) {
-            $title = get_the_title($post_id);
+        foreach ($query->posts as $post) {
+            $title = get_the_title($post);
             if (!empty($title)) {
                 $message = !empty($item_prefix) ? $item_prefix . ' ' . $title : $title;
                 $messages[] = ['message' => $message];
-                BuildContext::mark_post_seen((int) $post_id);
+                BuildContext::mark_post_seen((int) $post->ID);
             }
         }
 

@@ -73,7 +73,7 @@ class TickerHeadlinesBlockTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
 
-        \WP_Query::$stubPosts = $postIds;
+        \WP_Query::$stubPosts = array_map(fn ($id) => (object) ['ID' => $id], $postIds);
 
         Functions\when('get_option')->alias(fn (string $name, $default = false) => match ($name) {
             'teksttv_max_post_age' => 30,
@@ -96,7 +96,7 @@ class TickerHeadlinesBlockTest extends TestCase
             '20:_teksttv_date_end' => '',
         ]);
 
-        Functions\when('get_the_title')->alias(fn ($id) => 'Titel ' . $id);
+        Functions\when('get_the_title')->alias(fn ($post) => 'Titel ' . $post->ID);
 
         $item = ['count' => 5];
         $result = TickerHeadlinesBlock::build($item, 'tv1');
@@ -114,7 +114,7 @@ class TickerHeadlinesBlockTest extends TestCase
             '10:_teksttv_date_end' => '',
         ]);
 
-        Functions\when('get_the_title')->alias(fn ($id) => 'Nieuws artikel');
+        Functions\when('get_the_title')->justReturn('Nieuws artikel');
 
         $item = ['count' => 5, 'prefix' => 'Nieuws:'];
         $result = TickerHeadlinesBlock::build($item, 'tv1');
@@ -161,7 +161,7 @@ class TickerHeadlinesBlockTest extends TestCase
             '30:_teksttv_date_end' => '2026-05-31',
         ]);
 
-        Functions\when('get_the_title')->alias(fn ($id) => 'Post ' . $id);
+        Functions\when('get_the_title')->alias(fn ($post) => 'Post ' . $post->ID);
 
         $item = ['count' => 10];
         $result = TickerHeadlinesBlock::build($item, 'tv1');
@@ -191,7 +191,7 @@ class TickerHeadlinesBlockTest extends TestCase
     public function test_build_marks_returned_post_ids_as_seen(): void
     {
         $this->setupTickerHeadlines([10, 20]);
-        Functions\when('get_the_title')->alias(fn ($id) => 'Titel ' . $id);
+        Functions\when('get_the_title')->alias(fn ($post) => 'Titel ' . $post->ID);
 
         TickerHeadlinesBlock::build(['count' => 5], 'tv1');
 
@@ -204,7 +204,7 @@ class TickerHeadlinesBlockTest extends TestCase
         BuildContext::mark_post_seen(20);
 
         $this->setupTickerHeadlines([10, 20, 30, 40]);
-        Functions\when('get_the_title')->alias(fn ($id) => 'Titel ' . $id);
+        Functions\when('get_the_title')->alias(fn ($post) => 'Titel ' . $post->ID);
 
         $result = TickerHeadlinesBlock::build(['count' => 5], 'tv1');
 

@@ -30,6 +30,9 @@ class SlidesBuilderTest extends TestCase
 
     public function test_build_delegates_to_block_registry(): void
     {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
         Functions\expect('get_option')
             ->with('teksttv_loop_tv1', [])
             ->andReturn([
@@ -54,6 +57,9 @@ class SlidesBuilderTest extends TestCase
 
     public function test_build_filters_null_slides(): void
     {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
         Functions\expect('get_option')
             ->with('teksttv_loop_tv1', [])
             ->andReturn([
@@ -74,6 +80,9 @@ class SlidesBuilderTest extends TestCase
 
     public function test_build_skips_unregistered_types(): void
     {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
         Functions\expect('get_option')
             ->with('teksttv_loop_tv1', [])
             ->andReturn([
@@ -82,6 +91,54 @@ class SlidesBuilderTest extends TestCase
 
         $result = SlidesBuilder::build('tv1');
         $this->assertSame([], $result);
+    }
+
+    public function test_build_skips_unscheduled_blocks(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([
+                ['type' => 'image', 'image_id' => 42, 'date_start' => '2026-05-01'],
+            ]);
+
+        BlockRegistry::register('image', [
+            'label' => 'Test Image',
+            'context' => 'loop',
+            'build' => function (array $block) {
+                return [['type' => 'image', 'id' => $block['image_id']]];
+            },
+        ]);
+
+        $result = SlidesBuilder::build('tv1');
+        $this->assertSame([], $result);
+    }
+
+    public function test_build_includes_block_with_unrestricted_null_days(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([
+                ['type' => 'image', 'image_id' => 42, 'days' => null],
+            ]);
+
+        BlockRegistry::register('image', [
+            'label' => 'Test Image',
+            'context' => 'loop',
+            'build' => function (array $block) {
+                return [['type' => 'image', 'id' => $block['image_id']]];
+            },
+        ]);
+
+        $result = SlidesBuilder::build('tv1');
+
+        $this->assertCount(1, $result);
+        $this->assertSame(42, $result[0]['id']);
     }
 
     public function test_build_ticker_returns_empty_for_empty_config(): void

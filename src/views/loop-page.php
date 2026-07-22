@@ -94,7 +94,6 @@ settings_errors('teksttv');
 
         <?php
         // Ticker templates per type
-        $ticker_types = BlockRegistry::all('ticker');
         foreach ($ticker_types as $ticker_type => $ticker_meta) : ?>
         <script type="text/html" id="tmpl-teksttv-ticker-<?php echo esc_attr($ticker_type); ?>">
             <?php AdminPage::render_block_generic('__TINDEX__', ['type' => $ticker_type], 'teksttv_ticker'); ?>

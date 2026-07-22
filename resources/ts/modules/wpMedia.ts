@@ -1,4 +1,4 @@
-import type { WPMediaFrame, WPMediaOptions } from './types';
+import type { WPMediaAttachment, WPMediaFrame, WPMediaOptions } from './types';
 
 /**
  * wp.media expects Underscore on `_` (needs `_.defaults`). Gutenberg uses Lodash via
@@ -21,6 +21,16 @@ function ensureUnderscore(): void {
 export function wpMedia(options: WPMediaOptions): WPMediaFrame {
     ensureUnderscore();
     return wp.media(options);
+}
+
+/** Open a single-image media frame and call `onSelect` with the chosen attachment. */
+export function pickSingleImage(onSelect: (att: WPMediaAttachment) => void): WPMediaFrame {
+    const frame = wpMedia({ multiple: false, library: { type: 'image' } });
+    frame.on('select', () => {
+        onSelect(frame.state().get('selection').first().toJSON());
+    });
+    frame.open();
+    return frame;
 }
 
 /**

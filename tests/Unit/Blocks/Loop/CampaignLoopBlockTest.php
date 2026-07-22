@@ -86,17 +86,6 @@ class CampaignLoopBlockTest extends TestCase
         $this->assertSame([], CampaignLoopBlock::build($block, 'tv1'));
     }
 
-    public function test_build_returns_empty_when_not_scheduled(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $block = [
-            'groups' => ['sponsors'],
-            'date_start' => '2026-05-01',
-        ];
-        $this->assertSame([], CampaignLoopBlock::build($block, 'tv1'));
-    }
 
     public function test_build_with_campaigns(): void
     {
