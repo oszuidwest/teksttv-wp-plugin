@@ -162,6 +162,15 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame('Page two', $result[1]);
     }
 
+    public function test_split_pages_preserves_inline_hyphens(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_features', \Mockery::any())
+            ->andReturn(['page_separator']);
+
+        $this->assertSame(['foo---bar'], ArticlesLoopBlock::split_pages('foo---bar'));
+    }
+
     public function test_sidebar_image_override_with_explicit_none(): void
     {
         Functions\when('get_option')->justReturn(['sidebar_image']);

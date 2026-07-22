@@ -27,7 +27,7 @@ export function previewSlideUrl(baseUrl: string, slide: Slide): string {
  * segments — callers filter or count as needed.
  */
 export function splitPages(html: string): string[] {
-    return html.split(/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i);
+    return html.split(/<p[^>]*>\s*-{3,}\s*<\/p>|(?:^|\r?\n)[ \t]*-{3,}[ \t]*(?=\r?\n|$)/i);
 }
 
 /** Replace HTML tags with spaces (callers trim/collapse as needed). */

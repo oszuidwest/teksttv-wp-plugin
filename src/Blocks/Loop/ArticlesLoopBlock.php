@@ -184,7 +184,7 @@ final class ArticlesLoopBlock implements LoopBlock
             return $trimmed !== '' ? [$trimmed] : [];
         }
 
-        $parts = preg_split('/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i', $content);
+        $parts = preg_split('/<p[^>]*>\s*-{3,}\s*<\/p>|(?:^|\R)[ \t]*-{3,}[ \t]*(?=\R|$)/i', $content);
         $pages = [];
         foreach ($parts as $part) {
             $part = trim($part);

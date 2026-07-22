@@ -297,6 +297,33 @@ class AdminPageTest extends TestCase
         $this->assertStringNotContainsString('checked="checked"', $this->renderDaysRow([]));
     }
 
+    public function test_render_scheduling_fields_preserves_explicit_null_days(): void
+    {
+        Functions\when('esc_attr')->alias(fn ($value) => $value);
+        Functions\when('esc_html')->alias(fn ($value) => $value);
+        Functions\when('esc_html_e')->alias(function ($value): void {
+            echo $value;
+        });
+        Functions\when('checked')->alias(function ($checked, $current = true, $echo = true) {
+            $result = $checked === $current ? 'checked="checked"' : '';
+            if ($echo) {
+                echo $result;
+            }
+            return $result;
+        });
+
+        ob_start();
+        try {
+            AdminPage::render_scheduling_fields(0, ['days' => null], 'blocks', false);
+            $html = (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
+
+        $this->assertSame(7, substr_count($html, 'checked="checked"'));
+    }
+
     /** @param list<string>|null $days */
     private function renderDaysRow(?array $days): string
     {

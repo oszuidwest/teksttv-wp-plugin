@@ -430,6 +430,47 @@ class Helpers
     }
 
     /**
+     * Get all public taxonomies that apply to posts. Cached per request.
+     *
+     * @return list<array{name: string, label: string, terms: array<int, string>}>
+     */
+    public static function get_post_taxonomies(): array
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $result = [];
+        foreach (get_object_taxonomies('post') as $tax_name) {
+            $tax = get_taxonomy($tax_name);
+            if (!$tax || !$tax->public || $tax->name === 'post_format') {
+                continue;
+            }
+
+            // Only id => name is needed; skips hydrating full WP_Term objects
+            // (post_tag alone can be thousands of terms on a news site).
+            $terms = get_terms([
+                'taxonomy' => $tax->name,
+                'hide_empty' => false,
+                'fields' => 'id=>name',
+            ]);
+            if (is_wp_error($terms) || empty($terms)) {
+                continue;
+            }
+
+            $result[] = [
+                'name' => $tax->name,
+                'label' => $tax->labels->singular_name,
+                'terms' => $terms,
+            ];
+        }
+
+        $cache = $result;
+        return $result;
+    }
+
+    /**
      * Build a tax_query array from taxonomy filters.
      *
      * @param array<string, mixed> $taxonomy_filters Keyed by taxonomy name, values are term ID arrays.
