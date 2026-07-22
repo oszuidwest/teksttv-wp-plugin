@@ -692,6 +692,60 @@ class HelpersTest extends TestCase
         $this->assertSame(8192, $result['max_tokens']);
     }
 
+    public function test_normalize_ai_prompt_limits_preserves_photo_inheritance_marker(): void
+    {
+        $limits = Helpers::normalize_ai_prompt_limits([
+            'word_limit' => 250,
+            'word_limit_photo' => 0,
+        ]);
+
+        $this->assertSame(250, $limits['word_limit']);
+        $this->assertSame(0, $limits['word_limit_photo']);
+    }
+
+    // =========================================================================
+    // get_post_taxonomies()
+    // =========================================================================
+
+    public function test_post_taxonomy_cache_can_be_reset(): void
+    {
+        $taxonomy_name = 'category';
+        $taxonomy_label = 'Category';
+        $terms = [1 => 'Nieuws'];
+
+        Functions\when('get_object_taxonomies')->alias(function () use (&$taxonomy_name): array {
+            return [$taxonomy_name];
+        });
+        Functions\when('get_taxonomy')->alias(function () use (&$taxonomy_name, &$taxonomy_label): object {
+            return (object) [
+                'public' => true,
+                'name' => $taxonomy_name,
+                'labels' => (object) ['singular_name' => $taxonomy_label],
+            ];
+        });
+        Functions\when('get_terms')->alias(function () use (&$terms): array {
+            return $terms;
+        });
+        Functions\when('is_wp_error')->justReturn(false);
+
+        $first = Helpers::get_post_taxonomies();
+        $taxonomy_name = 'post_tag';
+        $taxonomy_label = 'Tag';
+        $terms = [2 => 'Sport'];
+
+        $this->assertSame($first, Helpers::get_post_taxonomies());
+
+        Helpers::reset_post_taxonomies_cache();
+
+        $this->assertSame([
+            [
+                'name' => 'post_tag',
+                'label' => 'Tag',
+                'terms' => [2 => 'Sport'],
+            ],
+        ], Helpers::get_post_taxonomies());
+    }
+
     // =========================================================================
     // get_campaign_groups()
     // =========================================================================

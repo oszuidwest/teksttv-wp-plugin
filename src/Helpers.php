@@ -7,6 +7,9 @@ use DateTimeInterface;
 
 class Helpers
 {
+    /** @var list<array{name: string, label: string, terms: array<int, string>}>|null */
+    private static ?array $post_taxonomies_cache = null;
+
     /**
      * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
      *
@@ -235,6 +238,34 @@ class Helpers
     }
 
     /**
+     * Normalize the bounded numeric AI prompt settings used by both storage
+     * sanitization and runtime reads.
+     *
+     * A zero word_limit_photo remains the stored "inherit word_limit" marker;
+     * get_ai_prompts() resolves it to the effective word limit at read time.
+     *
+     * @param array<string, mixed> $settings
+     * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, temperature: string|float, top_p: string|float, max_tokens: int}
+     */
+    public static function normalize_ai_prompt_limits(array $settings): array
+    {
+        $temperature = $settings['temperature'] ?? '';
+        $top_p = $settings['top_p'] ?? '';
+
+        return [
+            'word_limit' => self::clamp_int($settings['word_limit'] ?? 100, 10, 500),
+            'word_limit_photo' => min(500, absint($settings['word_limit_photo'] ?? 0)),
+            'title_char_limit' => self::clamp_int($settings['title_char_limit'] ?? 40, 10, 100),
+            'min_input_words' => self::clamp_int($settings['min_input_words'] ?? 50, 0, 500),
+            'max_retries' => self::clamp_int($settings['max_retries'] ?? 3, 1, 5),
+            'rate_limit' => self::clamp_int($settings['rate_limit'] ?? 10, 1, 60),
+            'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
+            'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
+            'max_tokens' => self::clamp_int($settings['max_tokens'] ?? 2048, 64, 8192),
+        ];
+    }
+
+    /**
      * Get the AI prompt configuration with defaults.
      *
      * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
@@ -242,15 +273,9 @@ class Helpers
     public static function get_ai_prompts(): array
     {
         $saved = get_option('teksttv_ai_prompts', []);
-        $word_limit = self::clamp_int($saved['word_limit'] ?? 100, 10, 500);
-        $word_limit_photo = min(500, absint($saved['word_limit_photo'] ?? 0));
-        $word_limit_photo = $word_limit_photo >= 1 ? $word_limit_photo : $word_limit;
-        $title_char_limit = self::clamp_int($saved['title_char_limit'] ?? 40, 10, 100);
-        $min_input = self::clamp_int($saved['min_input_words'] ?? 50, 0, 500);
-        $max_retries = self::clamp_int($saved['max_retries'] ?? 3, 1, 5);
-        $rate_limit = self::clamp_int($saved['rate_limit'] ?? 10, 1, 60);
-        $temperature = $saved['temperature'] ?? '';
-        $top_p = $saved['top_p'] ?? '';
+        $saved = is_array($saved) ? $saved : [];
+        $limits = self::normalize_ai_prompt_limits($saved);
+        $word_limit_photo = $limits['word_limit_photo'] >= 1 ? $limits['word_limit_photo'] : $limits['word_limit'];
 
         $defaults = [
             'system' => 'Je bent een eindredacteur voor tekst-tv. Schrijf in natuurlijk, vloeiend Nederlands voor een breed publiek. Gebruik korte, heldere zinnen. Schrijf alleen in het Nederlands en gebruik geen gedachtestreepjes.',
@@ -262,18 +287,18 @@ class Helpers
             'system' => !empty($saved['system']) ? $saved['system'] : $defaults['system'],
             'prompt_title' => !empty($saved['prompt_title']) ? $saved['prompt_title'] : $defaults['prompt_title'],
             'prompt_body' => !empty($saved['prompt_body']) ? $saved['prompt_body'] : $defaults['prompt_body'],
-            'word_limit' => $word_limit,
+            'word_limit' => $limits['word_limit'],
             'word_limit_photo' => $word_limit_photo,
-            'title_char_limit' => $title_char_limit,
-            'min_input_words' => $min_input,
-            'max_retries' => $max_retries,
-            'rate_limit' => $rate_limit,
+            'title_char_limit' => $limits['title_char_limit'],
+            'min_input_words' => $limits['min_input_words'],
+            'max_retries' => $limits['max_retries'],
+            'rate_limit' => $limits['rate_limit'],
             'region_taxonomy' => $saved['region_taxonomy'] ?? '',
             'provider' => $saved['provider'] ?? '',
             'model' => $saved['model'] ?? '',
-            'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
-            'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
-            'max_tokens' => self::clamp_int($saved['max_tokens'] ?? 2048, 64, 8192),
+            'temperature' => $limits['temperature'],
+            'top_p' => $limits['top_p'],
+            'max_tokens' => $limits['max_tokens'],
         ];
     }
 
@@ -439,9 +464,8 @@ class Helpers
      */
     public static function get_post_taxonomies(): array
     {
-        static $cache = null;
-        if ($cache !== null) {
-            return $cache;
+        if (self::$post_taxonomies_cache !== null) {
+            return self::$post_taxonomies_cache;
         }
 
         $result = [];
@@ -469,8 +493,16 @@ class Helpers
             ];
         }
 
-        $cache = $result;
+        self::$post_taxonomies_cache = $result;
         return $result;
+    }
+
+    /**
+     * Clear the request-local post taxonomy cache.
+     */
+    public static function reset_post_taxonomies_cache(): void
+    {
+        self::$post_taxonomies_cache = null;
     }
 
     /**

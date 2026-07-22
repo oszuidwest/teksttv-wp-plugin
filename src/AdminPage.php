@@ -247,26 +247,24 @@ class AdminPage
         }
 
         $merged = array_merge($current, $input);
-        $temperature = $merged['temperature'] ?? '';
-        $top_p = $merged['top_p'] ?? '';
+        $limits = Helpers::normalize_ai_prompt_limits($merged);
 
         return [
             'system' => sanitize_textarea_field($merged['system'] ?? ''),
             'prompt_title' => sanitize_textarea_field($merged['prompt_title'] ?? ''),
             'prompt_body' => sanitize_textarea_field($merged['prompt_body'] ?? ''),
-            'word_limit' => Helpers::clamp_int($merged['word_limit'] ?? 100, 10, 500),
-            // 0 means "inherit word_limit"; any positive value is capped at the UI max.
-            'word_limit_photo' => min(500, absint($merged['word_limit_photo'] ?? 0)),
-            'title_char_limit' => Helpers::clamp_int($merged['title_char_limit'] ?? 40, 10, 100),
-            'min_input_words' => Helpers::clamp_int($merged['min_input_words'] ?? 50, 0, 500),
-            'max_retries' => Helpers::clamp_int($merged['max_retries'] ?? 3, 1, 5),
-            'rate_limit' => Helpers::clamp_int($merged['rate_limit'] ?? 10, 1, 60),
+            'word_limit' => $limits['word_limit'],
+            'word_limit_photo' => $limits['word_limit_photo'],
+            'title_char_limit' => $limits['title_char_limit'],
+            'min_input_words' => $limits['min_input_words'],
+            'max_retries' => $limits['max_retries'],
+            'rate_limit' => $limits['rate_limit'],
             'region_taxonomy' => sanitize_key($merged['region_taxonomy'] ?? ''),
             'provider' => sanitize_key($merged['provider'] ?? ''),
             'model' => sanitize_text_field($merged['model'] ?? ''),
-            'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
-            'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
-            'max_tokens' => Helpers::clamp_int($merged['max_tokens'] ?? 2048, 64, 8192),
+            'temperature' => $limits['temperature'],
+            'top_p' => $limits['top_p'],
+            'max_tokens' => $limits['max_tokens'],
         ];
     }
 
