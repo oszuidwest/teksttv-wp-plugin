@@ -145,7 +145,7 @@ class CampaignsPage
         foreach ($raw as $item) {
             $submitted_id = sanitize_key($item['id'] ?? '');
             $saved = [
-                'id' => $submitted_id !== '' ? $submitted_id : self::new_campaign_id(),
+                'id' => $submitted_id !== '' ? $submitted_id : 'camp_' . time() . '_' . wp_rand(),
                 'name' => sanitize_text_field($item['name'] ?? ''),
                 'group' => sanitize_key($item['group'] ?? ''),
             ];
@@ -180,14 +180,6 @@ class CampaignsPage
         RestApi::invalidate_slides_cache();
 
         add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv-wp-plugin'), 'success');
-    }
-
-    /**
-     * Fallback id for a campaign row that reaches the server without one.
-     */
-    private static function new_campaign_id(): string
-    {
-        return 'camp_' . time() . '_' . wp_rand();
     }
 
     /**

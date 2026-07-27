@@ -27,10 +27,6 @@ export function createPostMetaPage() {
         return buildSlidesFromDom(config, customImageData);
     }
 
-    function refreshWordCount(): void {
-        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
-    }
-
     function updatePreviewNav(): void {
         const total = slides.length;
         const current = total > 0 ? currentSlideIndex + 1 : 0;
@@ -49,7 +45,7 @@ export function createPostMetaPage() {
     }
 
     const updatePreview = debounce(() => {
-        refreshWordCount();
+        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
 
         const iframe = document.querySelector<HTMLIFrameElement>('#teksttv-preview-iframe');
         if (!(previewUrl && iframe)) return;

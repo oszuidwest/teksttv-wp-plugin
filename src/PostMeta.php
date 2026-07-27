@@ -14,7 +14,7 @@ class PostMeta
         // Broader slides-cache invalidation for editorial changes that affect
         // output but do not go through the Tekst TV meta box: quick edits,
         // scheduled publishes, category assignments and media caption edits.
-        add_action('save_post_post', [self::class, 'invalidate_on_post_save'], 10, 2);
+        add_action('save_post', [self::class, 'invalidate_on_post_save'], 20, 2);
         add_action('transition_post_status', [self::class, 'invalidate_on_status_transition'], 10, 3);
         add_action('set_object_terms', [self::class, 'invalidate_on_terms_change'], 10, 1);
         add_action('attachment_updated', [self::class, 'invalidate_on_attachment_update'], 10, 1);
@@ -26,7 +26,7 @@ class PostMeta
      */
     public static function invalidate_on_post_save(int $post_id, \WP_Post $post): void
     {
-        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+        if ($post->post_type !== 'post' || wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
             return;
         }
         RestApi::invalidate_slides_cache();
@@ -286,11 +286,6 @@ class PostMeta
         ];
 
         self::process_save($post_id, $data);
-
-        // save_post_post also invalidates for this save, but it fires BEFORE
-        // this callback writes the meta. A concurrent /slides request in that
-        // window can re-cache the old meta, so invalidate again after writing.
-        RestApi::invalidate_slides_cache();
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace TekstTV\Tests\Unit;
 
+use Brain\Monkey\Actions;
 use Brain\Monkey\Functions;
 use TekstTV\PostMeta;
 
@@ -234,28 +235,16 @@ class PostMetaTest extends TestCase
         $this->assertEmpty($this->metaUpdates);
     }
 
-    public function test_save_meta_invalidates_slides_cache_after_meta_updates(): void
+    public function test_cache_invalidation_runs_after_meta_save(): void
     {
-        $_POST = [
-            'teksttv_meta_nonce' => 'valid',
-            'teksttv_active' => '1',
-        ];
-        $post = \Mockery::mock(\WP_Post::class);
-        $post->post_type = 'post';
+        Actions\expectAdded('save_post')
+            ->with([PostMeta::class, 'save_meta'], 10, 2)
+            ->once();
+        Actions\expectAdded('save_post')
+            ->with([PostMeta::class, 'invalidate_on_post_save'], 20, 2)
+            ->once();
 
-        Functions\when('wp_verify_nonce')->justReturn(true);
-        Functions\when('wp_unslash')->alias(fn ($v) => $v);
-        Functions\when('current_user_can')->justReturn(true);
-        $this->setupProcessSave();
-
-        // Regression: save_post_post invalidates BEFORE this callback writes
-        // the meta; a concurrent /slides request in that window can re-cache
-        // stale data, so save_meta() must invalidate again after writing.
-        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1');
-
-        PostMeta::save_meta(1, $post);
-
-        $this->assertNotEmpty($this->metaUpdates);
+        PostMeta::init();
     }
 
     // Broader slides-cache invalidation on editorial changes.
@@ -287,6 +276,20 @@ class PostMetaTest extends TestCase
         Functions\expect('delete_transient')->never();
 
         $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+        PostMeta::invalidate_on_post_save(5, $post);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_invalidate_on_post_save_skips_non_post(): void
+    {
+        Functions\expect('wp_is_post_autosave')->never();
+        Functions\expect('wp_is_post_revision')->never();
+        Functions\expect('delete_transient')->never();
+
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'page';
         PostMeta::invalidate_on_post_save(5, $post);
 
         $this->assertTrue(true);
