@@ -8,7 +8,7 @@ use TekstTV\Helpers;
 class CampaignsPageTest extends TestCase
 {
     // =========================================================================
-    // sanitize_groups() — stable ids survive renames
+    // sanitize_groups() - stable ids survive renames
     // =========================================================================
 
     public function test_sanitize_groups_preserves_submitted_id_on_rename(): void

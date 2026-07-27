@@ -12,12 +12,19 @@ class Updater
     private const REPO_URL = 'https://github.com/oszuidwest/teksttv-wp-plugin/';
     private const SLUG = 'teksttv';
 
+    /**
+     * WordPress only performs plugin-update checks from admin, cron, and
+     * WP-CLI contexts; frontend/REST requests (the continuously polled slides
+     * endpoint in particular) should not pay for constructing the checker.
+     */
+    public static function should_check_for_updates(): bool
+    {
+        return is_admin() || wp_doing_cron() || (defined('WP_CLI') && WP_CLI);
+    }
+
     public static function init(string $plugin_file): void
     {
-        // WordPress only performs plugin-update checks from admin, cron, and
-        // WP-CLI contexts; skip constructing the checker on frontend/REST
-        // requests (the continuously polled slides endpoint in particular).
-        if (!is_admin() && !wp_doing_cron() && !(defined('WP_CLI') && WP_CLI)) {
+        if (!self::should_check_for_updates()) {
             return;
         }
 

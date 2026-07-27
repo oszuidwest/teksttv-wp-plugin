@@ -35,12 +35,23 @@ export function createSidebarCustomPicker(
                         credentials: 'same-origin',
                     },
                 )
-                    .then((res) => res.json())
-                    .then((data: ImageData) => {
+                    .then(async (res) => ({
+                        ok: res.ok,
+                        data: (await res.json()) as ImageData | { error?: string; message?: string },
+                    }))
+                    .then(({ ok, data }) => {
+                        // {error} is the plugin's 404 shape; {code, message}
+                        // is a WordPress core rejection (e.g. expired nonce).
+                        if (!ok || 'error' in data || !('url' in data) || !data.url) {
+                            throw new Error('image-data request failed');
+                        }
                         setCustomImageData(data);
                         applySidebarCardState('custom', refreshPreview);
                     })
                     .catch(() => {
+                        console.warn(
+                            'TekstTV: metadata voor de sidebar-afbeelding kon niet worden opgehaald; de onbewerkte bijlage-URL wordt gebruikt.',
+                        );
                         const fullUrl = att.sizes?.large?.url ?? att.url;
                         const imgData: ImageData = { url: fullUrl };
                         if (att.caption) imgData.caption = att.caption;

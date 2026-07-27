@@ -8,7 +8,7 @@ use TekstTV\OpenWeatherProvider;
 class OpenWeatherProviderTest extends TestCase
 {
     // =========================================================================
-    // fetch() — cached result
+    // fetch() - cached result
     // =========================================================================
 
     public function test_fetch_returns_cached_result(): void
@@ -27,7 +27,7 @@ class OpenWeatherProviderTest extends TestCase
     }
 
     // =========================================================================
-    // fetch() — geocode failure
+    // fetch() - geocode failure
     // =========================================================================
 
     public function test_fetch_returns_null_when_geocode_fails(): void
@@ -50,7 +50,7 @@ class OpenWeatherProviderTest extends TestCase
     }
 
     // =========================================================================
-    // fetch() — geocode succeeds but API fails
+    // fetch() - geocode succeeds but API fails
     // =========================================================================
 
     public function test_fetch_returns_null_when_api_returns_error(): void
@@ -76,7 +76,7 @@ class OpenWeatherProviderTest extends TestCase
     }
 
     // =========================================================================
-    // fetch() — WP_Error from HTTP
+    // fetch() - WP_Error from HTTP
     // =========================================================================
 
     public function test_fetch_returns_null_on_http_error(): void
@@ -105,7 +105,7 @@ class OpenWeatherProviderTest extends TestCase
     }
 
     // =========================================================================
-    // fetch() — successful end-to-end with cached geocode
+    // fetch() - successful end-to-end with cached geocode
     // =========================================================================
 
     public function test_fetch_returns_weather_data_on_success(): void

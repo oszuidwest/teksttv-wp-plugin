@@ -1,5 +1,5 @@
 import { type Locator, type Page, expect, test } from '@playwright/test';
-import { addLoopBlock, addTickerBlock, login } from './helpers';
+import { addLoopBlock, addTickerBlock, login, submitAndReload } from './helpers';
 
 const LOOP_URL = '/wp-admin/admin.php?page=teksttv-loop-tv1';
 
@@ -142,11 +142,7 @@ test.describe('admin interaction contracts', () => {
         await iframeBlock.locator('input[name$="[url]"]').fill('https://example.test/dashboard');
         await iframeBlock.locator('input[name$="[duration]"]').fill('31');
 
-        await Promise.all([
-            page.waitForLoadState('domcontentloaded'),
-            page.locator('form input[name="submit"]').click(),
-        ]);
-        await page.reload();
+        await submitAndReload(page);
 
         const savedArticle = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
         await expect(savedArticle.locator('input[name$="[count]"]')).toHaveValue('9');
@@ -206,11 +202,7 @@ test.describe('admin interaction contracts', () => {
 
         await expect(campaigns).toHaveCount(2);
         await expectSequentialNames(page.locator('#teksttv-campaigns'), ':scope > .teksttv-block', 'teksttv_campaigns');
-        await Promise.all([
-            page.waitForLoadState('domcontentloaded'),
-            page.locator('form input[name="submit"]').click(),
-        ]);
-        await page.reload();
+        await submitAndReload(page);
 
         const savedGroupLabels = await page
             .locator('#teksttv-groups input[name$="[label]"]')

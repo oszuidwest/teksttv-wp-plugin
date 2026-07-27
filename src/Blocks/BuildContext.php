@@ -11,7 +11,7 @@ namespace TekstTV\Blocks;
  * articles when an operator stacks two of the same block in one channel.
  *
  * Reset at the start of every {@see \TekstTV\SlidesBuilder::build()} and
- * {@see \TekstTV\SlidesBuilder::build_ticker()} call — state is per pass,
+ * {@see \TekstTV\SlidesBuilder::build_ticker()} call - state is per pass,
  * not global. The loop and ticker passes are independent: a post may appear
  * once in the loop and once in the ticker.
  */

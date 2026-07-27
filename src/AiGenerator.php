@@ -4,7 +4,8 @@ namespace TekstTV;
 
 /**
  * AI content generation for TekstTV: prompt construction, WP AI Client calls,
- * output validation, and rate limiting.
+ * output validation, rate limiting, audit-trail meta persistence
+ * (_teksttv_ai_title / _teksttv_ai_body), and region prefixing.
  */
 class AiGenerator
 {
@@ -14,7 +15,7 @@ class AiGenerator
      * With a persistent object cache, wp_cache_incr() is atomic and avoids the
      * read-then-write race where concurrent requests both pass the check before
      * either writes back. Without one, fall back to a transient-backed counter
-     * (persistent but not atomic — acceptable for editor cost control).
+     * (persistent but not atomic - acceptable for editor cost control).
      *
      * @return bool True when the request is allowed (and has been counted).
      */
@@ -29,7 +30,10 @@ class AiGenerator
             wp_cache_add($key, 0, $group, MINUTE_IN_SECONDS);
             $count = wp_cache_incr($key, 1, $group);
             if ($count === false) {
-                // Cache backend hiccup: fail open rather than block the editor.
+                // Cache backend hiccup: fail open rather than block the editor,
+                // but log it so a persistently broken backend is discoverable.
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+                error_log('TekstTV AI rate limiter: wp_cache_incr() failed, allowing request without counting.');
                 return true;
             }
             return $count <= $rate_limit;
@@ -39,7 +43,12 @@ class AiGenerator
         if ($count >= $rate_limit) {
             return false;
         }
-        set_transient($key, $count + 1, MINUTE_IN_SECONDS);
+        if (!set_transient($key, $count + 1, MINUTE_IN_SECONDS)) {
+            // Fail open, but log: if transient writes keep failing, the counter
+            // never advances and rate limiting is effectively disabled.
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log('TekstTV AI rate limiter: set_transient() failed, request not counted.');
+        }
         return true;
     }
 
@@ -56,6 +65,14 @@ class AiGenerator
      */
     public static function generate_for_post(\WP_Post $post, string $field, bool $has_photo = false, ?array $prompts = null)
     {
+        if (!in_array($field, ['title', 'body', 'both'], true)) {
+            return new \WP_Error(
+                'teksttv_invalid_field',
+                __('Ongeldig veld voor AI-generatie.', 'teksttv-wp-plugin'),
+                ['status' => 400]
+            );
+        }
+
         $prompts ??= Helpers::get_ai_prompts();
         $post_text = self::prepare_content($post->post_content);
         $post_title = $post->post_title;
@@ -106,7 +123,6 @@ class AiGenerator
         if (isset($fields['body'])) {
             update_post_meta($post->ID, '_teksttv_ai_body', $fields['body']);
 
-            // Apply region prefix to body (after save, so audit trail stays clean)
             $region_prefix = self::get_region_prefix($post->ID, $prompts['region_taxonomy']);
             if (!empty($region_prefix)) {
                 $fields['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $fields['body']));
@@ -134,11 +150,24 @@ class AiGenerator
 
             if (is_wp_error($result)) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log('TekstTV AI generation error: ' . $result->get_error_message());
+                error_log(sprintf('TekstTV AI generation error (field: %s, attempt %d): %s', $field, $attempt, $result->get_error_message()));
                 return $result;
             }
 
             $last_content = trim($result);
+            if ($last_content === '') {
+                // An empty response (exhausted tokens, provider content filter)
+                // must never pass as success: the title length check would
+                // accept it and the editor would see nothing happen.
+                if ($attempt === $prompts['max_retries']) {
+                    return new \WP_Error(
+                        'teksttv_empty_output',
+                        __('AI gaf een leeg antwoord terug. Probeer het opnieuw.', 'teksttv-wp-plugin')
+                    );
+                }
+                continue;
+            }
+
             $warning = self::validate_ai_output($field, $last_content, $prompts, $attempt === $prompts['max_retries'], $has_photo);
 
             if (empty($warning)) {
@@ -243,7 +272,9 @@ class AiGenerator
      * Validate AI output against length constraints.
      *
      * @param array<string, mixed> $prompts
-     * @return string Warning message if invalid, empty string if valid.
+     * @return string '' when valid; a user-facing warning when invalid on the
+     *                last attempt; the sentinel 'retry' when invalid but
+     *                another attempt remains.
      */
     public static function validate_ai_output(string $field, string $content, array $prompts, bool $is_last_attempt, bool $has_photo = false): string
     {
@@ -292,13 +323,9 @@ class AiGenerator
         $text = preg_replace('/<\/(p|div|h[1-6]|li|tr|blockquote)>/i', "\n", $text);
         $text = preg_replace('/<br\s*\/?>/i', "\n", $text);
 
-        // Strip remaining HTML tags
         $text = wp_strip_all_tags($text);
-
-        // Decode HTML entities
         $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
 
-        // Normalize whitespace
         $text = preg_replace('/[ \t]+/', ' ', $text);
         $text = preg_replace('/\n{3,}/', "\n\n", $text);
 
@@ -310,12 +337,26 @@ class AiGenerator
      */
     public static function get_region_prefix(int $post_id, string $taxonomy): string
     {
-        if (empty($taxonomy) || !taxonomy_exists($taxonomy)) {
+        if (empty($taxonomy)) {
+            return '';
+        }
+
+        if (!taxonomy_exists($taxonomy)) {
+            // A configured but missing taxonomy is a config error (e.g. the
+            // plugin registering it was deactivated); without a log the prefix
+            // just silently stops appearing.
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log(sprintf('TekstTV region prefix: configured taxonomy "%s" does not exist.', $taxonomy));
             return '';
         }
 
         $terms = wp_get_post_terms($post_id, $taxonomy, ['fields' => 'names']);
-        if (is_wp_error($terms) || empty($terms)) {
+        if (is_wp_error($terms)) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log(sprintf('TekstTV region prefix: term lookup failed for post %d: %s', $post_id, $terms->get_error_message()));
+            return '';
+        }
+        if (empty($terms)) {
             return '';
         }
 

@@ -42,7 +42,7 @@ class AiGeneratorTest extends TestCase
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\when('wp_cache_add')->justReturn(true);
-        // Counter lands on the limit exactly — still allowed.
+        // Counter lands on the limit exactly - still allowed.
         Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7', 1, 'teksttv_ai_rate')->andReturn(10);
 
         $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
@@ -62,6 +62,8 @@ class AiGeneratorTest extends TestCase
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\when('wp_cache_add')->justReturn(true);
         Functions\expect('wp_cache_incr')->andReturn(false);
+        // Failing open is logged so a broken cache backend is discoverable.
+        Functions\expect('error_log')->once()->andReturn(true);
 
         $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
     }
@@ -70,8 +72,19 @@ class AiGeneratorTest extends TestCase
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
         Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(3);
-        Functions\expect('set_transient')->once()->with('teksttv_ai_rate_7', 4, 60);
+        Functions\expect('set_transient')->once()->with('teksttv_ai_rate_7', 4, 60)->andReturn(true);
 
+        $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
+    }
+
+    public function test_within_rate_limit_logs_when_transient_write_fails(): void
+    {
+        Functions\when('wp_using_ext_object_cache')->justReturn(false);
+        Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(3);
+        Functions\expect('set_transient')->once()->andReturn(false);
+        Functions\expect('error_log')->once()->andReturn(true);
+
+        // Still fails open, but the broken counter is logged.
         $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
     }
 
@@ -266,6 +279,8 @@ class AiGeneratorTest extends TestCase
         Functions\expect('taxonomy_exists')
             ->with('regio')
             ->andReturn(false);
+        // A configured but missing taxonomy is a config error and is logged.
+        Functions\expect('error_log')->once()->andReturn(true);
 
         $result = AiGenerator::get_region_prefix(1, 'regio');
         $this->assertSame('', $result);
@@ -311,15 +326,18 @@ class AiGeneratorTest extends TestCase
         Functions\expect('taxonomy_exists')->andReturn(true);
 
         $error = \Mockery::mock('WP_Error');
+        $error->shouldReceive('get_error_message')->andReturn('lookup failed');
         Functions\expect('wp_get_post_terms')->andReturn($error);
         Functions\expect('is_wp_error')->with($error)->andReturn(true);
+        // The failure is logged so a broken taxonomy config is discoverable.
+        Functions\expect('error_log')->once()->andReturn(true);
 
         $result = AiGenerator::get_region_prefix(1, 'regio');
         $this->assertSame('', $result);
     }
 
     // =========================================================================
-    // validate_ai_output() — body at exact boundaries
+    // validate_ai_output() - body at exact boundaries
     // =========================================================================
 
     public function test_validate_ai_output_body_at_exact_minimum_returns_empty(): void
@@ -360,8 +378,76 @@ class AiGeneratorTest extends TestCase
     }
 
     // =========================================================================
-    // generate_single_field() — with mocked AI
+    // validate_ai_output() / build_ai_prompt() - photo word limit
     // =========================================================================
+
+    public function test_validate_ai_output_uses_photo_word_limit_when_has_photo(): void
+    {
+        $prompts = ['title_char_limit' => 40, 'word_limit' => 100, 'word_limit_photo' => 25];
+        $content = str_repeat('woord ', 30); // 30 words: valid without photo, over the photo limit
+
+        $this->assertSame('', AiGenerator::validate_ai_output('body', $content, $prompts, false, false));
+        $this->assertSame('retry', AiGenerator::validate_ai_output('body', $content, $prompts, false, true));
+    }
+
+    public function test_validate_ai_output_photo_limit_warning_on_last_attempt(): void
+    {
+        $prompts = ['title_char_limit' => 40, 'word_limit' => 100, 'word_limit_photo' => 25];
+        $content = str_repeat('woord ', 30);
+
+        $warning = AiGenerator::validate_ai_output('body', $content, $prompts, true, true);
+
+        $this->assertNotSame('', $warning);
+        $this->assertNotSame('retry', $warning);
+        $this->assertStringContainsString('25', $warning);
+    }
+
+    public function test_build_ai_prompt_uses_photo_word_limit_when_has_photo(): void
+    {
+        $prompts = self::aiPrompts(['word_limit' => 100, 'word_limit_photo' => 25]);
+
+        [, $system] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $prompts, true);
+        $this->assertStringContainsString('tussen de 5 en 25 woorden', $system);
+
+        [, $system_no_photo] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $prompts, false);
+        $this->assertStringContainsString('tussen de 20 en 100 woorden', $system_no_photo);
+    }
+
+    // =========================================================================
+    // generate_single_field() - with mocked AI
+    // =========================================================================
+
+    public function test_generate_single_field_rejects_empty_output_on_last_attempt(): void
+    {
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('generate_text')->andReturn('');
+
+        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
+        Functions\expect('is_wp_error')->andReturn(false);
+
+        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiPrompts());
+
+        $this->assertInstanceOf(\WP_Error::class, $result);
+        $this->assertSame('teksttv_empty_output', $result->get_error_code());
+    }
+
+    public function test_generate_single_field_retries_after_empty_output(): void
+    {
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('generate_text')->twice()->andReturn('', 'Korte kop');
+
+        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
+        Functions\expect('is_wp_error')->andReturn(false);
+
+        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiPrompts(['max_retries' => 2]));
+
+        $this->assertSame('Korte kop', $result['content']);
+        $this->assertArrayNotHasKey('warning', $result);
+    }
 
     public function test_generate_single_field_returns_body_with_wpautop(): void
     {
@@ -455,6 +541,15 @@ class AiGeneratorTest extends TestCase
         $post->post_title = $overrides['post_title'] ?? 'Titel';
         $post->post_content = $overrides['post_content'] ?? '<p>' . implode(' ', array_fill(0, 60, 'woord')) . '</p>';
         return $post;
+    }
+
+    public function test_generate_for_post_rejects_invalid_field(): void
+    {
+        $result = AiGenerator::generate_for_post(self::makePost(), 'bogus');
+
+        $this->assertInstanceOf(\WP_Error::class, $result);
+        $this->assertSame('teksttv_invalid_field', $result->get_error_code());
+        $this->assertSame(['status' => 400], $result->get_error_data());
     }
 
     public function test_generate_for_post_rejects_empty_post(): void
@@ -572,7 +667,7 @@ class AiGeneratorTest extends TestCase
     }
 
     // =========================================================================
-    // prepare_content() — additional edge cases
+    // prepare_content() - additional edge cases
     // =========================================================================
 
     public function test_prepare_content_handles_br_tags(): void

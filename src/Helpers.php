@@ -149,7 +149,7 @@ class Helpers
 
     /**
      * Default slide durations in seconds per kind. Also the defaults for the
-     * registered settings — keep every read of these numbers on this single map.
+     * registered settings - keep every read of these numbers on this single map.
      */
     public const DURATION_DEFAULTS = [
         'text' => 20,
@@ -159,7 +159,7 @@ class Helpers
 
     /**
      * Features enabled when the option has never been saved. Also the default
-     * for the registered setting — keep both reads on this single list.
+     * for the registered setting - keep both reads on this single list.
      */
     public const DEFAULT_FEATURES = [
         'custom_title', 'sidebar_image', 'extra_images',
@@ -175,7 +175,8 @@ class Helpers
      */
     public static function get_features(): array
     {
-        return get_option('teksttv_features', self::DEFAULT_FEATURES);
+        $features = get_option('teksttv_features', self::DEFAULT_FEATURES);
+        return is_array($features) ? $features : self::DEFAULT_FEATURES;
     }
 
     /**
@@ -213,6 +214,14 @@ class Helpers
      */
     public static function duration_seconds(string $kind): int
     {
+        if (!array_key_exists($kind, self::DURATION_DEFAULTS)) {
+            // A typo'd kind must not become a 0 ms slide: log and use the
+            // text default.
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log(sprintf('TekstTV: unknown duration kind "%s"; falling back to text default.', $kind));
+            return self::DURATION_DEFAULTS['text'];
+        }
+
         return (int) get_option('teksttv_duration_' . $kind, self::DURATION_DEFAULTS[$kind]);
     }
 
@@ -225,7 +234,9 @@ class Helpers
      */
     public static function duration_ms(mixed $override_seconds, string $kind): int
     {
-        $seconds = !empty($override_seconds) ? (int) $override_seconds : self::duration_seconds($kind);
+        // Overrides are re-clamped at runtime: values stored before the
+        // save-time clamp existed could still be unbounded.
+        $seconds = !empty($override_seconds) ? self::clamp_int($override_seconds, 1, 120) : self::duration_seconds($kind);
         return $seconds * 1000;
     }
 
@@ -478,7 +489,8 @@ class Helpers
      */
     public static function enabled_taxonomies(): array
     {
-        return get_option('teksttv_enabled_taxonomies', ['category']);
+        $taxonomies = get_option('teksttv_enabled_taxonomies', ['category']);
+        return is_array($taxonomies) ? $taxonomies : ['category'];
     }
 
     /**
@@ -510,7 +522,7 @@ class Helpers
      * When the caller passes a `$slot` identifying which template slot the
      * image will fill, the `teksttv_image_url` filter is applied so the
      * active theme can return a slot-appropriate (e.g. focal-point-aware,
-     * pre-cropped) variant. The plugin stays template-agnostic — pixel
+     * pre-cropped) variant. The plugin stays template-agnostic - pixel
      * dimensions live in the theme that owns the layout.
      *
      * Known slots:

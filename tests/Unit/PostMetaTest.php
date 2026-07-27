@@ -191,7 +191,7 @@ class PostMetaTest extends TestCase
     }
 
     // =========================================================================
-    // Feature: sidebar_image — three states
+    // Feature: sidebar_image - three states
     // =========================================================================
 
     public function test_process_save_sidebar_custom_id(): void

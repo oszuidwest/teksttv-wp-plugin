@@ -727,7 +727,7 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // is_within_date_range() — edge case: invalid date format
+    // is_within_date_range() - edge case: invalid date format
     // =========================================================================
 
     public function test_is_within_date_range_ignores_invalid_start_format(): void
@@ -740,7 +740,7 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // extract_scheduling_fields() — shared by loop and campaigns saves
+    // extract_scheduling_fields() - shared by loop and campaigns saves
     // =========================================================================
 
     public function test_extract_scheduling_fields_with_dates(): void
@@ -807,8 +807,17 @@ class HelpersTest extends TestCase
     {
         $result = Helpers::extract_scheduling_fields([]);
 
-        // Empty days array passes is_array but has count 0 < 7, so it's included
+        // Absent days key: sanitize_days_input(null) returns null, so days is omitted.
         $this->assertArrayNotHasKey('date_start', $result);
         $this->assertArrayNotHasKey('date_end', $result);
+        $this->assertArrayNotHasKey('days', $result);
+    }
+
+    public function test_extract_scheduling_fields_explicit_empty_days_array(): void
+    {
+        $result = Helpers::extract_scheduling_fields(['days' => []]);
+
+        // An explicit empty array passes is_array and count 0 < 7, so it is stored.
+        $this->assertSame([], $result['days']);
     }
 }

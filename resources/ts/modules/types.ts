@@ -23,7 +23,7 @@ export interface ImageSlide {
 
 export type Slide = TextSlide | ImageSlide;
 
-/** Config passed from PHP via wp_localize_script */
+/** Config passed from PHP via an inline script (wp_json_encode in PostMeta.php) */
 export interface TeksttvPostConfig {
     previewUrl: string;
     restNonce: string;
@@ -75,7 +75,7 @@ export interface WPMediaFrame {
     state(): {
         get(key: string): {
             toJSON(): WPMediaAttachment[];
-            first(): { toJSON(): WPMediaAttachment };
+            first(): { toJSON(): WPMediaAttachment } | undefined;
         };
     };
 }
@@ -88,7 +88,7 @@ export interface WPMediaOptions {
     library?: { type: string };
 }
 
-/** WordPress global (partial — media library) */
+/** WordPress global (partial - media library) */
 interface WPGlobal {
     media(options: WPMediaOptions): WPMediaFrame;
 }

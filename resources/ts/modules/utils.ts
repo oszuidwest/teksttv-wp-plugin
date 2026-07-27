@@ -33,7 +33,9 @@ export function previewSlideUrl(baseUrl: string, slide: Slide): string {
 /**
  * Split editor HTML on page separators. Uses the same separator regex as PHP
  * ArticlesLoopBlock::split_pages, but unlike PHP it keeps empty/untrimmed
- * segments — callers filter or count as needed.
+ * segments (callers filter or count as needed) and it does not check the
+ * page_separator feature (PHP returns the whole content as one page when
+ * that feature is disabled).
  */
 export function splitPages(html: string): string[] {
     return html.split(/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i);

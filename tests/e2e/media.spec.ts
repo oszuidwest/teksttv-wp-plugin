@@ -61,6 +61,30 @@ test.describe('media picker interactions', () => {
         await expect(removeButton).toBeHidden();
     });
 
+    test('sets and clears a campaign intro image through the shared picker contract', async ({ page }) => {
+        await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
+        const campaignBlock = await addLoopBlock(page, 'campaign');
+
+        // First picker in the block is the intro transition image.
+        const introPicker = campaignBlock.locator('.teksttv-image-picker').first();
+        const idInput = introPicker.locator('.teksttv-block-image-id');
+        const preview = introPicker.locator('.teksttv-block-image-preview');
+        const removeButton = introPicker.locator('.teksttv-block-image-remove');
+
+        await introPicker.locator('.teksttv-block-image-select').click();
+        const attachmentId = await selectFixtureImage(page);
+
+        await expect(idInput).toHaveValue(attachmentId);
+        await expect(preview).toBeVisible();
+        await expect(introPicker.locator('.teksttv-block-image-thumb')).not.toHaveAttribute('src', '');
+        await expect(removeButton).toBeVisible();
+
+        await removeButton.click();
+        await expect(idInput).toHaveValue('');
+        await expect(preview).toBeHidden();
+        await expect(removeButton).toBeHidden();
+    });
+
     test('adds and removes an extra image in the post meta box', async ({ page }) => {
         test.setTimeout(45_000);
         await page.goto('/wp-admin/edit.php');
@@ -94,7 +118,6 @@ test.describe('media picker interactions', () => {
         const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
         await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
         await expect(metaBoxesButton).toBeVisible();
-        await page.waitForTimeout(300);
         await expect
             .poll(async () => {
                 if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {

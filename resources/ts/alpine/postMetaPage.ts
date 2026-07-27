@@ -119,7 +119,8 @@ export function createPostMetaPage() {
             if (typeof tinymce !== 'undefined') {
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
                     // `updatePreview` debounces and also refreshes the word count.
-                    editor.on('input change SetContent', updatePreview);
+                    // keyup stays bound: not every TinyMCE edit fires input.
+                    editor.on('input change keyup SetContent', updatePreview);
                 };
                 const existing = tinymce.get('teksttv_content');
                 if (existing) bindEditor(existing);
@@ -254,7 +255,7 @@ export function createPostMetaPage() {
             const btn = e.currentTarget;
             if (!(btn instanceof HTMLButtonElement) || !config?.generateUrl) return;
             const field = btn.dataset.field;
-            if (!field || btn.disabled) return;
+            if (btn.disabled || !(field === 'title' || field === 'body' || field === 'both')) return;
 
             if (config.isNewPost) {
                 window.alert('Sla de post eerst op voordat je AI-content kunt genereren.');

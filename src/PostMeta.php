@@ -138,7 +138,10 @@ class PostMeta
         $ai_supported = Helpers::ai_supported();
         $prompts = $ai_supported ? Helpers::get_ai_prompts() : [];
 
-        wp_localize_script('teksttv-admin', 'teksttvPost', [
+        // wp_json_encode via an inline script instead of wp_localize_script:
+        // the latter casts every scalar to a string, which would make the
+        // number/boolean types in TeksttvPostConfig (types.ts) lies.
+        $config = [
             'previewUrl' => $preview_url,
             'restNonce' => wp_create_nonce('wp_rest'),
             'imageDataUrl' => rest_url('teksttv/v1/image-data'),
@@ -149,10 +152,11 @@ class PostMeta
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
             'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
-            'titleCharLimit' => $prompts['title_char_limit'] ?? 0,
-            'wordLimit' => $prompts['word_limit'] ?? 0,
-            'wordLimitPhoto' => $prompts['word_limit_photo'] ?? 0,
-        ]);
+            'titleCharLimit' => (int) ($prompts['title_char_limit'] ?? 0),
+            'wordLimit' => (int) ($prompts['word_limit'] ?? 0),
+            'wordLimitPhoto' => (int) ($prompts['word_limit_photo'] ?? 0),
+        ];
+        wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');
     }
 
     /**
@@ -306,7 +310,7 @@ class PostMeta
             update_post_meta($post_id, '_teksttv_title', $data['title'] ?? '');
         }
 
-        // Content — strip tags that are disabled by features
+        // Content - strip tags that are disabled by features
         $allowed_tags = ['p' => [], 'br' => []];
         if (Helpers::has_feature('bold')) {
             $allowed_tags['strong'] = [];

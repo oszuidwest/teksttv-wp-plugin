@@ -3,8 +3,10 @@
  * E2E fixtures, loaded inside a real WordPress via `wp eval-file`.
  *
  * Seeds a channel, all features, a loop + ticker config, a published TekstTV
- * post, and a custom role/user with only the intended TekstTV capabilities so
- * the browser suite can exercise administrator and custom-role save paths.
+ * post, campaign groups + campaigns, a media-library attachment (used by the
+ * media picker specs), and a custom role/user with only the intended TekstTV
+ * capabilities so the browser suite can exercise administrator and custom-role
+ * save paths.
  */
 
 defined('ABSPATH') || exit;

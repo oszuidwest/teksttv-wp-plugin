@@ -42,7 +42,10 @@ class CampaignsPage
      */
     public static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
     {
-        $id = $campaign['id'] ?? self::new_campaign_id();
+        // The template row (index '__INDEX__') renders an empty id; save()
+        // mints a unique one per submitted row. Baking an id into the template
+        // would give every campaign added in one page load the same id.
+        $id = $campaign['id'] ?? '';
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
         $group = (string) ($campaign['group'] ?? '');
@@ -142,8 +145,9 @@ class CampaignsPage
         $valid_slugs = Helpers::channel_slugs();
 
         foreach ($raw as $item) {
+            $submitted_id = sanitize_key($item['id'] ?? '');
             $saved = [
-                'id' => sanitize_key($item['id'] ?? self::new_campaign_id()),
+                'id' => $submitted_id !== '' ? $submitted_id : self::new_campaign_id(),
                 'name' => sanitize_text_field($item['name'] ?? ''),
                 'group' => sanitize_key($item['group'] ?? ''),
             ];
@@ -193,8 +197,8 @@ class CampaignsPage
      * Sanitize submitted campaign groups into stable id/label pairs.
      *
      * Each row carries a hidden id so a rename preserves the id (and therefore
-     * every campaign/loop reference to it). Rows without an id — newly added in
-     * the browser — get a stable id derived from the label. Duplicate ids and
+     * every campaign/loop reference to it). Rows without an id - newly added in
+     * the browser - get a stable id derived from the label. Duplicate ids and
      * empty labels are dropped.
      *
      * @param mixed $raw

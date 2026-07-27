@@ -574,7 +574,7 @@ class ArticlesLoopBlockTest extends TestCase
     }
 
     // =========================================================================
-    // Features are runtime-authoritative — disabling one stops its stored meta
+    // Features are runtime-authoritative - disabling one stops its stored meta
     // from acting, even though the values remain in the database.
     // =========================================================================
 

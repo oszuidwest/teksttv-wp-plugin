@@ -116,14 +116,6 @@ class RestApi
 
         $prompts = Helpers::get_ai_prompts();
 
-        // Rate limiting per user
-        if (!AiGenerator::within_rate_limit(get_current_user_id(), $prompts['rate_limit'])) {
-            return new WP_REST_Response(
-                ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
-                429
-            );
-        }
-
         if (!current_user_can('edit_post', $post_id)) {
             return new WP_REST_Response(['error' => __('Onvoldoende rechten.', 'teksttv-wp-plugin')], 403);
         }
@@ -133,6 +125,14 @@ class RestApi
             return new WP_REST_Response(['error' => __('Post niet gevonden.', 'teksttv-wp-plugin')], 404);
         }
 
+        // Counted last so requests that can only 403/404 do not consume quota.
+        if (!AiGenerator::within_rate_limit(get_current_user_id(), $prompts['rate_limit'])) {
+            return new WP_REST_Response(
+                ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
+                429
+            );
+        }
+
         $result = AiGenerator::generate_for_post($post, $field, (bool) $request->get_param('has_photo'), $prompts);
         if (is_wp_error($result)) {
             $data = $result->get_error_data();
@@ -140,7 +140,8 @@ class RestApi
             return new WP_REST_Response(['error' => $result->get_error_message()], $status);
         }
 
-        // For single field requests, keep backward-compatible response
+        // Single-field requests return {content}; 'both' returns {title, body}.
+        // Shape consumed by resources/ts/alpine/postMeta/aiGeneration.ts.
         $response = $field !== 'both' ? ['content' => $result['fields'][$field]] : $result['fields'];
 
         if ($result['warning'] !== '') {

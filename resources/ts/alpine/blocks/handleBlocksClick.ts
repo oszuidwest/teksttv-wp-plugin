@@ -1,4 +1,4 @@
-import { slideToggle, slideUp } from '../../modules/dom';
+import { fadeOutRemove, slideToggle, slideUp } from '../../modules/dom';
 import { imageItemHtml } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -62,7 +62,15 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         return;
     }
 
-    // `.teksttv-image-picker` wraps the id input, thumb/preview, and buttons — a contract with the PHP renderers.
+    const imgItemRm = e.target.closest('.teksttv-remove-image');
+    if (imgItemRm && blocksRoot.contains(imgItemRm)) {
+        e.preventDefault();
+        const item = imgItemRm.closest('.teksttv-image-item');
+        if (item instanceof HTMLElement) fadeOutRemove(item, 150);
+        return;
+    }
+
+    // `.teksttv-image-picker` wraps the id input, thumb/preview, and buttons - a contract with the PHP renderers.
     const imgSel = e.target.closest('.teksttv-block-image-select');
     if (imgSel && blocksRoot.contains(imgSel)) {
         e.preventDefault();

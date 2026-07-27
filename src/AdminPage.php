@@ -54,7 +54,7 @@ class AdminPage
 
     public static function register_menu(): void
     {
-        // Main menu item — first loop channel or settings if no channels
+        // Main menu item - first loop channel or settings if no channels
         $channels = Helpers::get_channels();
         $first_channel = $channels[0]['slug'] ?? '';
 
@@ -229,9 +229,9 @@ class AdminPage
     /**
      * Sanitize the AI prompts option.
      *
-     * Merges submitted values over the stored option so a partial form — e.g.
+     * Merges submitted values over the stored option so a partial form - e.g.
      * one rendered without the region/technical sections for a role lacking
-     * manage_teksttv — cannot silently clear fields it never displayed.
+     * manage_teksttv - cannot silently clear fields it never displayed.
      *
      * @param mixed $input
      * @return array<string, mixed>
@@ -469,54 +469,73 @@ class AdminPage
     private static function handle_loop_save(): void
     {
         if (!isset($_POST['teksttv_loop_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_loop_nonce'])), 'teksttv_save_loop')) {
+            add_settings_error('teksttv', 'loop_nonce_failed', __('Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.', 'teksttv-wp-plugin'));
             return;
         }
 
         if (!current_user_can('manage_teksttv')) {
+            add_settings_error('teksttv', 'loop_no_permission', __('Onvoldoende rechten; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
             return;
         }
 
         $channel = sanitize_key(wp_unslash($_POST['teksttv_loop_channel'] ?? ''));
-        if (empty($channel)) {
+        if (empty($channel) || !in_array($channel, Helpers::channel_slugs(), true)) {
+            add_settings_error('teksttv', 'loop_unknown_channel', __('Onbekend kanaal; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
             return;
         }
 
-        // Validate channel exists
-        if (!in_array($channel, Helpers::channel_slugs(), true)) {
-            return;
-        }
-
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field is sanitized individually below
-        $raw_blocks = isset($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
-        $blocks = [];
-
-        foreach ($raw_blocks as $block) {
-            $type = sanitize_key($block['type'] ?? '');
-            $saved = BlockRegistry::save($type, $block);
-            if ($saved) {
-                $saved = array_merge($saved, Helpers::extract_scheduling_fields($block));
-                $blocks[] = $saved;
-            }
-        }
-
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field is sanitized individually in sanitize_registry_items()
+        $raw_blocks = isset($_POST['teksttv_blocks']) && is_array($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
+        [$blocks, $blocks_preserved] = self::sanitize_registry_items($raw_blocks, 'teksttv_loop_' . $channel);
         update_option('teksttv_loop_' . $channel, $blocks);
 
-        // Save ticker items
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
-        $raw_ticker = isset($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
-        $ticker = [];
-        foreach ($raw_ticker as $item) {
-            $type = sanitize_key($item['type'] ?? '');
-            $saved_ticker = BlockRegistry::save($type, $item);
-            if ($saved_ticker) {
-                $saved_ticker = array_merge($saved_ticker, Helpers::extract_scheduling_fields($item));
-                $ticker[] = $saved_ticker;
-            }
-        }
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field is sanitized individually in sanitize_registry_items()
+        $raw_ticker = isset($_POST['teksttv_ticker']) && is_array($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
+        [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel);
         update_option('teksttv_ticker_' . $channel, $ticker);
 
         RestApi::invalidate_slides_cache($channel);
 
-        add_settings_error('teksttv-wp-plugin', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
+        if ($blocks_preserved || $ticker_preserved) {
+            add_settings_error('teksttv', 'loop_preserved_unknown', __('Sommige opgeslagen blokken horen bij een niet-actieve plugin. Ze zijn bewaard maar verschijnen pas weer als die plugin actief is.', 'teksttv-wp-plugin'), 'warning');
+        }
+
+        add_settings_error('teksttv', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
+    }
+
+    /**
+     * Sanitize posted registry items and re-append stored items whose type is
+     * no longer registered (e.g. an add-on plugin was deactivated). Those items
+     * cannot render in the form, so they are absent from the POST and would
+     * otherwise be silently deleted on save.
+     *
+     * @param array<int|string, mixed> $raw_items Unslashed POST items.
+     * @return array{0: list<array<string, mixed>>, 1: bool} Sanitized items and whether any stored item was preserved.
+     */
+    private static function sanitize_registry_items(array $raw_items, string $option_name): array
+    {
+        $items = [];
+        foreach ($raw_items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $type = sanitize_key($item['type'] ?? '');
+            $saved = BlockRegistry::save($type, $item);
+            if ($saved) {
+                $items[] = array_merge($saved, Helpers::extract_scheduling_fields($item));
+            }
+        }
+
+        $preserved = false;
+        $existing = get_option($option_name, []);
+        foreach (is_array($existing) ? $existing : [] as $existing_item) {
+            $existing_type = is_array($existing_item) ? (string) ($existing_item['type'] ?? '') : '';
+            if ($existing_type !== '' && BlockRegistry::get($existing_type) === null) {
+                $items[] = $existing_item;
+                $preserved = true;
+            }
+        }
+
+        return [$items, $preserved];
     }
 }

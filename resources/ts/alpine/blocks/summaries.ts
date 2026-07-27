@@ -24,16 +24,17 @@ function fieldSummaryValue(el: Element): string {
 
 /**
  * Header summary line per `.teksttv-block`, driven by `data-summary` markers
- * that each block's PHP `render()` puts on its own fields — this module has no
+ * that each block's PHP `render()` puts on its own fields - this module has no
  * knowledge of block types, so registry-registered blocks work automatically.
  *
+ * All summary parts are deduplicated before joining, so e.g. several taxonomy
+ * filters that all fall back to 'alle' render once.
+ *
  * Field contract:
- * - `data-summary`         — include this field; the attribute value is an
+ * - `data-summary`         - include this field; the attribute value is an
  *                            optional format with `%s` (e.g. `%sx`, `max %s`).
- * - `data-summary-label`   — show this text instead of the value when filled.
- * - `data-summary-empty`   — show this text when the field is empty; identical
- *                            parts are deduplicated (e.g. several taxonomy
- *                            filters that all fall back to 'alle').
+ * - `data-summary-label`   - show this text instead of the value when filled.
+ * - `data-summary-empty`   - show this text when the field is empty.
  */
 export function updateBlockSummaries(blocksEl: HTMLElement): void {
     blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((blockEl) => {

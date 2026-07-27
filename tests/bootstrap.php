@@ -166,7 +166,7 @@ if (!class_exists('WP_Query')) {
         /** @var list<object> Posts to return from the stub. Set this in your test. */
         public static array $stubPosts = [];
 
-        /** @var WP_Query|null Last instance constructed — inspect query_vars from tests. */
+        /** @var WP_Query|null Last instance constructed - inspect query_vars from tests. */
         public static ?WP_Query $lastInstance = null;
 
         /** @var array<string, mixed> The query args passed to the constructor. */

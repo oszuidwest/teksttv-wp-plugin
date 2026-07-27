@@ -19,11 +19,29 @@ async function addBlock(page: Page, kind: keyof typeof ADD_BLOCK_UI, type: strin
     const blocks = page.locator(`${ui.list} > .teksttv-block`);
     const previousCount = await blocks.count();
 
-    await page.locator(ui.toggle).click();
-    await page.locator(`${ui.menu} button[data-type="${type}"]`).click();
+    // With exactly one registered ticker type the view renders a single
+    // button (#teksttv-add-ticker-single) instead of the dropdown.
+    const single = page.locator(`#teksttv-add-${kind === 'ticker' ? 'ticker' : 'block'}-single[data-type="${type}"]`);
+    if ((await page.locator(ui.toggle).count()) === 0 && (await single.count()) > 0) {
+        await single.click();
+    } else {
+        await page.locator(ui.toggle).click();
+        await page.locator(`${ui.menu} button[data-type="${type}"]`).click();
+    }
 
     await expect(blocks).toHaveCount(previousCount + 1);
     return blocks.last();
+}
+
+/**
+ * Submit the page's settings form, wait for the save round-trip to finish
+ * (the success notice renders on the response document), then reload so
+ * assertions run against freshly rendered saved state.
+ */
+export async function submitAndReload(page: Page): Promise<void> {
+    await page.locator('form input[name="submit"]').click();
+    await expect(page.locator('.notice-success').first()).toBeVisible();
+    await page.reload();
 }
 
 /** Add a loop block via the add-block dropdown and return the new block. */
