@@ -447,30 +447,40 @@ class AdminPage
         <?php
     }
 
-    private static function handle_loop_save(): void
+    private static function validate_loop_save_request(): ?string
     {
         if (!isset($_POST['teksttv_loop_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_loop_nonce'])), 'teksttv_save_loop')) {
             add_settings_error('teksttv', 'loop_nonce_failed', __('Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.', 'teksttv-wp-plugin'));
-            return;
+            return null;
         }
 
         if (!current_user_can('manage_teksttv')) {
             add_settings_error('teksttv', 'loop_no_permission', __('Onvoldoende rechten; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
-            return;
+            return null;
         }
 
         $channel = sanitize_key(wp_unslash($_POST['teksttv_loop_channel'] ?? ''));
         if (empty($channel) || !in_array($channel, Helpers::channel_slugs(), true)) {
             add_settings_error('teksttv', 'loop_unknown_channel', __('Onbekend kanaal; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
+            return null;
+        }
+
+        return $channel;
+    }
+
+    private static function handle_loop_save(): void
+    {
+        $channel = self::validate_loop_save_request();
+        if ($channel === null) {
             return;
         }
 
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field is sanitized individually in sanitize_registry_items()
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
         $raw_blocks = isset($_POST['teksttv_blocks']) && is_array($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
         [$blocks, $blocks_preserved] = self::sanitize_registry_items($raw_blocks, 'teksttv_loop_' . $channel);
         update_option('teksttv_loop_' . $channel, $blocks);
 
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field is sanitized individually in sanitize_registry_items()
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
         $raw_ticker = isset($_POST['teksttv_ticker']) && is_array($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
         [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel);
         update_option('teksttv_ticker_' . $channel, $ticker);

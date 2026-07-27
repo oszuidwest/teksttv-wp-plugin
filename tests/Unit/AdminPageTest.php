@@ -220,6 +220,86 @@ class AdminPageTest extends TestCase
         $this->assertStringNotContainsString('style="display:none;"', $html);
     }
 
+    public function test_validate_loop_save_request_rejects_invalid_nonce(): void
+    {
+        $_POST = ['teksttv_loop_nonce' => 'invalid'];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')
+            ->with('invalid', 'teksttv_save_loop')
+            ->andReturn(false);
+        Functions\expect('add_settings_error')
+            ->with('teksttv', 'loop_nonce_failed', \Mockery::type('string'))
+            ->once();
+
+        try {
+            $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+        } finally {
+            $_POST = [];
+        }
+    }
+
+    public function test_validate_loop_save_request_rejects_missing_capability(): void
+    {
+        $_POST = ['teksttv_loop_nonce' => 'valid'];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')->andReturn(true);
+        Functions\expect('current_user_can')
+            ->with('manage_teksttv')
+            ->andReturn(false);
+        Functions\expect('add_settings_error')
+            ->with('teksttv', 'loop_no_permission', \Mockery::type('string'))
+            ->once();
+
+        try {
+            $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+        } finally {
+            $_POST = [];
+        }
+    }
+
+    public function test_validate_loop_save_request_rejects_unknown_channel(): void
+    {
+        $_POST = [
+            'teksttv_loop_nonce' => 'valid',
+            'teksttv_loop_channel' => 'unknown',
+        ];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')->andReturn(true);
+        Functions\expect('current_user_can')->andReturn(true);
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+        Functions\expect('add_settings_error')
+            ->with('teksttv', 'loop_unknown_channel', \Mockery::type('string'))
+            ->once();
+
+        try {
+            $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+        } finally {
+            $_POST = [];
+        }
+    }
+
+    public function test_validate_loop_save_request_returns_known_channel(): void
+    {
+        $_POST = [
+            'teksttv_loop_nonce' => 'valid',
+            'teksttv_loop_channel' => 'TV1',
+        ];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')->andReturn(true);
+        Functions\expect('current_user_can')->andReturn(true);
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+
+        try {
+            $this->assertSame('tv1', self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+        } finally {
+            $_POST = [];
+        }
+    }
+
     /**
      * @param list<string>|null $days
      */

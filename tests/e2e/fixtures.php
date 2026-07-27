@@ -88,8 +88,8 @@ if ($teksttv_attachments) {
         'post_mime_type' => 'image/png',
         'post_title' => 'TekstTV E2E Image',
         'post_status' => 'inherit',
-    ], $teksttv_upload['file']);
-    if (is_wp_error($teksttv_attachment_id)) {
+    ], $teksttv_upload['file'], 0, true);
+    if (is_wp_error($teksttv_attachment_id) || $teksttv_attachment_id <= 0) {
         throw new RuntimeException('Could not create the E2E image attachment.');
     }
 

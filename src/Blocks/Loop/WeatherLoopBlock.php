@@ -100,7 +100,7 @@ final class WeatherLoopBlock implements BlockType
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Duur', 'teksttv-wp-plugin'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) Helpers::DURATION_DEFAULTS['weather']); ?>" /> <span class="teksttv-unit">sec</span>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) Helpers::duration_seconds('weather')); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>
         <?php

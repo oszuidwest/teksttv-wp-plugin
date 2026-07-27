@@ -159,8 +159,8 @@ class Helpers
         'text' => 20,
         'image' => 7,
         'iframe' => 30,
-        // Weather has no settings field; the option never exists and the
-        // default always wins.
+        // Weather has no settings field; this remains the default unless the
+        // option is supplied programmatically.
         'weather' => 15,
     ];
 
