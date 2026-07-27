@@ -35,10 +35,9 @@ interface GenerateResponse {
     title?: string;
     body?: string;
     content?: string;
-    error?: string;
     warning?: string;
-    // WordPress core rejections (expired nonce, invalid param) use this shape.
-    code?: string;
+    // Every failure - plugin WP_Error or core rejection (expired nonce,
+    // invalid param) - arrives as {code, message} with a non-ok status.
     message?: string;
 }
 
@@ -90,11 +89,8 @@ export function requestAiGeneration(
     })
         .then(async (res) => ({ ok: res.ok, data: (await res.json()) as GenerateResponse }))
         .then(({ ok, data }) => {
-            // Plugin errors use {error}; WordPress core rejections (expired
-            // nonce, invalid param) use {code, message} with a non-ok status.
-            const errorMessage = data.error ?? (!ok ? data.message || 'Er ging iets mis bij het genereren.' : '');
-            if (errorMessage) {
-                showError(errorMessage);
+            if (!ok) {
+                showError(data.message || 'Er ging iets mis bij het genereren.');
                 return;
             }
 

@@ -10,8 +10,6 @@ use TekstTV\WeatherProvider;
 
 final class WeatherLoopBlock implements BlockType
 {
-    private const DEFAULT_DURATION_SECONDS = 15;
-
     private static ?WeatherProvider $weather_provider = null;
 
     private static bool $weather_provider_resolved = false;
@@ -102,7 +100,7 @@ final class WeatherLoopBlock implements BlockType
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Duur', 'teksttv-wp-plugin'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="15" /> <span class="teksttv-unit">sec</span>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) Helpers::DURATION_DEFAULTS['weather']); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>
         <?php
@@ -153,8 +151,7 @@ final class WeatherLoopBlock implements BlockType
             return [];
         }
 
-        // Weather has no duration setting; the per-block override falls back to a fixed default.
-        $duration = (!empty($block['duration']) ? (int) $block['duration'] : self::DEFAULT_DURATION_SECONDS) * 1000;
+        $duration = Helpers::duration_ms($block['duration'] ?? null, 'weather');
 
         $days_output = [];
         foreach ($weather['days'] as $index => $day) {

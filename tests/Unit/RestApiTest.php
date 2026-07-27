@@ -55,6 +55,41 @@ class RestApiTest extends TestCase
         Functions\when('set_transient')->justReturn(true);
     }
 
+    /**
+     * Stub every pre-generation check to pass (feature enabled, AI available,
+     * capability, existing post, rate limit ok). Tests override individual
+     * stubs after calling this.
+     */
+    private static function stubHappyPath(): void
+    {
+        self::stubOptions();
+        Functions\when('wp_supports_ai')->justReturn(true);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('get_post')->justReturn(self::makePost());
+        Functions\when('get_current_user_id')->justReturn(7);
+        self::stubRateLimitOk();
+        Functions\when('is_wp_error')->alias(fn ($thing) => $thing instanceof \WP_Error);
+    }
+
+    /**
+     * Assert a WP_Error carrying the given HTTP status in its error data,
+     * the shape WP_REST_Server maps onto the response status.
+     */
+    private function assertErrorStatus(int $status, mixed $response): void
+    {
+        $this->assertInstanceOf(\WP_Error::class, $response);
+        $this->assertSame($status, $response->get_error_data()['status'] ?? null);
+    }
+
+    public function test_get_image_data_returns_404_error_for_missing_attachment(): void
+    {
+        Functions\when('wp_get_attachment_image_url')->justReturn(false);
+
+        $response = RestApi::get_image_data(self::requestMock(['id' => 999]));
+
+        $this->assertErrorStatus(404, $response);
+    }
+
     public function test_generate_content_returns_403_when_ai_generate_disabled(): void
     {
         // ai_generate is absent from the enabled features list.
@@ -62,9 +97,7 @@ class RestApiTest extends TestCase
 
         $request = \Mockery::mock('WP_REST_Request');
 
-        $response = RestApi::generate_content($request);
-
-        $this->assertSame(403, $response->get_status());
+        $this->assertErrorStatus(403, RestApi::generate_content($request));
     }
 
     public function test_generate_content_returns_503_when_ai_unsupported(): void
@@ -74,8 +107,8 @@ class RestApiTest extends TestCase
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
-        $this->assertSame(503, $response->get_status());
-        $this->assertArrayHasKey('error', $response->get_data());
+        $this->assertErrorStatus(503, $response);
+        $this->assertNotSame('', $response->get_error_message());
     }
 
     public function test_generate_content_returns_403_without_edit_post_and_skips_rate_limit(): void
@@ -89,7 +122,7 @@ class RestApiTest extends TestCase
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
-        $this->assertSame(403, $response->get_status());
+        $this->assertErrorStatus(403, $response);
     }
 
     public function test_generate_content_returns_404_for_missing_post(): void
@@ -101,31 +134,22 @@ class RestApiTest extends TestCase
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
-        $this->assertSame(404, $response->get_status());
+        $this->assertErrorStatus(404, $response);
     }
 
     public function test_generate_content_returns_429_when_rate_limited(): void
     {
-        self::stubOptions();
-        Functions\when('wp_supports_ai')->justReturn(true);
-        Functions\when('current_user_can')->justReturn(true);
-        Functions\when('get_post')->justReturn(self::makePost());
-        Functions\when('get_current_user_id')->justReturn(7);
-        Functions\when('wp_using_ext_object_cache')->justReturn(false);
+        self::stubHappyPath();
         Functions\when('get_transient')->justReturn(10); // default rate_limit is 10.
+
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
-        $this->assertSame(429, $response->get_status());
+        $this->assertErrorStatus(429, $response);
     }
 
-    public function test_generate_content_maps_wp_error_status_to_http_status(): void
+    public function test_generate_content_passes_ai_generator_error_through(): void
     {
-        self::stubOptions();
-        Functions\when('wp_supports_ai')->justReturn(true);
-        Functions\when('current_user_can')->justReturn(true);
-        Functions\when('get_current_user_id')->justReturn(7);
-        self::stubRateLimitOk();
-        Functions\when('is_wp_error')->alias(fn ($thing) => $thing instanceof \WP_Error);
+        self::stubHappyPath();
 
         // Empty post -> AiGenerator returns teksttv_no_content with status 422.
         $post = new \WP_Post();
@@ -134,34 +158,13 @@ class RestApiTest extends TestCase
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
-        $this->assertSame(422, $response->get_status());
-        $this->assertArrayHasKey('error', $response->get_data());
-    }
-
-    public function test_generate_content_returns_400_for_invalid_field(): void
-    {
-        self::stubOptions();
-        Functions\when('wp_supports_ai')->justReturn(true);
-        Functions\when('current_user_can')->justReturn(true);
-        Functions\when('get_post')->justReturn(self::makePost());
-        Functions\when('get_current_user_id')->justReturn(7);
-        self::stubRateLimitOk();
-        Functions\when('is_wp_error')->alias(fn ($thing) => $thing instanceof \WP_Error);
-
-        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'bogus']));
-
-        $this->assertSame(400, $response->get_status());
+        $this->assertErrorStatus(422, $response);
+        $this->assertSame('teksttv_no_content', $response->get_error_code());
     }
 
     public function test_generate_content_single_field_returns_content_shape(): void
     {
-        self::stubOptions();
-        Functions\when('wp_supports_ai')->justReturn(true);
-        Functions\when('current_user_can')->justReturn(true);
-        Functions\when('get_post')->justReturn(self::makePost());
-        Functions\when('get_current_user_id')->justReturn(7);
-        self::stubRateLimitOk();
-        Functions\when('is_wp_error')->alias(fn ($thing) => $thing instanceof \WP_Error);
+        self::stubHappyPath();
         Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_title', 'Korte kop');
 
         $builder = \Mockery::mock();
@@ -178,13 +181,7 @@ class RestApiTest extends TestCase
 
     public function test_generate_content_both_returns_title_and_body_shape(): void
     {
-        self::stubOptions();
-        Functions\when('wp_supports_ai')->justReturn(true);
-        Functions\when('current_user_can')->justReturn(true);
-        Functions\when('get_post')->justReturn(self::makePost());
-        Functions\when('get_current_user_id')->justReturn(7);
-        self::stubRateLimitOk();
-        Functions\when('is_wp_error')->alias(fn ($thing) => $thing instanceof \WP_Error);
+        self::stubHappyPath();
         Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
         Functions\expect('update_post_meta')->twice();
 

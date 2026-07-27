@@ -22,7 +22,7 @@ function ensureUnderscore(): void {
  * console error) when the media scripts failed to load, so picker buttons
  * degrade to a logged no-op instead of an uncaught TypeError.
  */
-export function wpMedia(options: WPMediaOptions): WPMediaFrame | null {
+function wpMedia(options: WPMediaOptions): WPMediaFrame | null {
     if (typeof wp === 'undefined' || typeof wp.media !== 'function') {
         console.error('TekstTV: wp.media is niet beschikbaar; kan de mediabibliotheek niet openen.');
         return null;

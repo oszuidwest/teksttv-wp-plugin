@@ -40,12 +40,10 @@ export function createSidebarCustomPicker(
                 )
                     .then(async (res) => ({
                         ok: res.ok,
-                        data: (await res.json()) as ImageData | { error?: string; message?: string },
+                        data: (await res.json()) as ImageData,
                     }))
                     .then(({ ok, data }) => {
-                        // {error} is the plugin's 404 shape; {code, message}
-                        // is a WordPress core rejection (e.g. expired nonce).
-                        if (!ok || 'error' in data || !('url' in data) || !data.url) {
+                        if (!ok || !data.url) {
                             throw new Error('image-data request failed');
                         }
                         setCustomImageData(data);

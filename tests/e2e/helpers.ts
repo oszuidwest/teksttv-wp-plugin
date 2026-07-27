@@ -1,5 +1,8 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
+/** Admin session saved by global-setup and loaded by every test (see playwright.config.ts). */
+export const ADMIN_STORAGE_STATE = '.playwright/auth/admin.json';
+
 /** Log in through wp-login.php and wait for the admin dashboard. */
 export async function login(page: Page, username: string, password: string): Promise<void> {
     await page.goto('/wp-login.php');
@@ -10,8 +13,18 @@ export async function login(page: Page, username: string, password: string): Pro
 }
 
 const ADD_BLOCK_UI = {
-    loop: { list: '#teksttv-blocks', toggle: '#teksttv-add-block-toggle', menu: '#teksttv-add-block-menu' },
-    ticker: { list: '#teksttv-ticker', toggle: '#teksttv-add-ticker-toggle', menu: '#teksttv-add-ticker-menu' },
+    loop: {
+        list: '#teksttv-blocks',
+        toggle: '#teksttv-add-block-toggle',
+        menu: '#teksttv-add-block-menu',
+        single: '#teksttv-add-block-single',
+    },
+    ticker: {
+        list: '#teksttv-ticker',
+        toggle: '#teksttv-add-ticker-toggle',
+        menu: '#teksttv-add-ticker-menu',
+        single: '#teksttv-add-ticker-single',
+    },
 } as const;
 
 async function addBlock(page: Page, kind: keyof typeof ADD_BLOCK_UI, type: string): Promise<Locator> {
@@ -20,8 +33,8 @@ async function addBlock(page: Page, kind: keyof typeof ADD_BLOCK_UI, type: strin
     const previousCount = await blocks.count();
 
     // With exactly one registered ticker type the view renders a single
-    // button (#teksttv-add-ticker-single) instead of the dropdown.
-    const single = page.locator(`#teksttv-add-${kind === 'ticker' ? 'ticker' : 'block'}-single[data-type="${type}"]`);
+    // button instead of the dropdown.
+    const single = page.locator(`${ui.single}[data-type="${type}"]`);
     if ((await page.locator(ui.toggle).count()) === 0 && (await single.count()) > 0) {
         await single.click();
     } else {

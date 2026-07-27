@@ -38,6 +38,7 @@ export interface TeksttvPostConfig {
     titleCharLimit: number;
     wordLimit: number;
     wordLimitPhoto: number;
+    pageSeparator: boolean;
 }
 
 /** WordPress TinyMCE editor instance (partial) */

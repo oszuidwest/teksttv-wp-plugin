@@ -320,7 +320,11 @@ class WeatherLoopBlockTest extends TestCase
             ],
         ]);
 
-        Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('key');
+        // No override: duration_ms falls back to the (never-saved) weather
+        // option default, so unsaved options must return their default.
+        Functions\expect('get_option')->andReturnUsing(
+            fn ($key, $default = false) => $key === 'teksttv_openweather_api_key' ? 'key' : $default
+        );
         Functions\expect('apply_filters')->andReturn($mock_provider);
         Functions\expect('date_i18n')->andReturn('dinsdag 7 apr');
 

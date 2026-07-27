@@ -2,6 +2,7 @@
 
 namespace TekstTV;
 
+use WP_Error;
 use WP_REST_Response;
 use WP_REST_Request;
 
@@ -83,61 +84,67 @@ class RestApi
         return in_array($value, Helpers::channel_slugs(), true);
     }
 
-    public static function get_image_data(WP_REST_Request $request): WP_REST_Response
+    public static function get_image_data(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $id = $request->get_param('id');
         $slot = $request->get_param('slot') ?: null;
         $data = Helpers::get_image_data($id, 'large', $slot);
         if (!$data) {
-            return new WP_REST_Response(['error' => __('Bijlage niet gevonden.', 'teksttv-wp-plugin')], 404);
+            return new WP_Error('teksttv_not_found', __('Bijlage niet gevonden.', 'teksttv-wp-plugin'), ['status' => 404]);
         }
 
         return new WP_REST_Response($data, 200);
     }
 
-    public static function generate_content(WP_REST_Request $request): WP_REST_Response
+    /**
+     * Errors are returned as WP_Error so core serializes every failure - ours
+     * and its own (expired nonce, invalid param) - into the one {code, message}
+     * shape that resources/ts/alpine/postMeta/aiGeneration.ts consumes.
+     */
+    public static function generate_content(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         if (!Helpers::has_feature('ai_generate')) {
-            return new WP_REST_Response(
-                ['error' => __('AI-generatie is uitgeschakeld.', 'teksttv-wp-plugin')],
-                403
+            return new WP_Error(
+                'teksttv_ai_disabled',
+                __('AI-generatie is uitgeschakeld.', 'teksttv-wp-plugin'),
+                ['status' => 403]
             );
         }
 
         if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
-            return new WP_REST_Response(
-                ['error' => __('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.', 'teksttv-wp-plugin')],
-                503
+            return new WP_Error(
+                'teksttv_ai_unavailable',
+                __('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.', 'teksttv-wp-plugin'),
+                ['status' => 503]
             );
         }
 
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
 
-        $prompts = Helpers::get_ai_prompts();
-
         if (!current_user_can('edit_post', $post_id)) {
-            return new WP_REST_Response(['error' => __('Onvoldoende rechten.', 'teksttv-wp-plugin')], 403);
+            return new WP_Error('teksttv_forbidden', __('Onvoldoende rechten.', 'teksttv-wp-plugin'), ['status' => 403]);
         }
 
         $post = get_post($post_id);
         if (!$post) {
-            return new WP_REST_Response(['error' => __('Post niet gevonden.', 'teksttv-wp-plugin')], 404);
+            return new WP_Error('teksttv_post_not_found', __('Post niet gevonden.', 'teksttv-wp-plugin'), ['status' => 404]);
         }
+
+        $prompts = Helpers::get_ai_prompts();
 
         // Counted last so requests that can only 403/404 do not consume quota.
         if (!AiGenerator::within_rate_limit(get_current_user_id(), $prompts['rate_limit'])) {
-            return new WP_REST_Response(
-                ['error' => __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin')],
-                429
+            return new WP_Error(
+                'teksttv_rate_limited',
+                __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin'),
+                ['status' => 429]
             );
         }
 
         $result = AiGenerator::generate_for_post($post, $field, (bool) $request->get_param('has_photo'), $prompts);
         if (is_wp_error($result)) {
-            $data = $result->get_error_data();
-            $status = is_array($data) && isset($data['status']) ? (int) $data['status'] : 500;
-            return new WP_REST_Response(['error' => $result->get_error_message()], $status);
+            return $result;
         }
 
         // Single-field requests return {content}; 'both' returns {title, body}.

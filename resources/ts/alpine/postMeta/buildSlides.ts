@@ -35,7 +35,7 @@ export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, custom
     const content = getTeksttvEditorHtml();
     const result: Slide[] = [];
 
-    const expandedPages = splitPages(content);
+    const expandedPages = splitPages(content, config?.pageSeparator ?? true);
 
     const sidebarImg = resolveSidebarImage(config, customImageData);
 

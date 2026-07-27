@@ -154,6 +154,7 @@ class PostMeta
             'titleCharLimit' => (int) ($prompts['title_char_limit'] ?? 0),
             'wordLimit' => (int) ($prompts['word_limit'] ?? 0),
             'wordLimitPhoto' => (int) ($prompts['word_limit_photo'] ?? 0),
+            'pageSeparator' => Helpers::has_feature('page_separator'),
         ];
         wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');
     }
@@ -165,7 +166,9 @@ class PostMeta
     private static function default_start_date(?\WP_Post $post): string
     {
         $pub_date = ($post && $post->post_date !== '0000-00-00 00:00:00') ? $post->post_date : '';
-        return $pub_date ? date('Y-m-d', strtotime($pub_date)) : date('Y-m-d');
+        // post_date is already site-local; "today" must be site-local too
+        // (the scheduling checks in Helpers use wp_timezone()).
+        return $pub_date ? date('Y-m-d', strtotime($pub_date)) : wp_date('Y-m-d');
     }
 
     /**

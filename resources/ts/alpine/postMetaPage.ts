@@ -1,7 +1,7 @@
 import Sortable from 'sortablejs';
-import { fadeOutRemove, hide, show, slideDown, slideUp } from '../modules/dom';
+import { hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
-import { debounce, previewSlideUrl } from '../modules/utils';
+import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
@@ -188,10 +188,7 @@ export function createPostMetaPage() {
         onExtraImagesClick(e: MouseEvent): void {
             if (!(e.target instanceof Element)) return;
             const tgt = e.target.closest('.teksttv-remove-image');
-            const item = tgt?.closest('.teksttv-image-item');
-            if (item instanceof HTMLElement) {
-                fadeOutRemove(item, 150);
-            }
+            if (tgt) removeImageItem(tgt);
         },
 
         activateSidebarCardDefault(): void {

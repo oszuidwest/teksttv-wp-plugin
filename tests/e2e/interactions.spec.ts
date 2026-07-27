@@ -1,25 +1,24 @@
 import { type Locator, type Page, expect, test } from '@playwright/test';
-import { addLoopBlock, addTickerBlock, login, submitAndReload } from './helpers';
+import { addLoopBlock, addTickerBlock, submitAndReload } from './helpers';
 
 const LOOP_URL = '/wp-admin/admin.php?page=teksttv-loop-tv1';
 
 async function expectSequentialNames(root: Locator, itemSelector: string, prefix: string): Promise<void> {
-    const items = root.locator(itemSelector);
-    const count = await items.count();
+    // One evaluate round-trip: every item's field names, in DOM order.
+    const itemNames = await root.locator(itemSelector).evaluateAll((items) =>
+        items.map((item) =>
+            Array.from(item.querySelectorAll('input[name], select[name]')).map((field) => field.getAttribute('name')),
+        ),
+    );
 
-    for (let index = 0; index < count; index++) {
-        const names = await items
-            .nth(index)
-            .locator('input[name], select[name]')
-            .evaluateAll((fields) => fields.map((field) => field.getAttribute('name')));
-
+    itemNames.forEach((names, index) => {
         expect(names.length, `${prefix}[${index}] should contain named fields`).toBeGreaterThan(0);
         for (const name of names) {
             expect(name, `field in item ${index} should use the DOM-order index`).toMatch(
-                new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\[${index}\\]`),
+                new RegExp(`^${prefix}\\[${index}\\]`),
             );
         }
-    }
+    });
 }
 
 async function dragBlockToStart(page: Page, sourceBlock: Locator, targetBlock: Locator): Promise<void> {
@@ -36,10 +35,6 @@ async function dragBlockToStart(page: Page, sourceBlock: Locator, targetBlock: L
 }
 
 test.describe('admin interaction contracts', () => {
-    test.beforeEach(async ({ page }) => {
-        await login(page, 'admin', 'password');
-    });
-
     test('adds every registered loop block expanded at the next free index', async ({ page }) => {
         await page.goto(LOOP_URL);
 

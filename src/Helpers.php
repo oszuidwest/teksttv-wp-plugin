@@ -155,6 +155,9 @@ class Helpers
         'text' => 20,
         'image' => 7,
         'iframe' => 30,
+        // Weather has no settings field; the option never exists and the
+        // default always wins.
+        'weather' => 15,
     ];
 
     /**
@@ -214,15 +217,7 @@ class Helpers
      */
     public static function duration_seconds(string $kind): int
     {
-        if (!array_key_exists($kind, self::DURATION_DEFAULTS)) {
-            // A typo'd kind must not become a 0 ms slide: log and use the
-            // text default.
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-            error_log(sprintf('TekstTV: unknown duration kind "%s"; falling back to text default.', $kind));
-            return self::DURATION_DEFAULTS['text'];
-        }
-
-        return (int) get_option('teksttv_duration_' . $kind, self::DURATION_DEFAULTS[$kind]);
+        return (int) get_option('teksttv_duration_' . $kind, self::DURATION_DEFAULTS[$kind] ?? self::DURATION_DEFAULTS['text']);
     }
 
     /**

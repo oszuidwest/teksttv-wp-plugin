@@ -1,11 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { login } from './helpers';
 
 test.describe('administrator admin screens', () => {
-    test.beforeEach(async ({ page }) => {
-        await login(page, 'admin', 'password');
-    });
-
     test('settings page renders core controls', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-settings');
         await expect(page.locator('input[name="teksttv_duration_text"]')).toBeVisible();

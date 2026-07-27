@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { login } from './helpers';
 
+// The suite-wide storageState is the admin session; this test logs in as its
+// own user, so start from a clean context.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 /**
  * A role holding only the intended TekstTV capabilities (no manage_options)
  * must be able to open and save the settings page.

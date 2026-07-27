@@ -18,7 +18,7 @@ function fieldSummaryValue(el: Element): string {
             .map((opt) => opt.text)
             .join(', ');
     }
-    if (el instanceof HTMLInputElement) return el.value.trim();
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return el.value.trim();
     return '';
 }
 

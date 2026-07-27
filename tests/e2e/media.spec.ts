@@ -1,5 +1,5 @@
 import { type Page, expect, test } from '@playwright/test';
-import { addLoopBlock, login } from './helpers';
+import { addLoopBlock } from './helpers';
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
@@ -33,10 +33,6 @@ async function selectFixtureImage(page: Page): Promise<string> {
 }
 
 test.describe('media picker interactions', () => {
-    test.beforeEach(async ({ page }) => {
-        await login(page, 'admin', 'password');
-    });
-
     test('sets and clears an image block attachment and preview', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
         const imageBlock = await addLoopBlock(page, 'image');

@@ -36,14 +36,13 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     function insertBlockFromTemplate(
         root: HTMLElement,
         templateId: string,
-        placeholder: RegExp,
         options: { focusText?: boolean } = {},
     ): void {
         const templateHtml = tmplHtml(templateId);
         if (!templateHtml) return;
         root.querySelector('.teksttv-empty-state')?.remove();
         const index = root.querySelectorAll(':scope > .teksttv-block').length;
-        root.insertAdjacentHTML('beforeend', templateHtml.replace(placeholder, String(index)));
+        root.insertAdjacentHTML('beforeend', templateHtml.replace(/__INDEX__/g, String(index)));
         const newBlock = root.querySelector(':scope > .teksttv-block:last-of-type');
         if (newBlock instanceof HTMLElement) {
             const body = newBlock.querySelector<HTMLElement>('.teksttv-block-body');
@@ -105,17 +104,17 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addLoopBlock(type: string): void {
             if (!blocksEl) return;
-            insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, /__INDEX__/g);
+            insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`);
         },
 
         addCampaignBlock(): void {
             if (!blocksEl || !opts.campaignAdd) return;
-            insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign', /__INDEX__/g);
+            insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign');
         },
 
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
-            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true });
+            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, { focusText: true });
         },
 
         expandAllBlocks(): void {

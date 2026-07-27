@@ -95,7 +95,7 @@ settings_errors('teksttv');
         // Empty-row templates the workbench clones when a ticker item is added.
         foreach ($ticker_types as $ticker_type => $ticker_meta) : ?>
         <script type="text/html" id="tmpl-teksttv-ticker-<?php echo esc_attr($ticker_type); ?>">
-            <?php AdminPage::render_block_generic('__TINDEX__', ['type' => $ticker_type], 'teksttv_ticker'); ?>
+            <?php AdminPage::render_block_generic('__INDEX__', ['type' => $ticker_type], 'teksttv_ticker'); ?>
         </script>
         <?php endforeach; ?>
 

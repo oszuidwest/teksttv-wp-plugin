@@ -1,5 +1,5 @@
-import { fadeOutRemove, slideToggle, slideUp } from '../../modules/dom';
-import { imageItemHtml } from '../../modules/utils';
+import { slideToggle, slideUp } from '../../modules/dom';
+import { imageItemHtml, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
@@ -65,8 +65,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     const imgItemRm = e.target.closest('.teksttv-remove-image');
     if (imgItemRm && blocksRoot.contains(imgItemRm)) {
         e.preventDefault();
-        const item = imgItemRm.closest('.teksttv-image-item');
-        if (item instanceof HTMLElement) fadeOutRemove(item, 150);
+        removeImageItem(imgItemRm);
         return;
     }
 

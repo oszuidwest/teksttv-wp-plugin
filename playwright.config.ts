@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { ADMIN_STORAGE_STATE } from './tests/e2e/helpers';
 
 /**
  * Browser + API smoke suite for the plugin running inside a real WordPress
@@ -17,6 +18,7 @@ export default defineConfig({
     reporter: 'list',
     use: {
         baseURL: process.env.WP_BASE_URL || 'http://localhost:8888',
+        storageState: ADMIN_STORAGE_STATE,
         trace: 'on-first-retry',
     },
     projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
