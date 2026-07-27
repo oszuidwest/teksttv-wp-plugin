@@ -240,7 +240,11 @@ class AuditPage
     }
 
     /**
-     * Compute stats from an already-fetched posts array.
+     * Calculate modified-output percentages for the supplied posts.
+     *
+     * All percentages use count($posts) as their denominator. render_page()
+     * passes one page, so these values describe that page rather than every post
+     * with AI content.
      *
      * @param list<array{title_status: string, body_status: string}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}

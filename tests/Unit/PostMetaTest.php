@@ -75,10 +75,6 @@ class PostMetaTest extends TestCase
         return false;
     }
 
-    // =========================================================================
-    // Active toggle
-    // =========================================================================
-
     public function test_process_save_saves_active(): void
     {
         $this->setupProcessSave();
@@ -95,10 +91,6 @@ class PostMetaTest extends TestCase
         $this->assertSame('0', $this->findMetaUpdate('_teksttv_active'));
     }
 
-    // =========================================================================
-    // Feature: custom_title
-    // =========================================================================
-
     public function test_process_save_skips_title_when_feature_disabled(): void
     {
         $this->setupProcessSave([]);
@@ -114,10 +106,6 @@ class PostMetaTest extends TestCase
 
         $this->assertSame('Custom', $this->findMetaUpdate('_teksttv_title'));
     }
-
-    // =========================================================================
-    // Feature: scheduling
-    // =========================================================================
 
     public function test_process_save_skips_scheduling_when_feature_disabled(): void
     {
@@ -161,10 +149,6 @@ class PostMetaTest extends TestCase
         $this->assertSame(['1', '5'], $this->findMetaUpdate('_teksttv_days'));
     }
 
-    // =========================================================================
-    // Feature: extra_images
-    // =========================================================================
-
     public function test_process_save_skips_images_when_feature_disabled(): void
     {
         $this->setupProcessSave([]);
@@ -189,10 +173,6 @@ class PostMetaTest extends TestCase
         $images = $this->findMetaUpdate('_teksttv_images');
         $this->assertSame([10], array_values($images));
     }
-
-    // =========================================================================
-    // Feature: sidebar_image - three states
-    // =========================================================================
 
     public function test_process_save_sidebar_custom_id(): void
     {
@@ -228,10 +208,7 @@ class PostMetaTest extends TestCase
         $this->assertFalse($this->wasMetaDeleted('_teksttv_sidebar_image'));
     }
 
-    // =========================================================================
-    // Guard clauses (save_meta level, still using $_POST)
-    // =========================================================================
-
+    // Guard clauses (save_meta level, still using $_POST).
     public function test_save_meta_returns_early_without_nonce(): void
     {
         $_POST = [];
@@ -281,10 +258,7 @@ class PostMetaTest extends TestCase
         $this->assertNotEmpty($this->metaUpdates);
     }
 
-    // =========================================================================
-    // Broader slides-cache invalidation on editorial changes
-    // =========================================================================
-
+    // Broader slides-cache invalidation on editorial changes.
     public function test_invalidate_on_terms_change_clears_cache_for_post(): void
     {
         Functions\expect('get_post_type')->with(10)->andReturn('post');

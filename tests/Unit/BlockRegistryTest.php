@@ -10,7 +10,7 @@ class BlockRegistryTest extends TestCase
     {
         parent::setUp();
 
-        // Reset the static $types array before each test
+        // Reset the static $types array before each test.
         $ref = new \ReflectionProperty(BlockRegistry::class, 'types');
         $ref->setValue(null, []);
     }
@@ -33,10 +33,6 @@ class BlockRegistryTest extends TestCase
         ]);
     }
 
-    // =========================================================================
-    // register() + get()
-    // =========================================================================
-
     public function test_register_and_get(): void
     {
         $this->registerTestBlock();
@@ -51,10 +47,6 @@ class BlockRegistryTest extends TestCase
     {
         $this->assertNull(BlockRegistry::get('nonexistent'));
     }
-
-    // =========================================================================
-    // all()
-    // =========================================================================
 
     public function test_all_returns_all_types(): void
     {
@@ -74,7 +66,7 @@ class BlockRegistryTest extends TestCase
         $this->registerTestBlock('both_block', 'both');
 
         $loop = BlockRegistry::all('loop');
-        $this->assertCount(2, $loop); // loop_block + both_block
+        $this->assertCount(2, $loop);
         $this->assertArrayHasKey('loop_block', $loop);
         $this->assertArrayHasKey('both_block', $loop);
         $this->assertArrayNotHasKey('ticker_block', $loop);
@@ -87,14 +79,10 @@ class BlockRegistryTest extends TestCase
         $this->registerTestBlock('both_block', 'both');
 
         $ticker = BlockRegistry::all('ticker');
-        $this->assertCount(2, $ticker); // ticker_block + both_block
+        $this->assertCount(2, $ticker);
         $this->assertArrayHasKey('ticker_block', $ticker);
         $this->assertArrayHasKey('both_block', $ticker);
     }
-
-    // =========================================================================
-    // save()
-    // =========================================================================
 
     public function test_save_returns_sanitized_data_with_type(): void
     {
@@ -118,10 +106,6 @@ class BlockRegistryTest extends TestCase
 
         $this->assertSame('test_block', $result['type']);
     }
-
-    // =========================================================================
-    // build()
-    // =========================================================================
 
     public function test_build_returns_slides_array(): void
     {

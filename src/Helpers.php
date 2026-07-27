@@ -398,13 +398,11 @@ class Helpers
         $campaigns = self::get_campaigns();
 
         return array_filter($campaigns, function ($campaign) use ($channel) {
-            // Must be assigned to this channel
             $channels = $campaign['channels'] ?? [];
             if (!in_array($channel, $channels, true)) {
                 return false;
             }
 
-            // Must pass date range + day-of-week scheduling
             return self::is_block_scheduled($campaign);
         });
     }

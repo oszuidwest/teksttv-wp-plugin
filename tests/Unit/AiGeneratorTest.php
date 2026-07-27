@@ -34,10 +34,6 @@ class AiGeneratorTest extends TestCase
         ];
     }
 
-    // =========================================================================
-    // within_rate_limit()
-    // =========================================================================
-
     public function test_within_rate_limit_uses_atomic_incr_with_object_cache(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
@@ -97,10 +93,6 @@ class AiGeneratorTest extends TestCase
         $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
     }
 
-    // =========================================================================
-    // validate_ai_output()
-    // =========================================================================
-
     public function test_validate_ai_output_title_within_limit_returns_empty(): void
     {
         $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
@@ -145,15 +137,10 @@ class AiGeneratorTest extends TestCase
     public function test_validate_ai_output_body_under_minimum_returns_retry(): void
     {
         $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
-        // min = ceil(100 * 0.2) = 20
-
+        // min = ceil(100 * 0.2) = 20.
         $result = AiGenerator::validate_ai_output('body', 'slechts drie woorden', $prompts, false);
         $this->assertSame('retry', $result);
     }
-
-    // =========================================================================
-    // prepare_content()
-    // =========================================================================
 
     public function test_prepare_content_strips_scripts(): void
     {
@@ -192,10 +179,6 @@ class AiGeneratorTest extends TestCase
         $this->assertStringNotContainsString('color', $result);
         $this->assertStringContainsString('Visible', $result);
     }
-
-    // =========================================================================
-    // build_ai_prompt()
-    // =========================================================================
 
     public function test_build_ai_prompt_title_field(): void
     {
@@ -243,7 +226,7 @@ class AiGeneratorTest extends TestCase
         $long_text = str_repeat('a', 5000);
         [$user_prompt] = AiGenerator::build_ai_prompt('title', 'Titel', $long_text, $prompts);
 
-        // Title prompt truncates to 2000 chars
+        // Title prompt truncates to 2000 chars.
         $this->assertLessThanOrEqual(2100, mb_strlen($user_prompt));
     }
 
@@ -260,13 +243,9 @@ class AiGeneratorTest extends TestCase
         $long_text = str_repeat('a', 8000);
         [$user_prompt] = AiGenerator::build_ai_prompt('body', 'Titel', $long_text, $prompts);
 
-        // Body prompt truncates to 4000 chars
+        // Body prompt truncates to 4000 chars.
         $this->assertLessThanOrEqual(4100, mb_strlen($user_prompt));
     }
-
-    // =========================================================================
-    // get_region_prefix()
-    // =========================================================================
 
     public function test_get_region_prefix_returns_empty_when_no_taxonomy_configured(): void
     {
@@ -336,14 +315,10 @@ class AiGeneratorTest extends TestCase
         $this->assertSame('', $result);
     }
 
-    // =========================================================================
-    // validate_ai_output() - body at exact boundaries
-    // =========================================================================
-
     public function test_validate_ai_output_body_at_exact_minimum_returns_empty(): void
     {
         $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
-        // min = ceil(100 * 0.2) = 20 words
+        // min = ceil(100 * 0.2) = 20 words.
         $content = implode(' ', array_fill(0, 20, 'woord'));
 
         $result = AiGenerator::validate_ai_output('body', $content, $prompts, false);
@@ -377,10 +352,6 @@ class AiGeneratorTest extends TestCase
         $this->assertSame('', $result);
     }
 
-    // =========================================================================
-    // validate_ai_output() / build_ai_prompt() - photo word limit
-    // =========================================================================
-
     public function test_validate_ai_output_uses_photo_word_limit_when_has_photo(): void
     {
         $prompts = ['title_char_limit' => 40, 'word_limit' => 100, 'word_limit_photo' => 25];
@@ -412,10 +383,6 @@ class AiGeneratorTest extends TestCase
         [, $system_no_photo] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $prompts, false);
         $this->assertStringContainsString('tussen de 20 en 100 woorden', $system_no_photo);
     }
-
-    // =========================================================================
-    // generate_single_field() - with mocked AI
-    // =========================================================================
 
     public function test_generate_single_field_rejects_empty_output_on_last_attempt(): void
     {
@@ -451,7 +418,6 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_returns_body_with_wpautop(): void
     {
-        // Mock wp_ai_client_prompt chain
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
         $builder->shouldReceive('using_max_tokens')->andReturnSelf();
@@ -506,7 +472,7 @@ class AiGeneratorTest extends TestCase
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
         $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        // First attempt: too many words, second attempt: still too many
+        // First attempt: too many words, second attempt: still too many.
         $builder->shouldReceive('generate_text')
             ->twice()
             ->andReturn(implode(' ', array_fill(0, 50, 'woord')));
@@ -522,14 +488,9 @@ class AiGeneratorTest extends TestCase
             self::aiPrompts(['word_limit' => 10, 'word_limit_photo' => 10, 'max_retries' => 2])
         );
 
-        // Should have a warning because both attempts exceeded limit
         $this->assertArrayHasKey('warning', $result);
         $this->assertNotSame('retry', $result['warning']);
     }
-
-    // =========================================================================
-    // generate_for_post()
-    // =========================================================================
 
     /**
      * @param array<string, mixed> $overrides
@@ -665,10 +626,6 @@ class AiGeneratorTest extends TestCase
         $this->assertSame(500, $result->get_error_data()['status']);
         $this->assertStringContainsString('API timeout', $result->get_error_message());
     }
-
-    // =========================================================================
-    // prepare_content() - additional edge cases
-    // =========================================================================
 
     public function test_prepare_content_handles_br_tags(): void
     {

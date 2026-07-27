@@ -1,7 +1,6 @@
 import type { Slide } from '../../modules/types';
 import { previewSlideUrl } from '../../modules/utils';
 
-/** Volledige scherm-overlay voor preview navigeren met pijlen/Escape. */
 export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, initialIndex: number): void {
     if (!slides.length) return;
     let overlayIndex = initialIndex;

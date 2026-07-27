@@ -55,10 +55,6 @@ class RestApiTest extends TestCase
         Functions\when('set_transient')->justReturn(true);
     }
 
-    // =========================================================================
-    // generate_content() - feature toggle enforcement
-    // =========================================================================
-
     public function test_generate_content_returns_403_when_ai_generate_disabled(): void
     {
         // ai_generate is absent from the enabled features list.
@@ -70,10 +66,6 @@ class RestApiTest extends TestCase
 
         $this->assertSame(403, $response->get_status());
     }
-
-    // =========================================================================
-    // generate_content() - orchestration and status mapping
-    // =========================================================================
 
     public function test_generate_content_returns_503_when_ai_unsupported(): void
     {
@@ -120,8 +112,7 @@ class RestApiTest extends TestCase
         Functions\when('get_post')->justReturn(self::makePost());
         Functions\when('get_current_user_id')->justReturn(7);
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
-        Functions\when('get_transient')->justReturn(10); // default rate_limit is 10
-
+        Functions\when('get_transient')->justReturn(10); // default rate_limit is 10.
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
         $this->assertSame(429, $response->get_status());
@@ -213,10 +204,6 @@ class RestApiTest extends TestCase
         $this->assertArrayNotHasKey('warning', $data);
     }
 
-    // =========================================================================
-    // validate_channel()
-    // =========================================================================
-
     public function test_validate_channel_returns_true_for_valid_channel(): void
     {
         Functions\expect('get_option')->with('teksttv_channels', [])->andReturn([
@@ -242,10 +229,6 @@ class RestApiTest extends TestCase
 
         $this->assertTrue(RestApi::validate_channel('tv1'));
     }
-
-    // =========================================================================
-    // invalidate_slides_cache()
-    // =========================================================================
 
     public function test_invalidate_slides_cache_single_channel(): void
     {

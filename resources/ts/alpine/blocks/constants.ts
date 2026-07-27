@@ -1,4 +1,4 @@
-/** Loop / campaigns block workbench (+ optional ticker Sortable). */
+/** Which parts of the shared workbench a page uses: the loop page has a ticker, campaigns have groups. */
 export type WorkbenchOpts = {
     ticker: boolean;
     groups: boolean;

@@ -110,7 +110,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $post_id = get_the_ID();
 
-        // Build fallback image data (post thumbnail with caption/attribution)
         $fallback_image = null;
         if ($post_id) {
             $thumb_id = get_post_thumbnail_id($post_id);
@@ -119,7 +118,6 @@ class PostMeta
             }
         }
 
-        // Build custom sidebar image data (for JS preview of already saved custom images)
         $custom_image = null;
         if ($post_id) {
             $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
@@ -128,7 +126,8 @@ class PostMeta
             }
         }
 
-        // Calculate default end date using the same start date shown in the form
+        // Derive from the same start date the form renders, so the JS reset button
+        // restores the value the editor actually sees.
         $saved_start = $post_id ? get_post_meta($post_id, '_teksttv_date_start', true) : '';
         if (empty($saved_start) && $post_id) {
             $saved_start = self::default_start_date(get_post($post_id));
@@ -140,7 +139,7 @@ class PostMeta
 
         // wp_json_encode via an inline script instead of wp_localize_script:
         // the latter casts every scalar to a string, which would make the
-        // number/boolean types in TeksttvPostConfig (types.ts) lies.
+        // number/boolean types in TeksttvPostConfig (types.ts) inaccurate.
         $config = [
             'previewUrl' => $preview_url,
             'restNonce' => wp_create_nonce('wp_rest'),
@@ -198,7 +197,6 @@ class PostMeta
             $images = [];
         }
 
-        // Default dates for new/unsaved posts
         if (empty($date_start) && empty($date_end)) {
             $date_start = self::default_start_date($post);
             $date_end = self::default_end_date($date_start);
@@ -207,7 +205,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $ai_enabled = Helpers::ai_supported();
 
-        // Build TinyMCE toolbar and valid elements based on features
         $toolbar_items = [];
         if (Helpers::has_feature('bold')) {
             $toolbar_items[] = 'bold';
@@ -273,7 +270,6 @@ class PostMeta
             return;
         }
 
-        // Sanitize POST data
         $data = [
             'active' => isset($_POST['teksttv_active']),
             'title' => sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? '')),
@@ -302,15 +298,14 @@ class PostMeta
      */
     public static function process_save(int $post_id, array $data): void
     {
-        // Active toggle
         update_post_meta($post_id, '_teksttv_active', $data['active'] ? '1' : '0');
 
-        // Title override (only save if feature enabled)
         if (Helpers::has_feature('custom_title')) {
             update_post_meta($post_id, '_teksttv_title', $data['title'] ?? '');
         }
 
-        // Content - strip tags that are disabled by features
+        // Disabled formatting features must not survive in stored content, even
+        // when the markup was pasted or produced before the feature was turned off.
         $allowed_tags = ['p' => [], 'br' => []];
         if (Helpers::has_feature('bold')) {
             $allowed_tags['strong'] = [];
@@ -331,7 +326,6 @@ class PostMeta
         $content = wp_kses($data['content'] ?? '', $allowed_tags);
         update_post_meta($post_id, '_teksttv_content', $content);
 
-        // Scheduling (only save if feature enabled)
         if (Helpers::has_feature('scheduling')) {
             update_post_meta($post_id, '_teksttv_date_start', $data['date_start'] ?? '');
             update_post_meta($post_id, '_teksttv_date_end', $data['date_end'] ?? '');
@@ -341,14 +335,14 @@ class PostMeta
             update_post_meta($post_id, '_teksttv_days', $days);
         }
 
-        // Extra images (only save if feature enabled)
         if (Helpers::has_feature('extra_images')) {
             $images = array_filter($data['images'] ?? []);
             update_post_meta($post_id, '_teksttv_images', $images);
         }
 
-        // Sidebar image (only save if feature enabled)
         if (Helpers::has_feature('sidebar_image')) {
+            // '0' suppresses the sidebar image entirely; an empty value falls
+            // back to the automatic category/thumbnail resolution.
             $sidebar_raw = $data['sidebar_image'] ?? '';
             if ($sidebar_raw === '0') {
                 update_post_meta($post_id, '_teksttv_sidebar_image', '0');

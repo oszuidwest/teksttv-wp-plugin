@@ -101,10 +101,6 @@ class AdminPageTest extends TestCase
         $this->assertSame('tv2', $result[1]['slug']);
     }
 
-    // =========================================================================
-    // sanitize_channels()
-    // =========================================================================
-
     public function test_sanitize_channels_valid_input(): void
     {
         $input = [
@@ -167,7 +163,7 @@ class AdminPageTest extends TestCase
         $result = AdminPage::sanitize_channels($input);
 
         $this->assertCount(1, $result);
-        // sanitize_key lowercases and strips special chars
+        // sanitize_key lowercases and strips special chars.
         $this->assertSame('tv-1test', $result[0]['slug']);
     }
 

@@ -91,7 +91,7 @@ class AiGenerator
             if ($word_count < $min_words) {
                 return new \WP_Error(
                     'teksttv_input_too_short',
-                    // translators: %1$d: actual word count, %2$d: minimum required words
+                    /* translators: %1$d: actual word count, %2$d: minimum required words */
                     sprintf(__('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', 'teksttv-wp-plugin'), $word_count, $min_words),
                     ['status' => 422]
                 );
@@ -105,7 +105,7 @@ class AiGenerator
             if (is_wp_error($result)) {
                 return new \WP_Error(
                     'teksttv_generation_failed',
-                    // translators: %s: error message from AI provider
+                    /* translators: %s: error message from AI provider */
                     sprintf(__('AI-generatie mislukt: %s', 'teksttv-wp-plugin'), $result->get_error_message()),
                     ['status' => 500]
                 );
@@ -116,7 +116,8 @@ class AiGenerator
             }
         }
 
-        // Save AI output as post meta for audit trail (before prefix, for clean comparison)
+        // Store the raw output, before the region prefix, so the audit page diffs
+        // what the model produced against what the editor kept.
         if (isset($fields['title'])) {
             update_post_meta($post->ID, '_teksttv_ai_title', $fields['title']);
         }
@@ -316,10 +317,11 @@ class AiGenerator
      */
     public static function prepare_content(string $html): string
     {
-        // Remove script, style, and noscript tags with their content
+        // wp_strip_all_tags() below drops script/style bodies but not noscript,
+        // whose fallback text would otherwise reach the model as article prose.
         $text = preg_replace('/<(script|style|noscript)[^>]*>.*?<\/\1>/si', '', $html);
 
-        // Convert block elements to newlines for readability
+        // Keep block boundaries as newlines so paragraphs do not run together.
         $text = preg_replace('/<\/(p|div|h[1-6]|li|tr|blockquote)>/i', "\n", $text);
         $text = preg_replace('/<br\s*\/?>/i', "\n", $text);
 

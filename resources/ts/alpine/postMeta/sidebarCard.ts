@@ -1,4 +1,7 @@
-/** Sidebar-afbeeldingskiezer: alleen staat/actieve kaart en verborgen veld. Preview herbereken extern. */
+/**
+ * Select a sidebar image card and sync the hidden field: '' uses automatic image
+ * resolution, while '0' suppresses the image (see PostMeta::process_save).
+ */
 export function applySidebarCardState(state: string, refreshPreview: () => void): void {
     for (const c of document.querySelectorAll('.teksttv-image-card')) {
         c.classList.remove('is-active');

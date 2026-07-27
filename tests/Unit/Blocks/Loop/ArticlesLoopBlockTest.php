@@ -573,11 +573,8 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame([], BuildContext::get_seen_post_ids());
     }
 
-    // =========================================================================
     // Features are runtime-authoritative - disabling one stops its stored meta
     // from acting, even though the values remain in the database.
-    // =========================================================================
-
     public function test_build_ignores_custom_title_when_feature_disabled(): void
     {
         $post = (object) ['ID' => 10];
@@ -585,7 +582,7 @@ class ArticlesLoopBlockTest extends TestCase
             '10:_teksttv_title' => 'Aangepaste kop',
             '10:_teksttv_content' => 'Tekst',
             '10:_teksttv_sidebar_image' => '0',
-        ], ['sidebar_image', 'page_separator']); // custom_title disabled
+        ], ['sidebar_image', 'page_separator']);
 
         Functions\expect('get_the_title')->andReturn('Echte titel');
 
@@ -605,7 +602,7 @@ class ArticlesLoopBlockTest extends TestCase
             '10:_teksttv_date_end' => '2026-05-31',
             '10:_teksttv_content' => 'Tekst',
             '10:_teksttv_sidebar_image' => '0',
-        ], ['sidebar_image', 'page_separator']); // scheduling disabled
+        ], ['sidebar_image', 'page_separator']);
 
         Functions\expect('get_the_title')->andReturn('Titel');
 
@@ -617,7 +614,7 @@ class ArticlesLoopBlockTest extends TestCase
 
     public function test_build_omits_date_meta_query_when_scheduling_disabled(): void
     {
-        $this->setupArticleSlides([], [], ['page_separator']); // scheduling disabled
+        $this->setupArticleSlides([], [], ['page_separator']);
 
         ArticlesLoopBlock::build(['count' => 3], 'tv1');
 
@@ -635,7 +632,7 @@ class ArticlesLoopBlockTest extends TestCase
             '10:_teksttv_content' => 'Tekst',
             '10:_teksttv_images' => [50, 51],
             '10:_teksttv_sidebar_image' => '0',
-        ], ['sidebar_image', 'page_separator']); // extra_images disabled
+        ], ['sidebar_image', 'page_separator']);
 
         Functions\expect('get_the_title')->andReturn('Titel');
 
@@ -655,7 +652,7 @@ class ArticlesLoopBlockTest extends TestCase
         $this->setupArticleSlides([$post], [
             '10:_teksttv_content' => 'Tekst',
             '10:_teksttv_sidebar_image' => '0',
-        ], ['page_separator']); // sidebar_image disabled
+        ], ['page_separator']);
 
         Functions\expect('get_the_title')->andReturn('Titel');
         Functions\expect('get_the_terms')->with(10, 'category')->andReturn(false);

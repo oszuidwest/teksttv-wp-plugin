@@ -33,7 +33,6 @@ defined('ABSPATH') || exit;
     </div>
 
     <div class="teksttv-fields" id="teksttv-fields">
-        <!-- Two-column layout: editor left, preview right -->
         <div class="teksttv-editor-layout">
             <div class="teksttv-editor-main">
                 <?php if ($ai_enabled) : ?>
@@ -47,7 +46,6 @@ defined('ABSPATH') || exit;
                 <?php endif; ?>
 
                 <?php if (Helpers::has_feature('custom_title')) : ?>
-                <!-- Title override -->
                 <div class="teksttv-meta-section">
                     <div class="teksttv-section-header">
                         <label for="teksttv-title" class="teksttv-section-label"><?php esc_html_e('Kop', 'teksttv-wp-plugin'); ?></label>
@@ -64,7 +62,6 @@ defined('ABSPATH') || exit;
                 </div>
                 <?php endif; ?>
 
-                <!-- Content -->
                 <div class="teksttv-meta-section teksttv-content-wrap">
                     <div class="teksttv-section-header">
                         <label class="teksttv-section-label"><?php esc_html_e('Tekst voor Tekst TV', 'teksttv-wp-plugin'); ?></label>
@@ -114,7 +111,6 @@ defined('ABSPATH') || exit;
                 </div>
 
                 <?php if (Helpers::has_feature('sidebar_image')) : ?>
-                <!-- Sidebar image -->
                 <div class="teksttv-meta-section teksttv-sidebar-image-section">
                     <span class="teksttv-section-label"><?php esc_html_e('Sidebar afbeelding', 'teksttv-wp-plugin'); ?></span>
                     <?php
@@ -153,7 +149,6 @@ defined('ABSPATH') || exit;
                 <?php endif; ?>
 
                 <?php if (Helpers::has_feature('extra_images')) : ?>
-                <!-- Extra images -->
                 <div class="teksttv-meta-section teksttv-images-section">
                     <h4><?php esc_html_e('Extra afbeeldingen', 'teksttv-wp-plugin'); ?></h4>
                     <p class="description"><?php esc_html_e('Worden als aparte fullscreen image-slides getoond na de tekst.', 'teksttv-wp-plugin'); ?></p>
@@ -174,7 +169,6 @@ defined('ABSPATH') || exit;
                 <?php endif; ?>
 
                 <?php if (Helpers::has_feature('scheduling')) : ?>
-                <!-- Scheduling -->
                 <div class="teksttv-meta-section teksttv-collapsible" x-data="{ planOpen: false }">
                     <button type="button" class="teksttv-collapsible-toggle" @click.prevent="planOpen = !planOpen" :aria-expanded="planOpen">
                         <span class="teksttv-section-label"><?php esc_html_e('Planning', 'teksttv-wp-plugin'); ?></span>
@@ -209,7 +203,6 @@ defined('ABSPATH') || exit;
                 <?php endif; ?>
             </div>
 
-            <!-- Preview sidebar -->
             <div class="teksttv-editor-preview" id="teksttv-preview-wrap">
                 <div class="teksttv-preview-header">
                     <span class="teksttv-section-label"><?php esc_html_e('Preview', 'teksttv-wp-plugin'); ?></span>
@@ -225,7 +218,7 @@ defined('ABSPATH') || exit;
                         <button type="button" class="teksttv-preview-enlarge-btn" id="teksttv-preview-enlarge" title="Vergroot preview" @click.prevent="openPreviewOverlay()"><span class="dashicons dashicons-editor-expand"></span></button>
                     </div>
                     <div class="teksttv-preview-thumbs" id="teksttv-preview-thumbs" @click="onPreviewThumbClick($event)">
-                        <!-- Filled by JS: mini slide thumbnails -->
+                        <?php // Thumbnails are rendered client-side by previewThumbnails.ts. ?>
                     </div>
                 <?php else : ?>
                     <div class="teksttv-no-preview">

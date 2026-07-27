@@ -22,7 +22,6 @@ export function hasSidebarPhoto(config: TeksttvPostConfig | undefined, customIma
     return resolveSidebarImage(config, customImageData) !== null;
 }
 
-/** Leest kop, body en afbeeldingslijst uit de DOM naar preview-slides. */
 export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, customImageData: ImageData | null): Slide[] {
     const customTitle = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
     const postTitle = (

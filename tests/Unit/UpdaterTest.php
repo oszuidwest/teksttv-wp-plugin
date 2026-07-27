@@ -7,10 +7,6 @@ use TekstTV\Updater;
 
 class UpdaterTest extends TestCase
 {
-    // =========================================================================
-    // should_check_for_updates() - request-context gate
-    // =========================================================================
-
     public function test_gate_allows_admin_requests(): void
     {
         Functions\expect('is_admin')->once()->andReturn(true);
@@ -34,10 +30,6 @@ class UpdaterTest extends TestCase
 
         $this->assertFalse(Updater::should_check_for_updates());
     }
-
-    // =========================================================================
-    // init() - early return before the update checker is constructed
-    // =========================================================================
 
     public function test_init_skips_on_frontend_requests(): void
     {

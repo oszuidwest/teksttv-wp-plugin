@@ -6,10 +6,6 @@ use TekstTV\AuditPage;
 
 class AuditPageTest extends TestCase
 {
-    // =========================================================================
-    // compare()
-    // =========================================================================
-
     public function test_compare_returns_no_ai_when_ai_version_empty(): void
     {
         $result = AuditPage::compare('', 'current text');
@@ -39,10 +35,6 @@ class AuditPageTest extends TestCase
         $result = AuditPage::compare('', '');
         $this->assertSame('no_ai', $result);
     }
-
-    // =========================================================================
-    // compute_stats()
-    // =========================================================================
 
     public function test_compute_stats_returns_zeros_for_empty_array(): void
     {

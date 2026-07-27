@@ -9,7 +9,6 @@ defined('ABSPATH') || exit;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Define WP constants used throughout the plugin
 if (!defined('TEKSTTV_PLUGIN_DIR')) {
     define('TEKSTTV_PLUGIN_DIR', dirname(__DIR__) . '/');
 }

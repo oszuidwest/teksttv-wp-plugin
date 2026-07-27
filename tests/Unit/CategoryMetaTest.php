@@ -7,15 +7,10 @@ use TekstTV\CategoryMeta;
 
 class CategoryMetaTest extends TestCase
 {
-    // =========================================================================
-    // save_term_meta()
-    // =========================================================================
-
     public function test_save_term_meta_returns_early_without_nonce(): void
     {
         $_POST = [];
 
-        // Should not call update_term_meta or delete_term_meta
         Functions\expect('update_term_meta')->never();
         Functions\expect('delete_term_meta')->never();
 

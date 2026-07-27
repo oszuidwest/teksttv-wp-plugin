@@ -20,7 +20,6 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
     <form method="post" action="options.php" class="teksttv-settings-form">
         <?php settings_fields('teksttv_settings'); ?>
 
-        <!-- Channels -->
         <div class="teksttv-card">
             <h3><?php esc_html_e('Kanalen', 'teksttv-wp-plugin'); ?></h3>
             <p class="description"><?php esc_html_e('Beheer de kanalen waarvoor Tekst TV slides worden gegenereerd. Elk kanaal krijgt een eigen loop en API endpoint.', 'teksttv-wp-plugin'); ?></p>
@@ -47,7 +46,6 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
             </p>
         </div>
 
-        <!-- Features -->
         <div class="teksttv-card">
             <h3><?php esc_html_e('Post editor features', 'teksttv-wp-plugin'); ?></h3>
             <p class="description"><?php esc_html_e('Bepaal welke opties beschikbaar zijn bij het bewerken van een post.', 'teksttv-wp-plugin'); ?></p>
@@ -101,7 +99,6 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
             </fieldset>
         </div>
 
-        <!-- Slide duur -->
         <div class="teksttv-card">
             <h3><?php esc_html_e('Slide duur', 'teksttv-wp-plugin'); ?></h3>
             <p class="description"><?php esc_html_e('Standaard weergaveduur per slide type. Kan per post worden overschreven.', 'teksttv-wp-plugin'); ?></p>
@@ -127,7 +124,6 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
             </table>
         </div>
 
-        <!-- Taxonomies -->
         <div class="teksttv-card">
             <h3><?php esc_html_e('Taxonomy filters', 'teksttv-wp-plugin'); ?></h3>
             <p class="description"><?php esc_html_e('Kies welke taxonomies beschikbaar zijn als filter in de loop-blokken.', 'teksttv-wp-plugin'); ?></p>
@@ -141,7 +137,6 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
             </fieldset>
         </div>
 
-        <!-- Standaardwaarden -->
         <div class="teksttv-card">
             <h3><?php esc_html_e('Standaardwaarden', 'teksttv-wp-plugin'); ?></h3>
             <p class="description"><?php esc_html_e('Standaard instellingen voor nieuwe Tekst TV items op posts.', 'teksttv-wp-plugin'); ?></p>
@@ -165,7 +160,6 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
             </table>
         </div>
 
-        <!-- Weather -->
         <div class="teksttv-card">
             <h3><?php esc_html_e('Weer', 'teksttv-wp-plugin'); ?></h3>
             <p class="description"><?php esc_html_e('OpenWeather API configuratie voor weer-slides.', 'teksttv-wp-plugin'); ?></p>
@@ -180,7 +174,6 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
             </table>
         </div>
 
-        <!-- Preview -->
         <div class="teksttv-card">
             <h3><?php esc_html_e('Preview', 'teksttv-wp-plugin'); ?></h3>
             <p class="description"><?php esc_html_e('Configureer de live preview die getoond wordt bij het bewerken van posts.', 'teksttv-wp-plugin'); ?></p>

@@ -2,7 +2,10 @@ import type { ImageData, TeksttvPostConfig, WPMediaFrame } from '../../modules/t
 import { pickSingleImage } from '../../modules/wpMedia';
 import { applySidebarCardState } from './sidebarCard';
 
-/** Custom sidebar-afbeelding via media library + optionele REST-metadata. */
+/**
+ * Pick a custom sidebar image. The REST endpoint supplies the normalized slide metadata;
+ * the attachment URL and caption are the fallback when that request fails.
+ */
 export function createSidebarCustomPicker(
     config: TeksttvPostConfig | undefined,
     setCustomImageData: (data: ImageData | null) => void,

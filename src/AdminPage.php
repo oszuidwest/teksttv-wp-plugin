@@ -54,7 +54,6 @@ class AdminPage
 
     public static function register_menu(): void
     {
-        // Main menu item - first loop channel or settings if no channels
         $channels = Helpers::get_channels();
         $first_channel = $channels[0]['slug'] ?? '';
 
@@ -68,7 +67,6 @@ class AdminPage
             30
         );
 
-        // Submenu per channel loop
         foreach ($channels as $ch) {
             $loop_label = count($channels) > 1 ? sprintf(/* translators: %s: channel label */ __('Loop: %s', 'teksttv-wp-plugin'), $ch['label']) : __('Loop', 'teksttv-wp-plugin');
             add_submenu_page(
@@ -81,7 +79,6 @@ class AdminPage
             );
         }
 
-        // Settings submenu
         add_submenu_page(
             'teksttv',
             __('Instellingen', 'teksttv-wp-plugin'),
@@ -91,7 +88,6 @@ class AdminPage
             [self::class, 'render_settings_page']
         );
 
-        // AI prompts submenu (separate capability)
         if (Helpers::has_feature('ai_generate')) {
             add_submenu_page(
                 'teksttv',
@@ -103,13 +99,13 @@ class AdminPage
             );
         }
 
-        // Remove the auto-generated duplicate submenu
+        // add_menu_page() auto-adds a first submenu item duplicating the parent.
         remove_submenu_page('teksttv', 'teksttv');
     }
 
     public static function register_settings(): void
     {
-        // Align the save capability (checked by options.php) with the view capability of each page
+        // Align the save capability (checked by options.php) with the view capability of each page.
         add_filter('option_page_capability_teksttv_settings', static fn() => 'manage_teksttv');
         add_filter('option_page_capability_teksttv_content', static fn() => 'manage_teksttv_content');
 
@@ -272,7 +268,6 @@ class AdminPage
 
     public static function enqueue_assets(string $hook): void
     {
-        // Load on any Tekst TV admin page
         if (!str_contains($hook, 'teksttv')) {
             return;
         }
@@ -304,14 +299,10 @@ class AdminPage
             return substr($page, strlen('teksttv-loop-'));
         }
 
-        // Fallback: first channel (for the main teksttv page)
+        // Fallback: first channel (for the main teksttv page).
         $channels = Helpers::get_channels();
         return $channels[0]['slug'] ?? '';
     }
-
-    // =========================================================================
-    // Loop page
-    // =========================================================================
 
     public static function render_loop_page(): void
     {
@@ -323,7 +314,6 @@ class AdminPage
             return;
         }
 
-        // Handle loop save via POST
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified in handle_loop_save()
         if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['teksttv_loop_nonce'])) {
             self::handle_loop_save();
@@ -340,10 +330,6 @@ class AdminPage
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
     }
 
-    // =========================================================================
-    // Settings page (channels + preview URL)
-    // =========================================================================
-
     public static function render_settings_page(): void
     {
         $channels = Helpers::get_channels();
@@ -354,10 +340,6 @@ class AdminPage
         include TEKSTTV_PLUGIN_DIR . 'src/views/settings-page.php';
     }
 
-    // =========================================================================
-    // AI Settings page
-    // =========================================================================
-
     public static function render_prompts_page(): void
     {
         $prompts = Helpers::get_ai_prompts();
@@ -366,10 +348,6 @@ class AdminPage
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/prompts-page.php';
     }
-
-    // =========================================================================
-    // Block rendering
-    // =========================================================================
 
     /**
      * Render a loop or ticker block using the registry.
@@ -461,10 +439,6 @@ class AdminPage
         </div>
         <?php
     }
-
-    // =========================================================================
-    // Save handler
-    // =========================================================================
 
     private static function handle_loop_save(): void
     {

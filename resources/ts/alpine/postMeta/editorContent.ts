@@ -1,4 +1,4 @@
-/** Tekst-TV editor textarea of TinyMCE-instantie. */
+/** Content of the Tekst TV editor, from TinyMCE when visible and the raw textarea otherwise. */
 export function getTeksttvEditorHtml(): string {
     const editor = typeof tinymce !== 'undefined' ? tinymce?.get('teksttv_content') : null;
     if (editor && !editor.isHidden()) {

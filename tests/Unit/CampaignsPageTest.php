@@ -7,10 +7,6 @@ use TekstTV\Helpers;
 
 class CampaignsPageTest extends TestCase
 {
-    // =========================================================================
-    // sanitize_groups() - stable ids survive renames
-    // =========================================================================
-
     public function test_sanitize_groups_preserves_submitted_id_on_rename(): void
     {
         // A rename keeps the hidden id, so references to the group stay intact.
