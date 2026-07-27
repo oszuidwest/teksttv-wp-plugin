@@ -12,6 +12,7 @@
 defined('ABSPATH') || exit;
 
 update_option('teksttv_channels', [['slug' => 'tv1', 'label' => 'TV 1']]);
+update_option('teksttv_preview_url', 'https://preview.example.test/');
 
 update_option('teksttv_features', [
     'custom_title',
@@ -133,6 +134,7 @@ $teksttv_post_id = $teksttv_existing ? $teksttv_existing[0]->ID : wp_insert_post
 ]);
 update_post_meta($teksttv_post_id, '_teksttv_active', '1');
 update_post_meta($teksttv_post_id, '_teksttv_content', '<p>Slide-inhoud voor de smoke test.</p>');
+update_post_meta($teksttv_post_id, '_teksttv_images', [$teksttv_attachment_id]);
 
 // Clear any cached slides so the REST assertion sees the fixtures.
 delete_transient('teksttv_slides_tv1');

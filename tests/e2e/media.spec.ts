@@ -81,7 +81,7 @@ test.describe('media picker interactions', () => {
         await expect(removeButton).toBeHidden();
     });
 
-    test('adds and removes an extra image in the post meta box', async ({ page }) => {
+    test('keeps extra-image removal in sync with the form and preview', async ({ page }) => {
         test.setTimeout(45_000);
         await page.goto('/wp-admin/edit.php');
         await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
@@ -126,6 +126,21 @@ test.describe('media picker interactions', () => {
 
         const list = page.locator('#teksttv-images-list');
         const items = list.locator(':scope > .teksttv-image-item');
+        const previewCounter = page.locator('#teksttv-preview-counter');
+        const existingItem = items.first();
+
+        await expect(existingItem).toHaveCount(1);
+        await expect(previewCounter).toHaveText('1 / 2');
+
+        const inputDisabledImmediately = await existingItem.locator('.teksttv-remove-image').evaluate((button) => {
+            button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            const input = button.closest('.teksttv-image-item')?.querySelector('input[name="teksttv_images[]"]');
+            return input instanceof HTMLInputElement && input.disabled;
+        });
+        expect(inputDisabledImmediately).toBe(true);
+        await expect(existingItem).toHaveCount(0);
+        await expect(previewCounter).toHaveText('1 / 1');
+
         const addImagesButton = page.locator('#teksttv-add-images');
         await expect(addImagesButton).toBeVisible();
         await addImagesButton.focus();
@@ -141,5 +156,6 @@ test.describe('media picker interactions', () => {
         await addedItem.locator('.teksttv-remove-image').focus();
         await page.keyboard.press('Enter');
         await expect(addedItem).toHaveCount(0);
+        await expect(previewCounter).toHaveText('1 / 1');
     });
 });

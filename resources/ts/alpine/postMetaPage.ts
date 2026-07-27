@@ -184,7 +184,7 @@ export function createPostMetaPage() {
         onExtraImagesClick(e: MouseEvent): void {
             if (!(e.target instanceof Element)) return;
             const tgt = e.target.closest('.teksttv-remove-image');
-            if (tgt) removeImageItem(tgt);
+            if (tgt) removeImageItem(tgt, updatePreview);
         },
 
         activateSidebarCardDefault(): void {

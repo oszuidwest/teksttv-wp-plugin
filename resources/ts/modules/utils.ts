@@ -51,11 +51,19 @@ export function stripTags(html: string): string {
 /**
  * Remove the `.teksttv-image-item` owning a `.teksttv-remove-image` button.
  * The counterpart of `imageItemHtml`: every list built from that markup
- * removes items this way.
+ * removes items this way. Disable form controls before the fade so a save
+ * during the animation cannot submit the removed image.
  */
-export function removeImageItem(button: Element): void {
+export function removeImageItem(button: Element, onRemoved?: () => void): void {
     const item = button.closest('.teksttv-image-item');
-    if (item instanceof HTMLElement) fadeOutRemove(item, 150);
+    if (!(item instanceof HTMLElement)) return;
+
+    item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+        'input, select, textarea',
+    ).forEach((control) => {
+        control.disabled = true;
+    });
+    fadeOutRemove(item, 150, onRemoved);
 }
 
 /** HTML fragment for a removable image item in an image list. */
