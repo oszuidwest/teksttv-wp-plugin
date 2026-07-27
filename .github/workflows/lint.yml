@@ -36,6 +36,9 @@ permissions:
 
 jobs:
   lint:
+    permissions:
+      contents: read
+      pull-requests: write
     uses: oszuidwest/.github-templates/.github/workflows/wp-ci.yml@v2
 
   test:
