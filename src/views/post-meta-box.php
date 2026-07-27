@@ -7,7 +7,7 @@
  * @var string $content
  * @var string $date_start
  * @var string $date_end
- * @var list<string> $days
+ * @var list<string>|null $days
  * @var list<int> $images
  * @var string $preview_url
  * @var bool $ai_enabled

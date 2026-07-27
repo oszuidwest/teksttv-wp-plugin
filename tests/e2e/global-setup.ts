@@ -19,8 +19,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     const { baseURL } = config.projects[0].use;
     mkdirSync(dirname(ADMIN_STORAGE_STATE), { recursive: true });
     const browser = await chromium.launch();
-    const page = await browser.newPage({ baseURL });
-    await login(page, 'admin', 'password');
-    await page.context().storageState({ path: ADMIN_STORAGE_STATE });
-    await browser.close();
+    try {
+        const page = await browser.newPage({ baseURL });
+        await login(page, 'admin', 'password');
+        await page.context().storageState({ path: ADMIN_STORAGE_STATE });
+    } finally {
+        await browser.close();
+    }
 }

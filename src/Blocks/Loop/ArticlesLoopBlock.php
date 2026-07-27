@@ -119,10 +119,8 @@ final class ArticlesLoopBlock implements BlockType
 
             if ($scheduling) {
                 $days = get_post_meta($post_id, '_teksttv_days', true);
-                if (!empty($days) && is_array($days)) {
-                    if (!Helpers::is_allowed_on_day($days)) {
-                        continue;
-                    }
+                if (is_array($days) && !Helpers::is_allowed_on_day($days)) {
+                    continue;
                 }
 
                 $date_start = get_post_meta($post_id, '_teksttv_date_start', true);

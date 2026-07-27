@@ -192,9 +192,9 @@ class PostMeta
         $days = get_post_meta($post->ID, '_teksttv_days', true);
         $images = get_post_meta($post->ID, '_teksttv_images', true);
 
-        // Empty days means "all days" and renders with every checkbox checked.
+        // Missing meta means "all days"; a stored empty array means "no days".
         if (!is_array($days)) {
-            $days = [];
+            $days = null;
         }
         if (!is_array($images)) {
             $images = [];
@@ -280,7 +280,7 @@ class PostMeta
             'content' => wp_unslash($_POST['teksttv_content'] ?? ''),
             'date_start' => sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? '')),
             'date_end' => sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? '')),
-            'days' => array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'] ?? [])),
+            'days' => isset($_POST['teksttv_days']) && is_array($_POST['teksttv_days']) ? array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'])) : null,
             'images' => array_map('absint', wp_unslash($_POST['teksttv_images'] ?? [])),
             'sidebar_image' => sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? '')),
         ];
@@ -328,9 +328,12 @@ class PostMeta
             update_post_meta($post_id, '_teksttv_date_start', $data['date_start'] ?? '');
             update_post_meta($post_id, '_teksttv_date_end', $data['date_end'] ?? '');
 
-            // null (all 7 days checked) and [] are both "no restriction".
-            $days = Helpers::sanitize_days_input($data['days'] ?? []) ?? [];
-            update_post_meta($post_id, '_teksttv_days', $days);
+            $days = Helpers::sanitize_days_input($data['days'] ?? null);
+            if ($days === null) {
+                delete_post_meta($post_id, '_teksttv_days');
+            } else {
+                update_post_meta($post_id, '_teksttv_days', $days);
+            }
         }
 
         if (Helpers::has_feature('extra_images')) {

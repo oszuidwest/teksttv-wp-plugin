@@ -47,7 +47,7 @@ test.describe('media picker interactions', () => {
 
         await expect(idInput).toHaveValue(attachmentId);
         await expect(preview).toBeVisible();
-        await expect(thumbnail).not.toHaveAttribute('src', '');
+        await expect(thumbnail).toHaveAttribute('src', /.+/);
         await expect(removeButton).toBeVisible();
 
         await removeButton.click();
@@ -72,7 +72,7 @@ test.describe('media picker interactions', () => {
 
         await expect(idInput).toHaveValue(attachmentId);
         await expect(preview).toBeVisible();
-        await expect(introPicker.locator('.teksttv-block-image-thumb')).not.toHaveAttribute('src', '');
+        await expect(introPicker.locator('.teksttv-block-image-thumb')).toHaveAttribute('src', /.+/);
         await expect(removeButton).toBeVisible();
 
         await removeButton.click();
@@ -129,7 +129,7 @@ test.describe('media picker interactions', () => {
         const previewCounter = page.locator('#teksttv-preview-counter');
         const existingItem = items.first();
 
-        await expect(existingItem).toHaveCount(1);
+        await expect(items).toHaveCount(1);
         await expect(previewCounter).toHaveText('1 / 2');
 
         const inputDisabledImmediately = await existingItem.locator('.teksttv-remove-image').evaluate((button) => {
@@ -151,7 +151,7 @@ test.describe('media picker interactions', () => {
         const addedItem = items.filter({ has: page.locator(`input[value="${attachmentId}"]`) });
         await expect(addedItem).toHaveCount(1);
         await expect(addedItem.locator('input[name="teksttv_images[]"]')).toHaveValue(attachmentId);
-        await expect(addedItem.locator('img')).not.toHaveAttribute('src', '');
+        await expect(addedItem.locator('img')).toHaveAttribute('src', /.+/);
 
         await addedItem.locator('.teksttv-remove-image').focus();
         await page.keyboard.press('Enter');

@@ -28,9 +28,9 @@ class HelpersTest extends TestCase
         $this->assertSame(120, Helpers::clamp_int('-9999', 1, 120));
     }
 
-    public function test_is_allowed_on_day_returns_true_for_empty_array(): void
+    public function test_is_allowed_on_day_returns_false_for_empty_array(): void
     {
-        $this->assertTrue(Helpers::is_allowed_on_day([]));
+        $this->assertFalse(Helpers::is_allowed_on_day([]));
     }
 
     public function test_is_allowed_on_day_returns_true_for_null(): void
@@ -179,6 +179,22 @@ class HelpersTest extends TestCase
         ];
 
         $this->assertFalse(Helpers::is_block_scheduled($block));
+    }
+
+    public function test_is_block_scheduled_returns_false_for_explicit_empty_days(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $this->assertFalse(Helpers::is_block_scheduled(['days' => []]));
+    }
+
+    public function test_is_block_scheduled_returns_true_for_null_days(): void
+    {
+        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
+        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
+
+        $this->assertTrue(Helpers::is_block_scheduled(['days' => null]));
     }
 
     public function test_is_block_scheduled_returns_true_when_in_range_and_correct_day(): void
@@ -731,6 +747,15 @@ class HelpersTest extends TestCase
         $this->assertSame(['1', '5'], $result['days']);
     }
 
+    public function test_extract_scheduling_fields_deduplicates_days_before_detecting_all_days(): void
+    {
+        $result = Helpers::extract_scheduling_fields([
+            'days' => ['', '1', '1', '2', '3', '4', '5', '6'],
+        ]);
+
+        $this->assertSame(['1', '2', '3', '4', '5', '6'], $result['days']);
+    }
+
     public function test_extract_scheduling_fields_empty_input(): void
     {
         $result = Helpers::extract_scheduling_fields([]);
@@ -746,6 +771,13 @@ class HelpersTest extends TestCase
         $result = Helpers::extract_scheduling_fields(['days' => []]);
 
         // An explicit empty array passes is_array and count 0 < 7, so it is stored.
+        $this->assertSame([], $result['days']);
+    }
+
+    public function test_extract_scheduling_fields_hidden_empty_day_marker_preserves_empty_selection(): void
+    {
+        $result = Helpers::extract_scheduling_fields(['days' => ['']]);
+
         $this->assertSame([], $result['days']);
     }
 }

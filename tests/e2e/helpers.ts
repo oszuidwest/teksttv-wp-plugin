@@ -48,13 +48,13 @@ async function addBlock(page: Page, kind: keyof typeof ADD_BLOCK_UI, type: strin
 
 /**
  * Submit the page's settings form, wait for the save round-trip to finish
- * (the success notice renders on the response document), then reload so
- * assertions run against freshly rendered saved state.
+ * (the success notice renders on the response document), then perform a GET
+ * so assertions run against freshly rendered saved state without resubmitting.
  */
 export async function submitAndReload(page: Page): Promise<void> {
     await page.locator('form input[name="submit"]').click();
     await expect(page.locator('.notice-success').first()).toBeVisible();
-    await page.reload();
+    await page.goto(page.url());
 }
 
 /** Add a loop block via the add-block dropdown and return the new block. */

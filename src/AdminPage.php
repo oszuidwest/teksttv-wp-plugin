@@ -392,8 +392,11 @@ class AdminPage
     {
         $date_start = $block['date_start'] ?? '';
         $date_end = $block['date_end'] ?? '';
-        $days = $block['days'] ?? [];
-        $has_scheduling = !empty($date_start) || !empty($date_end) || !empty($days);
+        $days = null;
+        if (array_key_exists('days', $block) && $block['days'] !== null) {
+            $days = is_array($block['days']) ? $block['days'] : [];
+        }
+        $has_scheduling = !empty($date_start) || !empty($date_end) || $days !== null;
 
         if ($with_toggle) : ?>
         <div class="teksttv-block-scheduling-toggle">
@@ -414,25 +417,29 @@ class AdminPage
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
-                <?php self::render_days_row($prefix . '[' . $index . '][days][]', (array) $days); ?>
+                <?php self::render_days_row($prefix . '[' . $index . '][days][]', $days); ?>
             </div>
         </div>
         <?php
     }
 
     /**
-     * Render the weekday checkbox row. An empty $days list means "all days":
-     * every checkbox renders checked.
+     * Render the weekday checkbox row. Null means "all days"; an empty list
+     * means no days are selected.
      *
-     * @param list<string> $days Selected ISO day numbers ('1'..'7').
+     * A hidden empty value keeps the checkbox group present in POST when no
+     * weekdays are selected, so persistence can retain that explicit state.
+     *
+     * @param list<string>|null $days Selected ISO day numbers ('1'..'7').
      */
-    public static function render_days_row(string $field_name, array $days): void
+    public static function render_days_row(string $field_name, ?array $days): void
     {
         ?>
+        <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="" />
         <div class="teksttv-days-row">
             <?php foreach (Helpers::get_day_labels() as $num => $label) : ?>
             <label class="teksttv-day-toggle">
-                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
+                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" <?php checked($days === null || in_array((string) $num, $days, true)); ?> />
                 <span><?php echo esc_html($label); ?></span>
             </label>
             <?php endforeach; ?>

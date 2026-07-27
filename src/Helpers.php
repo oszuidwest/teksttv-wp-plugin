@@ -44,13 +44,14 @@ class Helpers
             return null;
         }
         $valid = ['1', '2', '3', '4', '5', '6', '7'];
-        $days = array_values(array_intersect(array_map('sanitize_text_field', $raw), $valid));
+        $days = array_values(array_unique(array_intersect(array_map('sanitize_text_field', $raw), $valid)));
         return count($days) < 7 ? $days : null;
     }
 
     /**
      * Extract sanitized scheduling fields (date_start, date_end, days) from a
-     * raw POST payload. Empty values are omitted so unscheduled items stay lean.
+     * raw POST payload. Empty dates are omitted; an explicit empty days list is
+     * retained to represent "no days selected".
      *
      * @param array<string, mixed> $raw
      * @return array<string, mixed>
@@ -79,13 +80,16 @@ class Helpers
     /**
      * Check if content should be displayed on the given day.
      *
-     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
+     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun); null means all days, [] means none.
      * @param DateTimeInterface|null $date Date to check, defaults to current date
      */
     public static function is_allowed_on_day(?array $allowed_days, ?DateTimeInterface $date = null): bool
     {
-        if (empty($allowed_days)) {
+        if ($allowed_days === null) {
             return true;
+        }
+        if ($allowed_days === []) {
+            return false;
         }
 
         $date = $date ?? current_datetime();
@@ -417,16 +421,18 @@ class Helpers
      */
     public static function is_block_scheduled(array $block): bool
     {
-        $days = $block['days'] ?? [];
         // Unscheduled blocks are the common case; skip the datetime work entirely.
-        if (empty($block['date_start']) && empty($block['date_end']) && empty($days)) {
+        if (empty($block['date_start']) && empty($block['date_end']) && !array_key_exists('days', $block)) {
             return true;
         }
         if (!self::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
             return false;
         }
-        if (!empty($days) && !self::is_allowed_on_day($days)) {
-            return false;
+        if (array_key_exists('days', $block)) {
+            $days = $block['days'] === null ? null : (is_array($block['days']) ? $block['days'] : []);
+            if (!self::is_allowed_on_day($days)) {
+                return false;
+            }
         }
         return true;
     }

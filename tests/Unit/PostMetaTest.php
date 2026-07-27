@@ -150,6 +150,28 @@ class PostMetaTest extends TestCase
         $this->assertSame(['1', '5'], $this->findMetaUpdate('_teksttv_days'));
     }
 
+    public function test_process_save_preserves_explicit_empty_days(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, ['active' => true, 'content' => '', 'days' => []]);
+
+        $this->assertSame([], $this->findMetaUpdate('_teksttv_days'));
+        $this->assertFalse($this->wasMetaDeleted('_teksttv_days'));
+    }
+
+    public function test_process_save_deletes_days_meta_for_unrestricted_days(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, [
+            'active' => true,
+            'content' => '',
+            'days' => ['', '1', '2', '3', '4', '5', '6', '7'],
+        ]);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertFalse($this->wasMetaUpdated('_teksttv_days'));
+    }
+
     public function test_process_save_skips_images_when_feature_disabled(): void
     {
         $this->setupProcessSave([]);

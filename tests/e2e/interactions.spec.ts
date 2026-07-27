@@ -7,7 +7,9 @@ async function expectSequentialNames(root: Locator, itemSelector: string, prefix
     // One evaluate round-trip: every item's field names, in DOM order.
     const itemNames = await root.locator(itemSelector).evaluateAll((items) =>
         items.map((item) =>
-            Array.from(item.querySelectorAll('input[name], select[name]')).map((field) => field.getAttribute('name')),
+            Array.from(item.querySelectorAll('input[name], select[name], textarea[name], [data-name]')).map(
+                (field) => field.getAttribute('name') ?? field.getAttribute('data-name'),
+            ),
         ),
     );
 
@@ -105,9 +107,53 @@ test.describe('admin interaction contracts', () => {
         await toggle.uncheck();
         await expect(scheduling).toBeHidden();
         await expect(startDate).toHaveValue('');
-        for (const day of await scheduling.locator('input[type="checkbox"]').all()) {
+        const days = scheduling.locator('input[type="checkbox"]');
+        await expect(days).toHaveCount(7);
+        for (const day of await days.all()) {
             await expect(day).toBeChecked();
         }
+    });
+
+    test('preserves an explicit no-weekdays schedule across saving and rendering', async ({ page }) => {
+        await page.goto(LOOP_URL);
+
+        let block = page.locator('#teksttv-blocks > .teksttv-block').first();
+        await block.locator('.teksttv-block-header').click();
+        await block.locator('.teksttv-scheduling-checkbox').check();
+
+        let dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
+        let days = dayToggles.locator('input[type="checkbox"]');
+        await expect(days).toHaveCount(7);
+        for (const toggle of await dayToggles.all()) {
+            await toggle.locator('span').click();
+        }
+
+        await submitAndReload(page);
+
+        block = page.locator('#teksttv-blocks > .teksttv-block').first();
+        await expect(block.locator('.teksttv-scheduling-checkbox')).toBeChecked();
+        dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
+        days = dayToggles.locator('input[type="checkbox"]');
+        await expect(days).toHaveCount(7);
+        for (const day of await days.all()) {
+            await expect(day).not.toBeChecked();
+        }
+
+        // Restore the unrestricted fixture state for the remaining suite.
+        await days.evaluateAll((inputs) => {
+            for (const input of inputs) {
+                if (input instanceof HTMLInputElement) input.checked = true;
+            }
+        });
+        await page.locator('form').evaluate((form) => {
+            if (!(form instanceof HTMLFormElement)) throw new Error('Loop settings must be rendered in a form.');
+            form.requestSubmit();
+        });
+        await expect(page.locator('.notice-success').first()).toBeVisible();
+        await page.goto(page.url());
+        await expect(
+            page.locator('#teksttv-blocks > .teksttv-block').first().locator('.teksttv-scheduling-checkbox'),
+        ).not.toBeChecked();
     });
 
     test('updates a block header summary from its data-summary field', async ({ page }) => {

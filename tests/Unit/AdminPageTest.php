@@ -189,4 +189,67 @@ class AdminPageTest extends TestCase
         $result = AdminPage::sanitize_channels($input);
         $this->assertSame([], $result);
     }
+
+    public function test_render_days_row_checks_every_day_for_absent_restriction(): void
+    {
+        $html = $this->renderDaysRow(null);
+
+        $this->assertSame(7, substr_count($html, 'checked="checked"'));
+        $this->assertStringContainsString('type="hidden" name="days[]" value=""', $html);
+    }
+
+    public function test_render_days_row_leaves_every_day_unchecked_for_empty_selection(): void
+    {
+        $this->assertStringNotContainsString('checked="checked"', $this->renderDaysRow([]));
+    }
+
+    public function test_render_scheduling_fields_keeps_explicit_empty_days_enabled(): void
+    {
+        $this->stubSchedulingRenderFunctions();
+
+        ob_start();
+        try {
+            AdminPage::render_scheduling_fields(0, ['days' => []], 'blocks');
+            $html = (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
+
+        $this->assertSame(1, substr_count($html, 'checked="checked"'));
+        $this->assertStringNotContainsString('style="display:none;"', $html);
+    }
+
+    /**
+     * @param list<string>|null $days
+     */
+    private function renderDaysRow(?array $days): string
+    {
+        $this->stubSchedulingRenderFunctions();
+
+        ob_start();
+        try {
+            AdminPage::render_days_row('days[]', $days);
+            return (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
+    }
+
+    private function stubSchedulingRenderFunctions(): void
+    {
+        Functions\when('esc_attr')->alias(fn ($value) => $value);
+        Functions\when('esc_html')->alias(fn ($value) => $value);
+        Functions\when('esc_html_e')->alias(function ($value): void {
+            echo $value;
+        });
+        Functions\when('checked')->alias(function ($checked, $current = true, $echo = true) {
+            $result = $checked === $current ? 'checked="checked"' : '';
+            if ($echo) {
+                echo $result;
+            }
+            return $result;
+        });
+    }
 }
