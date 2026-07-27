@@ -26,8 +26,8 @@
         "tom-select": "^2.6.2"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.5.4",
-        "@playwright/test": "^1.61.1",
+        "@biomejs/biome": "^2.5.5",
+        "@playwright/test": "^1.62.0",
         "@types/sortablejs": "^1.15.9",
         "@wordpress/env": "^11.11.0"
     }
