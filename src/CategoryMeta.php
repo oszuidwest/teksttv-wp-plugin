@@ -99,18 +99,4 @@ class CategoryMeta
         // The category image feeds the article sidebar fallback.
         RestApi::invalidate_slides_cache();
     }
-
-    /**
-     * Get the TekstTV image URL for a category.
-     */
-    public static function get_image_url(int $term_id): ?string
-    {
-        $image_id = get_term_meta($term_id, self::META_KEY, true);
-        if (!$image_id) {
-            return null;
-        }
-
-        $url = wp_get_attachment_image_url($image_id, 'large');
-        return $url ?: null;
-    }
 }

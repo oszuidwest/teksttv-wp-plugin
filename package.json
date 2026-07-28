@@ -14,6 +14,7 @@
         "lint:fix": "vendor/bin/phpcbf; bunx biome check --write resources/",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "test": "vendor/bin/phpunit",
+        "test:js": "bun test tests/js",
         "build:package": "bun run build && bash bin/package-plugin.sh",
         "env:start": "bun run build:package && wp-env start",
         "env:stop": "wp-env stop",

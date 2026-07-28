@@ -14,6 +14,13 @@ class Updater
 
     public static function init(string $plugin_file): void
     {
+        // WordPress only performs plugin-update checks from admin, cron, and
+        // WP-CLI contexts; skip constructing the checker on frontend/REST
+        // requests (the continuously polled slides endpoint in particular).
+        if (!is_admin() && !wp_doing_cron() && !(defined('WP_CLI') && WP_CLI)) {
+            return;
+        }
+
         if (!class_exists(PucFactory::class)) {
             return;
         }

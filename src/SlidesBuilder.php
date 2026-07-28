@@ -13,8 +13,8 @@ class SlidesBuilder
      */
     public static function build_ticker(string $channel_slug): array
     {
-        $items = get_option('teksttv_ticker_' . sanitize_key($channel_slug), []);
-        if (empty($items) || !is_array($items)) {
+        $items = Helpers::get_ticker_config($channel_slug);
+        if (empty($items)) {
             return [];
         }
 
@@ -51,6 +51,10 @@ class SlidesBuilder
         $slides = [];
 
         foreach ($blocks as $block) {
+            if (!Helpers::is_block_scheduled($block)) {
+                continue;
+            }
+
             $type = $block['type'] ?? '';
             $built = BlockRegistry::build($type, $block, $channel_slug);
             $slides = array_merge($slides, $built);

@@ -13,6 +13,9 @@ class PostMetaTest extends TestCase
     /** @var list<array{0: int, 1: string}> Captured delete_post_meta calls */
     private array $metaDeletes = [];
 
+    /** @var list<string> Captured meta-write and cache-invalidation events */
+    private array $saveEvents = [];
+
     /**
      * Set up WP function stubs for process_save().
      *
@@ -22,13 +25,16 @@ class PostMetaTest extends TestCase
     {
         $this->metaUpdates = [];
         $this->metaDeletes = [];
+        $this->saveEvents = [];
 
         Functions\when('update_post_meta')->alias(function (int $post_id, string $key, $value) {
             $this->metaUpdates[] = [$post_id, $key, $value];
+            $this->saveEvents[] = 'update:' . $key;
             return true;
         });
         Functions\when('delete_post_meta')->alias(function (int $post_id, string $key) {
             $this->metaDeletes[] = [$post_id, $key];
+            $this->saveEvents[] = 'delete:' . $key;
             return true;
         });
         Functions\when('wp_kses')->alias(function ($content) {
@@ -161,6 +167,51 @@ class PostMetaTest extends TestCase
         $this->assertSame(['1', '5'], $this->findMetaUpdate('_teksttv_days'));
     }
 
+    public function test_process_save_preserves_explicit_empty_days(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, ['active' => true, 'content' => '', 'days' => []]);
+
+        $this->assertSame([], $this->findMetaUpdate('_teksttv_days'));
+        $this->assertFalse($this->wasMetaDeleted('_teksttv_days'));
+    }
+
+    public function test_process_save_preserves_explicit_null_days(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, ['active' => true, 'content' => '', 'days' => null]);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertFalse($this->wasMetaUpdated('_teksttv_days'));
+    }
+
+    public function test_process_save_deletes_days_meta_when_all_days_are_selected(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, [
+            'active' => true,
+            'content' => '',
+            'days' => ['1', '2', '3', '4', '5', '6', '7'],
+        ]);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertFalse($this->wasMetaUpdated('_teksttv_days'));
+    }
+
+    public function test_process_save_rejects_invalid_scheduling_dates(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, [
+            'active' => true,
+            'content' => '',
+            'date_start' => '2026-02-31',
+            'date_end' => 'not-a-date',
+        ]);
+
+        $this->assertSame('', $this->findMetaUpdate('_teksttv_date_start'));
+        $this->assertSame('', $this->findMetaUpdate('_teksttv_date_end'));
+    }
+
     // =========================================================================
     // Feature: extra_images
     // =========================================================================
@@ -232,6 +283,24 @@ class PostMetaTest extends TestCase
     // Guard clauses (save_meta level, still using $_POST)
     // =========================================================================
 
+    public function test_default_start_date_uses_wordpress_local_date_without_publication_date(): void
+    {
+        Functions\expect('current_time')->once()->with('Y-m-d')->andReturn('2026-07-23');
+
+        $result = self::callPrivate(PostMeta::class, 'default_start_date', [null]);
+
+        $this->assertSame('2026-07-23', $result);
+    }
+
+    public function test_default_end_date_adds_configured_days(): void
+    {
+        Functions\expect('get_option')->with('teksttv_default_end_days', 7)->andReturn(7);
+
+        $result = self::callPrivate(PostMeta::class, 'default_end_date', ['2026-07-23']);
+
+        $this->assertSame('2026-07-30', $result);
+    }
+
     public function test_save_meta_returns_early_without_nonce(): void
     {
         $_POST = [];
@@ -255,6 +324,98 @@ class PostMetaTest extends TestCase
         PostMeta::save_meta(1, $post);
 
         $this->assertEmpty($this->metaUpdates);
+    }
+
+    public function test_save_meta_handles_scalar_collection_fields(): void
+    {
+        $_POST = [
+            'teksttv_meta_nonce' => 'valid',
+            'teksttv_days' => '1',
+            'teksttv_images' => '42',
+        ];
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        Functions\when('wp_unslash')->alias(fn ($value) => $value);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('delete_transient')->justReturn(true);
+        $this->setupProcessSave(['scheduling', 'extra_images']);
+
+        PostMeta::save_meta(1, $post);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertSame([], $this->findMetaUpdate('_teksttv_images'));
+    }
+
+    public function test_save_meta_preserves_explicit_null_days(): void
+    {
+        $_POST = [
+            'teksttv_meta_nonce' => 'valid',
+            'teksttv_days' => null,
+        ];
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        Functions\when('wp_unslash')->alias(fn ($value) => $value);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('delete_transient')->justReturn(true);
+        $this->setupProcessSave(['scheduling']);
+
+        PostMeta::save_meta(1, $post);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertFalse($this->wasMetaUpdated('_teksttv_days'));
+    }
+
+    public function test_save_meta_treats_missing_days_as_empty_selection(): void
+    {
+        $_POST = ['teksttv_meta_nonce' => 'valid'];
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        Functions\when('wp_unslash')->alias(fn ($value) => $value);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('delete_transient')->justReturn(true);
+        $this->setupProcessSave(['scheduling']);
+
+        PostMeta::save_meta(1, $post);
+
+        $this->assertSame([], $this->findMetaUpdate('_teksttv_days'));
+        $this->assertFalse($this->wasMetaDeleted('_teksttv_days'));
+    }
+
+    public function test_save_meta_invalidates_slides_cache_after_meta_updates(): void
+    {
+        $_POST = [
+            'teksttv_meta_nonce' => 'valid',
+            'teksttv_active' => '1',
+        ];
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        Functions\when('wp_unslash')->alias(fn ($v) => $v);
+        Functions\when('current_user_can')->justReturn(true);
+        $this->setupProcessSave();
+
+        // Regression: save_post_post invalidates BEFORE this callback writes
+        // the meta; a concurrent /slides request in that window can re-cache
+        // stale data, so save_meta() must invalidate again after writing.
+        Functions\expect('delete_transient')
+            ->once()
+            ->with('teksttv_slides_tv1')
+            ->andReturnUsing(function (string $key): bool {
+                $this->saveEvents[] = 'invalidate:' . $key;
+                return true;
+            });
+
+        PostMeta::save_meta(1, $post);
+
+        $this->assertNotEmpty($this->metaUpdates);
+        $this->assertSame('invalidate:teksttv_slides_tv1', end($this->saveEvents));
     }
 
     // =========================================================================

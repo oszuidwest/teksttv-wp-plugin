@@ -1,7 +1,7 @@
 import Sortable from 'sortablejs';
 import { fadeOutRemove, hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
-import { encodeSlideData } from '../modules/utils';
+import { debounce, previewSlideUrl } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
@@ -15,7 +15,6 @@ import { createSidebarCustomPicker } from './postMeta/sidebarCustomPicker';
 export function createPostMetaPage() {
     const config: TeksttvPostConfig | undefined = typeof teksttvPost !== 'undefined' ? teksttvPost : undefined;
 
-    let debounceTimer: ReturnType<typeof setTimeout>;
     let currentSlideIndex = 0;
     let slides: Slide[] = [];
     let customImageData: ImageData | null = config?.customImage ? (config.customImage as ImageData) : null;
@@ -26,15 +25,6 @@ export function createPostMetaPage() {
 
     function getSlides(): Slide[] {
         return buildSlidesFromDom(config, customImageData);
-    }
-
-    function refreshWordCount(): void {
-        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
-    }
-
-    function updatePreviewAndWordCount(): void {
-        updatePreview();
-        refreshWordCount();
     }
 
     function updatePreviewNav(): void {
@@ -54,49 +44,45 @@ export function createPostMetaPage() {
         }
     }
 
-    function updatePreview(): void {
+    const updatePreview = debounce(() => {
+        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
+
         const iframe = document.querySelector<HTMLIFrameElement>('#teksttv-preview-iframe');
         if (!(previewUrl && iframe)) return;
 
-        clearTimeout(debounceTimer);
-        debounceTimer = window.setTimeout(() => {
-            slides = getSlides();
-            if (currentSlideIndex >= slides.length) currentSlideIndex = slides.length - 1;
-            if (currentSlideIndex < 0) currentSlideIndex = 0;
-            updatePreviewNav();
+        slides = getSlides();
+        if (currentSlideIndex >= slides.length) currentSlideIndex = slides.length - 1;
+        if (currentSlideIndex < 0) currentSlideIndex = 0;
+        updatePreviewNav();
 
-            const container = iframe.closest('.teksttv-preview-container');
-            if (slides.length === 0) {
-                iframe.setAttribute('src', 'about:blank');
-                container?.classList.remove('is-loading');
-                container?.classList.add('is-empty');
-                return;
-            }
+        const container = iframe.closest('.teksttv-preview-container');
+        if (slides.length === 0) {
+            iframe.setAttribute('src', 'about:blank');
+            container?.classList.remove('is-loading');
+            container?.classList.add('is-empty');
+            return;
+        }
 
-            container?.classList.remove('is-empty');
-            container?.classList.add('is-loading');
-            if (iframeLoadHandler) {
-                iframe.removeEventListener('load', iframeLoadHandler);
-            }
-            iframeLoadHandler = () => container?.classList.remove('is-loading');
-            iframe.addEventListener('load', iframeLoadHandler, { once: true });
-            iframe.setAttribute(
-                'src',
-                `${previewUrl}?data=${encodeURIComponent(encodeSlideData(slides[currentSlideIndex]))}`,
-            );
-        }, 400);
-    }
+        container?.classList.remove('is-empty');
+        container?.classList.add('is-loading');
+        if (iframeLoadHandler) {
+            iframe.removeEventListener('load', iframeLoadHandler);
+        }
+        iframeLoadHandler = () => container?.classList.remove('is-loading');
+        iframe.addEventListener('load', iframeLoadHandler, { once: true });
+        iframe.setAttribute('src', previewSlideUrl(previewUrl, slides[currentSlideIndex]));
+    }, 400);
 
     const openSidebarCustom = createSidebarCustomPicker(
         config,
         (d) => {
             customImageData = d;
         },
-        updatePreviewAndWordCount,
+        updatePreview,
     );
 
     function activateSidebarCard(state: string): void {
-        applySidebarCardState(state, updatePreviewAndWordCount);
+        applySidebarCardState(state, updatePreview);
     }
 
     return {
@@ -128,14 +114,8 @@ export function createPostMetaPage() {
 
             if (typeof tinymce !== 'undefined') {
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
-                    editor.on('input change keyup', () => {
-                        updatePreview();
-                        refreshWordCount();
-                    });
-                    editor.on('SetContent', () => {
-                        updatePreview();
-                        refreshWordCount();
-                    });
+                    // `updatePreview` debounces and also refreshes the word count.
+                    editor.on('input change SetContent', updatePreview);
                 };
                 const existing = tinymce.get('teksttv_content');
                 if (existing) bindEditor(existing);
@@ -148,7 +128,6 @@ export function createPostMetaPage() {
                 const t = e.target;
                 if (!(t instanceof Element && t.matches('#teksttv_content'))) return;
                 updatePreview();
-                refreshWordCount();
             });
 
             document.querySelector('#title')?.addEventListener('input', updatePreview);
@@ -179,10 +158,7 @@ export function createPostMetaPage() {
                 }
             }
 
-            window.setTimeout(() => {
-                updatePreview();
-                refreshWordCount();
-            }, 500);
+            window.setTimeout(updatePreview, 500);
         },
 
         onActiveChange(): void {

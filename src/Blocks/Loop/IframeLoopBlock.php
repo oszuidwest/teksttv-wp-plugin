@@ -29,7 +29,7 @@ final class IframeLoopBlock implements LoopBlock
         $name = $block['name'] ?? '';
         $url = $block['url'] ?? '';
         $duration = $block['duration'] ?? '';
-        $default_duration = (int) get_option('teksttv_duration_iframe', 30);
+        $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe']);
 
         ?>
         <div class="teksttv-block-fields">
@@ -64,7 +64,7 @@ final class IframeLoopBlock implements LoopBlock
 
         $dur = $raw['duration'] ?? '';
         if ($dur !== '') {
-            $saved['duration'] = absint($dur);
+            $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
         }
 
         return $saved;
@@ -76,21 +76,15 @@ final class IframeLoopBlock implements LoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
-        if (!Helpers::is_block_scheduled($block)) {
-            return [];
-        }
-
         $url = trim((string) ($block['url'] ?? ''));
         if ($url === '') {
             return [];
         }
 
-        $duration = !empty($block['duration']) ? (int) $block['duration'] * 1000 : (int) get_option('teksttv_duration_iframe', 30) * 1000;
-
         return [[
             'type' => 'iframe',
             'url' => $url,
-            'duration' => $duration,
+            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_iframe'),
         ]
         ];
     }

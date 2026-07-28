@@ -38,19 +38,6 @@ class ImageLoopBlockTest extends TestCase
         $this->assertSame(0, $result['image_id']);
     }
 
-    public function test_build_returns_empty_when_not_scheduled(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $block = [
-            'image_id' => 123,
-            'date_start' => '2026-05-01',
-            'date_end' => '2026-05-31',
-        ];
-
-        $this->assertSame([], ImageLoopBlock::build($block));
-    }
 
     public function test_build_returns_empty_when_no_image_id(): void
     {

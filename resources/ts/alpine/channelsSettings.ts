@@ -1,15 +1,12 @@
+import { reindexNames } from '../modules/dom';
+
 /** Settings tab: repeatable channel rows. */
 export function createChannelsSettingsPage() {
     let channelsTbody: HTMLTableSectionElement | null = null;
 
     function reindexChannels(): void {
         if (!channelsTbody) return;
-        channelsTbody.querySelectorAll('tr').forEach((tr, i) => {
-            tr.querySelectorAll('input').forEach((input) => {
-                const name = input.getAttribute('name');
-                if (name) input.setAttribute('name', name.replace(/\[\d+\]/, `[${i}]`));
-            });
-        });
+        reindexNames(channelsTbody, 'tr', /(teksttv_channels)\[\d+\]/);
     }
 
     return {

@@ -1,4 +1,5 @@
 import type { TeksttvPostConfig } from '../../modules/types';
+import { splitPages, stripTags } from '../../modules/utils';
 import { getTeksttvEditorHtml } from './editorContent';
 
 export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): void {
@@ -22,11 +23,13 @@ export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined, ha
     const wc = document.querySelector('#teksttv-wordcount');
     if (!(wc instanceof HTMLElement)) return;
 
-    const text = content
-        .replace(/<[^>]+>/g, ' ')
+    const pages = splitPages(content);
+    const text = pages
+        .map((page) => stripTags(page))
+        .join(' ')
         .replace(/\s+/g, ' ')
         .trim();
-    const pageCount = content.split(/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i).length;
+    const pageCount = pages.filter((page) => page.trim()).length;
     const totalWords = text ? text.split(/\s+/).length : 0;
 
     const wordLimit = (hasPhoto ? config?.wordLimitPhoto : config?.wordLimit) ?? 0;

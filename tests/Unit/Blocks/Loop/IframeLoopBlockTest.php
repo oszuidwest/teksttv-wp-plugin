@@ -56,19 +56,6 @@ class IframeLoopBlockTest extends TestCase
         $this->assertSame('', $result['url']);
     }
 
-    public function test_build_returns_empty_when_not_scheduled(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $block = [
-            'url' => 'https://example.com/embed',
-            'date_start' => '2026-05-01',
-            'date_end' => '2026-05-31',
-        ];
-
-        $this->assertSame([], IframeLoopBlock::build($block));
-    }
 
     public function test_build_returns_empty_when_no_url(): void
     {

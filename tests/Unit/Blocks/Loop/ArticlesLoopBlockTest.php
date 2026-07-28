@@ -162,6 +162,15 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame('Page two', $result[1]);
     }
 
+    public function test_split_pages_preserves_inline_hyphens(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_features', \Mockery::any())
+            ->andReturn(['page_separator']);
+
+        $this->assertSame(['foo---bar'], ArticlesLoopBlock::split_pages('foo---bar'));
+    }
+
     public function test_sidebar_image_override_with_explicit_none(): void
     {
         Functions\when('get_option')->justReturn(['sidebar_image']);
@@ -207,7 +216,7 @@ class ArticlesLoopBlockTest extends TestCase
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
 
-        Functions\expect('wp_get_post_categories')->with(1)->andReturn([10, 20]);
+        Functions\expect('get_the_terms')->with(1, 'category')->andReturn([(object) ['term_id' => 10], (object) ['term_id' => 20]]);
         Functions\expect('get_term_meta')
             ->with(10, '_teksttv_category_image', true)
             ->andReturn('55');
@@ -228,7 +237,7 @@ class ArticlesLoopBlockTest extends TestCase
             ->with(1, '_teksttv_sidebar_image', true)
             ->andReturn('');
 
-        Functions\expect('wp_get_post_categories')->with(1)->andReturn([10]);
+        Functions\expect('get_the_terms')->with(1, 'category')->andReturn([(object) ['term_id' => 10]]);
         Functions\expect('get_term_meta')
             ->with(10, '_teksttv_category_image', true)
             ->andReturn('');
@@ -255,7 +264,7 @@ class ArticlesLoopBlockTest extends TestCase
             ->with('teksttv_primary_category', \Mockery::any(), 1)
             ->andReturn('');
 
-        Functions\expect('wp_get_post_categories')->with(1)->andReturn([]);
+        Functions\expect('get_the_terms')->with(1, 'category')->andReturn(false);
         Functions\expect('get_post_thumbnail_id')->with(1)->andReturn(0);
 
         $result = ArticlesLoopBlock::get_sidebar_image_data(1);
@@ -286,10 +295,6 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame('https://example.com/primary.jpg', $result['url']);
     }
 
-    /**
-     * @param list<object> $posts
-     * @param array<string, mixed> $metaMap
-     */
     /**
      * @param list<object> $posts
      * @param array<string, mixed> $metaMap
@@ -332,15 +337,6 @@ class ArticlesLoopBlockTest extends TestCase
         Functions\when('wp_reset_postdata')->justReturn(true);
     }
 
-    public function test_build_returns_empty_when_not_scheduled(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $block = ['date_start' => '2026-05-01'];
-        $this->assertSame([], ArticlesLoopBlock::build($block));
-    }
-
     public function test_build_returns_empty_when_no_posts(): void
     {
         $this->setupArticleSlides([]);
@@ -369,7 +365,7 @@ class ArticlesLoopBlockTest extends TestCase
         Functions\expect('apply_filters')
             ->with('teksttv_primary_category', \Mockery::any(), 10)
             ->andReturn('');
-        Functions\expect('wp_get_post_categories')->with(10)->andReturn([]);
+        Functions\expect('get_the_terms')->with(10, 'category')->andReturn(false);
         Functions\expect('get_post_thumbnail_id')->with(10)->andReturn(0);
 
         $block = ['count' => 1];
@@ -485,6 +481,19 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame([], $result);
     }
 
+    public function test_build_skips_post_with_no_selected_days(): void
+    {
+        $post = (object) ['ID' => 10];
+        $this->setupArticleSlides([$post], [
+            '10:_teksttv_days' => [],
+            '10:_teksttv_content' => 'Tekst',
+        ]);
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertSame([], $result);
+    }
+
     public function test_build_skips_post_outside_date_range(): void
     {
         $post = (object) ['ID' => 10];
@@ -530,7 +539,7 @@ class ArticlesLoopBlockTest extends TestCase
         Functions\expect('apply_filters')
             ->with('teksttv_primary_category', \Mockery::any(), 10)
             ->andReturn('');
-        Functions\expect('wp_get_post_categories')->with(10)->andReturn([]);
+        Functions\expect('get_the_terms')->with(10, 'category')->andReturn(false);
         Functions\expect('get_post_thumbnail_id')->with(10)->andReturn(0);
 
         $block = ['count' => 1];
@@ -667,7 +676,7 @@ class ArticlesLoopBlockTest extends TestCase
         ], ['page_separator']); // sidebar_image disabled
 
         Functions\expect('get_the_title')->andReturn('Titel');
-        Functions\expect('wp_get_post_categories')->with(10)->andReturn([]);
+        Functions\expect('get_the_terms')->with(10, 'category')->andReturn(false);
         Functions\expect('get_post_thumbnail_id')->with(10)->andReturn(77);
         Functions\expect('wp_get_attachment_image_url')->with(77, 'large')->andReturn('https://example.com/thumb.jpg');
         Functions\expect('wp_get_attachment_caption')->with(77)->andReturn('');

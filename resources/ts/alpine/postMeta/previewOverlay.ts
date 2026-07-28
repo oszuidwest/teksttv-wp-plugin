@@ -1,12 +1,12 @@
 import type { Slide } from '../../modules/types';
-import { encodeSlideData } from '../../modules/utils';
+import { previewSlideUrl } from '../../modules/utils';
 
 /** Volledige scherm-overlay voor preview navigeren met pijlen/Escape. */
 export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, initialIndex: number): void {
     if (!slides.length) return;
     let overlayIndex = initialIndex;
 
-    const getOverlaySrc = (idx: number) => `${previewUrl}?data=${encodeURIComponent(encodeSlideData(slides[idx]))}`;
+    const getOverlaySrc = (idx: number) => previewSlideUrl(previewUrl, slides[idx]);
 
     const overlay = document.createElement('div');
     overlay.className = 'teksttv-preview-overlay';

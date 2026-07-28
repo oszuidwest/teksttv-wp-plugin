@@ -1,9 +1,8 @@
 import Sortable from 'sortablejs';
-import { hide, show, slideDown, slideToggle, slideUp, tmplHtml } from '../../modules/dom';
-import { initTomSelectIn } from '../../modules/utils';
+import { hide, reindexNames, show, slideDown, slideUp, tmplHtml } from '../../modules/dom';
+import { debounce, initTomSelectIn } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
-import { handleBlocksClick } from './handleBlocksClick';
-import { reindexBlocks as reindexBlocksDom, reindexTicker as reindexTickerDom } from './reindex';
+import { handleBlocksClick, removeClosestBlock, toggleBlockOpen } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -17,17 +16,43 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
     function reindexBlocks(): void {
         if (!blocksEl) return;
-        reindexBlocksDom(blocksEl);
+        reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/);
     }
 
     function reindexTicker(): void {
         if (!tickerEl) return;
-        reindexTickerDom(tickerEl);
+        reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/);
     }
 
     function refreshSummaries(): void {
         if (!blocksEl) return;
         updateBlockSummaries(blocksEl);
+    }
+
+    const scheduleSummaries = debounce(refreshSummaries, 150);
+
+    /** Insert a block from a template, expand it, and optionally focus its first text input. */
+    function insertBlockFromTemplate(
+        root: HTMLElement,
+        templateId: string,
+        placeholder: RegExp,
+        options: { focusText?: boolean } = {},
+    ): boolean {
+        const templateHtml = tmplHtml(templateId);
+        if (!templateHtml) return false;
+        const index = root.querySelectorAll(':scope > .teksttv-block').length;
+        root.insertAdjacentHTML('beforeend', templateHtml.replace(placeholder, String(index)));
+        const newBlock = root.querySelector(':scope > .teksttv-block:last-of-type');
+        if (newBlock instanceof HTMLElement) {
+            const body = newBlock.querySelector<HTMLElement>('.teksttv-block-body');
+            if (body) show(body);
+            newBlock.classList.add('is-expanded');
+            // A no-op for templates without .teksttv-tomselect fields — the
+            // class on the rendered fields is the declaration.
+            initTomSelectIn(newBlock);
+            if (options.focusText) newBlock.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
+        }
+        return true;
     }
 
     const clickCtx: BlocksWorkbenchContext = {
@@ -81,54 +106,22 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         addLoopBlock(type: string): void {
             if (!blocksEl) return;
             document.querySelector('#teksttv-empty-state')?.remove();
-            const templateHtml = tmplHtml(`tmpl-teksttv-block-${type}`);
-            if (!templateHtml) return;
-            const index = blocksEl.querySelectorAll(':scope > .teksttv-block').length;
-            const rendered = templateHtml.replace(/__INDEX__/g, String(index));
-            blocksEl.insertAdjacentHTML('beforeend', rendered);
-            const newBlock = blocksEl.querySelector(':scope > .teksttv-block:last-of-type');
-            refreshSummaries();
-            if (newBlock instanceof HTMLElement) {
-                const body = newBlock.querySelector<HTMLElement>('.teksttv-block-body');
-                if (body) show(body);
-                newBlock.classList.add('is-expanded');
-                initTomSelectIn(newBlock);
+            if (insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, /__INDEX__/g)) {
+                refreshSummaries();
             }
-            this.menuBlockOpen = false;
         },
 
         addCampaignBlock(): void {
             if (!blocksEl || !opts.campaignAdd) return;
             document.querySelector('#teksttv-empty-state')?.remove();
-            const html = tmplHtml('tmpl-teksttv-campaign');
-            if (!html) return;
-            const index = blocksEl.querySelectorAll(':scope > .teksttv-block').length;
-            blocksEl.insertAdjacentHTML('beforeend', html.replace(/__INDEX__/g, String(index)));
-            const newBlock = blocksEl.querySelector(':scope > .teksttv-block:last-of-type');
-            if (newBlock instanceof HTMLElement) {
-                const body = newBlock.querySelector<HTMLElement>('.teksttv-block-body');
-                if (body) show(body);
-                newBlock.classList.add('is-expanded');
+            if (insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign', /__INDEX__/g)) {
+                refreshSummaries();
             }
-            refreshSummaries();
         },
 
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
-            const root = tickerEl;
-            const html = tmplHtml(`tmpl-teksttv-ticker-${type}`);
-            if (!html) return;
-            const index = root.querySelectorAll(':scope > .teksttv-block').length;
-            root.insertAdjacentHTML('beforeend', html.replace(/__TINDEX__/g, String(index)));
-            const newBlock = root.querySelector(':scope > .teksttv-block:last-of-type');
-            if (newBlock instanceof HTMLElement) {
-                const body = newBlock.querySelector<HTMLElement>('.teksttv-block-body');
-                if (body) show(body);
-                newBlock.classList.add('is-expanded');
-                initTomSelectIn(newBlock);
-                newBlock.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
-            }
-            this.menuTickerOpen = false;
+            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true });
         },
 
         expandAllBlocks(): void {
@@ -162,7 +155,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 applySchedulingToggle(t);
             }
             if (t.closest('.teksttv-block-body')) {
-                refreshSummaries();
+                scheduleSummaries();
             }
         },
 
@@ -172,23 +165,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             const header = e.target.closest('.teksttv-block-header');
             if (header && tickerEl.contains(header)) {
                 if (e.target.closest('.teksttv-remove-block')) return;
-                const block = header.closest('.teksttv-block');
-                if (!(block instanceof HTMLElement)) return;
-                block.classList.toggle('is-expanded');
-                const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-                if (body) slideToggle(body, 150);
+                toggleBlockOpen(header);
                 return;
             }
 
             const rem = e.target.closest('.teksttv-remove-block');
             if (rem && tickerEl.contains(rem)) {
                 e.stopPropagation();
-                const block = rem.closest('.teksttv-block');
-                if (!(block instanceof HTMLElement)) return;
-                slideUp(block, 200, () => {
-                    block.remove();
-                    reindexTicker();
-                });
+                removeClosestBlock(rem, reindexTicker);
             }
         },
 

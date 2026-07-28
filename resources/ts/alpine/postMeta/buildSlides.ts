@@ -1,4 +1,5 @@
 import type { ImageData, Slide, TeksttvPostConfig, TextSlide } from '../../modules/types';
+import { splitPages } from '../../modules/utils';
 import { getTeksttvEditorHtml } from './editorContent';
 
 export function resolveSidebarImage(
@@ -35,13 +36,7 @@ export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, custom
     const content = getTeksttvEditorHtml();
     const result: Slide[] = [];
 
-    const pages = content.split(/<p[^>]*>\s*-{3,}\s*<\/p>/i);
-    const expandedPages: string[] = [];
-    for (const page of pages) {
-        for (const sp of page.split(/\n*-{3,}\n*/)) {
-            expandedPages.push(sp);
-        }
-    }
+    const expandedPages = splitPages(content);
 
     const sidebarImg = resolveSidebarImage(config, customImageData);
 
