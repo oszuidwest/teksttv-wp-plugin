@@ -6,6 +6,8 @@ namespace TekstTV;
  * AI content generation for TekstTV: prompt construction, WP AI Client calls,
  * output validation, rate limiting, audit-trail meta persistence
  * (_teksttv_ai_title / _teksttv_ai_body), and region prefixing.
+ *
+ * @phpstan-import-type AiConfig from Helpers
  */
 class AiGenerator
 {
@@ -60,10 +62,10 @@ class AiGenerator
      * `status` entry in the error data for HTTP mapping.
      *
      * @param string $field 'title', 'body', or 'both'.
-     * @param array<string, mixed>|null $prompts Config from Helpers::get_ai_prompts(); resolved here when null.
+     * @param AiConfig $config Config from Helpers::get_ai_prompts().
      * @return array{fields: array<string, string>, warning: string}|\WP_Error
      */
-    public static function generate_for_post(\WP_Post $post, string $field, bool $has_photo = false, ?array $prompts = null)
+    public static function generate_for_post(\WP_Post $post, string $field, array $config, bool $has_photo = false)
     {
         if (!in_array($field, ['title', 'body', 'both'], true)) {
             return new \WP_Error(
@@ -73,7 +75,6 @@ class AiGenerator
             );
         }
 
-        $prompts ??= Helpers::get_ai_prompts();
         $post_text = self::prepare_content($post->post_content);
         $post_title = $post->post_title;
 
@@ -85,7 +86,7 @@ class AiGenerator
             );
         }
 
-        $min_words = $prompts['min_input_words'];
+        $min_words = $config['min_input_words'];
         if ($min_words > 0) {
             $word_count = Helpers::count_words($post_text);
             if ($word_count < $min_words) {
@@ -101,7 +102,7 @@ class AiGenerator
         $fields = [];
         $warnings = [];
         foreach ($field === 'both' ? ['title', 'body'] : [$field] as $current_field) {
-            $result = self::generate_single_field($current_field, $post_title, $post_text, $prompts, $has_photo);
+            $result = self::generate_single_field($current_field, $post_title, $post_text, $config, $has_photo);
             if (is_wp_error($result)) {
                 return new \WP_Error(
                     'teksttv_generation_failed',
@@ -124,7 +125,7 @@ class AiGenerator
         if (isset($fields['body'])) {
             update_post_meta($post->ID, '_teksttv_ai_body', $fields['body']);
 
-            $region_prefix = self::get_region_prefix($post->ID, $prompts['region_taxonomy']);
+            $region_prefix = self::get_region_prefix($post->ID, $config['region_taxonomy']);
             if (!empty($region_prefix)) {
                 $fields['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $fields['body']));
             }
@@ -136,18 +137,18 @@ class AiGenerator
     /**
      * Generate a single field (title or body) using the WP AI Client.
      *
-     * @param array<string, mixed> $prompts Config from Helpers::get_ai_prompts().
+     * @param AiConfig $config Config from Helpers::get_ai_prompts().
      * @return array{content: string, warning?: string}|\WP_Error
      */
-    public static function generate_single_field(string $field, string $post_title, string $post_text, array $prompts, bool $has_photo = false)
+    public static function generate_single_field(string $field, string $post_title, string $post_text, array $config, bool $has_photo = false)
     {
-        [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $prompts, $has_photo);
+        [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $config, $has_photo);
 
         $last_content = '';
         $warning = '';
 
-        for ($attempt = 1; $attempt <= $prompts['max_retries']; $attempt++) {
-            $result = self::call_ai($user_prompt, $system, $prompts);
+        for ($attempt = 1; $attempt <= $config['max_retries']; $attempt++) {
+            $result = self::call_ai($user_prompt, $system, $config);
 
             if (is_wp_error($result)) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -160,7 +161,7 @@ class AiGenerator
                 // An empty response (exhausted tokens, provider content filter)
                 // must never pass as success: the title length check would
                 // accept it and the editor would see nothing happen.
-                if ($attempt === $prompts['max_retries']) {
+                if ($attempt === $config['max_retries']) {
                     return new \WP_Error(
                         'teksttv_empty_output',
                         __('AI gaf een leeg antwoord terug. Probeer het opnieuw.', 'teksttv-wp-plugin')
@@ -169,9 +170,11 @@ class AiGenerator
                 continue;
             }
 
-            $warning = self::validate_ai_output($field, $last_content, $prompts, $attempt === $prompts['max_retries'], $has_photo);
+            // A warning here means "retry if attempts remain"; the last loop
+            // pass leaves it set so the editor sees why the output is off.
+            $warning = self::validate_ai_output($field, $last_content, $config, $has_photo);
 
-            if (empty($warning)) {
+            if ($warning === '') {
                 break;
             }
         }
@@ -191,33 +194,33 @@ class AiGenerator
     /**
      * Build the system instruction and user prompt for AI generation.
      *
-     * @param array<string, mixed> $prompts
+     * @param AiConfig $config
      * @return array{0: string, 1: string} [user_prompt, system]
      */
-    public static function build_ai_prompt(string $field, string $post_title, string $post_text, array $prompts, bool $has_photo = false): array
+    public static function build_ai_prompt(string $field, string $post_title, string $post_text, array $config, bool $has_photo = false): array
     {
         if ($field === 'title') {
-            $tokens = ['{{chars}}' => (string) $prompts['title_char_limit']];
+            $tokens = ['{{chars}}' => (string) $config['title_char_limit']];
             $user_prompt = sprintf(
                 "%s\n\nTitel: %s\n\n%s",
-                strtr($prompts['prompt_title'], $tokens),
+                strtr($config['prompt_title'], $tokens),
                 $post_title,
                 mb_substr($post_text, 0, 2000)
             );
-            $system = strtr($prompts['system'], $tokens) . sprintf(
+            $system = strtr($config['system'], $tokens) . sprintf(
                 ' De kop mag maximaal %d tekens lang zijn.',
-                $prompts['title_char_limit']
+                $config['title_char_limit']
             );
         } else {
-            $word_limit = self::effective_word_limit($prompts, $has_photo);
+            $word_limit = self::effective_word_limit($config, $has_photo);
             $tokens = ['{{words}}' => (string) $word_limit];
             $user_prompt = sprintf(
                 "%s\n\nTitel: %s\n\n%s",
-                strtr($prompts['prompt_body'], $tokens),
+                strtr($config['prompt_body'], $tokens),
                 $post_title,
                 mb_substr($post_text, 0, 4000)
             );
-            $system = strtr($prompts['system'], $tokens) . sprintf(
+            $system = strtr($config['system'], $tokens) . sprintf(
                 ' De samenvatting moet tussen de %d en %d woorden zijn.',
                 (int) ceil($word_limit * 0.2),
                 $word_limit
@@ -231,34 +234,34 @@ class AiGenerator
      * Resolve the applicable word limit, using the photo-specific limit when a
      * photo accompanies the text.
      *
-     * @param array<string, mixed> $prompts
+     * @param AiConfig $config
      */
-    private static function effective_word_limit(array $prompts, bool $has_photo): int
+    private static function effective_word_limit(array $config, bool $has_photo): int
     {
-        return $has_photo ? (int) $prompts['word_limit_photo'] : (int) $prompts['word_limit'];
+        return $has_photo ? $config['word_limit_photo'] : $config['word_limit'];
     }
 
     /**
      * Call the WP AI Client with configured model/provider settings.
      *
-     * @param array<string, mixed> $prompts
+     * @param AiConfig $config
      * @return string|\WP_Error
      */
-    private static function call_ai(string $user_prompt, string $system, array $prompts)
+    private static function call_ai(string $user_prompt, string $system, array $config)
     {
         $builder = wp_ai_client_prompt($user_prompt)
             ->using_system_instruction($system)
-            ->using_max_tokens($prompts['max_tokens']);
+            ->using_max_tokens($config['max_tokens']);
 
-        if ($prompts['temperature'] !== '') {
-            $builder = $builder->using_temperature((float) $prompts['temperature']);
+        if ($config['temperature'] !== '') {
+            $builder = $builder->using_temperature((float) $config['temperature']);
         }
-        if ($prompts['top_p'] !== '') {
-            $builder = $builder->using_top_p((float) $prompts['top_p']);
+        if ($config['top_p'] !== '') {
+            $builder = $builder->using_top_p((float) $config['top_p']);
         }
 
-        $model_setting = $prompts['model'];
-        $provider_setting = $prompts['provider'];
+        $model_setting = $config['model'];
+        $provider_setting = $config['provider'];
         if (!empty($model_setting) && str_contains($model_setting, '/')) {
             [$provider_id, $model_id] = explode('/', $model_setting, 2);
             $builder = $builder->using_model_preference([$provider_id, $model_id]);
@@ -272,44 +275,39 @@ class AiGenerator
     /**
      * Validate AI output against length constraints.
      *
-     * @param array<string, mixed> $prompts
-     * @return string '' when valid; a user-facing warning when invalid on the
-     *                last attempt; the sentinel 'retry' when invalid but
-     *                another attempt remains.
+     * @param AiConfig $config
+     * @return string '' when valid, otherwise a user-facing warning. Retry
+     *                policy belongs to the caller, not here.
      */
-    public static function validate_ai_output(string $field, string $content, array $prompts, bool $is_last_attempt, bool $has_photo = false): string
+    public static function validate_ai_output(string $field, string $content, array $config, bool $has_photo = false): string
     {
         if ($field === 'title') {
-            if (mb_strlen($content) <= $prompts['title_char_limit']) {
+            if (mb_strlen($content) <= $config['title_char_limit']) {
                 return '';
             }
-            if ($is_last_attempt) {
-                return sprintf(
-                    /* translators: %1$d: actual character count, %2$d: maximum allowed characters */
-                    __('Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.', 'teksttv-wp-plugin'),
-                    mb_strlen($content),
-                    $prompts['title_char_limit']
-                );
-            }
-        } else {
-            $word_limit = self::effective_word_limit($prompts, $has_photo);
-            $count = Helpers::count_words($content);
-            $min_words = (int) ceil($word_limit * 0.2);
-            if ($count >= $min_words && $count <= $word_limit) {
-                return '';
-            }
-            if ($is_last_attempt) {
-                return sprintf(
-                    /* translators: %1$d: actual word count, %2$d: minimum words, %3$d: maximum words */
-                    __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv-wp-plugin'),
-                    $count,
-                    $min_words,
-                    $word_limit
-                );
-            }
+
+            return sprintf(
+                /* translators: %1$d: actual character count, %2$d: maximum allowed characters */
+                __('Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.', 'teksttv-wp-plugin'),
+                mb_strlen($content),
+                $config['title_char_limit']
+            );
         }
 
-        return 'retry';
+        $word_limit = self::effective_word_limit($config, $has_photo);
+        $count = Helpers::count_words($content);
+        $min_words = (int) ceil($word_limit * 0.2);
+        if ($count >= $min_words && $count <= $word_limit) {
+            return '';
+        }
+
+        return sprintf(
+            /* translators: %1$d: actual word count, %2$d: minimum words, %3$d: maximum words */
+            __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv-wp-plugin'),
+            $count,
+            $min_words,
+            $word_limit
+        );
     }
 
     /**

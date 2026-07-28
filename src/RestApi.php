@@ -131,10 +131,10 @@ class RestApi
             return new WP_Error('teksttv_forbidden', __('Onvoldoende rechten.', 'teksttv-wp-plugin'), ['status' => 403]);
         }
 
-        $prompts = Helpers::get_ai_prompts();
+        $config = Helpers::get_ai_prompts();
 
         // Counted last so requests that can only 403/404 do not consume quota.
-        if (!AiGenerator::within_rate_limit(get_current_user_id(), $prompts['rate_limit'])) {
+        if (!AiGenerator::within_rate_limit(get_current_user_id(), $config['rate_limit'])) {
             return new WP_Error(
                 'teksttv_rate_limited',
                 __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin'),
@@ -142,7 +142,7 @@ class RestApi
             );
         }
 
-        $result = AiGenerator::generate_for_post($post, $field, (bool) $request->get_param('has_photo'), $prompts);
+        $result = AiGenerator::generate_for_post($post, $field, $config, (bool) $request->get_param('has_photo'));
         if (is_wp_error($result)) {
             return $result;
         }

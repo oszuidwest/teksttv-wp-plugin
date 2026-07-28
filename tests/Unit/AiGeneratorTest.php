@@ -8,12 +8,12 @@ use TekstTV\AiGenerator;
 class AiGeneratorTest extends TestCase
 {
     /**
-     * Complete prompts config as produced by Helpers::get_ai_prompts().
+     * Complete AI config as produced by Helpers::get_ai_prompts().
      *
      * @param array<string, mixed> $overrides
      * @return array<string, mixed>
      */
-    private static function aiPrompts(array $overrides = []): array
+    private static function aiConfig(array $overrides = []): array
     {
         return $overrides + [
             'system' => 'Test',
@@ -92,61 +92,37 @@ class AiGeneratorTest extends TestCase
         $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
     }
 
-    public function test_validate_ai_output_title_within_limit_returns_empty(): void
+    public function test_validate_ai_output_title_over_limit_returns_warning(): void
     {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
+        $config = self::aiConfig(['title_char_limit' => 10]);
 
-        $result = AiGenerator::validate_ai_output('title', 'Korte kop', $prompts, false);
-        $this->assertSame('', $result);
+        $result = AiGenerator::validate_ai_output('title', 'Dit is een veel te lange kop', $config);
+        $this->assertStringContainsString('10', $result);
     }
 
-    public function test_validate_ai_output_title_over_limit_not_last_attempt_returns_retry(): void
+    public function test_validate_ai_output_body_over_limit_returns_warning(): void
     {
-        $prompts = ['title_char_limit' => 10, 'word_limit' => 100];
+        $config = self::aiConfig(['word_limit' => 10]);
 
-        $result = AiGenerator::validate_ai_output('title', 'Dit is een veel te lange kop', $prompts, false);
-        $this->assertSame('retry', $result);
+        $result = AiGenerator::validate_ai_output('body', str_repeat('woord ', 50), $config);
+        $this->assertStringContainsString('50 woorden', $result);
     }
 
-    public function test_validate_ai_output_title_over_limit_last_attempt_returns_warning(): void
+    public function test_validate_ai_output_body_under_minimum_returns_warning(): void
     {
-        $prompts = ['title_char_limit' => 10, 'word_limit' => 100];
-
-        $result = AiGenerator::validate_ai_output('title', 'Dit is een veel te lange kop', $prompts, true);
-        $this->assertNotEmpty($result);
-        $this->assertNotSame('retry', $result);
-    }
-
-    public function test_validate_ai_output_body_within_range_returns_empty(): void
-    {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
-
-        $result = AiGenerator::validate_ai_output('body', str_repeat('woord ', 50), $prompts, false);
-        $this->assertSame('', $result);
-    }
-
-    public function test_validate_ai_output_body_over_limit_not_last_returns_retry(): void
-    {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 10];
-
-        $result = AiGenerator::validate_ai_output('body', str_repeat('woord ', 50), $prompts, false);
-        $this->assertSame('retry', $result);
-    }
-
-    public function test_validate_ai_output_body_under_minimum_returns_retry(): void
-    {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
         // min = ceil(100 * 0.2) = 20.
-        $result = AiGenerator::validate_ai_output('body', 'slechts drie woorden', $prompts, false);
-        $this->assertSame('retry', $result);
+        $result = AiGenerator::validate_ai_output('body', 'slechts drie woorden', self::aiConfig());
+        $this->assertStringContainsString('3 woorden', $result);
     }
 
-    public function test_prepare_content_strips_scripts(): void
+    public function test_prepare_content_strips_non_content_tags(): void
     {
-        $html = '<p>Hello</p><script>alert("xss")</script><p>World</p>';
-        $result = AiGenerator::prepare_content($html);
-        $this->assertStringNotContainsString('script', $result);
-        $this->assertStringNotContainsString('alert', $result);
+        // One alternation covers all three. noscript is in it because
+        // wp_strip_all_tags() keeps its fallback text, which would otherwise
+        // reach the model as article prose.
+        $this->assertSame('Hello', AiGenerator::prepare_content('<p>Hello</p><script>alert("xss")</script>'));
+        $this->assertSame('Visible', AiGenerator::prepare_content('<style>.red { color: red; }</style><p>Visible</p>'));
+        $this->assertSame('Content', AiGenerator::prepare_content('<noscript>Zet JavaScript aan</noscript><p>Content</p>'));
     }
 
     public function test_prepare_content_converts_block_elements_to_newlines(): void
@@ -171,25 +147,11 @@ class AiGeneratorTest extends TestCase
         $this->assertStringContainsString('Veel spaties', $result);
     }
 
-    public function test_prepare_content_strips_style_tags(): void
-    {
-        $html = '<style>.red { color: red; }</style><p>Visible</p>';
-        $result = AiGenerator::prepare_content($html);
-        $this->assertStringNotContainsString('color', $result);
-        $this->assertStringContainsString('Visible', $result);
-    }
-
     public function test_build_ai_prompt_title_field(): void
     {
-        $prompts = [
-            'system' => 'System prompt.',
-            'prompt_title' => 'Schrijf een kop',
-            'prompt_body' => 'Vat samen',
-            'title_char_limit' => 40,
-            'word_limit' => 100,
-        ];
+        $config = self::aiConfig(['prompt_title' => 'Schrijf een kop']);
 
-        [$user_prompt, $system] = AiGenerator::build_ai_prompt('title', 'Mijn titel', 'Artikeltekst hier', $prompts);
+        [$user_prompt, $system] = AiGenerator::build_ai_prompt('title', 'Mijn titel', 'Artikeltekst hier', $config);
 
         $this->assertStringContainsString('Schrijf een kop', $user_prompt);
         $this->assertStringContainsString('Mijn titel', $user_prompt);
@@ -198,15 +160,9 @@ class AiGeneratorTest extends TestCase
 
     public function test_build_ai_prompt_body_field(): void
     {
-        $prompts = [
-            'system' => 'System prompt.',
-            'prompt_title' => 'Schrijf een kop',
-            'prompt_body' => 'Vat samen',
-            'title_char_limit' => 40,
-            'word_limit' => 100,
-        ];
+        $config = self::aiConfig(['prompt_body' => 'Vat samen']);
 
-        [$user_prompt, $system] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $prompts);
+        [$user_prompt, $system] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $config);
 
         $this->assertStringContainsString('Vat samen', $user_prompt);
         $this->assertStringContainsString('100 woorden', $system);
@@ -214,16 +170,8 @@ class AiGeneratorTest extends TestCase
 
     public function test_build_ai_prompt_truncates_text_for_title(): void
     {
-        $prompts = [
-            'system' => 'Sys',
-            'prompt_title' => 'Kop',
-            'prompt_body' => 'Body',
-            'title_char_limit' => 40,
-            'word_limit' => 100,
-        ];
-
         $long_text = str_repeat('a', 5000);
-        [$user_prompt] = AiGenerator::build_ai_prompt('title', 'Titel', $long_text, $prompts);
+        [$user_prompt] = AiGenerator::build_ai_prompt('title', 'Titel', $long_text, self::aiConfig());
 
         // Title prompt truncates to 2000 chars.
         $this->assertLessThanOrEqual(2100, mb_strlen($user_prompt));
@@ -231,16 +179,8 @@ class AiGeneratorTest extends TestCase
 
     public function test_build_ai_prompt_truncates_text_for_body(): void
     {
-        $prompts = [
-            'system' => 'Sys',
-            'prompt_title' => 'Kop',
-            'prompt_body' => 'Body',
-            'title_char_limit' => 40,
-            'word_limit' => 100,
-        ];
-
         $long_text = str_repeat('a', 8000);
-        [$user_prompt] = AiGenerator::build_ai_prompt('body', 'Titel', $long_text, $prompts);
+        [$user_prompt] = AiGenerator::build_ai_prompt('body', 'Titel', $long_text, self::aiConfig());
 
         // Body prompt truncates to 4000 chars.
         $this->assertLessThanOrEqual(4100, mb_strlen($user_prompt));
@@ -314,72 +254,43 @@ class AiGeneratorTest extends TestCase
         $this->assertSame('', $result);
     }
 
-    public function test_validate_ai_output_body_at_exact_minimum_returns_empty(): void
+    public function test_validate_ai_output_body_accepts_both_range_boundaries(): void
     {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
-        // min = ceil(100 * 0.2) = 20 words.
-        $content = implode(' ', array_fill(0, 20, 'woord'));
+        // The range is inclusive: min = ceil(100 * 0.2) = 20, max = word_limit.
+        $config = self::aiConfig();
 
-        $result = AiGenerator::validate_ai_output('body', $content, $prompts, false);
-        $this->assertSame('', $result);
-    }
-
-    public function test_validate_ai_output_body_at_exact_maximum_returns_empty(): void
-    {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 100];
-        $content = implode(' ', array_fill(0, 100, 'woord'));
-
-        $result = AiGenerator::validate_ai_output('body', $content, $prompts, false);
-        $this->assertSame('', $result);
-    }
-
-    public function test_validate_ai_output_body_over_limit_last_attempt_returns_warning(): void
-    {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 10];
-        $content = implode(' ', array_fill(0, 50, 'woord'));
-
-        $result = AiGenerator::validate_ai_output('body', $content, $prompts, true);
-        $this->assertNotEmpty($result);
-        $this->assertNotSame('retry', $result);
+        $this->assertSame('', AiGenerator::validate_ai_output('body', implode(' ', array_fill(0, 20, 'woord')), $config));
+        $this->assertSame('', AiGenerator::validate_ai_output('body', implode(' ', array_fill(0, 100, 'woord')), $config));
     }
 
     public function test_validate_ai_output_title_at_exact_limit_returns_empty(): void
     {
-        $prompts = ['title_char_limit' => 10, 'word_limit' => 100];
+        $config = self::aiConfig(['title_char_limit' => 10]);
 
-        $result = AiGenerator::validate_ai_output('title', '1234567890', $prompts, false);
+        $result = AiGenerator::validate_ai_output('title', '1234567890', $config);
         $this->assertSame('', $result);
     }
 
     public function test_validate_ai_output_uses_photo_word_limit_when_has_photo(): void
     {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 100, 'word_limit_photo' => 25];
+        $config = self::aiConfig(['word_limit' => 100, 'word_limit_photo' => 25]);
         $content = str_repeat('woord ', 30); // 30 words: valid without photo, over the photo limit
 
-        $this->assertSame('', AiGenerator::validate_ai_output('body', $content, $prompts, false, false));
-        $this->assertSame('retry', AiGenerator::validate_ai_output('body', $content, $prompts, false, true));
-    }
+        $this->assertSame('', AiGenerator::validate_ai_output('body', $content, $config, false));
 
-    public function test_validate_ai_output_photo_limit_warning_on_last_attempt(): void
-    {
-        $prompts = ['title_char_limit' => 40, 'word_limit' => 100, 'word_limit_photo' => 25];
-        $content = str_repeat('woord ', 30);
+        $warning = AiGenerator::validate_ai_output('body', $content, $config, true);
 
-        $warning = AiGenerator::validate_ai_output('body', $content, $prompts, true, true);
-
-        $this->assertNotSame('', $warning);
-        $this->assertNotSame('retry', $warning);
         $this->assertStringContainsString('25', $warning);
     }
 
     public function test_build_ai_prompt_uses_photo_word_limit_when_has_photo(): void
     {
-        $prompts = self::aiPrompts(['word_limit' => 100, 'word_limit_photo' => 25]);
+        $config = self::aiConfig(['word_limit' => 100, 'word_limit_photo' => 25]);
 
-        [, $system] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $prompts, true);
+        [, $system] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $config, true);
         $this->assertStringContainsString('tussen de 5 en 25 woorden', $system);
 
-        [, $system_no_photo] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $prompts, false);
+        [, $system_no_photo] = AiGenerator::build_ai_prompt('body', 'Titel', 'Tekst', $config, false);
         $this->assertStringContainsString('tussen de 20 en 100 woorden', $system_no_photo);
     }
 
@@ -390,7 +301,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
 
-        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiPrompts());
+        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiConfig());
 
         $this->assertInstanceOf(\WP_Error::class, $result);
         $this->assertSame('teksttv_empty_output', $result->get_error_code());
@@ -403,7 +314,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
 
-        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiPrompts(['max_retries' => 2]));
+        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiConfig(['max_retries' => 2]));
 
         $this->assertSame('Korte kop', $result['content']);
         $this->assertArrayNotHasKey('warning', $result);
@@ -416,7 +327,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
 
-        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst hier', self::aiPrompts());
+        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst hier', self::aiConfig());
 
         $this->assertArrayHasKey('content', $result);
         $this->assertStringStartsWith('<p>', $result['content']);
@@ -429,7 +340,7 @@ class AiGeneratorTest extends TestCase
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
 
-        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiPrompts());
+        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiConfig());
 
         $this->assertSame('Korte kop', $result['content']);
     }
@@ -445,7 +356,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('is_wp_error')->with($wp_error)->andReturn(true);
         Functions\expect('error_log')->andReturn(true);
 
-        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst', self::aiPrompts());
+        $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst', self::aiConfig());
 
         $this->assertSame($wp_error, $result);
     }
@@ -464,28 +375,15 @@ class AiGeneratorTest extends TestCase
             'body',
             'Titel',
             'Tekst',
-            self::aiPrompts(['word_limit' => 10, 'word_limit_photo' => 10, 'max_retries' => 2])
+            self::aiConfig(['word_limit' => 10, 'word_limit_photo' => 10, 'max_retries' => 2])
         );
 
         $this->assertArrayHasKey('warning', $result);
-        $this->assertNotSame('retry', $result['warning']);
-    }
-
-    /**
-     * @param array<string, mixed> $overrides
-     */
-    private static function makePost(array $overrides = []): \WP_Post
-    {
-        $post = new \WP_Post();
-        $post->ID = 42;
-        $post->post_title = $overrides['post_title'] ?? 'Titel';
-        $post->post_content = $overrides['post_content'] ?? '<p>' . implode(' ', array_fill(0, 60, 'woord')) . '</p>';
-        return $post;
     }
 
     public function test_generate_for_post_rejects_invalid_field(): void
     {
-        $result = AiGenerator::generate_for_post(self::makePost(), 'bogus');
+        $result = AiGenerator::generate_for_post(self::makePost(), 'bogus', self::aiConfig());
 
         $this->assertInstanceOf(\WP_Error::class, $result);
         $this->assertSame('teksttv_invalid_field', $result->get_error_code());
@@ -494,11 +392,10 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_for_post_rejects_empty_post(): void
     {
-        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn([]);
-
         $result = AiGenerator::generate_for_post(
             self::makePost(['post_title' => '', 'post_content' => '']),
-            'body'
+            'body',
+            self::aiConfig()
         );
 
         $this->assertInstanceOf(\WP_Error::class, $result);
@@ -508,13 +405,10 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_for_post_rejects_too_short_input(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['min_input_words' => 50]);
-
         $result = AiGenerator::generate_for_post(
             self::makePost(['post_content' => '<p>veel te kort</p>']),
-            'body'
+            'body',
+            self::aiConfig(['min_input_words' => 50])
         );
 
         $this->assertInstanceOf(\WP_Error::class, $result);
@@ -524,10 +418,6 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_for_post_saves_audit_meta_before_region_prefix(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['region_taxonomy' => 'regio', 'min_input_words' => 0, 'max_retries' => 1]);
-
         $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
@@ -543,7 +433,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('wp_get_post_terms')->andReturn(['Leiden']);
         Functions\when('esc_html')->returnArg();
 
-        $result = AiGenerator::generate_for_post(self::makePost(), 'body');
+        $result = AiGenerator::generate_for_post(self::makePost(), 'body', self::aiConfig(['region_taxonomy' => 'regio']));
 
         $this->assertIsArray($result);
         $this->assertStringStartsWith('<p>LEIDEN - ', $result['fields']['body']);
@@ -552,10 +442,6 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_for_post_generates_both_fields(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['min_input_words' => 0, 'max_retries' => 1]);
-
         $builder = self::mockAiBuilder('Korte kop', implode(' ', array_fill(0, 50, 'woord')));
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
@@ -565,7 +451,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_title', 'Korte kop');
         Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_body', \Mockery::type('string'));
 
-        $result = AiGenerator::generate_for_post(self::makePost(), 'both');
+        $result = AiGenerator::generate_for_post(self::makePost(), 'both', self::aiConfig());
 
         $this->assertIsArray($result);
         $this->assertSame('Korte kop', $result['fields']['title']);
@@ -574,10 +460,6 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_for_post_maps_provider_failure_to_500(): void
     {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['min_input_words' => 0, 'max_retries' => 1]);
-
         $wp_error = \Mockery::mock('WP_Error');
         $wp_error->shouldReceive('get_error_message')->andReturn('API timeout');
 
@@ -587,7 +469,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('is_wp_error')->andReturnUsing(fn($v) => $v === $wp_error);
         Functions\expect('error_log')->andReturn(true);
 
-        $result = AiGenerator::generate_for_post(self::makePost(), 'body');
+        $result = AiGenerator::generate_for_post(self::makePost(), 'body', self::aiConfig());
 
         $this->assertInstanceOf(\WP_Error::class, $result);
         $this->assertSame('teksttv_generation_failed', $result->get_error_code());
@@ -606,15 +488,6 @@ class AiGeneratorTest extends TestCase
     public function test_prepare_content_handles_empty_string(): void
     {
         $this->assertSame('', AiGenerator::prepare_content(''));
-    }
-
-    public function test_prepare_content_strips_noscript_tags(): void
-    {
-        $html = '<noscript><img src="tracker.gif"></noscript><p>Content</p>';
-        $result = AiGenerator::prepare_content($html);
-        $this->assertStringNotContainsString('noscript', $result);
-        $this->assertStringNotContainsString('tracker', $result);
-        $this->assertStringContainsString('Content', $result);
     }
 
     public function test_prepare_content_limits_consecutive_newlines(): void

@@ -38,15 +38,6 @@ class RestApiTest extends TestCase
         });
     }
 
-    private static function makePost(): \WP_Post
-    {
-        $post = new \WP_Post();
-        $post->ID = 42;
-        $post->post_title = 'Titel';
-        $post->post_content = '<p>' . implode(' ', array_fill(0, 60, 'woord')) . '</p>';
-        return $post;
-    }
-
     /** Rate limiter passes via the transient path. */
     private static function stubRateLimitOk(): void
     {
@@ -59,10 +50,12 @@ class RestApiTest extends TestCase
      * Stub every pre-generation check to pass (feature enabled, AI available,
      * capability, existing post, rate limit ok). Tests override individual
      * stubs after calling this.
+     *
+     * @param array<string, mixed> $option_overrides Passed to stubOptions().
      */
-    private static function stubHappyPath(): void
+    private static function stubHappyPath(array $option_overrides = []): void
     {
-        self::stubOptions();
+        self::stubOptions($option_overrides);
         Functions\when('wp_supports_ai')->justReturn(true);
         Functions\when('current_user_can')->justReturn(true);
         Functions\when('get_post')->justReturn(self::makePost());
@@ -153,9 +146,7 @@ class RestApiTest extends TestCase
         self::stubHappyPath();
 
         // Empty post -> AiGenerator returns teksttv_no_content with status 422.
-        $post = new \WP_Post();
-        $post->ID = 42;
-        Functions\when('get_post')->justReturn($post);
+        Functions\when('get_post')->justReturn(self::makePost(['post_title' => '', 'post_content' => '']));
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
@@ -194,6 +185,37 @@ class RestApiTest extends TestCase
         $this->assertSame('Korte kop', $data['title']);
         $this->assertSame('<p>' . $body_text . '</p>', $data['body']);
         $this->assertArrayNotHasKey('warning', $data);
+    }
+
+    /**
+     * REST owns one thing here: reading has_photo off the request and handing
+     * it to the generator. Both directions are asserted - one call would leave
+     * a hardcoded `true` at the call site undetected.
+     */
+    public function test_generate_content_forwards_has_photo_to_the_generator(): void
+    {
+        self::stubHappyPath(['teksttv_ai_prompts' => [
+            'min_input_words' => 0,
+            'max_retries' => 1,
+            'word_limit' => 100,
+            'word_limit_photo' => 25,
+        ]]);
+        Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
+        Functions\when('update_post_meta')->justReturn(true);
+
+        // 50 words: inside the plain limit, over the photo limit.
+        $body_text = implode(' ', array_fill(0, 50, 'woord'));
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder($body_text, $body_text));
+
+        $with_photo = RestApi::generate_content(
+            self::requestMock(['post_id' => 42, 'field' => 'body', 'has_photo' => true])
+        );
+        $without_photo = RestApi::generate_content(
+            self::requestMock(['post_id' => 42, 'field' => 'body', 'has_photo' => false])
+        );
+
+        $this->assertArrayHasKey('warning', $with_photo->get_data(), 'has_photo did not reach the generator.');
+        $this->assertArrayNotHasKey('warning', $without_photo->get_data());
     }
 
     public function test_validate_channel_returns_true_for_valid_channel(): void
