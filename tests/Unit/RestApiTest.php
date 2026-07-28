@@ -115,6 +115,7 @@ class RestApiTest extends TestCase
     {
         self::stubOptions();
         Functions\when('wp_supports_ai')->justReturn(true);
+        Functions\when('get_post')->justReturn(self::makePost());
         Functions\when('current_user_can')->justReturn(false);
         // Forbidden requests must not consume rate-limit quota.
         Functions\expect('get_transient')->never();
@@ -129,8 +130,8 @@ class RestApiTest extends TestCase
     {
         self::stubOptions();
         Functions\when('wp_supports_ai')->justReturn(true);
-        Functions\when('current_user_can')->justReturn(true);
         Functions\when('get_post')->justReturn(null);
+        Functions\expect('current_user_can')->never();
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
@@ -167,10 +168,7 @@ class RestApiTest extends TestCase
         self::stubHappyPath();
         Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_title', 'Korte kop');
 
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')->andReturn('Korte kop');
+        $builder = self::mockAiBuilder('Korte kop');
         Functions\when('wp_ai_client_prompt')->justReturn($builder);
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
@@ -186,10 +184,7 @@ class RestApiTest extends TestCase
         Functions\expect('update_post_meta')->twice();
 
         $body_text = implode(' ', array_fill(0, 50, 'woord'));
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')->andReturn('Korte kop', $body_text);
+        $builder = self::mockAiBuilder('Korte kop', $body_text);
         Functions\when('wp_ai_client_prompt')->justReturn($builder);
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'both']));

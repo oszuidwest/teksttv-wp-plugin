@@ -53,15 +53,15 @@ class AiGeneratorTest extends TestCase
         $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
     }
 
-    public function test_within_rate_limit_fails_open_when_incr_fails(): void
+    public function test_within_rate_limit_fails_closed_when_incr_fails(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\when('wp_cache_add')->justReturn(true);
         Functions\expect('wp_cache_incr')->andReturn(false);
-        // Failing open is logged so a broken cache backend is discoverable.
+        // Failing closed prevents an uncounted paid request.
         Functions\expect('error_log')->once()->andReturn(true);
 
-        $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
+        $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
     }
 
     public function test_within_rate_limit_falls_back_to_transient_without_object_cache(): void
@@ -73,15 +73,14 @@ class AiGeneratorTest extends TestCase
         $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
     }
 
-    public function test_within_rate_limit_logs_when_transient_write_fails(): void
+    public function test_within_rate_limit_fails_closed_when_transient_write_fails(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
         Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(3);
         Functions\expect('set_transient')->once()->andReturn(false);
         Functions\expect('error_log')->once()->andReturn(true);
 
-        // Still fails open, but the broken counter is logged.
-        $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
+        $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
     }
 
     public function test_within_rate_limit_transient_blocks_at_limit(): void
@@ -386,10 +385,7 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_rejects_empty_output_on_last_attempt(): void
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')->andReturn('');
+        $builder = self::mockAiBuilder('');
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -402,10 +398,7 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_retries_after_empty_output(): void
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')->twice()->andReturn('', 'Korte kop');
+        $builder = self::mockAiBuilder('', 'Korte kop');
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -418,11 +411,7 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_returns_body_with_wpautop(): void
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')
-            ->andReturn(implode(' ', array_fill(0, 50, 'woord')));
+        $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
@@ -436,10 +425,7 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_returns_title_without_wpautop(): void
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')->andReturn('Korte kop');
+        $builder = self::mockAiBuilder('Korte kop');
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
 
@@ -453,10 +439,7 @@ class AiGeneratorTest extends TestCase
         $wp_error = \Mockery::mock('WP_Error');
         $wp_error->shouldReceive('get_error_message')->andReturn('API timeout');
 
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')->andReturn($wp_error);
+        $builder = self::mockAiBuilder($wp_error);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->with($wp_error)->andReturn(true);
@@ -469,13 +452,9 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_retries_on_length_violation(): void
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
         // First attempt: too many words, second attempt: still too many.
-        $builder->shouldReceive('generate_text')
-            ->twice()
-            ->andReturn(implode(' ', array_fill(0, 50, 'woord')));
+        $response = implode(' ', array_fill(0, 50, 'woord'));
+        $builder = self::mockAiBuilder($response, $response);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -549,11 +528,7 @@ class AiGeneratorTest extends TestCase
             ->with('teksttv_ai_prompts', [])
             ->andReturn(['region_taxonomy' => 'regio', 'min_input_words' => 0, 'max_retries' => 1]);
 
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')
-            ->andReturn(implode(' ', array_fill(0, 50, 'woord')));
+        $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -581,11 +556,7 @@ class AiGeneratorTest extends TestCase
             ->with('teksttv_ai_prompts', [])
             ->andReturn(['min_input_words' => 0, 'max_retries' => 1]);
 
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')
-            ->andReturn('Korte kop', implode(' ', array_fill(0, 50, 'woord')));
+        $builder = self::mockAiBuilder('Korte kop', implode(' ', array_fill(0, 50, 'woord')));
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -610,10 +581,7 @@ class AiGeneratorTest extends TestCase
         $wp_error = \Mockery::mock('WP_Error');
         $wp_error->shouldReceive('get_error_message')->andReturn('API timeout');
 
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
-        $builder->shouldReceive('generate_text')->andReturn($wp_error);
+        $builder = self::mockAiBuilder($wp_error);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturnUsing(fn($v) => $v === $wp_error);

@@ -122,13 +122,13 @@ class RestApi
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
 
-        if (!current_user_can('edit_post', $post_id)) {
-            return new WP_Error('teksttv_forbidden', __('Onvoldoende rechten.', 'teksttv-wp-plugin'), ['status' => 403]);
-        }
-
         $post = get_post($post_id);
         if (!$post) {
             return new WP_Error('teksttv_post_not_found', __('Post niet gevonden.', 'teksttv-wp-plugin'), ['status' => 404]);
+        }
+
+        if (!current_user_can('edit_post', $post_id)) {
+            return new WP_Error('teksttv_forbidden', __('Onvoldoende rechten.', 'teksttv-wp-plugin'), ['status' => 403]);
         }
 
         $prompts = Helpers::get_ai_prompts();

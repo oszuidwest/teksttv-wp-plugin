@@ -14,6 +14,7 @@ async function expectSequentialNames(root: Locator, itemSelector: string, prefix
         ),
     );
 
+    expect(itemNames.length, `${prefix} should contain at least one item`).toBeGreaterThan(0);
     itemNames.forEach((names, index) => {
         expect(names.length, `${prefix}[${index}] should contain named fields`).toBeGreaterThan(0);
         for (const name of names) {

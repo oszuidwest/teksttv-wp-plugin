@@ -17,7 +17,10 @@ class AiGenerator
      * either writes back. Without one, fall back to a transient-backed counter
      * (persistent but not atomic - acceptable for editor cost control).
      *
-     * @return bool True when the request is allowed (and has been counted).
+     * Counter persistence failures fail closed so uncounted requests cannot
+     * bypass the cost-control boundary.
+     *
+     * @return bool True when the request is allowed and has been counted.
      */
     public static function within_rate_limit(int $user_id, int $rate_limit): bool
     {
@@ -30,11 +33,9 @@ class AiGenerator
             wp_cache_add($key, 0, $group, MINUTE_IN_SECONDS);
             $count = wp_cache_incr($key, 1, $group);
             if ($count === false) {
-                // Cache backend hiccup: fail open rather than block the editor,
-                // but log it so a persistently broken backend is discoverable.
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log('TekstTV AI rate limiter: wp_cache_incr() failed, allowing request without counting.');
-                return true;
+                error_log('TekstTV AI rate limiter: wp_cache_incr() failed, rejecting uncounted request.');
+                return false;
             }
             return $count <= $rate_limit;
         }
@@ -44,10 +45,9 @@ class AiGenerator
             return false;
         }
         if (!set_transient($key, $count + 1, MINUTE_IN_SECONDS)) {
-            // Fail open, but log: if transient writes keep failing, the counter
-            // never advances and rate limiting is effectively disabled.
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-            error_log('TekstTV AI rate limiter: set_transient() failed, request not counted.');
+            error_log('TekstTV AI rate limiter: set_transient() failed, rejecting uncounted request.');
+            return false;
         }
         return true;
     }
