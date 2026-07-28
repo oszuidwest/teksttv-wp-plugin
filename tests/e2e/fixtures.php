@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 
 update_option('teksttv_channels', [['slug' => 'tv1', 'label' => 'TV 1']]);
 update_option('teksttv_preview_url', 'https://preview.example.test/');
+update_option('teksttv_duration_text', \TekstTV\Helpers::DURATION_DEFAULTS['text']);
 
 update_option('teksttv_features', [
     'custom_title',
@@ -64,7 +65,9 @@ $teksttv_attachments = get_posts([
     'post_type' => 'attachment',
     'post_status' => 'inherit',
     'numberposts' => 1,
+    // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- one-off fixture lookup.
     'meta_key' => '_teksttv_e2e_fixture',
+    // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- one-off fixture lookup.
     'meta_value' => '1',
 ]);
 

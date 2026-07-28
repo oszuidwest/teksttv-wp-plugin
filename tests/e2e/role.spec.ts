@@ -1,9 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { login } from './helpers';
+import { reseedFixtures } from './reseed-fixtures';
 
 // The suite-wide storageState is the admin session; this test logs in as its
 // own user, so start from a clean context.
 test.use({ storageState: { cookies: [], origins: [] } });
+
+test.afterEach(() => {
+    reseedFixtures();
+});
 
 /**
  * A role holding only the intended TekstTV capabilities (no manage_options)

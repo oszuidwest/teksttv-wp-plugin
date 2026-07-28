@@ -225,9 +225,9 @@ class AdminPage
     /**
      * Sanitize the AI prompts option.
      *
-     * Merges submitted values over the stored option so a partial form - e.g.
-     * one rendered without the region/technical sections for a role lacking
-     * manage_teksttv - cannot silently clear fields it never displayed.
+     * Merges permitted submitted values over the stored option so a partial form
+     * cannot clear fields it never displayed. Region and technical fields are
+     * also protected here because hiding them in the UI is not authorization.
      *
      * @param mixed $input
      * @return array<string, mixed>
@@ -240,6 +240,17 @@ class AdminPage
         }
         if (!is_array($input)) {
             return $current;
+        }
+
+        if (!current_user_can('manage_teksttv')) {
+            $input = array_diff_key($input, array_flip([
+                'region_taxonomy',
+                'provider',
+                'model',
+                'temperature',
+                'top_p',
+                'max_tokens',
+            ]));
         }
 
         $merged = array_merge($current, $input);
