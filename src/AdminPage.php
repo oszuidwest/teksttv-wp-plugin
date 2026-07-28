@@ -455,57 +455,84 @@ class AdminPage
     // Save handler
     // =========================================================================
 
-    private static function handle_loop_save(): void
+    private static function validate_loop_save_request(): ?string
     {
         if (!isset($_POST['teksttv_loop_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_loop_nonce'])), 'teksttv_save_loop')) {
-            return;
+            add_settings_error('teksttv', 'loop_nonce_failed', __('Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.', 'teksttv-wp-plugin'));
+            return null;
         }
 
         if (!current_user_can('manage_teksttv')) {
-            return;
+            add_settings_error('teksttv', 'loop_no_permission', __('Onvoldoende rechten; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
+            return null;
         }
 
         $channel = sanitize_key(wp_unslash($_POST['teksttv_loop_channel'] ?? ''));
-        if (empty($channel)) {
+        if (empty($channel) || !in_array($channel, Helpers::channel_slugs(), true)) {
+            add_settings_error('teksttv', 'loop_unknown_channel', __('Onbekend kanaal; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
+            return null;
+        }
+
+        return $channel;
+    }
+
+    private static function handle_loop_save(): void
+    {
+        $channel = self::validate_loop_save_request();
+        if ($channel === null) {
             return;
         }
 
-        // Validate channel exists
-        if (!in_array($channel, Helpers::channel_slugs(), true)) {
-            return;
-        }
-
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field is sanitized individually below
-        $raw_blocks = isset($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
-        $blocks = [];
-
-        foreach ($raw_blocks as $block) {
-            $type = sanitize_key($block['type'] ?? '');
-            $saved = BlockRegistry::save($type, $block);
-            if ($saved) {
-                $saved = array_merge($saved, Helpers::extract_scheduling_fields($block));
-                $blocks[] = $saved;
-            }
-        }
-
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
+        $raw_blocks = isset($_POST['teksttv_blocks']) && is_array($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
+        [$blocks, $blocks_preserved] = self::sanitize_registry_items($raw_blocks, 'teksttv_loop_' . $channel);
         update_option('teksttv_loop_' . $channel, $blocks);
 
-        // Save ticker items
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
-        $raw_ticker = isset($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
-        $ticker = [];
-        foreach ($raw_ticker as $item) {
-            $type = sanitize_key($item['type'] ?? '');
-            $saved_ticker = BlockRegistry::save($type, $item);
-            if ($saved_ticker) {
-                $saved_ticker = array_merge($saved_ticker, Helpers::extract_scheduling_fields($item));
-                $ticker[] = $saved_ticker;
-            }
-        }
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
+        $raw_ticker = isset($_POST['teksttv_ticker']) && is_array($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
+        [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel);
         update_option('teksttv_ticker_' . $channel, $ticker);
 
         RestApi::invalidate_slides_cache($channel);
 
-        add_settings_error('teksttv-wp-plugin', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
+        if ($blocks_preserved || $ticker_preserved) {
+            add_settings_error('teksttv', 'loop_preserved_unknown', __('Sommige opgeslagen blokken horen bij een niet-actieve plugin. Ze zijn bewaard maar verschijnen pas weer als die plugin actief is.', 'teksttv-wp-plugin'), 'warning');
+        }
+
+        add_settings_error('teksttv', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
+    }
+
+    /**
+     * Sanitize submitted registry items and re-append stored items whose type is
+     * no longer registered (for example because an add-on was deactivated).
+     *
+     * @param array<int|string, mixed> $raw_items Unslashed POST items.
+     * @return array{0: list<array<string, mixed>>, 1: bool}
+     */
+    private static function sanitize_registry_items(array $raw_items, string $option_name): array
+    {
+        $items = [];
+        foreach ($raw_items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $type = sanitize_key($item['type'] ?? '');
+            $saved = BlockRegistry::save($type, $item);
+            if ($saved) {
+                $items[] = array_merge($saved, Helpers::extract_scheduling_fields($item));
+            }
+        }
+
+        $preserved = false;
+        $existing = get_option($option_name, []);
+        foreach (is_array($existing) ? $existing : [] as $existing_item) {
+            $existing_type = is_array($existing_item) ? (string) ($existing_item['type'] ?? '') : '';
+            if ($existing_type !== '' && BlockRegistry::get($existing_type) === null) {
+                $items[] = $existing_item;
+                $preserved = true;
+            }
+        }
+
+        return [$items, $preserved];
     }
 }

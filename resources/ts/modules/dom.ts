@@ -72,15 +72,23 @@ export function dispatchInput(el: Element): void {
 }
 
 /**
- * Rewrite indexed `name` attributes on inputs/selects after reorder or delete.
+ * Rewrite indexed `name` attributes on inputs/selects/textareas after reorder
+ * or delete, plus `data-name` on containers (the campaign slides list stores
+ * its field name there and later-added hidden inputs derive from it).
  * `pattern` must capture the name prefix in group 1; each match becomes `$1[<item index>]`.
  */
 export function reindexNames(container: HTMLElement, itemSelector: string, pattern: RegExp): void {
     container.querySelectorAll(itemSelector).forEach((item, i) => {
-        item.querySelectorAll('input, select').forEach((input) => {
+        item.querySelectorAll('input, select, textarea').forEach((input) => {
             const name = input.getAttribute('name');
             if (name) {
                 input.setAttribute('name', name.replace(pattern, `$1[${i}]`));
+            }
+        });
+        item.querySelectorAll<HTMLElement>('[data-name]').forEach((el) => {
+            const dataName = el.dataset.name;
+            if (dataName) {
+                el.dataset.name = dataName.replace(pattern, `$1[${i}]`);
             }
         });
     });

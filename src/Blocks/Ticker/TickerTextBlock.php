@@ -31,7 +31,7 @@ final class TickerTextBlock implements TickerBlock
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field" style="flex:1;">
                 <label><?php esc_html_e('Bericht', 'teksttv-wp-plugin'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][message]" value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr__('Ticker tekst...', 'teksttv-wp-plugin'); ?>" />
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][message]" value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr__('Ticker tekst...', 'teksttv-wp-plugin'); ?>" data-summary />
             </div>
         </div>
         <?php

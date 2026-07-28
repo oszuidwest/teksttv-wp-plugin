@@ -138,7 +138,7 @@ class PostMeta
         $ai_supported = Helpers::ai_supported();
         $prompts = $ai_supported ? Helpers::get_ai_prompts() : [];
 
-        wp_localize_script('teksttv-admin', 'teksttvPost', [
+        $config = [
             'previewUrl' => $preview_url,
             'restNonce' => wp_create_nonce('wp_rest'),
             'imageDataUrl' => rest_url('teksttv/v1/image-data'),
@@ -152,7 +152,9 @@ class PostMeta
             'titleCharLimit' => $prompts['title_char_limit'] ?? 0,
             'wordLimit' => $prompts['word_limit'] ?? 0,
             'wordLimitPhoto' => $prompts['word_limit_photo'] ?? 0,
-        ]);
+            'pageSeparator' => Helpers::has_feature('page_separator'),
+        ];
+        wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');
     }
 
     /**

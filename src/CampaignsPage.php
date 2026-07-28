@@ -42,7 +42,9 @@ class CampaignsPage
      */
     public static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
     {
-        $id = $campaign['id'] ?? self::new_campaign_id();
+        // Template rows render an empty id. A unique id is minted for each
+        // submitted row so multiple additions never share the template's id.
+        $id = $campaign['id'] ?? '';
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
         $group = (string) ($campaign['group'] ?? '');
@@ -139,13 +141,17 @@ class CampaignsPage
 
         // Save campaigns
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
-        $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
+        $raw = isset($_POST['teksttv_campaigns']) && is_array($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         $campaigns = [];
         $valid_slugs = Helpers::channel_slugs();
 
         foreach ($raw as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $submitted_id = sanitize_key($item['id'] ?? '');
             $saved = [
-                'id' => sanitize_key($item['id'] ?? self::new_campaign_id()),
+                'id' => $submitted_id !== '' ? $submitted_id : self::new_campaign_id(),
                 'name' => sanitize_text_field($item['name'] ?? ''),
                 'group' => sanitize_key($item['group'] ?? ''),
             ];

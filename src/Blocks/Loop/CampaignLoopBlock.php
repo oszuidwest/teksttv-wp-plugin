@@ -41,7 +41,7 @@ final class CampaignLoopBlock implements LoopBlock
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Groep(en)', 'teksttv-wp-plugin'); ?></label>
                 <?php if (!empty($available_groups)) : ?>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv-wp-plugin'); ?>" multiple>
+                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv-wp-plugin'); ?>" data-summary data-summary-empty="<?php echo esc_attr__('Geen groep', 'teksttv-wp-plugin'); ?>" multiple>
                     <?php foreach ($available_groups as $group_option) : ?>
                     <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
                     <?php endforeach; ?>
@@ -52,7 +52,7 @@ final class CampaignLoopBlock implements LoopBlock
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Max. slides', 'teksttv-wp-plugin'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv-wp-plugin'); ?>" />
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv-wp-plugin'); ?>" data-summary="max %s" />
                 <p class="description"><?php esc_html_e('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.', 'teksttv-wp-plugin'); ?></p>
             </div>
         </div>
@@ -67,12 +67,13 @@ final class CampaignLoopBlock implements LoopBlock
 
     /**
      * Render one intro/outro image picker field. The class names are a contract
-     * with the image-select handler in the admin JS.
+     * with the image-select handler in the admin JS: `.teksttv-image-picker`
+     * wraps the id input, preview, and select/remove buttons.
      */
     private static function render_transition_picker(string $label, string $field_name, int $image_id, string $image_url): void
     {
         ?>
-        <div class="teksttv-block-field">
+        <div class="teksttv-block-field teksttv-image-picker">
             <label><?php echo esc_html($label); ?></label>
             <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $image_id); ?>" class="teksttv-block-image-id" />
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">

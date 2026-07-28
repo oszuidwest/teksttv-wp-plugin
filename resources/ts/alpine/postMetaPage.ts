@@ -1,7 +1,7 @@
 import Sortable from 'sortablejs';
-import { fadeOutRemove, hide, show, slideDown, slideUp } from '../modules/dom';
+import { hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
-import { debounce, previewSlideUrl } from '../modules/utils';
+import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
@@ -21,7 +21,6 @@ export function createPostMetaPage() {
     let iframeLoadHandler: (() => void) | undefined;
 
     const previewUrl = config?.previewUrl ?? '';
-    const openExtraImages = createExtraImagesOpener();
 
     function getSlides(): Slide[] {
         return buildSlidesFromDom(config, customImageData);
@@ -72,6 +71,8 @@ export function createPostMetaPage() {
         iframe.addEventListener('load', iframeLoadHandler, { once: true });
         iframe.setAttribute('src', previewSlideUrl(previewUrl, slides[currentSlideIndex]));
     }, 400);
+
+    const openExtraImages = createExtraImagesOpener(updatePreview);
 
     const openSidebarCustom = createSidebarCustomPicker(
         config,
@@ -183,10 +184,7 @@ export function createPostMetaPage() {
         onExtraImagesClick(e: MouseEvent): void {
             if (!(e.target instanceof Element)) return;
             const tgt = e.target.closest('.teksttv-remove-image');
-            const item = tgt?.closest('.teksttv-image-item');
-            if (item instanceof HTMLElement) {
-                fadeOutRemove(item, 150);
-            }
+            if (tgt) removeImageItem(tgt, updatePreview);
         },
 
         activateSidebarCardDefault(): void {

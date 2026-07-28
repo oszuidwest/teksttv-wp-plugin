@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { debounce } from '../../resources/ts/modules/utils';
+import { debounce, splitPages } from '../../resources/ts/modules/utils';
 
 const originalWindow = globalThis.window;
 
@@ -22,5 +22,13 @@ describe('debounce', () => {
         await new Promise((resolve) => setTimeout(resolve, 20));
 
         expect(calls).toBe(1);
+    });
+});
+
+describe('splitPages', () => {
+    test('keeps separator markup on one page when the feature is disabled', () => {
+        const html = '<p>Pagina één</p><p>---</p><p>Pagina twee</p>';
+
+        expect(splitPages(html, false)).toEqual([html]);
     });
 });
