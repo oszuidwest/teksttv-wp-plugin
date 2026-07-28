@@ -52,10 +52,15 @@ async function openFixturePostEditor(page: Page): Promise<void> {
     const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
     await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
     await expect(metaBoxesButton).toBeVisible();
-    if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
-        await metaBoxesButton.click();
-    }
-    await expect(metaBoxesButton).toHaveAttribute('aria-expanded', 'true');
+    await expect
+        .poll(async () => {
+            if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
+                await metaBoxesButton.focus();
+                await page.keyboard.press('Enter');
+            }
+            return metaBoxesButton.getAttribute('aria-expanded');
+        })
+        .toBe('true');
 }
 
 // No reseed hooks here: none of these tests submit a form or save the post,
