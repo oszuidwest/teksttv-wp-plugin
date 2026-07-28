@@ -66,7 +66,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     function handleFieldChange(root: HTMLElement | null, e: Event): void {
         const t = e.target;
         if (!(t instanceof HTMLElement) || !root?.contains(t)) return;
-        if (t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
+        if (e.type === 'change' && t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
             applySchedulingToggle(t);
         }
         if (t.closest('.teksttv-block-body')) {

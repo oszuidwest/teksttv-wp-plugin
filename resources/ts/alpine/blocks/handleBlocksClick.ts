@@ -16,6 +16,11 @@ export function toggleBlockOpen(header: Element): void {
 export function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
+    block
+        .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')
+        .forEach((control) => {
+            control.disabled = true;
+        });
     slideUp(block, 200, () => {
         block.remove();
         onRemoved();

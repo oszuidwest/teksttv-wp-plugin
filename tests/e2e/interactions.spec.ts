@@ -74,7 +74,19 @@ test.describe('admin interaction contracts', () => {
         await addLoopBlock(page, 'iframe');
 
         const blocks = page.locator('#teksttv-blocks > .teksttv-block');
-        await blocks.nth(1).locator('.teksttv-remove-block').click();
+        const disabledStates = await blocks
+            .nth(1)
+            .locator('.teksttv-remove-block')
+            .evaluate((button) => {
+                button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                const block = button.closest('.teksttv-block');
+                const controls = block?.querySelectorAll<
+                    HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+                >('input, select, textarea');
+                return Array.from(controls ?? [], (control) => control.disabled);
+            });
+        expect(disabledStates.length).toBeGreaterThan(0);
+        expect(disabledStates.every(Boolean)).toBe(true);
         await expect(blocks).toHaveCount(2);
         await expect(blocks.nth(0)).toHaveAttribute('data-type', 'articles');
         await expect(blocks.nth(1)).toHaveAttribute('data-type', 'iframe');

@@ -52,14 +52,12 @@ async function openFixturePostEditor(page: Page): Promise<void> {
     const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
     await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
     await expect(metaBoxesButton).toBeVisible();
+    if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
+        await metaBoxesButton.focus();
+        await page.keyboard.press('Enter');
+    }
     await expect
-        .poll(async () => {
-            if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
-                await metaBoxesButton.focus();
-                await page.keyboard.press('Enter');
-            }
-            return metaBoxesButton.getAttribute('aria-expanded');
-        })
+        .poll(() => metaBoxesButton.getAttribute('aria-expanded'))
         .toBe('true');
 }
 

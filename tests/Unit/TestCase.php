@@ -5,6 +5,7 @@ namespace TekstTV\Tests\Unit;
 use Brain\Monkey;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
+use TekstTV\BlockRegistry;
 use TekstTV\Helpers;
 
 abstract class TestCase extends PHPUnitTestCase
@@ -15,6 +16,8 @@ abstract class TestCase extends PHPUnitTestCase
     {
         parent::setUp();
         Monkey\setUp();
+        $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
+        $registry_types->setValue(null, []);
         Helpers::reset_post_taxonomies_cache();
     }
 

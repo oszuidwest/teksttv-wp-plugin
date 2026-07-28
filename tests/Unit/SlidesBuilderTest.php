@@ -11,13 +11,6 @@ use TekstTV\SlidesBuilder;
  */
 class SlidesBuilderTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $ref = new \ReflectionProperty(BlockRegistry::class, 'types');
-        $ref->setValue(null, []);
-    }
-
     public function test_build_returns_empty_for_empty_config(): void
     {
         Functions\expect('get_option')
