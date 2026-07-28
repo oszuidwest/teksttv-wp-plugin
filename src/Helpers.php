@@ -82,6 +82,18 @@ class Helpers
     }
 
     /**
+     * Normalize a stored days value to its tri-state form: null (or any
+     * non-array, e.g. the '' that get_post_meta returns for missing meta)
+     * means "all days"; an empty list means "no days"; a list restricts.
+     *
+     * @return list<string>|null
+     */
+    public static function normalize_days(mixed $days): ?array
+    {
+        return is_array($days) ? $days : null;
+    }
+
+    /**
      * Check if content should be displayed on the given day.
      *
      * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun); null means all days, [] means none.
@@ -220,20 +232,40 @@ class Helpers
     }
 
     /**
+     * Default seconds for the per-type duration options. Single source for the
+     * registered setting defaults, the admin placeholders, and build-time
+     * fallbacks — keep all reads on this map.
+     */
+    public const DURATION_DEFAULTS = [
+        'teksttv_duration_text' => 20,
+        'teksttv_duration_image' => 7,
+        'teksttv_duration_iframe' => 30,
+    ];
+
+    /**
      * Resolve a slide duration in milliseconds from an optional per-block
-     * override (in seconds), falling back to a duration option (in seconds).
+     * override (in seconds), falling back to a duration option (in seconds)
+     * whose default comes from {@see self::DURATION_DEFAULTS}.
      *
      * @param mixed $override_seconds Stored block value; empty means "use the option".
-     * @param string $option_name Duration option to read, or '' to use $default_seconds directly.
+     * @param key-of<self::DURATION_DEFAULTS> $option_name Duration option to read.
      */
-    public static function duration_ms(mixed $override_seconds, string $option_name, int $default_seconds): int
+    public static function duration_ms(mixed $override_seconds, string $option_name): int
     {
-        if (!empty($override_seconds)) {
-            $seconds = (int) $override_seconds;
-        } else {
-            $seconds = $option_name !== '' ? (int) get_option($option_name, $default_seconds) : $default_seconds;
-        }
+        $default = self::DURATION_DEFAULTS[$option_name];
+        return self::fixed_duration_ms(
+            $override_seconds,
+            !empty($override_seconds) ? $default : (int) get_option($option_name, $default)
+        );
+    }
 
+    /**
+     * Like {@see self::duration_ms()} for blocks without a duration option
+     * (weather): an optional per-block override with a fixed default.
+     */
+    public static function fixed_duration_ms(mixed $override_seconds, int $default_seconds): int
+    {
+        $seconds = !empty($override_seconds) ? (int) $override_seconds : $default_seconds;
         return self::clamp_int($seconds, 1, 120) * 1000;
     }
 
@@ -254,7 +286,7 @@ class Helpers
 
         return [
             'word_limit' => self::clamp_int($settings['word_limit'] ?? 100, 10, 500),
-            'word_limit_photo' => min(500, absint($settings['word_limit_photo'] ?? 0)),
+            'word_limit_photo' => self::clamp_int($settings['word_limit_photo'] ?? 0, 0, 500),
             'title_char_limit' => self::clamp_int($settings['title_char_limit'] ?? 40, 10, 100),
             'min_input_words' => self::clamp_int($settings['min_input_words'] ?? 50, 0, 500),
             'max_retries' => self::clamp_int($settings['max_retries'] ?? 3, 1, 5),
@@ -275,7 +307,10 @@ class Helpers
         $saved = get_option('teksttv_ai_prompts', []);
         $saved = is_array($saved) ? $saved : [];
         $limits = self::normalize_ai_prompt_limits($saved);
-        $word_limit_photo = $limits['word_limit_photo'] >= 1 ? $limits['word_limit_photo'] : $limits['word_limit'];
+        // Resolve the stored "inherit word_limit" marker (0) at read time.
+        if ($limits['word_limit_photo'] < 1) {
+            $limits['word_limit_photo'] = $limits['word_limit'];
+        }
 
         $defaults = [
             'system' => 'Je bent een eindredacteur voor tekst-tv. Schrijf in natuurlijk, vloeiend Nederlands voor een breed publiek. Gebruik korte, heldere zinnen. Schrijf alleen in het Nederlands en gebruik geen gedachtestreepjes.',
@@ -283,23 +318,14 @@ class Helpers
             'prompt_body' => 'Vat dit nieuwsartikel samen voor tekst-tv in maximaal {{words}} woorden. Schrijf in vloeiende, korte zinnen zonder HTML-opmaak.',
         ];
 
-        return [
+        return array_merge([
             'system' => !empty($saved['system']) ? $saved['system'] : $defaults['system'],
             'prompt_title' => !empty($saved['prompt_title']) ? $saved['prompt_title'] : $defaults['prompt_title'],
             'prompt_body' => !empty($saved['prompt_body']) ? $saved['prompt_body'] : $defaults['prompt_body'],
-            'word_limit' => $limits['word_limit'],
-            'word_limit_photo' => $word_limit_photo,
-            'title_char_limit' => $limits['title_char_limit'],
-            'min_input_words' => $limits['min_input_words'],
-            'max_retries' => $limits['max_retries'],
-            'rate_limit' => $limits['rate_limit'],
             'region_taxonomy' => $saved['region_taxonomy'] ?? '',
             'provider' => $saved['provider'] ?? '',
             'model' => $saved['model'] ?? '',
-            'temperature' => $limits['temperature'],
-            'top_p' => $limits['top_p'],
-            'max_tokens' => $limits['max_tokens'],
-        ];
+        ], $limits);
     }
 
     /**
@@ -448,13 +474,7 @@ class Helpers
         if (!self::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
             return false;
         }
-        if (array_key_exists('days', $block)) {
-            $days = $block['days'] === null ? null : (is_array($block['days']) ? $block['days'] : []);
-            if (!self::is_allowed_on_day($days)) {
-                return false;
-            }
-        }
-        return true;
+        return self::is_allowed_on_day(self::normalize_days($block['days'] ?? null));
     }
 
     /**

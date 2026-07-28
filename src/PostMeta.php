@@ -133,7 +133,7 @@ class PostMeta
         if (empty($saved_start) && $post_id) {
             $saved_start = self::default_start_date(get_post($post_id));
         }
-        $default_end = !empty($saved_start) ? self::default_end_date($saved_start) : '';
+        $default_end = self::default_end_date((string) $saved_start);
 
         $ai_supported = Helpers::ai_supported();
         $prompts = $ai_supported ? Helpers::get_ai_prompts() : [];
@@ -162,7 +162,7 @@ class PostMeta
     private static function default_start_date(?\WP_Post $post): string
     {
         $pub_date = ($post && $post->post_date !== '0000-00-00 00:00:00') ? $post->post_date : '';
-        return $pub_date ? date('Y-m-d', strtotime($pub_date)) : current_time('Y-m-d');
+        return $pub_date ? mysql2date('Y-m-d', $pub_date) : current_time('Y-m-d');
     }
 
     /**
@@ -177,8 +177,7 @@ class PostMeta
             return '';
         }
 
-        $start = \DateTimeImmutable::createFromFormat('!Y-m-d', $start_date);
-        return $start ? $start->modify('+' . $default_days . ' days')->format('Y-m-d') : '';
+        return (new \DateTimeImmutable($start_date))->modify('+' . $default_days . ' days')->format('Y-m-d');
     }
 
     public static function render_meta_box(\WP_Post $post): void
@@ -193,9 +192,7 @@ class PostMeta
         $images = get_post_meta($post->ID, '_teksttv_images', true);
 
         // Missing meta means "all days"; a stored empty array means "no days".
-        if (!is_array($days)) {
-            $days = null;
-        }
+        $days = Helpers::normalize_days($days);
         if (!is_array($images)) {
             $images = [];
         }

@@ -131,7 +131,7 @@ final class CampaignLoopBlock implements LoopBlock
                 continue;
             }
 
-            $duration = Helpers::duration_ms($campaign['duration'] ?? null, 'teksttv_duration_image', 7);
+            $duration = Helpers::duration_ms($campaign['duration'] ?? null, 'teksttv_duration_image');
 
             foreach ($campaign['slides'] ?? [] as $attachment_id) {
                 $url = wp_get_attachment_url((int) $attachment_id);

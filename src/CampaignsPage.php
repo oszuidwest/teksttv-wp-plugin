@@ -48,7 +48,7 @@ class CampaignsPage
         $group = (string) ($campaign['group'] ?? '');
         $duration = $campaign['duration'] ?? '';
         $slides = $campaign['slides'] ?? [];
-        $default_duration = (int) get_option('teksttv_duration_image', 7);
+        $default_duration = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
@@ -81,7 +81,9 @@ class CampaignsPage
                         <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>
-                <?php AdminPage::render_scheduling_fields($index, $campaign, 'teksttv_campaigns', false); ?>
+                <div class="teksttv-block-fields">
+                    <?php AdminPage::render_scheduling_inputs($index, $campaign, 'teksttv_campaigns'); ?>
+                </div>
                 <?php if (count($channels) > 1) : ?>
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">

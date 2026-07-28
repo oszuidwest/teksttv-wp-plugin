@@ -28,7 +28,7 @@ final class ImageLoopBlock implements LoopBlock
     {
         $image_id = $block['image_id'] ?? 0;
         $duration = $block['duration'] ?? '';
-        $default_image = (int) get_option('teksttv_duration_image', 7);
+        $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
         $image_url = $image_id ? wp_get_attachment_image_url((int) $image_id, 'medium') : '';
 
         ?>
@@ -89,7 +89,7 @@ final class ImageLoopBlock implements LoopBlock
 
         return [array_merge([
             'type' => 'image',
-            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_image', 7),
+            'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_image'),
         ], $image_data)
         ];
     }

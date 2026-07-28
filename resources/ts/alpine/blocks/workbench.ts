@@ -1,9 +1,8 @@
 import Sortable from 'sortablejs';
-import { hide, show, slideDown, slideUp, tmplHtml } from '../../modules/dom';
-import { initTomSelectIn } from '../../modules/utils';
+import { hide, reindexNames, show, slideDown, slideUp, tmplHtml } from '../../modules/dom';
+import { debounce, initTomSelectIn } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
 import { handleBlocksClick, removeClosestBlock, toggleBlockOpen } from './handleBlocksClick';
-import { reindexBlocks as reindexBlocksDom, reindexTicker as reindexTickerDom } from './reindex';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -17,12 +16,12 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
     function reindexBlocks(): void {
         if (!blocksEl) return;
-        reindexBlocksDom(blocksEl);
+        reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/);
     }
 
     function reindexTicker(): void {
         if (!tickerEl) return;
-        reindexTickerDom(tickerEl);
+        reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/);
     }
 
     function refreshSummaries(): void {
@@ -30,19 +29,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         updateBlockSummaries(blocksEl);
     }
 
-    let summariesTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleSummaries = debounce(refreshSummaries, 150);
 
-    function scheduleSummaries(): void {
-        clearTimeout(summariesTimer);
-        summariesTimer = window.setTimeout(refreshSummaries, 150);
-    }
-
-    /** Insert a block from a template, expand it, and optionally init TomSelect / focus its first text input. */
+    /** Insert a block from a template, expand it, and optionally focus its first text input. */
     function insertBlockFromTemplate(
         root: HTMLElement,
         templateId: string,
         placeholder: RegExp,
-        options: { tomSelect?: boolean; focusText?: boolean } = {},
+        options: { focusText?: boolean } = {},
     ): boolean {
         const templateHtml = tmplHtml(templateId);
         if (!templateHtml) return false;
@@ -53,7 +47,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             const body = newBlock.querySelector<HTMLElement>('.teksttv-block-body');
             if (body) show(body);
             newBlock.classList.add('is-expanded');
-            if (options.tomSelect) initTomSelectIn(newBlock);
+            // A no-op for templates without .teksttv-tomselect fields — the
+            // class on the rendered fields is the declaration.
+            initTomSelectIn(newBlock);
             if (options.focusText) newBlock.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
         }
         return true;
@@ -110,7 +106,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         addLoopBlock(type: string): void {
             if (!blocksEl) return;
             document.querySelector('#teksttv-empty-state')?.remove();
-            if (insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, /__INDEX__/g, { tomSelect: true })) {
+            if (insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, /__INDEX__/g)) {
                 refreshSummaries();
             }
         },
@@ -125,10 +121,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
-            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, {
-                tomSelect: true,
-                focusText: true,
-            });
+            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true });
         },
 
         expandAllBlocks(): void {

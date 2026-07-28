@@ -102,7 +102,7 @@ final class WeatherLoopBlock implements LoopBlock
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Duur', 'teksttv-wp-plugin'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="15" /> <span class="teksttv-unit">sec</span>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>
         <?php
@@ -153,7 +153,7 @@ final class WeatherLoopBlock implements LoopBlock
             return [];
         }
 
-        $duration = Helpers::duration_ms($block['duration'] ?? null, '', self::DEFAULT_DURATION_SECONDS);
+        $duration = Helpers::fixed_duration_ms($block['duration'] ?? null, self::DEFAULT_DURATION_SECONDS);
 
         $days_output = [];
         foreach ($weather['days'] as $index => $day) {

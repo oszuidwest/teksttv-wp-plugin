@@ -137,23 +137,13 @@ class AdminPage
             'default' => 30,
         ]);
 
-        register_setting('teksttv_settings', 'teksttv_duration_text', [
-            'type' => 'integer',
-            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
-            'default' => 20,
-        ]);
-
-        register_setting('teksttv_settings', 'teksttv_duration_image', [
-            'type' => 'integer',
-            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
-            'default' => 7,
-        ]);
-
-        register_setting('teksttv_settings', 'teksttv_duration_iframe', [
-            'type' => 'integer',
-            'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
-            'default' => 30,
-        ]);
+        foreach (Helpers::DURATION_DEFAULTS as $duration_option => $duration_default) {
+            register_setting('teksttv_settings', $duration_option, [
+                'type' => 'integer',
+                'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
+                'default' => $duration_default,
+            ]);
+        }
 
         register_setting('teksttv_settings', 'teksttv_openweather_api_key', [
             'type' => 'string',
@@ -247,25 +237,15 @@ class AdminPage
         }
 
         $merged = array_merge($current, $input);
-        $limits = Helpers::normalize_ai_prompt_limits($merged);
 
-        return [
+        return array_merge([
             'system' => sanitize_textarea_field($merged['system'] ?? ''),
             'prompt_title' => sanitize_textarea_field($merged['prompt_title'] ?? ''),
             'prompt_body' => sanitize_textarea_field($merged['prompt_body'] ?? ''),
-            'word_limit' => $limits['word_limit'],
-            'word_limit_photo' => $limits['word_limit_photo'],
-            'title_char_limit' => $limits['title_char_limit'],
-            'min_input_words' => $limits['min_input_words'],
-            'max_retries' => $limits['max_retries'],
-            'rate_limit' => $limits['rate_limit'],
             'region_taxonomy' => sanitize_key($merged['region_taxonomy'] ?? ''),
             'provider' => sanitize_key($merged['provider'] ?? ''),
             'model' => sanitize_text_field($merged['model'] ?? ''),
-            'temperature' => $limits['temperature'],
-            'top_p' => $limits['top_p'],
-            'max_tokens' => $limits['max_tokens'],
-        ];
+        ], Helpers::normalize_ai_prompt_limits($merged));
     }
 
     public static function enqueue_assets(string $hook): void
@@ -366,16 +346,6 @@ class AdminPage
     }
 
     /**
-     * @deprecated Use Helpers::get_post_taxonomies().
-     *
-     * @return list<array{name: string, label: string, terms: array<int, string>}>
-     */
-    public static function get_post_taxonomies_static(): array
-    {
-        return Helpers::get_post_taxonomies();
-    }
-
-    /**
      * Render a loop or ticker block using the registry.
      *
      * @param array<string, mixed> $block
@@ -408,43 +378,55 @@ class AdminPage
     }
 
     /**
-     * Render the date-range + weekday scheduling fields for a block-shaped item.
-     * Also used by the campaigns page ($with_toggle = false: always visible,
-     * without the enable checkbox or the --scheduling styling hook).
+     * Render the collapsible scheduling section for a loop/ticker block: the
+     * enable checkbox plus the date+days inputs, hidden until scheduling is
+     * set. The checkbox and --scheduling class are a contract with the
+     * scheduling toggle in the admin JS.
      *
      * @param array<string, mixed> $block
      */
-    public static function render_scheduling_fields(int|string $index, array $block, string $prefix = 'teksttv_blocks', bool $with_toggle = true): void
+    public static function render_scheduling_fields(int|string $index, array $block, string $prefix = 'teksttv_blocks'): void
     {
-        $date_start = $block['date_start'] ?? '';
-        $date_end = $block['date_end'] ?? '';
-        $days = null;
-        if (array_key_exists('days', $block) && $block['days'] !== null) {
-            $days = is_array($block['days']) ? $block['days'] : [];
-        }
-        $has_scheduling = !empty($date_start) || !empty($date_end) || $days !== null;
+        $days = Helpers::normalize_days($block['days'] ?? null);
+        $has_scheduling = !empty($block['date_start']) || !empty($block['date_end']) || $days !== null;
 
-        if ($with_toggle) : ?>
+        ?>
         <div class="teksttv-block-scheduling-toggle">
             <label>
                 <input type="checkbox" class="teksttv-scheduling-checkbox" <?php checked($has_scheduling); ?> />
                 <?php esc_html_e('Planning inschakelen', 'teksttv-wp-plugin'); ?>
             </label>
         </div>
-        <?php endif; ?>
-        <div class="teksttv-block-fields<?php echo $with_toggle ? ' teksttv-block-fields--scheduling' : ''; ?>" <?php echo (!$with_toggle || $has_scheduling) ? '' : 'style="display:none;"'; ?>>
-            <div class="teksttv-block-field">
-                <label><?php esc_html_e('Vanaf', 'teksttv-wp-plugin'); ?></label>
-                <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
-            </div>
-            <div class="teksttv-block-field">
-                <label><?php esc_html_e('Tot en met', 'teksttv-wp-plugin'); ?></label>
-                <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
-            </div>
-            <div class="teksttv-block-field">
-                <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
-                <?php self::render_days_row($prefix . '[' . $index . '][days][]', $days); ?>
-            </div>
+        <div class="teksttv-block-fields teksttv-block-fields--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
+            <?php self::render_scheduling_inputs($index, $block, $prefix); ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render the bare date-range + weekday inputs for a block-shaped item,
+     * without the toggle chrome. Callers provide their own container (the
+     * campaigns page renders these always-visible).
+     *
+     * @param array<string, mixed> $block
+     */
+    public static function render_scheduling_inputs(int|string $index, array $block, string $prefix): void
+    {
+        $date_start = $block['date_start'] ?? '';
+        $date_end = $block['date_end'] ?? '';
+
+        ?>
+        <div class="teksttv-block-field">
+            <label><?php esc_html_e('Vanaf', 'teksttv-wp-plugin'); ?></label>
+            <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
+        </div>
+        <div class="teksttv-block-field">
+            <label><?php esc_html_e('Tot en met', 'teksttv-wp-plugin'); ?></label>
+            <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
+        </div>
+        <div class="teksttv-block-field">
+            <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
+            <?php self::render_days_row($prefix . '[' . $index . '][days][]', Helpers::normalize_days($block['days'] ?? null)); ?>
         </div>
         <?php
     }

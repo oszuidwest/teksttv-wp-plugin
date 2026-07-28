@@ -38,19 +38,28 @@ class HelpersTest extends TestCase
 
     public function test_duration_ms_clamps_legacy_override(): void
     {
-        $this->assertSame(120000, Helpers::duration_ms('9999', 'unused_option', 20));
+        $this->assertSame(120000, Helpers::duration_ms('9999', 'teksttv_duration_text'));
     }
 
     public function test_duration_ms_clamps_legacy_option(): void
     {
-        Functions\expect('get_option')->with('duration_option', 20)->andReturn(0);
+        Functions\expect('get_option')->with('teksttv_duration_text', 20)->andReturn(0);
 
-        $this->assertSame(1000, Helpers::duration_ms(null, 'duration_option', 20));
+        $this->assertSame(1000, Helpers::duration_ms(null, 'teksttv_duration_text'));
     }
 
-    public function test_duration_ms_clamps_direct_default(): void
+    public function test_duration_ms_reads_default_from_duration_defaults(): void
     {
-        $this->assertSame(120000, Helpers::duration_ms(null, '', 9999));
+        Functions\expect('get_option')
+            ->with('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image'])
+            ->andReturnArg(1);
+
+        $this->assertSame(7000, Helpers::duration_ms(null, 'teksttv_duration_image'));
+    }
+
+    public function test_fixed_duration_ms_clamps_direct_default(): void
+    {
+        $this->assertSame(120000, Helpers::fixed_duration_ms(null, 9999));
     }
 
     // =========================================================================

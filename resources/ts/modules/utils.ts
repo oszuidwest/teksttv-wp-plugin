@@ -6,7 +6,7 @@ export function escAttr(value: string | number): string {
 }
 
 /** Encode a slide object to a base64 string for the preview URL. */
-export function encodeSlideData(slide: Slide): string {
+function encodeSlideData(slide: Slide): string {
     const json = JSON.stringify(slide);
     const bytes = new TextEncoder().encode(json);
     let binary = '';
@@ -28,6 +28,15 @@ export function previewSlideUrl(baseUrl: string, slide: Slide): string {
  */
 export function splitPages(html: string): string[] {
     return html.split(/<p[^>]*>\s*-{3,}\s*<\/p>|(?:^|\r?\n)[ \t]*-{3,}[ \t]*(?=\r?\n|$)/i);
+}
+
+/** Debounce `fn`: each call restarts the timer; only the last call within `ms` runs. */
+export function debounce(fn: () => void, ms: number): () => void {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    return () => {
+        clearTimeout(timer);
+        timer = window.setTimeout(fn, ms);
+    };
 }
 
 /** Replace HTML tags with spaces (callers trim/collapse as needed). */

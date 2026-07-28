@@ -33,8 +33,8 @@ final class ArticlesLoopBlock implements LoopBlock
         $count = $block['count'] ?? 3;
         $dur_text = $block['duration_text'] ?? '';
         $dur_image = $block['duration_image'] ?? '';
-        $default_text = (int) get_option('teksttv_duration_text', 20);
-        $default_image = (int) get_option('teksttv_duration_image', 7);
+        $default_text = (int) get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text']);
+        $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
 
         ?>
         <div class="teksttv-block-fields">
@@ -110,13 +110,16 @@ final class ArticlesLoopBlock implements LoopBlock
             'meta_query' => $meta_query,
         ]));
 
+        $text_duration = Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text');
+        $image_duration = Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image');
+
         while ($query->have_posts()) {
             $query->the_post();
             $post_id = get_the_ID();
 
             if ($scheduling) {
-                $days = get_post_meta($post_id, '_teksttv_days', true);
-                if (is_array($days) && !Helpers::is_allowed_on_day($days)) {
+                $days = Helpers::normalize_days(get_post_meta($post_id, '_teksttv_days', true));
+                if (!Helpers::is_allowed_on_day($days)) {
                     continue;
                 }
 
@@ -139,7 +142,7 @@ final class ArticlesLoopBlock implements LoopBlock
                 foreach ($pages as $page_content) {
                     $slide = [
                         'type' => 'text',
-                        'duration' => Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text', 20),
+                        'duration' => $text_duration,
                         'title' => $title,
                         'body' => wpautop($page_content),
                     ];
@@ -159,7 +162,7 @@ final class ArticlesLoopBlock implements LoopBlock
                     if ($image_data) {
                         $slides[] = array_merge([
                             'type' => 'image',
-                            'duration' => Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image', 7),
+                            'duration' => $image_duration,
                         ], $image_data);
                     }
                 }
