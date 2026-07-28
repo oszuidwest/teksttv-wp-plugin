@@ -1,34 +1,35 @@
 import { type Page, expect, test } from '@playwright/test';
 import { addLoopBlock } from './helpers';
-import { reseedFixtures } from './reseed-fixtures';
+
+type EditorWindow = Window & {
+    wp?: {
+        data?: {
+            dispatch?: (store: unknown) => { set: (scope: string, name: string, value: boolean) => void };
+        };
+        preferences?: { store?: unknown };
+    };
+};
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
     await expect(modal).toBeVisible();
     const libraryTab = modal.getByRole('tab', { name: 'Media Library' });
     await expect(libraryTab).toBeVisible();
-    await expect
-        .poll(async () => {
-            if ((await libraryTab.getAttribute('aria-selected')) !== 'true') {
-                await libraryTab.focus();
-                await page.keyboard.press('Enter');
-            }
-            return libraryTab.getAttribute('aria-selected');
-        })
-        .toBe('true');
+    if ((await libraryTab.getAttribute('aria-selected')) !== 'true') {
+        await libraryTab.click();
+    }
+    await expect(libraryTab).toHaveAttribute('aria-selected', 'true');
 
     const attachment = modal.getByRole('checkbox', { name: 'TekstTV E2E Image' });
     await expect(attachment).toBeVisible();
     const attachmentId = await attachment.getAttribute('data-id');
     if (!attachmentId) throw new Error('The E2E media fixture must expose its attachment ID.');
 
-    await attachment.focus();
-    await page.keyboard.press('Space');
+    await attachment.click();
     await expect(attachment).toHaveAttribute('aria-checked', 'true');
     const selectButton = modal.locator('.media-button-select');
     await expect(selectButton).toBeEnabled();
-    await selectButton.focus();
-    await page.keyboard.press('Enter');
+    await selectButton.click();
     await expect(modal).toBeHidden();
     return attachmentId;
 }
@@ -38,54 +39,28 @@ async function openFixturePostEditor(page: Page): Promise<void> {
     await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
 
     await expect(page.locator('#teksttv_meta')).toBeAttached();
-    await page.waitForFunction(
-        () =>
-            typeof (
-                window as unknown as {
-                    wp?: { data?: { dispatch?: unknown }; preferences?: { store?: unknown } };
-                }
-            ).wp?.data?.dispatch === 'function' &&
-            (
-                window as unknown as {
-                    wp?: { preferences?: { store?: unknown } };
-                }
-            ).wp?.preferences?.store !== undefined,
-    );
+    await page.waitForFunction(() => {
+        const { wp } = window as EditorWindow;
+        return typeof wp?.data?.dispatch === 'function' && wp?.preferences?.store !== undefined;
+    });
     await page.evaluate(() => {
-        const editorWp = (
-            window as unknown as {
-                wp: {
-                    data: {
-                        dispatch: (store: unknown) => {
-                            set: (scope: string, name: string, value: boolean) => void;
-                        };
-                    };
-                    preferences: { store: unknown };
-                };
-            }
-        ).wp;
-        editorWp.data.dispatch(editorWp.preferences.store).set('core/edit-post', 'welcomeGuide', false);
+        const { wp } = window as EditorWindow;
+        if (!wp?.data?.dispatch || !wp.preferences) return;
+        wp.data.dispatch(wp.preferences.store).set('core/edit-post', 'welcomeGuide', false);
     });
 
     const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
     await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
     await expect(metaBoxesButton).toBeVisible();
-    await expect
-        .poll(async () => {
-            if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
-                await metaBoxesButton.focus();
-                await page.keyboard.press('Enter');
-            }
-            return metaBoxesButton.getAttribute('aria-expanded');
-        })
-        .toBe('true');
+    if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
+        await metaBoxesButton.click();
+    }
+    await expect(metaBoxesButton).toHaveAttribute('aria-expanded', 'true');
 }
 
+// No reseed hooks here: none of these tests submit a form or save the post,
+// and the fixture attachment is created idempotently, so nothing persists.
 test.describe('media picker interactions', () => {
-    test.afterEach(() => {
-        reseedFixtures();
-    });
-
     test('ignores stale sidebar metadata after a newer card selection', async ({ page }) => {
         test.setTimeout(45_000);
         await openFixturePostEditor(page);
@@ -110,15 +85,13 @@ test.describe('media picker interactions', () => {
         });
 
         const customCard = page.locator('#teksttv-sidebar-card-custom');
-        await customCard.focus();
-        await page.keyboard.press('Enter');
+        await customCard.click();
         await selectFixtureImage(page);
         await requestStarted;
 
         const idField = page.locator('#teksttv-sidebar-image-id');
         const noneCard = page.locator('#teksttv-sidebar-card-none');
-        await noneCard.focus();
-        await page.keyboard.press('Enter');
+        await noneCard.click();
         await expect(idField).toHaveValue('0');
         await expect(noneCard).toHaveClass(/is-active/);
 
@@ -204,10 +177,7 @@ test.describe('media picker interactions', () => {
         await expect(previewCounter).toHaveText('1 / 1');
 
         const addImagesButton = page.locator('#teksttv-add-images');
-        await expect(addImagesButton).toBeVisible();
-        await addImagesButton.focus();
-        await expect(addImagesButton).toBeFocused();
-        await page.keyboard.press('Enter');
+        await addImagesButton.click();
         const attachmentId = await selectFixtureImage(page);
 
         const addedItem = items.filter({ has: page.locator(`input[value="${attachmentId}"]`) });
@@ -215,8 +185,7 @@ test.describe('media picker interactions', () => {
         await expect(addedItem.locator('input[name="teksttv_images[]"]')).toHaveValue(attachmentId);
         await expect(addedItem.locator('img')).toHaveAttribute('src', /.+/);
 
-        await addedItem.locator('.teksttv-remove-image').focus();
-        await page.keyboard.press('Enter');
+        await addedItem.locator('.teksttv-remove-image').click();
         await expect(addedItem).toHaveCount(0);
         await expect(previewCounter).toHaveText('1 / 1');
     });

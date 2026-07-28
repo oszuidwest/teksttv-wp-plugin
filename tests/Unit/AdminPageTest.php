@@ -360,11 +360,7 @@ class AdminPageTest extends TestCase
             ->with('teksttv', 'loop_nonce_failed', \Mockery::type('string'))
             ->once();
 
-        try {
-            $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
-        } finally {
-            $_POST = [];
-        }
+        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
     }
 
     public function test_validate_loop_save_request_rejects_missing_capability(): void
@@ -377,11 +373,7 @@ class AdminPageTest extends TestCase
             ->with('teksttv', 'loop_no_permission', \Mockery::type('string'))
             ->once();
 
-        try {
-            $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
-        } finally {
-            $_POST = [];
-        }
+        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
     }
 
     public function test_validate_loop_save_request_rejects_unknown_channel(): void
@@ -400,11 +392,7 @@ class AdminPageTest extends TestCase
             ->with('teksttv', 'loop_unknown_channel', \Mockery::type('string'))
             ->once();
 
-        try {
-            $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
-        } finally {
-            $_POST = [];
-        }
+        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
     }
 
     public function test_validate_loop_save_request_returns_known_channel(): void
@@ -420,11 +408,7 @@ class AdminPageTest extends TestCase
             ->with('teksttv_channels', [])
             ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
 
-        try {
-            $this->assertSame('tv1', self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
-        } finally {
-            $_POST = [];
-        }
+        $this->assertSame('tv1', self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
     }
 
     public function test_sanitize_registry_items_preserves_unregistered_stored_rows(): void

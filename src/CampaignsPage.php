@@ -67,7 +67,7 @@ class CampaignsPage
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
                         <label><?php esc_html_e('Naam', 'teksttv-wp-plugin'); ?></label>
-                        <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Bijv. Sponsor X', 'teksttv-wp-plugin'); ?>" />
+                        <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Bijv. Sponsor X', 'teksttv-wp-plugin'); ?>" data-summary data-summary-empty="<?php echo esc_attr__('Naamloze campagne', 'teksttv-wp-plugin'); ?>" />
                     </div>
                     <div class="teksttv-block-field">
                         <label><?php esc_html_e('Groep', 'teksttv-wp-plugin'); ?></label>
@@ -127,10 +127,12 @@ class CampaignsPage
     private static function handle_save(): void
     {
         if (!isset($_POST['teksttv_campaigns_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_campaigns_nonce'])), 'teksttv_save_campaigns')) {
+            add_settings_error('teksttv_campaigns', 'nonce_failed', __('Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.', 'teksttv-wp-plugin'));
             return;
         }
 
         if (!current_user_can('manage_teksttv_campaigns')) {
+            add_settings_error('teksttv_campaigns', 'no_permission', __('Onvoldoende rechten; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
             return;
         }
 
@@ -141,7 +143,7 @@ class CampaignsPage
 
         // Save campaigns
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
-        $raw = isset($_POST['teksttv_campaigns']) && is_array($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
+        $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         $campaigns = self::sanitize_campaigns($raw, Helpers::channel_slugs());
 
         update_option('teksttv_campaigns', $campaigns);
@@ -171,9 +173,7 @@ class CampaignsPage
 
             $id = sanitize_key($item['id'] ?? '');
             if ($id === '' || isset($seen_ids[$id])) {
-                do {
-                    $id = self::new_campaign_id();
-                } while (isset($seen_ids[$id]));
+                $id = self::new_campaign_id();
             }
             $seen_ids[$id] = true;
 

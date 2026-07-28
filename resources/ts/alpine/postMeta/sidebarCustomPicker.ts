@@ -12,7 +12,6 @@ export function createSidebarCustomPicker(
     refreshPreview: () => void,
 ): () => void {
     let sidebarFrame: WPMediaFrame | null = null;
-    let selectionVersion = 0;
 
     return (): void => {
         if (sidebarFrame) {
@@ -20,7 +19,6 @@ export function createSidebarCustomPicker(
             return;
         }
         sidebarFrame = pickSingleImage((att) => {
-            const requestVersion = ++selectionVersion;
             const selectedId = String(att.id);
             const url = att.sizes?.medium?.url ?? att.url;
             const idField = document.querySelector<HTMLInputElement>('#teksttv-sidebar-image-id');
@@ -34,8 +32,10 @@ export function createSidebarCustomPicker(
             placeholder?.classList.add('is-hidden');
 
             if (config?.imageDataUrl) {
+                // A newer pick or a sidebar-card switch rewrites the id field
+                // before this response can land, so comparing against it
+                // discards every stale response.
                 const selectionIsCurrent = (): boolean =>
-                    requestVersion === selectionVersion &&
                     document.querySelector<HTMLInputElement>('#teksttv-sidebar-image-id')?.value === selectedId;
 
                 void fetch(`${config.imageDataUrl}?${new URLSearchParams({ id: selectedId, slot: 'text_sidebar' })}`, {

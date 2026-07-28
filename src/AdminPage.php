@@ -525,13 +525,13 @@ class AdminPage
     private static function sanitize_registry_items(array $raw_items, string $option_name, string $context): array
     {
         $items = [];
+        $allowed = BlockRegistry::all($context);
         foreach ($raw_items as $item) {
             if (!is_array($item)) {
                 continue;
             }
             $type = sanitize_key($item['type'] ?? '');
-            $registered = BlockRegistry::get($type);
-            if (!$registered || !in_array($registered['context'] ?? 'loop', [$context, 'both'], true)) {
+            if (!isset($allowed[$type])) {
                 continue;
             }
             $saved = BlockRegistry::save($type, $item);

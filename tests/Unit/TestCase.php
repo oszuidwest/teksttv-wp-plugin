@@ -20,6 +20,7 @@ abstract class TestCase extends PHPUnitTestCase
 
     protected function tearDown(): void
     {
+        $_POST = [];
         Monkey\tearDown();
         parent::tearDown();
     }

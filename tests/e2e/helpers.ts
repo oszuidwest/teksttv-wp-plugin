@@ -32,14 +32,14 @@ async function addBlock(page: Page, kind: keyof typeof ADD_BLOCK_UI, type: strin
     const blocks = page.locator(`${ui.list} > .teksttv-block`);
     const previousCount = await blocks.count();
 
-    // With exactly one registered ticker type the view renders a single
-    // button instead of the dropdown.
-    const single = page.locator(`${ui.single}[data-type="${type}"]`);
-    if ((await page.locator(ui.toggle).count()) === 0 && (await single.count()) > 0) {
-        await single.click();
-    } else {
-        await page.locator(ui.toggle).click();
+    const toggle = page.locator(ui.toggle);
+    if (await toggle.count()) {
+        await toggle.click();
         await page.locator(`${ui.menu} button[data-type="${type}"]`).click();
+    } else {
+        // With exactly one registered ticker type the view renders a single
+        // button instead of the dropdown (the loop always has a dropdown).
+        await page.locator(`${ui.single}[data-type="${type}"]`).click();
     }
 
     await expect(blocks).toHaveCount(previousCount + 1);

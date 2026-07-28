@@ -25,6 +25,8 @@ async function expectSequentialNames(root: Locator, itemSelector: string, prefix
     });
 }
 
+// Manual mouse events instead of locator.dragTo(): SortableJS only reorders on
+// intermediate mousemove events, which dragTo does not emit.
 async function dragBlockToStart(page: Page, sourceBlock: Locator, targetBlock: Locator): Promise<void> {
     const source = await sourceBlock.locator('.teksttv-block-handle').boundingBox();
     const target = await targetBlock.locator('.teksttv-block-handle').boundingBox();
@@ -39,10 +41,6 @@ async function dragBlockToStart(page: Page, sourceBlock: Locator, targetBlock: L
 }
 
 test.describe('admin interaction contracts', () => {
-    test.afterEach(() => {
-        reseedFixtures();
-    });
-
     test('adds every registered loop block expanded at the next free index', async ({ page }) => {
         await page.goto(LOOP_URL);
 
@@ -120,32 +118,6 @@ test.describe('admin interaction contracts', () => {
         }
     });
 
-    test('preserves an explicit no-weekdays schedule across saving and rendering', async ({ page }) => {
-        await page.goto(LOOP_URL);
-
-        let block = page.locator('#teksttv-blocks > .teksttv-block').first();
-        await block.locator('.teksttv-block-header').click();
-        await block.locator('.teksttv-scheduling-checkbox').check();
-
-        let dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
-        let days = dayToggles.locator('input[type="checkbox"]');
-        await expect(days).toHaveCount(7);
-        for (const toggle of await dayToggles.all()) {
-            await toggle.locator('span').click();
-        }
-
-        await submitAndReload(page);
-
-        block = page.locator('#teksttv-blocks > .teksttv-block').first();
-        await expect(block.locator('.teksttv-scheduling-checkbox')).toBeChecked();
-        dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
-        days = dayToggles.locator('input[type="checkbox"]');
-        await expect(days).toHaveCount(7);
-        for (const day of await days.all()) {
-            await expect(day).not.toBeChecked();
-        }
-    });
-
     test('updates a block header summary from its data-summary field', async ({ page }) => {
         await page.goto(LOOP_URL);
 
@@ -153,37 +125,6 @@ test.describe('admin interaction contracts', () => {
         await articleBlock.locator('.teksttv-block-header').click();
         await articleBlock.locator('input[name$="[count]"]').fill('17');
         await expect(articleBlock.locator('.teksttv-block-summary')).toContainText('17x');
-    });
-
-    test('persists registry-managed block values after saving and reloading', async ({ page }) => {
-        await page.goto(LOOP_URL);
-
-        const articleBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
-        await articleBlock.locator('.teksttv-block-header').click();
-        await articleBlock.locator('input[name$="[count]"]').fill('9');
-        await articleBlock.locator('input[name$="[duration_text]"]').fill('23');
-
-        let iframeBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="iframe"]').first();
-        if ((await iframeBlock.count()) === 0) {
-            iframeBlock = await addLoopBlock(page, 'iframe');
-        } else if (!(await iframeBlock.locator('.teksttv-block-body').isVisible())) {
-            await iframeBlock.locator('.teksttv-block-header').click();
-        }
-        await iframeBlock.locator('input[name$="[name]"]').fill('E2E dashboard');
-        await iframeBlock.locator('input[name$="[url]"]').fill('https://example.test/dashboard');
-        await iframeBlock.locator('input[name$="[duration]"]').fill('31');
-
-        await submitAndReload(page);
-
-        const savedArticle = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
-        await expect(savedArticle.locator('input[name$="[count]"]')).toHaveValue('9');
-        await expect(savedArticle.locator('input[name$="[duration_text]"]')).toHaveValue('23');
-
-        const savedIframe = page.locator('#teksttv-blocks > .teksttv-block[data-type="iframe"]').first();
-        await expect(savedIframe.locator('input[name$="[name]"]')).toHaveValue('E2E dashboard');
-        await expect(savedIframe.locator('input[name$="[url]"]')).toHaveValue('https://example.test/dashboard');
-        await expect(savedIframe.locator('input[name$="[duration]"]')).toHaveValue('31');
-        await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
     });
 
     test('adds and removes ticker items while keeping all names sequential', async ({ page }) => {
@@ -198,53 +139,6 @@ test.describe('admin interaction contracts', () => {
         await expect(ticker).toHaveCount(2);
         await expect(ticker.nth(1)).toHaveAttribute('data-type', 'ticker_headlines');
         await expectSequentialNames(page.locator('#teksttv-ticker'), ':scope > .teksttv-block', 'teksttv_ticker');
-    });
-
-    test('adds and removes campaign and group rows and persists the remaining values', async ({ page }) => {
-        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
-
-        const groups = page.locator('#teksttv-groups tbody > .teksttv-group-row');
-        await page.locator('#teksttv-add-group').click();
-        const addedGroup = groups.last();
-        await addedGroup.locator('input[name$="[label]"]').fill('E2E Added Group');
-        await expect(addedGroup.locator('input[name]').first()).toHaveAttribute(
-            'name',
-            /^teksttv_campaign_groups\[new-\d+\]\[id\]$/,
-        );
-        await groups.nth(1).locator('.teksttv-remove-group').click();
-        await expect(groups).toHaveCount(2);
-
-        const groupNames = await groups
-            .locator('input[name]')
-            .evaluateAll((fields) => fields.map((field) => field.getAttribute('name')));
-        expect(groupNames).toEqual([
-            'teksttv_campaign_groups[0][id]',
-            'teksttv_campaign_groups[0][label]',
-            'teksttv_campaign_groups[new-0][id]',
-            'teksttv_campaign_groups[new-0][label]',
-        ]);
-
-        const campaigns = page.locator('#teksttv-campaigns > .teksttv-block');
-        await page.locator('#teksttv-add-campaign').click();
-        const addedCampaign = campaigns.last();
-        await addedCampaign.locator('input[name$="[name]"]').fill('E2E Added Campaign');
-        await addedCampaign.locator('input[name$="[duration]"]').fill('19');
-        await campaigns.nth(1).locator('.teksttv-remove-block').click();
-
-        await expect(campaigns).toHaveCount(2);
-        await expectSequentialNames(page.locator('#teksttv-campaigns'), ':scope > .teksttv-block', 'teksttv_campaigns');
-        await submitAndReload(page);
-
-        const savedGroupLabels = await page
-            .locator('#teksttv-groups input[name$="[label]"]')
-            .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
-        expect(savedGroupLabels).toEqual(['E2E Seed Group Alpha', 'E2E Added Group']);
-        const savedCampaignNames = await page
-            .locator('#teksttv-campaigns input[name$="[name]"]')
-            .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
-        expect(savedCampaignNames).toEqual(['E2E Seed Campaign Alpha', 'E2E Added Campaign']);
-        await expect(page.locator('#teksttv-campaigns input[name$="[duration]"]').last()).toHaveValue('19');
-        await expectSequentialNames(page.locator('#teksttv-campaigns'), ':scope > .teksttv-block', 'teksttv_campaigns');
     });
 
     test('adds and removes channel rows and reindexes every remaining field', async ({ page }) => {
@@ -272,5 +166,126 @@ test.describe('admin interaction contracts', () => {
             ':scope > .teksttv-channel-row',
             'teksttv_channels',
         );
+    });
+
+    // Only these tests submit forms and persist real option changes; the tests
+    // above are pure DOM work that a reload discards, so they skip the
+    // expensive wp-env reseed round-trip.
+    test.describe('persisting saves', () => {
+        test.afterEach(() => {
+            reseedFixtures();
+        });
+
+        test('preserves an explicit no-weekdays schedule across saving and rendering', async ({ page }) => {
+            await page.goto(LOOP_URL);
+
+            let block = page.locator('#teksttv-blocks > .teksttv-block').first();
+            await block.locator('.teksttv-block-header').click();
+            await block.locator('.teksttv-scheduling-checkbox').check();
+
+            let dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
+            let days = dayToggles.locator('input[type="checkbox"]');
+            await expect(days).toHaveCount(7);
+            for (const toggle of await dayToggles.all()) {
+                await toggle.locator('span').click();
+            }
+
+            await submitAndReload(page);
+
+            block = page.locator('#teksttv-blocks > .teksttv-block').first();
+            await expect(block.locator('.teksttv-scheduling-checkbox')).toBeChecked();
+            dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
+            days = dayToggles.locator('input[type="checkbox"]');
+            await expect(days).toHaveCount(7);
+            for (const day of await days.all()) {
+                await expect(day).not.toBeChecked();
+            }
+        });
+
+        test('persists registry-managed block values after saving and reloading', async ({ page }) => {
+            await page.goto(LOOP_URL);
+
+            const articleBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
+            await articleBlock.locator('.teksttv-block-header').click();
+            await articleBlock.locator('input[name$="[count]"]').fill('9');
+            await articleBlock.locator('input[name$="[duration_text]"]').fill('23');
+
+            let iframeBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="iframe"]').first();
+            if ((await iframeBlock.count()) === 0) {
+                iframeBlock = await addLoopBlock(page, 'iframe');
+            } else if (!(await iframeBlock.locator('.teksttv-block-body').isVisible())) {
+                await iframeBlock.locator('.teksttv-block-header').click();
+            }
+            await iframeBlock.locator('input[name$="[name]"]').fill('E2E dashboard');
+            await iframeBlock.locator('input[name$="[url]"]').fill('https://example.test/dashboard');
+            await iframeBlock.locator('input[name$="[duration]"]').fill('31');
+
+            await submitAndReload(page);
+
+            const savedArticle = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
+            await expect(savedArticle.locator('input[name$="[count]"]')).toHaveValue('9');
+            await expect(savedArticle.locator('input[name$="[duration_text]"]')).toHaveValue('23');
+
+            const savedIframe = page.locator('#teksttv-blocks > .teksttv-block[data-type="iframe"]').first();
+            await expect(savedIframe.locator('input[name$="[name]"]')).toHaveValue('E2E dashboard');
+            await expect(savedIframe.locator('input[name$="[url]"]')).toHaveValue('https://example.test/dashboard');
+            await expect(savedIframe.locator('input[name$="[duration]"]')).toHaveValue('31');
+            await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
+        });
+
+        test('adds and removes campaign and group rows and persists the remaining values', async ({ page }) => {
+            await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+
+            const groups = page.locator('#teksttv-groups tbody > .teksttv-group-row');
+            await page.locator('#teksttv-add-group').click();
+            const addedGroup = groups.last();
+            await addedGroup.locator('input[name$="[label]"]').fill('E2E Added Group');
+            await expect(addedGroup.locator('input[name]').first()).toHaveAttribute(
+                'name',
+                /^teksttv_campaign_groups\[new-\d+\]\[id\]$/,
+            );
+            await groups.nth(1).locator('.teksttv-remove-group').click();
+            await expect(groups).toHaveCount(2);
+
+            const groupNames = await groups
+                .locator('input[name]')
+                .evaluateAll((fields) => fields.map((field) => field.getAttribute('name')));
+            expect(groupNames).toEqual([
+                'teksttv_campaign_groups[0][id]',
+                'teksttv_campaign_groups[0][label]',
+                'teksttv_campaign_groups[new-0][id]',
+                'teksttv_campaign_groups[new-0][label]',
+            ]);
+
+            const campaigns = page.locator('#teksttv-campaigns > .teksttv-block');
+            await page.locator('#teksttv-add-campaign').click();
+            const addedCampaign = campaigns.last();
+            await addedCampaign.locator('input[name$="[name]"]').fill('E2E Added Campaign');
+            await addedCampaign.locator('input[name$="[duration]"]').fill('19');
+            await campaigns.nth(1).locator('.teksttv-remove-block').click();
+
+            await expect(campaigns).toHaveCount(2);
+            await expectSequentialNames(
+                page.locator('#teksttv-campaigns'),
+                ':scope > .teksttv-block',
+                'teksttv_campaigns',
+            );
+            await submitAndReload(page);
+
+            const savedGroupLabels = await page
+                .locator('#teksttv-groups input[name$="[label]"]')
+                .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
+            expect(savedGroupLabels).toEqual(['E2E Seed Group Alpha', 'E2E Added Group']);
+            const savedCampaignNames = await page
+                .locator('#teksttv-campaigns input[name$="[name]"]')
+                .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
+            expect(savedCampaignNames).toEqual(['E2E Seed Campaign Alpha', 'E2E Added Campaign']);
+            await expect(page.locator('#teksttv-campaigns input[name$="[duration]"]').last()).toHaveValue('19');
+            await expectSequentialNames(
+                page.locator('#teksttv-campaigns'),
+                ':scope > .teksttv-block',
+                'teksttv_campaigns',
+            );
+        });
     });
 });

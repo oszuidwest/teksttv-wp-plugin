@@ -63,15 +63,21 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         refreshSummaries,
     };
 
-    function toggleMenu(selector: string): void {
-        document.querySelector(selector)?.classList.toggle('is-open');
-    }
-
-    function closeMenu(selector: string): void {
-        document.querySelector(selector)?.classList.remove('is-open');
+    function handleFieldChange(root: HTMLElement | null, e: Event): void {
+        const t = e.target;
+        if (!(t instanceof HTMLElement) || !root?.contains(t)) return;
+        if (t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
+            applySchedulingToggle(t);
+        }
+        if (t.closest('.teksttv-block-body')) {
+            scheduleSummaries();
+        }
     }
 
     return {
+        menuBlockOpen: false,
+        menuTickerOpen: false,
+
         init(): void {
             blocksEl = document.querySelector<HTMLElement>('#teksttv-blocks, #teksttv-campaigns');
             if (!blocksEl) return;
@@ -130,22 +136,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             refreshSummaries();
         },
 
-        toggleBlockMenu(): void {
-            toggleMenu('#teksttv-add-block-menu');
-        },
-
-        closeBlockMenu(): void {
-            closeMenu('#teksttv-add-block-menu');
-        },
-
-        toggleTickerMenu(): void {
-            toggleMenu('#teksttv-add-ticker-menu');
-        },
-
-        closeTickerMenu(): void {
-            closeMenu('#teksttv-add-ticker-menu');
-        },
-
         expandAllBlocks(): void {
             if (!blocksEl) return;
             blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
@@ -171,14 +161,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         },
 
         blocksFieldChange(e: Event): void {
-            const t = e.target;
-            if (!(t instanceof HTMLElement) || !blocksEl?.contains(t)) return;
-            if (t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
-                applySchedulingToggle(t);
-            }
-            if (t.closest('.teksttv-block-body')) {
-                scheduleSummaries();
-            }
+            handleFieldChange(blocksEl, e);
         },
 
         tickerClick(e: MouseEvent): void {
@@ -201,14 +184,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         },
 
         tickerFieldChange(e: Event): void {
-            const t = e.target;
-            if (!(t instanceof HTMLElement) || !tickerEl?.contains(t)) return;
-            if (t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
-                applySchedulingToggle(t);
-            }
-            if (t.closest('.teksttv-block-body')) {
-                scheduleSummaries();
-            }
+            handleFieldChange(tickerEl, e);
         },
 
         addGroupRow(): void {
