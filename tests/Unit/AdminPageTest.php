@@ -275,6 +275,13 @@ class AdminPageTest extends TestCase
         $this->assertSame([], $result['days']);
     }
 
+    public function test_extract_scheduling_fields_preserves_explicit_null_days(): void
+    {
+        $result = Helpers::extract_scheduling_fields(['days' => null]);
+
+        $this->assertArrayNotHasKey('days', $result);
+    }
+
     public function test_render_days_row_checks_all_days_for_absent_restriction(): void
     {
         $this->assertSame(7, substr_count($this->renderDaysRow(null), 'checked="checked"'));

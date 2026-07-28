@@ -602,6 +602,19 @@ class HelpersTest extends TestCase
         $this->assertSame('TV 1', $result[0]['label']);
     }
 
+    public function test_get_channels_returns_default_for_non_array_option(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn('invalid');
+
+        $result = Helpers::get_channels();
+
+        $this->assertCount(1, $result);
+        $this->assertSame('tv1', $result[0]['slug']);
+        $this->assertSame('TV 1', $result[0]['label']);
+    }
+
     // =========================================================================
     // has_feature()
     // =========================================================================

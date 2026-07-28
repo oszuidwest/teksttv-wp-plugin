@@ -72,8 +72,9 @@ class Helpers
             $fields['date_end'] = $de;
         }
 
-        // Checkbox groups are absent from POST when every box is unchecked.
-        $sanitized_days = self::sanitize_days_input($raw['days'] ?? []);
+        // Missing checkbox groups mean "none selected"; explicit null remains unrestricted.
+        $raw_days = array_key_exists('days', $raw) ? $raw['days'] : [];
+        $sanitized_days = self::sanitize_days_input($raw_days);
         if ($sanitized_days !== null) {
             $fields['days'] = $sanitized_days;
         }
@@ -169,7 +170,7 @@ class Helpers
     public static function get_channels(): array
     {
         $channels = get_option('teksttv_channels', []);
-        if (empty($channels)) {
+        if (!is_array($channels) || empty($channels)) {
             return [['slug' => 'tv1', 'label' => __('TV 1', 'teksttv-wp-plugin')]];
         }
         return $channels;

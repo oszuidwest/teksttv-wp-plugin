@@ -274,6 +274,11 @@ class PostMeta
 
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated as an array and sanitized with absint below
         $raw_images = wp_unslash($_POST['teksttv_images'] ?? []);
+        $raw_days = [];
+        if (array_key_exists('teksttv_days', $_POST)) {
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via Helpers::sanitize_days_input() in process_save()
+            $raw_days = wp_unslash($_POST['teksttv_days']);
+        }
 
         // Collect POST data; process_save() performs the remaining field-specific sanitization.
         $data = [
@@ -283,8 +288,7 @@ class PostMeta
             'content' => wp_unslash($_POST['teksttv_content'] ?? ''),
             'date_start' => sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? '')),
             'date_end' => sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? '')),
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via Helpers::sanitize_days_input() in process_save()
-            'days' => wp_unslash($_POST['teksttv_days'] ?? []),
+            'days' => $raw_days,
             'images' => is_array($raw_images) ? array_map('absint', $raw_images) : [],
             'sidebar_image' => sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? '')),
         ];
@@ -339,7 +343,8 @@ class PostMeta
             update_post_meta($post_id, '_teksttv_date_start', Helpers::sanitize_date_input($data['date_start'] ?? ''));
             update_post_meta($post_id, '_teksttv_date_end', Helpers::sanitize_date_input($data['date_end'] ?? ''));
 
-            $days = Helpers::sanitize_days_input($data['days'] ?? []);
+            $raw_days = array_key_exists('days', $data) ? $data['days'] : [];
+            $days = Helpers::sanitize_days_input($raw_days);
             if ($days === null) {
                 delete_post_meta($post_id, '_teksttv_days');
             } else {
