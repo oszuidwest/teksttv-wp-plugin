@@ -248,7 +248,7 @@ export function createPostMetaPage() {
             const btn = e.currentTarget;
             if (!(btn instanceof HTMLButtonElement) || !config?.generateUrl) return;
             const field = btn.dataset.field;
-            if (!field || btn.disabled) return;
+            if (btn.disabled || !(field === 'title' || field === 'body' || field === 'both')) return;
 
             if (config.isNewPost) {
                 window.alert('Sla de post eerst op voordat je AI-content kunt genereren.');

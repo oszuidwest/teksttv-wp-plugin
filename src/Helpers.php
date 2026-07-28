@@ -5,6 +5,9 @@ namespace TekstTV;
 use DateTime;
 use DateTimeInterface;
 
+/**
+ * @phpstan-type AiConfig array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
+ */
 class Helpers
 {
     /** @var list<array{name: string, label: string, terms: array<int, string>}>|null */
@@ -306,7 +309,7 @@ class Helpers
     /**
      * Get the AI prompt configuration with defaults.
      *
-     * @return array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
+     * @return AiConfig
      */
     public static function get_ai_prompts(): array
     {
