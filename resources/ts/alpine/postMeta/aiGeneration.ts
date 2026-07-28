@@ -29,10 +29,22 @@ export function applyTeksttvBody(content: string): void {
     dispatchInput(ta);
 }
 
+export type AiField = 'title' | 'body' | 'both';
+
+interface GenerateResponse {
+    title?: string;
+    body?: string;
+    content?: string;
+    warning?: string;
+    // Every failure - plugin WP_Error or core rejection (expired nonce,
+    // invalid param) - arrives as {code, message} with a non-ok status.
+    message?: string;
+}
+
 export function requestAiGeneration(
     config: TeksttvPostConfig,
     btn: HTMLButtonElement,
-    field: string,
+    field: AiField,
     hasPhoto: boolean,
     onApplied?: () => void,
 ): void {
@@ -57,6 +69,16 @@ export function requestAiGeneration(
     statusEl?.classList.remove('is-error', 'is-warning');
     if (statusEl) statusEl.textContent = '';
 
+    const showError = (message: string): void => {
+        if (statusEl) {
+            statusEl.textContent = message;
+            statusEl.classList.add('is-error');
+        } else {
+            // Errors must never depend on the status element existing.
+            console.error('TekstTV AI-generatie:', message);
+        }
+    };
+
     fetch(config.generateUrl, {
         method: 'POST',
         headers: {
@@ -65,11 +87,10 @@ export function requestAiGeneration(
         },
         body: JSON.stringify({ post_id: config.postId, field, has_photo: hasPhoto }),
     })
-        .then((res) => res.json())
-        .then((data: { title?: string; body?: string; content?: string; error?: string; warning?: string }) => {
-            if (data.error && statusEl) {
-                statusEl.textContent = data.error;
-                statusEl.classList.add('is-error');
+        .then(async (res) => ({ ok: res.ok, data: (await res.json()) as GenerateResponse }))
+        .then(({ ok, data }) => {
+            if (!ok) {
+                showError(data.message || 'Er ging iets mis bij het genereren.');
                 return;
             }
 
@@ -100,10 +121,7 @@ export function requestAiGeneration(
             }
         })
         .catch(() => {
-            if (statusEl) {
-                statusEl.textContent = 'Er ging iets mis bij het genereren.';
-                statusEl.classList.add('is-error');
-            }
+            showError('Er ging iets mis bij het genereren.');
         })
         .finally(() => {
             window.clearInterval(msgInterval);
