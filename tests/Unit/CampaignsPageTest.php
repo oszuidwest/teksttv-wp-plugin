@@ -2,6 +2,7 @@
 
 namespace TekstTV\Tests\Unit;
 
+use Brain\Monkey\Functions;
 use TekstTV\CampaignsPage;
 use TekstTV\Helpers;
 
@@ -74,5 +75,26 @@ class CampaignsPageTest extends TestCase
     public function test_sanitize_groups_non_array_returns_empty(): void
     {
         $this->assertSame([], CampaignsPage::sanitize_groups('not an array'));
+    }
+
+    public function test_campaign_save_reassigns_duplicate_submitted_ids(): void
+    {
+        Functions\expect('wp_generate_uuid4')->once()->andReturn('generated-uuid');
+
+        $campaigns = self::callPrivate(
+            CampaignsPage::class,
+            'sanitize_campaigns',
+            [
+                [
+                    ['id' => 'camp_existing', 'name' => 'Eerste', 'channels' => ['tv1']],
+                    ['id' => 'camp_existing', 'name' => 'Tweede', 'channels' => ['tv1']],
+                ],
+                ['tv1'],
+            ]
+        );
+
+        $this->assertSame('camp_existing', $campaigns[0]['id']);
+        $this->assertSame('camp_generated-uuid', $campaigns[1]['id']);
+        $this->assertCount(2, array_unique(array_column($campaigns, 'id')));
     }
 }

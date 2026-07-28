@@ -1,5 +1,6 @@
 import { type Page, expect, test } from '@playwright/test';
 import { addLoopBlock } from './helpers';
+import { reseedFixtures } from './reseed-fixtures';
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
@@ -81,6 +82,10 @@ async function openFixturePostEditor(page: Page): Promise<void> {
 }
 
 test.describe('media picker interactions', () => {
+    test.afterEach(() => {
+        reseedFixtures();
+    });
+
     test('ignores stale sidebar metadata after a newer card selection', async ({ page }) => {
         test.setTimeout(45_000);
         await openFixturePostEditor(page);
@@ -168,11 +173,13 @@ test.describe('media picker interactions', () => {
         await expect(preview).toBeVisible();
         await expect(introPicker.locator('.teksttv-block-image-thumb')).toHaveAttribute('src', /.+/);
         await expect(removeButton).toBeVisible();
+        await expect(campaignBlock.locator('.teksttv-block-summary')).toContainText('Intro afbeelding');
 
         await removeButton.click();
         await expect(idInput).toHaveValue('');
         await expect(preview).toBeHidden();
         await expect(removeButton).toBeHidden();
+        await expect(campaignBlock.locator('.teksttv-block-summary')).not.toContainText('Intro afbeelding');
     });
 
     test('keeps extra-image removal in sync with the form and preview', async ({ page }) => {

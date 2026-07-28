@@ -52,7 +52,10 @@ async function addBlock(page: Page, kind: keyof typeof ADD_BLOCK_UI, type: strin
  * so assertions run against freshly rendered saved state without resubmitting.
  */
 export async function submitAndReload(page: Page): Promise<void> {
-    await page.locator('form input[name="submit"]').click();
+    const form = page.locator(
+        'form:has(input[name="teksttv_loop_nonce"]), form:has(input[name="teksttv_campaigns_nonce"])',
+    );
+    await form.locator('input[name="submit"]').click();
     await expect(page.locator('.notice-success').first()).toBeVisible();
     await page.goto(page.url());
 }

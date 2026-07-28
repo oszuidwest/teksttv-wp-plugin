@@ -142,16 +142,43 @@ class CampaignsPage
         // Save campaigns
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
         $raw = isset($_POST['teksttv_campaigns']) && is_array($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
-        $campaigns = [];
-        $valid_slugs = Helpers::channel_slugs();
+        $campaigns = self::sanitize_campaigns($raw, Helpers::channel_slugs());
 
+        update_option('teksttv_campaigns', $campaigns);
+
+        RestApi::invalidate_slides_cache();
+
+        add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv-wp-plugin'), 'success');
+    }
+
+    /**
+     * @param mixed        $raw         Unslashed submitted campaigns.
+     * @param list<string> $valid_slugs Configured channel slugs.
+     * @return list<array<string, mixed>>
+     */
+    private static function sanitize_campaigns(mixed $raw, array $valid_slugs): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $campaigns = [];
+        $seen_ids = [];
         foreach ($raw as $item) {
             if (!is_array($item)) {
                 continue;
             }
-            $submitted_id = sanitize_key($item['id'] ?? '');
+
+            $id = sanitize_key($item['id'] ?? '');
+            if ($id === '' || isset($seen_ids[$id])) {
+                do {
+                    $id = self::new_campaign_id();
+                } while (isset($seen_ids[$id]));
+            }
+            $seen_ids[$id] = true;
+
             $saved = [
-                'id' => $submitted_id !== '' ? $submitted_id : self::new_campaign_id(),
+                'id' => $id,
                 'name' => sanitize_text_field($item['name'] ?? ''),
                 'group' => sanitize_key($item['group'] ?? ''),
             ];
@@ -182,11 +209,7 @@ class CampaignsPage
             $campaigns[] = $saved;
         }
 
-        update_option('teksttv_campaigns', $campaigns);
-
-        RestApi::invalidate_slides_cache();
-
-        add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv-wp-plugin'), 'success');
+        return $campaigns;
     }
 
     /**

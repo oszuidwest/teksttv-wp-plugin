@@ -496,12 +496,12 @@ class AdminPage
 
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
         $raw_blocks = isset($_POST['teksttv_blocks']) && is_array($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
-        [$blocks, $blocks_preserved] = self::sanitize_registry_items($raw_blocks, 'teksttv_loop_' . $channel);
+        [$blocks, $blocks_preserved] = self::sanitize_registry_items($raw_blocks, 'teksttv_loop_' . $channel, 'loop');
         update_option('teksttv_loop_' . $channel, $blocks);
 
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
         $raw_ticker = isset($_POST['teksttv_ticker']) && is_array($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
-        [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel);
+        [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel, 'ticker');
         update_option('teksttv_ticker_' . $channel, $ticker);
 
         RestApi::invalidate_slides_cache($channel);
@@ -514,13 +514,15 @@ class AdminPage
     }
 
     /**
-     * Sanitize submitted registry items and re-append stored items whose type is
-     * no longer registered (for example because an add-on was deactivated).
+     * Sanitize submitted registry items and restore stored items whose type is
+     * no longer registered (for example because an add-on was deactivated) at
+     * their prior positions.
      *
      * @param array<int|string, mixed> $raw_items Unslashed POST items.
+     * @param string                   $context   Target registry context.
      * @return array{0: list<array<string, mixed>>, 1: bool}
      */
-    private static function sanitize_registry_items(array $raw_items, string $option_name): array
+    private static function sanitize_registry_items(array $raw_items, string $option_name, string $context): array
     {
         $items = [];
         foreach ($raw_items as $item) {
@@ -528,6 +530,10 @@ class AdminPage
                 continue;
             }
             $type = sanitize_key($item['type'] ?? '');
+            $registered = BlockRegistry::get($type);
+            if (!$registered || !in_array($registered['context'] ?? 'loop', [$context, 'both'], true)) {
+                continue;
+            }
             $saved = BlockRegistry::save($type, $item);
             if ($saved) {
                 $items[] = array_merge($saved, Helpers::extract_scheduling_fields($item));
@@ -536,10 +542,10 @@ class AdminPage
 
         $preserved = false;
         $existing = get_option($option_name, []);
-        foreach (is_array($existing) ? $existing : [] as $existing_item) {
+        foreach (is_array($existing) ? array_values($existing) : [] as $index => $existing_item) {
             $existing_type = is_array($existing_item) ? (string) ($existing_item['type'] ?? '') : '';
             if ($existing_type !== '' && BlockRegistry::get($existing_type) === null) {
-                $items[] = $existing_item;
+                array_splice($items, min($index, count($items)), 0, [$existing_item]);
                 $preserved = true;
             }
         }

@@ -63,10 +63,15 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         refreshSummaries,
     };
 
-    return {
-        menuBlockOpen: false,
-        menuTickerOpen: false,
+    function toggleMenu(selector: string): void {
+        document.querySelector(selector)?.classList.toggle('is-open');
+    }
 
+    function closeMenu(selector: string): void {
+        document.querySelector(selector)?.classList.remove('is-open');
+    }
+
+    return {
         init(): void {
             blocksEl = document.querySelector<HTMLElement>('#teksttv-blocks, #teksttv-campaigns');
             if (!blocksEl) return;
@@ -123,6 +128,22 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!(opts.ticker && tickerEl)) return;
             insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true });
             refreshSummaries();
+        },
+
+        toggleBlockMenu(): void {
+            toggleMenu('#teksttv-add-block-menu');
+        },
+
+        closeBlockMenu(): void {
+            closeMenu('#teksttv-add-block-menu');
+        },
+
+        toggleTickerMenu(): void {
+            toggleMenu('#teksttv-add-ticker-menu');
+        },
+
+        closeTickerMenu(): void {
+            closeMenu('#teksttv-add-ticker-menu');
         },
 
         expandAllBlocks(): void {

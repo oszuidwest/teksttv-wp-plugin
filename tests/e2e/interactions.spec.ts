@@ -258,11 +258,19 @@ test.describe('admin interaction contracts', () => {
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-three');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Three');
 
-        await expectSequentialNames(page.locator('#teksttv-channels tbody'), ':scope > tr', 'teksttv_channels');
+        await expectSequentialNames(
+            page.locator('#teksttv-channels tbody'),
+            ':scope > .teksttv-channel-row',
+            'teksttv_channels',
+        );
         await rows.nth(1).locator('.teksttv-remove-channel').click();
 
         await expect(rows).toHaveCount(2);
         await expect(rows.nth(1).locator('input[name$="[slug]"]')).toHaveValue('e2e-three');
-        await expectSequentialNames(page.locator('#teksttv-channels tbody'), ':scope > tr', 'teksttv_channels');
+        await expectSequentialNames(
+            page.locator('#teksttv-channels tbody'),
+            ':scope > .teksttv-channel-row',
+            'teksttv_channels',
+        );
     });
 });

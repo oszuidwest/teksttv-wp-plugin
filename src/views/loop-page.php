@@ -52,11 +52,11 @@ settings_errors('teksttv');
         </div>
 
         <div class="teksttv-add-block-bar">
-            <div class="teksttv-dropdown-button" @click.outside="menuBlockOpen = false">
-                <button type="button" class="button" id="teksttv-add-block-toggle" @click.prevent.stop="menuBlockOpen = !menuBlockOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Blok toevoegen', 'teksttv-wp-plugin'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
-                <div class="teksttv-dropdown-menu" id="teksttv-add-block-menu" :class="{ 'is-open': menuBlockOpen }">
+            <div class="teksttv-dropdown-button" @click.outside="closeBlockMenu()">
+                <button type="button" class="button" id="teksttv-add-block-toggle" @click.prevent.stop="toggleBlockMenu()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Blok toevoegen', 'teksttv-wp-plugin'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                <div class="teksttv-dropdown-menu" id="teksttv-add-block-menu">
                     <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
-                    <button type="button" data-type="<?php echo esc_attr($block_slug); ?>" @click.prevent="menuBlockOpen = false; addLoopBlock('<?php echo esc_js((string) $block_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($block_meta['icon']); ?>"></span> <?php echo esc_html($block_meta['label']); ?></button>
+                    <button type="button" data-type="<?php echo esc_attr($block_slug); ?>" @click.prevent="closeBlockMenu(); addLoopBlock('<?php echo esc_js((string) $block_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($block_meta['icon']); ?>"></span> <?php echo esc_html($block_meta['label']); ?></button>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -77,11 +77,11 @@ settings_errors('teksttv');
         <?php $ticker_types = BlockRegistry::all('ticker'); ?>
         <div class="teksttv-add-block-bar">
             <?php if (count($ticker_types) > 1) : ?>
-            <div class="teksttv-dropdown-button" @click.outside="menuTickerOpen = false">
-                <button type="button" class="button" id="teksttv-add-ticker-toggle" @click.prevent.stop="menuTickerOpen = !menuTickerOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Ticker toevoegen', 'teksttv-wp-plugin'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
-                <div class="teksttv-dropdown-menu" id="teksttv-add-ticker-menu" :class="{ 'is-open': menuTickerOpen }">
+            <div class="teksttv-dropdown-button" @click.outside="closeTickerMenu()">
+                <button type="button" class="button" id="teksttv-add-ticker-toggle" @click.prevent.stop="toggleTickerMenu()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Ticker toevoegen', 'teksttv-wp-plugin'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                <div class="teksttv-dropdown-menu" id="teksttv-add-ticker-menu">
                     <?php foreach ($ticker_types as $ticker_slug => $ticker_meta) : ?>
-                    <button type="button" data-type="<?php echo esc_attr($ticker_slug); ?>" @click.prevent="menuTickerOpen = false; addTickerBlock('<?php echo esc_js((string) $ticker_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($ticker_meta['icon']); ?>"></span> <?php echo esc_html($ticker_meta['label']); ?></button>
+                    <button type="button" data-type="<?php echo esc_attr($ticker_slug); ?>" @click.prevent="closeTickerMenu(); addTickerBlock('<?php echo esc_js((string) $ticker_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($ticker_meta['icon']); ?>"></span> <?php echo esc_html($ticker_meta['label']); ?></button>
                     <?php endforeach; ?>
                 </div>
             </div>
