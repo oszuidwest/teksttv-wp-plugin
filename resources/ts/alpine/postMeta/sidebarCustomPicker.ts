@@ -12,6 +12,7 @@ export function createSidebarCustomPicker(
     refreshPreview: () => void,
 ): () => void {
     let sidebarFrame: WPMediaFrame | null = null;
+    let selectionVersion = 0;
 
     return (): void => {
         if (sidebarFrame) {
@@ -19,11 +20,13 @@ export function createSidebarCustomPicker(
             return;
         }
         sidebarFrame = pickSingleImage((att) => {
+            const requestVersion = ++selectionVersion;
+            const selectedId = String(att.id);
             const url = att.sizes?.medium?.url ?? att.url;
             const idField = document.querySelector<HTMLInputElement>('#teksttv-sidebar-image-id');
             const img = document.querySelector<HTMLImageElement>('#teksttv-sidebar-image-img');
             const placeholder = document.querySelector('#teksttv-sidebar-image-placeholder');
-            if (idField) idField.value = String(att.id);
+            if (idField) idField.value = selectedId;
             if (img) {
                 img.src = url;
                 img.classList.remove('is-hidden');
@@ -31,18 +34,20 @@ export function createSidebarCustomPicker(
             placeholder?.classList.add('is-hidden');
 
             if (config?.imageDataUrl) {
-                void fetch(
-                    `${config.imageDataUrl}?${new URLSearchParams({ id: String(att.id), slot: 'text_sidebar' })}`,
-                    {
-                        headers: { 'X-WP-Nonce': config.restNonce },
-                        credentials: 'same-origin',
-                    },
-                )
+                const selectionIsCurrent = (): boolean =>
+                    requestVersion === selectionVersion &&
+                    document.querySelector<HTMLInputElement>('#teksttv-sidebar-image-id')?.value === selectedId;
+
+                void fetch(`${config.imageDataUrl}?${new URLSearchParams({ id: selectedId, slot: 'text_sidebar' })}`, {
+                    headers: { 'X-WP-Nonce': config.restNonce },
+                    credentials: 'same-origin',
+                })
                     .then(async (res) => ({
                         ok: res.ok,
                         data: (await res.json()) as ImageData,
                     }))
                     .then(({ ok, data }) => {
+                        if (!selectionIsCurrent()) return;
                         if (!ok || !data.url) {
                             throw new Error('image-data request failed');
                         }
@@ -50,6 +55,7 @@ export function createSidebarCustomPicker(
                         applySidebarCardState('custom', refreshPreview);
                     })
                     .catch(() => {
+                        if (!selectionIsCurrent()) return;
                         console.warn(
                             'TekstTV: metadata voor de sidebar-afbeelding kon niet worden opgehaald; de onbewerkte bijlage-URL wordt gebruikt.',
                         );

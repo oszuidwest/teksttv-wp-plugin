@@ -32,7 +32,96 @@ async function selectFixtureImage(page: Page): Promise<string> {
     return attachmentId;
 }
 
+async function openFixturePostEditor(page: Page): Promise<void> {
+    await page.goto('/wp-admin/edit.php');
+    await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
+
+    await expect(page.locator('#teksttv_meta')).toBeAttached();
+    await page.waitForFunction(
+        () =>
+            typeof (
+                window as unknown as {
+                    wp?: { data?: { dispatch?: unknown }; preferences?: { store?: unknown } };
+                }
+            ).wp?.data?.dispatch === 'function',
+    );
+    await page.evaluate(() => {
+        const editorWp = (
+            window as unknown as {
+                wp: {
+                    data: {
+                        dispatch: (store: unknown) => {
+                            set: (scope: string, name: string, value: boolean) => void;
+                        };
+                    };
+                    preferences: { store: unknown };
+                };
+            }
+        ).wp;
+        editorWp.data.dispatch(editorWp.preferences.store).set('core/edit-post', 'welcomeGuide', false);
+    });
+
+    const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
+    await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
+    await expect(metaBoxesButton).toBeVisible();
+    await expect
+        .poll(async () => {
+            if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
+                await metaBoxesButton.focus();
+                await page.keyboard.press('Enter');
+            }
+            return metaBoxesButton.getAttribute('aria-expanded');
+        })
+        .toBe('true');
+}
+
 test.describe('media picker interactions', () => {
+    test('ignores stale sidebar metadata after a newer card selection', async ({ page }) => {
+        test.setTimeout(45_000);
+        await openFixturePostEditor(page);
+
+        let markRequestStarted: () => void = () => {};
+        const requestStarted = new Promise<void>((resolve) => {
+            markRequestStarted = resolve;
+        });
+        let releaseResponse: () => void = () => {};
+        const responseReleased = new Promise<void>((resolve) => {
+            releaseResponse = resolve;
+        });
+
+        await page.route('**/wp-json/teksttv/v1/image-data?**', async (route) => {
+            markRequestStarted();
+            await responseReleased;
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ url: 'https://example.test/stale-sidebar.jpg' }),
+            });
+        });
+
+        const customCard = page.locator('#teksttv-sidebar-card-custom');
+        await customCard.focus();
+        await page.keyboard.press('Enter');
+        await selectFixtureImage(page);
+        await requestStarted;
+
+        const idField = page.locator('#teksttv-sidebar-image-id');
+        const noneCard = page.locator('#teksttv-sidebar-card-none');
+        await noneCard.focus();
+        await page.keyboard.press('Enter');
+        await expect(idField).toHaveValue('0');
+        await expect(noneCard).toHaveClass(/is-active/);
+
+        const response = page.waitForResponse('**/wp-json/teksttv/v1/image-data?**');
+        releaseResponse();
+        await response;
+        await page.waitForTimeout(100);
+
+        await expect(idField).toHaveValue('0');
+        await expect(noneCard).toHaveClass(/is-active/);
+        await expect(customCard).not.toHaveClass(/is-active/);
+    });
+
     test('sets and clears an image block attachment and preview', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
         const imageBlock = await addLoopBlock(page, 'image');
@@ -83,46 +172,7 @@ test.describe('media picker interactions', () => {
 
     test('keeps extra-image removal in sync with the form and preview', async ({ page }) => {
         test.setTimeout(45_000);
-        await page.goto('/wp-admin/edit.php');
-        await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
-
-        await expect(page.locator('#teksttv_meta')).toBeAttached();
-        await page.waitForFunction(
-            () =>
-                typeof (
-                    window as unknown as {
-                        wp?: { data?: { dispatch?: unknown }; preferences?: { store?: unknown } };
-                    }
-                ).wp?.data?.dispatch === 'function',
-        );
-        await page.evaluate(() => {
-            const editorWp = (
-                window as unknown as {
-                    wp: {
-                        data: {
-                            dispatch: (store: unknown) => {
-                                set: (scope: string, name: string, value: boolean) => void;
-                            };
-                        };
-                        preferences: { store: unknown };
-                    };
-                }
-            ).wp;
-            editorWp.data.dispatch(editorWp.preferences.store).set('core/edit-post', 'welcomeGuide', false);
-        });
-
-        const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
-        await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
-        await expect(metaBoxesButton).toBeVisible();
-        await expect
-            .poll(async () => {
-                if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
-                    await metaBoxesButton.focus();
-                    await page.keyboard.press('Enter');
-                }
-                return metaBoxesButton.getAttribute('aria-expanded');
-            })
-            .toBe('true');
+        await openFixturePostEditor(page);
 
         const list = page.locator('#teksttv-images-list');
         const items = list.locator(':scope > .teksttv-image-item');
