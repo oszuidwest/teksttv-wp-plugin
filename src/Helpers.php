@@ -221,7 +221,14 @@ class Helpers
      */
     public static function duration_seconds(string $kind): int
     {
-        return (int) get_option('teksttv_duration_' . $kind, self::DURATION_DEFAULTS[$kind] ?? self::DURATION_DEFAULTS['text']);
+        return self::clamp_int(
+            get_option(
+                'teksttv_duration_' . $kind,
+                self::DURATION_DEFAULTS[$kind] ?? self::DURATION_DEFAULTS['text']
+            ),
+            1,
+            120
+        );
     }
 
     /**

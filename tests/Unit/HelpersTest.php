@@ -28,6 +28,24 @@ class HelpersTest extends TestCase
         $this->assertSame(120, Helpers::clamp_int('-9999', 1, 120));
     }
 
+    public function test_duration_seconds_clamps_configured_value_to_minimum(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_duration_text', Helpers::DURATION_DEFAULTS['text'])
+            ->andReturn(0);
+
+        $this->assertSame(1, Helpers::duration_seconds('text'));
+    }
+
+    public function test_duration_ms_clamps_configured_fallback_to_maximum(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_duration_image', Helpers::DURATION_DEFAULTS['image'])
+            ->andReturn(9999);
+
+        $this->assertSame(120000, Helpers::duration_ms(null, 'image'));
+    }
+
     public function test_is_allowed_on_day_returns_false_for_empty_array(): void
     {
         $this->assertFalse(Helpers::is_allowed_on_day([]));
