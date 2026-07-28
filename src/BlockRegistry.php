@@ -11,7 +11,7 @@ namespace TekstTV;
  * Usage:
  *   BlockRegistry::register('my_block', [
  *       'label'   => 'My Block',
- *       'icon'    => 'dashicons-admin-generic',
+ *       'icon'    => 'admin-generic',
  *       'color'   => '#8c8f94',
  *       'context' => 'loop',         // 'loop', 'ticker', or 'both'
  *       'render'  => function (int|string $index, array $data, string $prefix): void { ... },

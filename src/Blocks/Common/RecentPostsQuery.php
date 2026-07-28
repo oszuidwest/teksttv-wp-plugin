@@ -16,7 +16,8 @@ final class RecentPostsQuery
 {
     /**
      * @param array<string, mixed> $taxonomy_filters Keyed by taxonomy name, values are term ID arrays.
-     * @param array<string, mixed> $extra Merged over the base args (e.g. meta_query).
+     * @param array<string, mixed> $extra Extra args (e.g. meta_query). Every key this class sets
+     *                                    itself wins, so $extra cannot widen the query.
      * @return array<string, mixed>
      */
     public static function args(int $count, array $taxonomy_filters, array $extra = []): array
@@ -45,6 +46,8 @@ final class RecentPostsQuery
             $args['tax_query'] = $tax_query;
         }
 
-        return array_merge($args, $extra);
+        // Policy args last so $extra cannot silently disable the class's
+        // advertised invariants (published-only, no duplicates, max age).
+        return array_merge($extra, $args);
     }
 }

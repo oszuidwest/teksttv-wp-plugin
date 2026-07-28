@@ -67,6 +67,29 @@ class WeatherLoopBlockTest extends TestCase
         $this->assertSame('', $result['title']);
     }
 
+    public function test_render_fields_uses_configured_weather_duration_as_placeholder(): void
+    {
+        Functions\when('esc_attr')->returnArg();
+        Functions\when('esc_attr__')->returnArg();
+        Functions\when('esc_html_e')->alias(function ($value): void {
+            echo $value;
+        });
+        Functions\expect('get_option')
+            ->with('teksttv_duration_weather', 15)
+            ->andReturn(23);
+
+        ob_start();
+        try {
+            WeatherLoopBlock::render_fields(0, [], 'teksttv_blocks');
+            $html = (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
+
+        $this->assertStringContainsString('placeholder="23"', $html);
+    }
+
     public function test_wind_deg_north(): void
     {
         $this->assertSame('N', WeatherLoopBlock::wind_deg_to_direction(0.0));
@@ -320,7 +343,11 @@ class WeatherLoopBlockTest extends TestCase
             ],
         ]);
 
-        Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('key');
+        // No override: duration_ms falls back to the (never-saved) weather
+        // option default, so unsaved options must return their default.
+        Functions\expect('get_option')->andReturnUsing(
+            fn ($key, $default = false) => $key === 'teksttv_openweather_api_key' ? 'key' : $default
+        );
         Functions\expect('apply_filters')->andReturn($mock_provider);
         Functions\expect('date_i18n')->andReturn('dinsdag 7 apr');
 

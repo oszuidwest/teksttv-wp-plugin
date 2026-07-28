@@ -18,8 +18,8 @@ function withTomSelect<T extends { init(this: unknown): void }>(component: T): T
 }
 
 /**
- * One `Alpine.data` per WP adminscherm houdt bootstrap simpel (geen geneste scopes die parent's
- * methods missen). Zware logika zit in losse TS-modules onder `alpine/blocks/` e.d.
+ * One `Alpine.data` component per WP admin screen keeps each page's state and methods
+ * together. The heavy lifting lives in plain TS modules under `alpine/`.
  */
 export function registerTeksttvAlpine(): void {
     Alpine.data('teksttvLoopPage', () =>

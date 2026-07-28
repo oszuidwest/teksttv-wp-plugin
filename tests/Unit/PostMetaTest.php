@@ -2,6 +2,7 @@
 
 namespace TekstTV\Tests\Unit;
 
+use Brain\Monkey\Actions;
 use Brain\Monkey\Functions;
 use TekstTV\PostMeta;
 
@@ -75,10 +76,6 @@ class PostMetaTest extends TestCase
         return false;
     }
 
-    // =========================================================================
-    // Active toggle
-    // =========================================================================
-
     public function test_process_save_saves_active(): void
     {
         $this->setupProcessSave();
@@ -95,10 +92,6 @@ class PostMetaTest extends TestCase
         $this->assertSame('0', $this->findMetaUpdate('_teksttv_active'));
     }
 
-    // =========================================================================
-    // Feature: custom_title
-    // =========================================================================
-
     public function test_process_save_skips_title_when_feature_disabled(): void
     {
         $this->setupProcessSave([]);
@@ -114,10 +107,6 @@ class PostMetaTest extends TestCase
 
         $this->assertSame('Custom', $this->findMetaUpdate('_teksttv_title'));
     }
-
-    // =========================================================================
-    // Feature: scheduling
-    // =========================================================================
 
     public function test_process_save_skips_scheduling_when_feature_disabled(): void
     {
@@ -161,9 +150,27 @@ class PostMetaTest extends TestCase
         $this->assertSame(['1', '5'], $this->findMetaUpdate('_teksttv_days'));
     }
 
-    // =========================================================================
-    // Feature: extra_images
-    // =========================================================================
+    public function test_process_save_preserves_explicit_empty_days(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, ['active' => true, 'content' => '', 'days' => []]);
+
+        $this->assertSame([], $this->findMetaUpdate('_teksttv_days'));
+        $this->assertFalse($this->wasMetaDeleted('_teksttv_days'));
+    }
+
+    public function test_process_save_deletes_days_meta_for_unrestricted_days(): void
+    {
+        $this->setupProcessSave(['scheduling']);
+        PostMeta::process_save(1, [
+            'active' => true,
+            'content' => '',
+            'days' => ['', '1', '2', '3', '4', '5', '6', '7'],
+        ]);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertFalse($this->wasMetaUpdated('_teksttv_days'));
+    }
 
     public function test_process_save_skips_images_when_feature_disabled(): void
     {
@@ -189,10 +196,6 @@ class PostMetaTest extends TestCase
         $images = $this->findMetaUpdate('_teksttv_images');
         $this->assertSame([10], array_values($images));
     }
-
-    // =========================================================================
-    // Feature: sidebar_image — three states
-    // =========================================================================
 
     public function test_process_save_sidebar_custom_id(): void
     {
@@ -228,10 +231,7 @@ class PostMetaTest extends TestCase
         $this->assertFalse($this->wasMetaDeleted('_teksttv_sidebar_image'));
     }
 
-    // =========================================================================
-    // Guard clauses (save_meta level, still using $_POST)
-    // =========================================================================
-
+    // Guard clauses (save_meta level, still using $_POST).
     public function test_save_meta_returns_early_without_nonce(): void
     {
         $_POST = [];
@@ -257,34 +257,19 @@ class PostMetaTest extends TestCase
         $this->assertEmpty($this->metaUpdates);
     }
 
-    public function test_save_meta_invalidates_slides_cache_after_meta_updates(): void
+    public function test_cache_invalidation_runs_after_meta_save(): void
     {
-        $_POST = [
-            'teksttv_meta_nonce' => 'valid',
-            'teksttv_active' => '1',
-        ];
-        $post = \Mockery::mock(\WP_Post::class);
-        $post->post_type = 'post';
+        Actions\expectAdded('save_post')
+            ->with([PostMeta::class, 'save_meta'], 10, 2)
+            ->once();
+        Actions\expectAdded('save_post')
+            ->with([PostMeta::class, 'invalidate_on_post_save'], 20, 2)
+            ->once();
 
-        Functions\when('wp_verify_nonce')->justReturn(true);
-        Functions\when('wp_unslash')->alias(fn ($v) => $v);
-        Functions\when('current_user_can')->justReturn(true);
-        $this->setupProcessSave();
-
-        // Regression: save_post_post invalidates BEFORE this callback writes
-        // the meta; a concurrent /slides request in that window can re-cache
-        // stale data, so save_meta() must invalidate again after writing.
-        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1');
-
-        PostMeta::save_meta(1, $post);
-
-        $this->assertNotEmpty($this->metaUpdates);
+        PostMeta::init();
     }
 
-    // =========================================================================
-    // Broader slides-cache invalidation on editorial changes
-    // =========================================================================
-
+    // Broader slides-cache invalidation on editorial changes.
     public function test_invalidate_on_terms_change_clears_cache_for_post(): void
     {
         Functions\expect('get_post_type')->with(10)->andReturn('post');
@@ -313,6 +298,20 @@ class PostMetaTest extends TestCase
         Functions\expect('delete_transient')->never();
 
         $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+        PostMeta::invalidate_on_post_save(5, $post);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_invalidate_on_post_save_skips_non_post(): void
+    {
+        Functions\expect('wp_is_post_autosave')->never();
+        Functions\expect('wp_is_post_revision')->never();
+        Functions\expect('delete_transient')->never();
+
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'page';
         PostMeta::invalidate_on_post_save(5, $post);
 
         $this->assertTrue(true);

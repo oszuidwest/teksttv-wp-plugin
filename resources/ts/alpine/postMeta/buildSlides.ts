@@ -22,7 +22,6 @@ export function hasSidebarPhoto(config: TeksttvPostConfig | undefined, customIma
     return resolveSidebarImage(config, customImageData) !== null;
 }
 
-/** Leest kop, body en afbeeldingslijst uit de DOM naar preview-slides. */
 export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, customImageData: ImageData | null): Slide[] {
     const customTitle = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
     const postTitle = (
@@ -36,7 +35,7 @@ export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, custom
     const content = getTeksttvEditorHtml();
     const result: Slide[] = [];
 
-    const expandedPages = splitPages(content);
+    const expandedPages = splitPages(content, config?.pageSeparator ?? true);
 
     const sidebarImg = resolveSidebarImage(config, customImageData);
 

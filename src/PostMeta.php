@@ -14,7 +14,7 @@ class PostMeta
         // Broader slides-cache invalidation for editorial changes that affect
         // output but do not go through the Tekst TV meta box: quick edits,
         // scheduled publishes, category assignments and media caption edits.
-        add_action('save_post_post', [self::class, 'invalidate_on_post_save'], 10, 2);
+        add_action('save_post', [self::class, 'invalidate_on_post_save'], 20, 2);
         add_action('transition_post_status', [self::class, 'invalidate_on_status_transition'], 10, 3);
         add_action('set_object_terms', [self::class, 'invalidate_on_terms_change'], 10, 1);
         add_action('attachment_updated', [self::class, 'invalidate_on_attachment_update'], 10, 1);
@@ -26,7 +26,7 @@ class PostMeta
      */
     public static function invalidate_on_post_save(int $post_id, \WP_Post $post): void
     {
-        if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+        if ($post->post_type !== 'post' || wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
             return;
         }
         RestApi::invalidate_slides_cache();
@@ -110,7 +110,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $post_id = get_the_ID();
 
-        // Build fallback image data (post thumbnail with caption/attribution)
         $fallback_image = null;
         if ($post_id) {
             $thumb_id = get_post_thumbnail_id($post_id);
@@ -119,7 +118,6 @@ class PostMeta
             }
         }
 
-        // Build custom sidebar image data (for JS preview of already saved custom images)
         $custom_image = null;
         if ($post_id) {
             $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
@@ -128,7 +126,8 @@ class PostMeta
             }
         }
 
-        // Calculate default end date using the same start date shown in the form
+        // Derive from the same start date the form renders, so the JS reset button
+        // restores the value the editor actually sees.
         $saved_start = $post_id ? get_post_meta($post_id, '_teksttv_date_start', true) : '';
         if (empty($saved_start) && $post_id) {
             $saved_start = self::default_start_date(get_post($post_id));
@@ -138,7 +137,10 @@ class PostMeta
         $ai_supported = Helpers::ai_supported();
         $prompts = $ai_supported ? Helpers::get_ai_prompts() : [];
 
-        wp_localize_script('teksttv-admin', 'teksttvPost', [
+        // wp_json_encode via an inline script instead of wp_localize_script:
+        // the latter casts every scalar to a string, which would make the
+        // number/boolean types in TeksttvPostConfig (types.ts) inaccurate.
+        $config = [
             'previewUrl' => $preview_url,
             'restNonce' => wp_create_nonce('wp_rest'),
             'imageDataUrl' => rest_url('teksttv/v1/image-data'),
@@ -149,10 +151,12 @@ class PostMeta
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
             'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
-            'titleCharLimit' => $prompts['title_char_limit'] ?? 0,
-            'wordLimit' => $prompts['word_limit'] ?? 0,
-            'wordLimitPhoto' => $prompts['word_limit_photo'] ?? 0,
-        ]);
+            'titleCharLimit' => (int) ($prompts['title_char_limit'] ?? 0),
+            'wordLimit' => (int) ($prompts['word_limit'] ?? 0),
+            'wordLimitPhoto' => (int) ($prompts['word_limit_photo'] ?? 0),
+            'pageSeparator' => Helpers::has_feature('page_separator'),
+        ];
+        wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');
     }
 
     /**
@@ -162,7 +166,9 @@ class PostMeta
     private static function default_start_date(?\WP_Post $post): string
     {
         $pub_date = ($post && $post->post_date !== '0000-00-00 00:00:00') ? $post->post_date : '';
-        return $pub_date ? date('Y-m-d', strtotime($pub_date)) : date('Y-m-d');
+        // post_date is already site-local; "today" must be site-local too
+        // (the scheduling checks in Helpers use wp_timezone()).
+        return $pub_date ? date('Y-m-d', strtotime($pub_date)) : wp_date('Y-m-d');
     }
 
     /**
@@ -186,15 +192,14 @@ class PostMeta
         $days = get_post_meta($post->ID, '_teksttv_days', true);
         $images = get_post_meta($post->ID, '_teksttv_images', true);
 
-        // Empty days means "all days" and renders with every checkbox checked.
+        // Missing meta means "all days"; a stored empty array means "no days".
         if (!is_array($days)) {
-            $days = [];
+            $days = null;
         }
         if (!is_array($images)) {
             $images = [];
         }
 
-        // Default dates for new/unsaved posts
         if (empty($date_start) && empty($date_end)) {
             $date_start = self::default_start_date($post);
             $date_end = self::default_end_date($date_start);
@@ -203,7 +208,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $ai_enabled = Helpers::ai_supported();
 
-        // Build TinyMCE toolbar and valid elements based on features
         $toolbar_items = [];
         if (Helpers::has_feature('bold')) {
             $toolbar_items[] = 'bold';
@@ -269,7 +273,6 @@ class PostMeta
             return;
         }
 
-        // Sanitize POST data
         $data = [
             'active' => isset($_POST['teksttv_active']),
             'title' => sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? '')),
@@ -277,17 +280,12 @@ class PostMeta
             'content' => wp_unslash($_POST['teksttv_content'] ?? ''),
             'date_start' => sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? '')),
             'date_end' => sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? '')),
-            'days' => array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'] ?? [])),
+            'days' => isset($_POST['teksttv_days']) && is_array($_POST['teksttv_days']) ? array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'])) : null,
             'images' => array_map('absint', wp_unslash($_POST['teksttv_images'] ?? [])),
             'sidebar_image' => sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? '')),
         ];
 
         self::process_save($post_id, $data);
-
-        // save_post_post also invalidates for this save, but it fires BEFORE
-        // this callback writes the meta. A concurrent /slides request in that
-        // window can re-cache the old meta, so invalidate again after writing.
-        RestApi::invalidate_slides_cache();
     }
 
     /**
@@ -298,15 +296,14 @@ class PostMeta
      */
     public static function process_save(int $post_id, array $data): void
     {
-        // Active toggle
         update_post_meta($post_id, '_teksttv_active', $data['active'] ? '1' : '0');
 
-        // Title override (only save if feature enabled)
         if (Helpers::has_feature('custom_title')) {
             update_post_meta($post_id, '_teksttv_title', $data['title'] ?? '');
         }
 
-        // Content — strip tags that are disabled by features
+        // Disabled formatting features must not survive in stored content, even
+        // when the markup was pasted or produced before the feature was turned off.
         $allowed_tags = ['p' => [], 'br' => []];
         if (Helpers::has_feature('bold')) {
             $allowed_tags['strong'] = [];
@@ -327,24 +324,26 @@ class PostMeta
         $content = wp_kses($data['content'] ?? '', $allowed_tags);
         update_post_meta($post_id, '_teksttv_content', $content);
 
-        // Scheduling (only save if feature enabled)
         if (Helpers::has_feature('scheduling')) {
             update_post_meta($post_id, '_teksttv_date_start', $data['date_start'] ?? '');
             update_post_meta($post_id, '_teksttv_date_end', $data['date_end'] ?? '');
 
-            // null (all 7 days checked) and [] are both "no restriction".
-            $days = Helpers::sanitize_days_input($data['days'] ?? []) ?? [];
-            update_post_meta($post_id, '_teksttv_days', $days);
+            $days = Helpers::sanitize_days_input($data['days'] ?? null);
+            if ($days === null) {
+                delete_post_meta($post_id, '_teksttv_days');
+            } else {
+                update_post_meta($post_id, '_teksttv_days', $days);
+            }
         }
 
-        // Extra images (only save if feature enabled)
         if (Helpers::has_feature('extra_images')) {
             $images = array_filter($data['images'] ?? []);
             update_post_meta($post_id, '_teksttv_images', $images);
         }
 
-        // Sidebar image (only save if feature enabled)
         if (Helpers::has_feature('sidebar_image')) {
+            // '0' suppresses the sidebar image entirely; an empty value falls
+            // back to the automatic category/thumbnail resolution.
             $sidebar_raw = $data['sidebar_image'] ?? '';
             if ($sidebar_raw === '0') {
                 update_post_meta($post_id, '_teksttv_sidebar_image', '0');

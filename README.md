@@ -124,7 +124,7 @@ Install dependencies with `composer install` and `bun install`.
 | `bunx tsc --noEmit` | Check TypeScript types |
 | `bun run analyse` | Run PHPStan |
 | `bun run test` | Run PHPUnit unit tests |
-| `bun run build` | Build minified admin assets into `assets/` |
+| `bun run build` | Build minified admin assets into `assets/` (JS minifies syntax and whitespace but deliberately keeps identifier names) |
 | `bun run dev` | Watch JavaScript and CSS entry points |
 | `bun run build:package` | Build the installable artifact in `release/teksttv/` |
 

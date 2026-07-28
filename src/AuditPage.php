@@ -57,15 +57,15 @@ class AuditPage
                 </div>
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['title_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Koppen bewerkt', 'teksttv-wp-plugin'); ?></span>
+                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Koppen bewerkt (deze pagina)', 'teksttv-wp-plugin'); ?></span>
                 </div>
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['body_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Teksten bewerkt', 'teksttv-wp-plugin'); ?></span>
+                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Teksten bewerkt (deze pagina)', 'teksttv-wp-plugin'); ?></span>
                 </div>
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['any_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Totaal bewerkt', 'teksttv-wp-plugin'); ?></span>
+                    <span class="teksttv-audit-stat-label"><?php esc_html_e('Totaal bewerkt (deze pagina)', 'teksttv-wp-plugin'); ?></span>
                 </div>
             </div>
 
@@ -240,7 +240,11 @@ class AuditPage
     }
 
     /**
-     * Compute stats from an already-fetched posts array.
+     * Calculate modified-output percentages for the supplied posts.
+     *
+     * All percentages use count($posts) as their denominator. render_page()
+     * passes one page, so these values describe that page rather than every post
+     * with AI content.
      *
      * @param list<array{title_status: string, body_status: string}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}

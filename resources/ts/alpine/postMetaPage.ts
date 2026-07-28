@@ -1,7 +1,7 @@
 import Sortable from 'sortablejs';
-import { fadeOutRemove, hide, show, slideDown, slideUp } from '../modules/dom';
+import { hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
-import { debounce, previewSlideUrl } from '../modules/utils';
+import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
@@ -27,10 +27,6 @@ export function createPostMetaPage() {
         return buildSlidesFromDom(config, customImageData);
     }
 
-    function refreshWordCount(): void {
-        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
-    }
-
     function updatePreviewNav(): void {
         const total = slides.length;
         const current = total > 0 ? currentSlideIndex + 1 : 0;
@@ -49,7 +45,7 @@ export function createPostMetaPage() {
     }
 
     const updatePreview = debounce(() => {
-        refreshWordCount();
+        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
 
         const iframe = document.querySelector<HTMLIFrameElement>('#teksttv-preview-iframe');
         if (!(previewUrl && iframe)) return;
@@ -119,7 +115,8 @@ export function createPostMetaPage() {
             if (typeof tinymce !== 'undefined') {
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
                     // `updatePreview` debounces and also refreshes the word count.
-                    editor.on('input change SetContent', updatePreview);
+                    // keyup stays bound: not every TinyMCE edit fires input.
+                    editor.on('input change keyup SetContent', updatePreview);
                 };
                 const existing = tinymce.get('teksttv_content');
                 if (existing) bindEditor(existing);
@@ -187,10 +184,7 @@ export function createPostMetaPage() {
         onExtraImagesClick(e: MouseEvent): void {
             if (!(e.target instanceof Element)) return;
             const tgt = e.target.closest('.teksttv-remove-image');
-            const item = tgt?.closest('.teksttv-image-item');
-            if (item instanceof HTMLElement) {
-                fadeOutRemove(item, 150);
-            }
+            if (tgt) removeImageItem(tgt, updatePreview);
         },
 
         activateSidebarCardDefault(): void {
@@ -254,7 +248,7 @@ export function createPostMetaPage() {
             const btn = e.currentTarget;
             if (!(btn instanceof HTMLButtonElement) || !config?.generateUrl) return;
             const field = btn.dataset.field;
-            if (!field || btn.disabled) return;
+            if (btn.disabled || !(field === 'title' || field === 'body' || field === 'both')) return;
 
             if (config.isNewPost) {
                 window.alert('Sla de post eerst op voordat je AI-content kunt genereren.');

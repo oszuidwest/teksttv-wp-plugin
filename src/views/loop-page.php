@@ -65,9 +65,8 @@ settings_errors('teksttv');
             <button type="button" class="button-link teksttv-action-collapse-blocks" id="teksttv-collapse-all" @click.prevent="collapseAllBlocks()"><?php esc_html_e('Alles dichtklappen', 'teksttv-wp-plugin'); ?></button>
         </div>
 
-        <!-- Ticker -->
         <h2 class="teksttv-ticker-heading"><?php esc_html_e('Ticker berichten', 'teksttv-wp-plugin'); ?></h2>
-        <div id="teksttv-ticker" class="teksttv-blocks" @click="tickerClick($event)" @change="tickerFieldChange($event)">
+        <div id="teksttv-ticker" class="teksttv-blocks" @click="tickerClick($event)" @change="tickerFieldChange($event)" @input="tickerFieldChange($event)">
             <?php if (!empty($ticker_items)) :
                 foreach ($ticker_items as $ti => $ticker_item) :
                     AdminPage::render_block_generic($ti, $ticker_item, 'teksttv_ticker');
@@ -93,10 +92,10 @@ settings_errors('teksttv');
         </div>
 
         <?php
-        // Ticker templates per type
+        // Empty-row templates the workbench clones when a ticker item is added.
         foreach ($ticker_types as $ticker_type => $ticker_meta) : ?>
         <script type="text/html" id="tmpl-teksttv-ticker-<?php echo esc_attr($ticker_type); ?>">
-            <?php AdminPage::render_block_generic('__TINDEX__', ['type' => $ticker_type], 'teksttv_ticker'); ?>
+            <?php AdminPage::render_block_generic('__INDEX__', ['type' => $ticker_type], 'teksttv_ticker'); ?>
         </script>
         <?php endforeach; ?>
 
@@ -109,7 +108,6 @@ settings_errors('teksttv');
         </div>
     </form>
 
-    <!-- Block templates (generated from registry) -->
     <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
     <script type="text/html" id="tmpl-teksttv-block-<?php echo esc_attr($block_slug); ?>">
         <?php AdminPage::render_block_generic('__INDEX__', ['type' => $block_slug]); ?>

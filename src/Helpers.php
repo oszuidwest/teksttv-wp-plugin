@@ -44,13 +44,14 @@ class Helpers
             return null;
         }
         $valid = ['1', '2', '3', '4', '5', '6', '7'];
-        $days = array_values(array_intersect(array_map('sanitize_text_field', $raw), $valid));
+        $days = array_values(array_unique(array_intersect(array_map('sanitize_text_field', $raw), $valid)));
         return count($days) < 7 ? $days : null;
     }
 
     /**
      * Extract sanitized scheduling fields (date_start, date_end, days) from a
-     * raw POST payload. Empty values are omitted so unscheduled items stay lean.
+     * raw POST payload. Empty dates are omitted; an explicit empty days list is
+     * retained to represent "no days selected".
      *
      * @param array<string, mixed> $raw
      * @return array<string, mixed>
@@ -79,13 +80,16 @@ class Helpers
     /**
      * Check if content should be displayed on the given day.
      *
-     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun) or empty for "no days"
+     * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun); null means all days, [] means none.
      * @param DateTimeInterface|null $date Date to check, defaults to current date
      */
     public static function is_allowed_on_day(?array $allowed_days, ?DateTimeInterface $date = null): bool
     {
-        if (empty($allowed_days)) {
+        if ($allowed_days === null) {
             return true;
+        }
+        if ($allowed_days === []) {
+            return false;
         }
 
         $date = $date ?? current_datetime();
@@ -149,17 +153,20 @@ class Helpers
 
     /**
      * Default slide durations in seconds per kind. Also the defaults for the
-     * registered settings — keep every read of these numbers on this single map.
+     * registered settings - keep every read of these numbers on this single map.
      */
     public const DURATION_DEFAULTS = [
         'text' => 20,
         'image' => 7,
         'iframe' => 30,
+        // Weather has no settings field; this remains the default unless the
+        // option is supplied programmatically.
+        'weather' => 15,
     ];
 
     /**
      * Features enabled when the option has never been saved. Also the default
-     * for the registered setting — keep both reads on this single list.
+     * for the registered setting - keep both reads on this single list.
      */
     public const DEFAULT_FEATURES = [
         'custom_title', 'sidebar_image', 'extra_images',
@@ -175,7 +182,8 @@ class Helpers
      */
     public static function get_features(): array
     {
-        return get_option('teksttv_features', self::DEFAULT_FEATURES);
+        $features = get_option('teksttv_features', self::DEFAULT_FEATURES);
+        return is_array($features) ? $features : self::DEFAULT_FEATURES;
     }
 
     /**
@@ -208,19 +216,33 @@ class Helpers
     }
 
     /**
+     * Configured duration in seconds for a slide kind (a DURATION_DEFAULTS key),
+     * falling back to the default when the option has never been saved.
+     */
+    public static function duration_seconds(string $kind): int
+    {
+        return self::clamp_int(
+            get_option(
+                'teksttv_duration_' . $kind,
+                self::DURATION_DEFAULTS[$kind] ?? self::DURATION_DEFAULTS['text']
+            ),
+            1,
+            120
+        );
+    }
+
+    /**
      * Resolve a slide duration in milliseconds from an optional per-block
-     * override (in seconds), falling back to a duration option (in seconds).
+     * override (in seconds), falling back to the configured duration for $kind.
      *
      * @param mixed $override_seconds Stored block value; empty means "use the option".
-     * @param string $option_name Duration option to read, or '' to use $default_seconds directly.
+     * @param string $kind A DURATION_DEFAULTS key ('text', 'image', 'iframe').
      */
-    public static function duration_ms(mixed $override_seconds, string $option_name, int $default_seconds): int
+    public static function duration_ms(mixed $override_seconds, string $kind): int
     {
-        if (!empty($override_seconds)) {
-            return (int) $override_seconds * 1000;
-        }
-
-        $seconds = $option_name !== '' ? (int) get_option($option_name, $default_seconds) : $default_seconds;
+        // Overrides are re-clamped at runtime: values stored before the
+        // save-time clamp existed could still be unbounded.
+        $seconds = !empty($override_seconds) ? self::clamp_int($override_seconds, 1, 120) : self::duration_seconds($kind);
         return $seconds * 1000;
     }
 
@@ -382,13 +404,11 @@ class Helpers
         $campaigns = self::get_campaigns();
 
         return array_filter($campaigns, function ($campaign) use ($channel) {
-            // Must be assigned to this channel
             $channels = $campaign['channels'] ?? [];
             if (!in_array($channel, $channels, true)) {
                 return false;
             }
 
-            // Must pass date range + day-of-week scheduling
             return self::is_block_scheduled($campaign);
         });
     }
@@ -408,16 +428,18 @@ class Helpers
      */
     public static function is_block_scheduled(array $block): bool
     {
-        $days = $block['days'] ?? [];
         // Unscheduled blocks are the common case; skip the datetime work entirely.
-        if (empty($block['date_start']) && empty($block['date_end']) && empty($days)) {
+        if (empty($block['date_start']) && empty($block['date_end']) && !array_key_exists('days', $block)) {
             return true;
         }
         if (!self::is_within_date_range($block['date_start'] ?? null, $block['date_end'] ?? null)) {
             return false;
         }
-        if (!empty($days) && !self::is_allowed_on_day($days)) {
-            return false;
+        if (array_key_exists('days', $block)) {
+            $days = $block['days'] === null ? null : (is_array($block['days']) ? $block['days'] : []);
+            if (!self::is_allowed_on_day($days)) {
+                return false;
+            }
         }
         return true;
     }
@@ -473,7 +495,8 @@ class Helpers
      */
     public static function enabled_taxonomies(): array
     {
-        return get_option('teksttv_enabled_taxonomies', ['category']);
+        $taxonomies = get_option('teksttv_enabled_taxonomies', ['category']);
+        return is_array($taxonomies) ? $taxonomies : ['category'];
     }
 
     /**
@@ -505,7 +528,7 @@ class Helpers
      * When the caller passes a `$slot` identifying which template slot the
      * image will fill, the `teksttv_image_url` filter is applied so the
      * active theme can return a slot-appropriate (e.g. focal-point-aware,
-     * pre-cropped) variant. The plugin stays template-agnostic — pixel
+     * pre-cropped) variant. The plugin stays template-agnostic - pixel
      * dimensions live in the theme that owns the layout.
      *
      * Known slots:

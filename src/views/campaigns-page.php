@@ -19,7 +19,6 @@ settings_errors('teksttv_campaigns');
 <form method="post" x-data="teksttvCampaignsPage">
     <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
 
-    <!-- Groups management -->
     <div class="teksttv-card" style="margin-bottom:24px;">
         <h3><?php esc_html_e('Groepen', 'teksttv-wp-plugin'); ?></h3>
         <p class="description"><?php esc_html_e('Definieer groepen om campagnes te organiseren. In de loop kies je per campagne-blok welke groepen getoond worden.', 'teksttv-wp-plugin'); ?></p>

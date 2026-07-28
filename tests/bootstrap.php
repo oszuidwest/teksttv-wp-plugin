@@ -9,7 +9,6 @@ defined('ABSPATH') || exit;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Define WP constants used throughout the plugin
 if (!defined('TEKSTTV_PLUGIN_DIR')) {
     define('TEKSTTV_PLUGIN_DIR', dirname(__DIR__) . '/');
 }
@@ -166,7 +165,7 @@ if (!class_exists('WP_Query')) {
         /** @var list<object> Posts to return from the stub. Set this in your test. */
         public static array $stubPosts = [];
 
-        /** @var WP_Query|null Last instance constructed — inspect query_vars from tests. */
+        /** @var WP_Query|null Last instance constructed - inspect query_vars from tests. */
         public static ?WP_Query $lastInstance = null;
 
         /** @var array<string, mixed> The query args passed to the constructor. */

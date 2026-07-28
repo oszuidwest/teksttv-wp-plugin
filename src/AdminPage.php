@@ -54,7 +54,6 @@ class AdminPage
 
     public static function register_menu(): void
     {
-        // Main menu item — first loop channel or settings if no channels
         $channels = Helpers::get_channels();
         $first_channel = $channels[0]['slug'] ?? '';
 
@@ -68,7 +67,6 @@ class AdminPage
             30
         );
 
-        // Submenu per channel loop
         foreach ($channels as $ch) {
             $loop_label = count($channels) > 1 ? sprintf(/* translators: %s: channel label */ __('Loop: %s', 'teksttv-wp-plugin'), $ch['label']) : __('Loop', 'teksttv-wp-plugin');
             add_submenu_page(
@@ -81,7 +79,6 @@ class AdminPage
             );
         }
 
-        // Settings submenu
         add_submenu_page(
             'teksttv',
             __('Instellingen', 'teksttv-wp-plugin'),
@@ -91,7 +88,6 @@ class AdminPage
             [self::class, 'render_settings_page']
         );
 
-        // AI prompts submenu (separate capability)
         if (Helpers::has_feature('ai_generate')) {
             add_submenu_page(
                 'teksttv',
@@ -103,13 +99,13 @@ class AdminPage
             );
         }
 
-        // Remove the auto-generated duplicate submenu
+        // add_menu_page() auto-adds a first submenu item duplicating the parent.
         remove_submenu_page('teksttv', 'teksttv');
     }
 
     public static function register_settings(): void
     {
-        // Align the save capability (checked by options.php) with the view capability of each page
+        // Align the save capability (checked by options.php) with the view capability of each page.
         add_filter('option_page_capability_teksttv_settings', static fn() => 'manage_teksttv');
         add_filter('option_page_capability_teksttv_content', static fn() => 'manage_teksttv_content');
 
@@ -229,9 +225,9 @@ class AdminPage
     /**
      * Sanitize the AI prompts option.
      *
-     * Merges submitted values over the stored option so a partial form — e.g.
-     * one rendered without the region/technical sections for a role lacking
-     * manage_teksttv — cannot silently clear fields it never displayed.
+     * Merges permitted submitted values over the stored option so a partial form
+     * cannot clear fields it never displayed. Region and technical fields are
+     * also protected here because hiding them in the UI is not authorization.
      *
      * @param mixed $input
      * @return array<string, mixed>
@@ -244,6 +240,17 @@ class AdminPage
         }
         if (!is_array($input)) {
             return $current;
+        }
+
+        if (!current_user_can('manage_teksttv')) {
+            $input = array_diff_key($input, array_flip([
+                'region_taxonomy',
+                'provider',
+                'model',
+                'temperature',
+                'top_p',
+                'max_tokens',
+            ]));
         }
 
         $merged = array_merge($current, $input);
@@ -272,7 +279,6 @@ class AdminPage
 
     public static function enqueue_assets(string $hook): void
     {
-        // Load on any Tekst TV admin page
         if (!str_contains($hook, 'teksttv')) {
             return;
         }
@@ -304,14 +310,10 @@ class AdminPage
             return substr($page, strlen('teksttv-loop-'));
         }
 
-        // Fallback: first channel (for the main teksttv page)
+        // Fallback: first channel (for the main teksttv page).
         $channels = Helpers::get_channels();
         return $channels[0]['slug'] ?? '';
     }
-
-    // =========================================================================
-    // Loop page
-    // =========================================================================
 
     public static function render_loop_page(): void
     {
@@ -323,7 +325,6 @@ class AdminPage
             return;
         }
 
-        // Handle loop save via POST
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified in handle_loop_save()
         if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['teksttv_loop_nonce'])) {
             self::handle_loop_save();
@@ -340,10 +341,6 @@ class AdminPage
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
     }
 
-    // =========================================================================
-    // Settings page (channels + preview URL)
-    // =========================================================================
-
     public static function render_settings_page(): void
     {
         $channels = Helpers::get_channels();
@@ -354,10 +351,6 @@ class AdminPage
         include TEKSTTV_PLUGIN_DIR . 'src/views/settings-page.php';
     }
 
-    // =========================================================================
-    // AI Settings page
-    // =========================================================================
-
     public static function render_prompts_page(): void
     {
         $prompts = Helpers::get_ai_prompts();
@@ -366,10 +359,6 @@ class AdminPage
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/prompts-page.php';
     }
-
-    // =========================================================================
-    // Block rendering
-    // =========================================================================
 
     /**
      * Render a loop or ticker block using the registry.
@@ -414,8 +403,11 @@ class AdminPage
     {
         $date_start = $block['date_start'] ?? '';
         $date_end = $block['date_end'] ?? '';
-        $days = $block['days'] ?? [];
-        $has_scheduling = !empty($date_start) || !empty($date_end) || !empty($days);
+        $days = null;
+        if (array_key_exists('days', $block) && $block['days'] !== null) {
+            $days = is_array($block['days']) ? $block['days'] : [];
+        }
+        $has_scheduling = !empty($date_start) || !empty($date_end) || $days !== null;
 
         if ($with_toggle) : ?>
         <div class="teksttv-block-scheduling-toggle">
@@ -436,25 +428,29 @@ class AdminPage
             </div>
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
-                <?php self::render_days_row($prefix . '[' . $index . '][days][]', (array) $days); ?>
+                <?php self::render_days_row($prefix . '[' . $index . '][days][]', $days); ?>
             </div>
         </div>
         <?php
     }
 
     /**
-     * Render the weekday checkbox row. An empty $days list means "all days":
-     * every checkbox renders checked.
+     * Render the weekday checkbox row. Null means "all days"; an empty list
+     * means no days are selected.
      *
-     * @param list<string> $days Selected ISO day numbers ('1'..'7').
+     * A hidden empty value keeps the checkbox group present in POST when no
+     * weekdays are selected, so persistence can retain that explicit state.
+     *
+     * @param list<string>|null $days Selected ISO day numbers ('1'..'7').
      */
-    public static function render_days_row(string $field_name, array $days): void
+    public static function render_days_row(string $field_name, ?array $days): void
     {
         ?>
+        <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="" />
         <div class="teksttv-days-row">
             <?php foreach (Helpers::get_day_labels() as $num => $label) : ?>
             <label class="teksttv-day-toggle">
-                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" <?php checked(empty($days) || in_array((string) $num, $days, true)); ?> />
+                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" <?php checked($days === null || in_array((string) $num, $days, true)); ?> />
                 <span><?php echo esc_html($label); ?></span>
             </label>
             <?php endforeach; ?>
@@ -462,61 +458,86 @@ class AdminPage
         <?php
     }
 
-    // =========================================================================
-    // Save handler
-    // =========================================================================
-
-    private static function handle_loop_save(): void
+    private static function validate_loop_save_request(): ?string
     {
         if (!isset($_POST['teksttv_loop_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_loop_nonce'])), 'teksttv_save_loop')) {
-            return;
+            add_settings_error('teksttv', 'loop_nonce_failed', __('Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.', 'teksttv-wp-plugin'));
+            return null;
         }
 
         if (!current_user_can('manage_teksttv')) {
-            return;
+            add_settings_error('teksttv', 'loop_no_permission', __('Onvoldoende rechten; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
+            return null;
         }
 
         $channel = sanitize_key(wp_unslash($_POST['teksttv_loop_channel'] ?? ''));
-        if (empty($channel)) {
+        if (empty($channel) || !in_array($channel, Helpers::channel_slugs(), true)) {
+            add_settings_error('teksttv', 'loop_unknown_channel', __('Onbekend kanaal; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
+            return null;
+        }
+
+        return $channel;
+    }
+
+    private static function handle_loop_save(): void
+    {
+        $channel = self::validate_loop_save_request();
+        if ($channel === null) {
             return;
         }
 
-        // Validate channel exists
-        if (!in_array($channel, Helpers::channel_slugs(), true)) {
-            return;
-        }
-
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field is sanitized individually below
-        $raw_blocks = isset($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
-        $blocks = [];
-
-        foreach ($raw_blocks as $block) {
-            $type = sanitize_key($block['type'] ?? '');
-            $saved = BlockRegistry::save($type, $block);
-            if ($saved) {
-                $saved = array_merge($saved, Helpers::extract_scheduling_fields($block));
-                $blocks[] = $saved;
-            }
-        }
-
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
+        $raw_blocks = isset($_POST['teksttv_blocks']) && is_array($_POST['teksttv_blocks']) ? wp_unslash($_POST['teksttv_blocks']) : [];
+        [$blocks, $blocks_preserved] = self::sanitize_registry_items($raw_blocks, 'teksttv_loop_' . $channel);
         update_option('teksttv_loop_' . $channel, $blocks);
 
-        // Save ticker items
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
-        $raw_ticker = isset($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
-        $ticker = [];
-        foreach ($raw_ticker as $item) {
-            $type = sanitize_key($item['type'] ?? '');
-            $saved_ticker = BlockRegistry::save($type, $item);
-            if ($saved_ticker) {
-                $saved_ticker = array_merge($saved_ticker, Helpers::extract_scheduling_fields($item));
-                $ticker[] = $saved_ticker;
-            }
-        }
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce is verified in validate_loop_save_request(); fields are sanitized individually in sanitize_registry_items()
+        $raw_ticker = isset($_POST['teksttv_ticker']) && is_array($_POST['teksttv_ticker']) ? wp_unslash($_POST['teksttv_ticker']) : [];
+        [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel);
         update_option('teksttv_ticker_' . $channel, $ticker);
 
         RestApi::invalidate_slides_cache($channel);
 
-        add_settings_error('teksttv-wp-plugin', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
+        if ($blocks_preserved || $ticker_preserved) {
+            add_settings_error('teksttv', 'loop_preserved_unknown', __('Sommige opgeslagen blokken horen bij een niet-actieve plugin. Ze zijn bewaard maar verschijnen pas weer als die plugin actief is.', 'teksttv-wp-plugin'), 'warning');
+        }
+
+        add_settings_error('teksttv', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
+    }
+
+    /**
+     * Sanitize posted registry items and re-append stored items whose type is
+     * no longer registered (e.g. an add-on plugin was deactivated). Those items
+     * cannot render in the form, so they are absent from the POST and would
+     * otherwise be silently deleted on save.
+     *
+     * @param array<int|string, mixed> $raw_items Unslashed POST items.
+     * @return array{0: list<array<string, mixed>>, 1: bool} Sanitized items and whether any stored item was preserved.
+     */
+    private static function sanitize_registry_items(array $raw_items, string $option_name): array
+    {
+        $items = [];
+        foreach ($raw_items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $type = sanitize_key($item['type'] ?? '');
+            $saved = BlockRegistry::save($type, $item);
+            if ($saved) {
+                $items[] = array_merge($saved, Helpers::extract_scheduling_fields($item));
+            }
+        }
+
+        $preserved = false;
+        $existing = get_option($option_name, []);
+        foreach (is_array($existing) ? $existing : [] as $existing_item) {
+            $existing_type = is_array($existing_item) ? (string) ($existing_item['type'] ?? '') : '';
+            if ($existing_type !== '' && BlockRegistry::get($existing_type) === null) {
+                $items[] = $existing_item;
+                $preserved = true;
+            }
+        }
+
+        return [$items, $preserved];
     }
 }

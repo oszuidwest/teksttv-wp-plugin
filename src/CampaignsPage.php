@@ -42,13 +42,16 @@ class CampaignsPage
      */
     public static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
     {
-        $id = $campaign['id'] ?? self::new_campaign_id();
+        // The template row (index '__INDEX__') renders an empty id; save()
+        // mints a unique one per submitted row. Baking an id into the template
+        // would give every campaign added in one page load the same id.
+        $id = $campaign['id'] ?? '';
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
         $group = (string) ($campaign['group'] ?? '');
         $duration = $campaign['duration'] ?? '';
         $slides = $campaign['slides'] ?? [];
-        $default_duration = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['image']);
+        $default_duration = Helpers::duration_seconds('image');
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
@@ -130,33 +133,32 @@ class CampaignsPage
             return;
         }
 
-        // Save groups
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_groups()
         $raw_groups = isset($_POST['teksttv_campaign_groups']) ? wp_unslash($_POST['teksttv_campaign_groups']) : [];
         update_option('teksttv_campaign_groups', self::sanitize_groups($raw_groups));
 
-        // Save campaigns
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         $campaigns = [];
         $valid_slugs = Helpers::channel_slugs();
 
         foreach ($raw as $item) {
+            $submitted_id = sanitize_key($item['id'] ?? '');
             $saved = [
-                'id' => sanitize_key($item['id'] ?? self::new_campaign_id()),
+                'id' => $submitted_id !== '' ? $submitted_id : 'camp_' . time() . '_' . wp_rand(),
                 'name' => sanitize_text_field($item['name'] ?? ''),
                 'group' => sanitize_key($item['group'] ?? ''),
             ];
 
-            // Channels
             $saved_channels = [];
             if (!empty($item['channels']) && is_array($item['channels'])) {
+                // Drop slugs of channels that no longer exist; the loop reads
+                // this list to decide where a campaign runs.
                 $saved_channels = array_map('sanitize_key', $item['channels']);
                 $saved_channels = array_values(array_intersect($saved_channels, $valid_slugs));
             }
             $saved['channels'] = $saved_channels;
 
-            // Duration
             $dur = $item['duration'] ?? '';
             if ($dur !== '') {
                 $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
@@ -164,7 +166,6 @@ class CampaignsPage
 
             $saved = array_merge($saved, Helpers::extract_scheduling_fields($item));
 
-            // Slides (attachment IDs)
             $saved_slides = [];
             if (!empty($item['slides']) && is_array($item['slides'])) {
                 $saved_slides = array_filter(array_map('absint', $item['slides']));
@@ -182,19 +183,11 @@ class CampaignsPage
     }
 
     /**
-     * Fallback id for a campaign row that reaches the server without one.
-     */
-    private static function new_campaign_id(): string
-    {
-        return 'camp_' . time() . '_' . wp_rand();
-    }
-
-    /**
      * Sanitize submitted campaign groups into stable id/label pairs.
      *
      * Each row carries a hidden id so a rename preserves the id (and therefore
-     * every campaign/loop reference to it). Rows without an id — newly added in
-     * the browser — get a stable id derived from the label. Duplicate ids and
+     * every campaign/loop reference to it). Rows without an id - newly added in
+     * the browser - get a stable id derived from the label. Duplicate ids and
      * empty labels are dropped.
      *
      * @param mixed $raw

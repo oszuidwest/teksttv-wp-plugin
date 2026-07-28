@@ -1,3 +1,4 @@
+import { fadeOutRemove } from './dom';
 import type { Slide, WPMediaAttachment } from './types';
 
 /** Escape a string for safe insertion into an HTML attribute. */
@@ -33,15 +34,36 @@ export function previewSlideUrl(baseUrl: string, slide: Slide): string {
 /**
  * Split editor HTML on page separators. Uses the same separator regex as PHP
  * ArticlesLoopBlock::split_pages, but unlike PHP it keeps empty/untrimmed
- * segments — callers filter or count as needed.
+ * segments (callers filter or count as needed). Pass `enabled` from the
+ * PHP-owned `pageSeparator` config flag so the preview matches what PHP
+ * builds when the feature is disabled: one page.
  */
-export function splitPages(html: string): string[] {
+export function splitPages(html: string, enabled = true): string[] {
+    if (!enabled) return [html];
     return html.split(/<p[^>]*>\s*-{3,}\s*<\/p>|\n*-{3,}\n*/i);
 }
 
 /** Replace HTML tags with spaces (callers trim/collapse as needed). */
 export function stripTags(html: string): string {
     return html.replace(/<[^>]+>/g, ' ');
+}
+
+/**
+ * Remove the `.teksttv-image-item` owning a `.teksttv-remove-image` button.
+ * The counterpart of `imageItemHtml`: every list built from that markup
+ * removes items this way. Disable form controls before the fade so a save
+ * during the animation cannot submit the removed image.
+ */
+export function removeImageItem(button: Element, onRemoved?: () => void): void {
+    const item = button.closest('.teksttv-image-item');
+    if (!(item instanceof HTMLElement)) return;
+
+    item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+        'input, select, textarea',
+    ).forEach((control) => {
+        control.disabled = true;
+    });
+    fadeOutRemove(item, 150, onRemoved);
 }
 
 /** HTML fragment for a removable image item in an image list. */
