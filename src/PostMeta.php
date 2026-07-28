@@ -272,7 +272,10 @@ class PostMeta
             return;
         }
 
-        // Sanitize POST data
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated as an array and sanitized with absint below
+        $raw_images = wp_unslash($_POST['teksttv_images'] ?? []);
+
+        // Collect POST data; process_save() performs the remaining field-specific sanitization.
         $data = [
             'active' => isset($_POST['teksttv_active']),
             'title' => sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? '')),
@@ -280,8 +283,9 @@ class PostMeta
             'content' => wp_unslash($_POST['teksttv_content'] ?? ''),
             'date_start' => sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? '')),
             'date_end' => sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? '')),
-            'days' => array_map('sanitize_text_field', wp_unslash($_POST['teksttv_days'] ?? [])),
-            'images' => array_map('absint', wp_unslash($_POST['teksttv_images'] ?? [])),
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via Helpers::sanitize_days_input() in process_save()
+            'days' => wp_unslash($_POST['teksttv_days'] ?? []),
+            'images' => is_array($raw_images) ? array_map('absint', $raw_images) : [],
             'sidebar_image' => sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? '')),
         ];
 
@@ -294,10 +298,10 @@ class PostMeta
     }
 
     /**
-     * Process sanitized meta data and persist to the database.
+     * Sanitize feature-owned values and persist normalized meta input.
      * Separated from save_meta() for testability without $_POST.
      *
-     * @param array<string, mixed> $data Sanitized field values.
+     * @param array<string, mixed> $data Normalized field values.
      */
     public static function process_save(int $post_id, array $data): void
     {

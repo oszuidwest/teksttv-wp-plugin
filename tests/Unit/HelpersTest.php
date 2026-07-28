@@ -610,6 +610,15 @@ class HelpersTest extends TestCase
         $this->assertFalse(Helpers::has_feature('ai_generate'));
     }
 
+    public function test_get_features_returns_defaults_for_non_array_option(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_features', Helpers::DEFAULT_FEATURES)
+            ->andReturn('invalid');
+
+        $this->assertSame(Helpers::DEFAULT_FEATURES, Helpers::get_features());
+    }
+
     // =========================================================================
     // get_ai_prompts()
     // =========================================================================

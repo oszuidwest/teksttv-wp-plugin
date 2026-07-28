@@ -311,6 +311,28 @@ class PostMetaTest extends TestCase
         $this->assertEmpty($this->metaUpdates);
     }
 
+    public function test_save_meta_handles_scalar_collection_fields(): void
+    {
+        $_POST = [
+            'teksttv_meta_nonce' => 'valid',
+            'teksttv_days' => '1',
+            'teksttv_images' => '42',
+        ];
+        $post = \Mockery::mock(\WP_Post::class);
+        $post->post_type = 'post';
+
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        Functions\when('wp_unslash')->alias(fn ($value) => $value);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('delete_transient')->justReturn(true);
+        $this->setupProcessSave(['scheduling', 'extra_images']);
+
+        PostMeta::save_meta(1, $post);
+
+        $this->assertTrue($this->wasMetaDeleted('_teksttv_days'));
+        $this->assertSame([], $this->findMetaUpdate('_teksttv_images'));
+    }
+
     public function test_save_meta_invalidates_slides_cache_after_meta_updates(): void
     {
         $_POST = [

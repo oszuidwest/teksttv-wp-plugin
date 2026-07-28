@@ -199,7 +199,8 @@ class Helpers
      */
     public static function get_features(): array
     {
-        return get_option('teksttv_features', self::DEFAULT_FEATURES);
+        $features = get_option('teksttv_features', self::DEFAULT_FEATURES);
+        return is_array($features) ? $features : self::DEFAULT_FEATURES;
     }
 
     /**

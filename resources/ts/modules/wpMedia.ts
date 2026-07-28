@@ -36,9 +36,9 @@ export function pickSingleImage(onSelect: (att: WPMediaAttachment) => void): WPM
 /** Open a multi-image media frame and call `onSelect` with the chosen attachments. */
 export function pickImages(
     onSelect: (atts: WPMediaAttachment[]) => void,
-    options: Partial<WPMediaOptions> = {},
+    options: Omit<Partial<WPMediaOptions>, 'multiple' | 'library'> = {},
 ): WPMediaFrame {
-    const frame = wpMedia({ multiple: true, library: { type: 'image' }, ...options });
+    const frame = wpMedia({ ...options, multiple: true, library: { type: 'image' } });
     frame.on('select', () => {
         onSelect(frame.state().get('selection').toJSON());
     });
