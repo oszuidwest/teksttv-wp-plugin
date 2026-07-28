@@ -35,4 +35,19 @@ abstract class TestCase extends PHPUnitTestCase
         $ref = new \ReflectionMethod($class, $method);
         return $ref->invokeArgs(null, $args);
     }
+
+    /**
+     * Build the fluent WordPress AI prompt mock with one response per call.
+     */
+    protected static function mockAiBuilder(string|\WP_Error ...$responses): \Mockery\MockInterface
+    {
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('generate_text')
+            ->times(count($responses))
+            ->andReturn(...$responses);
+
+        return $builder;
+    }
 }
