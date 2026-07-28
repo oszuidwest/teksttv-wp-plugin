@@ -1,8 +1,8 @@
-import { execSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { type FullConfig, chromium } from '@playwright/test';
 import { ADMIN_STORAGE_STATE, login } from './helpers';
+import { reseedFixtures } from './reseed-fixtures';
 
 /**
  * Reseed the wp-env fixtures before every run so the suite is idempotent:
@@ -14,7 +14,7 @@ import { ADMIN_STORAGE_STATE, login } from './helpers';
  * (role.spec.ts opts out to test its own user).
  */
 export default async function globalSetup(config: FullConfig): Promise<void> {
-    execSync('bun run test:e2e:fixtures', { stdio: 'inherit' });
+    reseedFixtures();
 
     const { baseURL } = config.projects[0].use;
     mkdirSync(dirname(ADMIN_STORAGE_STATE), { recursive: true });

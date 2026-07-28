@@ -1,5 +1,6 @@
 import { type Locator, type Page, expect, test } from '@playwright/test';
 import { addLoopBlock, addTickerBlock, submitAndReload } from './helpers';
+import { reseedFixtures } from './reseed-fixtures';
 
 const LOOP_URL = '/wp-admin/admin.php?page=teksttv-loop-tv1';
 
@@ -37,6 +38,10 @@ async function dragBlockToStart(page: Page, sourceBlock: Locator, targetBlock: L
 }
 
 test.describe('admin interaction contracts', () => {
+    test.afterEach(() => {
+        reseedFixtures();
+    });
+
     test('adds every registered loop block expanded at the next free index', async ({ page }) => {
         await page.goto(LOOP_URL);
 
@@ -138,22 +143,6 @@ test.describe('admin interaction contracts', () => {
         for (const day of await days.all()) {
             await expect(day).not.toBeChecked();
         }
-
-        // Restore the unrestricted fixture state for the remaining suite.
-        await days.evaluateAll((inputs) => {
-            for (const input of inputs) {
-                if (input instanceof HTMLInputElement) input.checked = true;
-            }
-        });
-        await page.locator('form').evaluate((form) => {
-            if (!(form instanceof HTMLFormElement)) throw new Error('Loop settings must be rendered in a form.');
-            form.requestSubmit();
-        });
-        await expect(page.locator('.notice-success').first()).toBeVisible();
-        await page.goto(page.url());
-        await expect(
-            page.locator('#teksttv-blocks > .teksttv-block').first().locator('.teksttv-scheduling-checkbox'),
-        ).not.toBeChecked();
     });
 
     test('updates a block header summary from its data-summary field', async ({ page }) => {
