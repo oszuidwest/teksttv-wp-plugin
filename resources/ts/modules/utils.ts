@@ -18,7 +18,9 @@ function encodeSlideData(slide: Slide): string {
 
 /** Build the preview iframe URL for a single slide. */
 export function previewSlideUrl(baseUrl: string, slide: Slide): string {
-    return `${baseUrl}?data=${encodeURIComponent(encodeSlideData(slide))}`;
+    const url = new URL(baseUrl, window.location.href);
+    url.searchParams.set('data', encodeSlideData(slide));
+    return url.href;
 }
 
 /**

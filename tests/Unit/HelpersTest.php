@@ -361,6 +361,20 @@ class HelpersTest extends TestCase
         $this->assertSame(1, Helpers::count_words('woord'));
     }
 
+    public function test_print_underscore_restore_handles_missing_global(): void
+    {
+        Functions\expect('wp_script_is')
+            ->with('teksttv-admin', 'enqueued')
+            ->andReturn(true);
+        Functions\expect('wp_print_inline_script_tag')
+            ->with(
+                '(function(){var u=window.wpUnderscore;if(u&&(!window._||typeof window._.defaults!=="function")){window._=u;}})();'
+            )
+            ->once();
+
+        Helpers::print_underscore_restore();
+    }
+
     // =========================================================================
     // get_date_end_meta_query()
     // =========================================================================
@@ -725,43 +739,73 @@ class HelpersTest extends TestCase
     // get_post_taxonomies()
     // =========================================================================
 
-    public function test_post_taxonomy_cache_can_be_reset(): void
+    public function test_get_post_taxonomies_returns_public_taxonomies(): void
     {
-        $taxonomy_name = 'category';
-        $taxonomy_label = 'Category';
-        $terms = [1 => 'Nieuws'];
-
-        Functions\when('get_object_taxonomies')->alias(function () use (&$taxonomy_name): array {
-            return [$taxonomy_name];
-        });
-        Functions\when('get_taxonomy')->alias(function () use (&$taxonomy_name, &$taxonomy_label): object {
-            return (object) [
-                'public' => true,
-                'name' => $taxonomy_name,
-                'labels' => (object) ['singular_name' => $taxonomy_label],
-            ];
-        });
-        Functions\when('get_terms')->alias(function () use (&$terms): array {
-            return $terms;
-        });
-        Functions\when('is_wp_error')->justReturn(false);
-
-        $first = Helpers::get_post_taxonomies();
-        $taxonomy_name = 'post_tag';
-        $taxonomy_label = 'Tag';
-        $terms = [2 => 'Sport'];
-
-        $this->assertSame($first, Helpers::get_post_taxonomies());
-
-        Helpers::reset_post_taxonomies_cache();
+        Functions\expect('get_object_taxonomies')
+            ->with('post', 'objects')
+            ->andReturn([
+                'category' => (object) [
+                    'public' => true,
+                    'name' => 'category',
+                    'labels' => (object) ['singular_name' => 'Category'],
+                ],
+                'post_format' => (object) [
+                    'public' => true,
+                    'name' => 'post_format',
+                    'labels' => (object) ['singular_name' => 'Format'],
+                ],
+                'private_taxonomy' => (object) [
+                    'public' => false,
+                    'name' => 'private_taxonomy',
+                    'labels' => (object) ['singular_name' => 'Private'],
+                ],
+            ]);
+        Functions\expect('get_terms')
+            ->with([
+                'taxonomy' => 'category',
+                'hide_empty' => false,
+                'fields' => 'id=>name',
+            ])
+            ->andReturn([1 => 'Nieuws']);
+        Functions\expect('is_wp_error')->with([1 => 'Nieuws'])->andReturn(false);
 
         $this->assertSame([
             [
-                'name' => 'post_tag',
-                'label' => 'Tag',
-                'terms' => [2 => 'Sport'],
+                'name' => 'category',
+                'label' => 'Category',
+                'terms' => [1 => 'Nieuws'],
             ],
         ], Helpers::get_post_taxonomies());
+    }
+
+    public function test_get_post_taxonomies_reuses_request_local_cache(): void
+    {
+        Functions\expect('get_object_taxonomies')
+            ->with('post', 'objects')
+            ->once()
+            ->andReturn([
+                'post_tag' => (object) [
+                    'public' => true,
+                    'name' => 'post_tag',
+                    'labels' => (object) ['singular_name' => 'Tag'],
+                ],
+            ]);
+        Functions\expect('get_terms')
+            ->with([
+                'taxonomy' => 'post_tag',
+                'hide_empty' => false,
+                'fields' => 'id=>name',
+            ])
+            ->once()
+            ->andReturn([2 => 'Sport']);
+        Functions\expect('is_wp_error')
+            ->with([2 => 'Sport'])
+            ->once()
+            ->andReturn(false);
+
+        $first = Helpers::get_post_taxonomies();
+
+        $this->assertSame($first, Helpers::get_post_taxonomies());
     }
 
     // =========================================================================

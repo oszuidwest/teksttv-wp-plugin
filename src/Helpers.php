@@ -137,6 +137,10 @@ class Helpers
      */
     public static function is_within_date_range(?string $start_date, ?string $end_date): bool
     {
+        if (empty($start_date) && empty($end_date)) {
+            return true;
+        }
+
         $now = current_datetime();
         $timezone = wp_timezone();
 
@@ -490,9 +494,8 @@ class Helpers
         }
 
         $result = [];
-        foreach (get_object_taxonomies('post') as $tax_name) {
-            $tax = get_taxonomy($tax_name);
-            if (!$tax || !$tax->public || $tax->name === 'post_format') {
+        foreach (get_object_taxonomies('post', 'objects') as $tax) {
+            if (!$tax->public || $tax->name === 'post_format') {
                 continue;
             }
 
@@ -658,7 +661,7 @@ class Helpers
         }
 
         wp_print_inline_script_tag(
-            '(function(){var u=window.wpUnderscore;if(u&&typeof window._.defaults!=="function"){window._=u;}})();'
+            '(function(){var u=window.wpUnderscore;if(u&&(!window._||typeof window._.defaults!=="function")){window._=u;}})();'
         );
     }
 

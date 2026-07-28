@@ -188,7 +188,7 @@ class CampaignsPage
      */
     private static function new_campaign_id(): string
     {
-        return 'camp_' . time() . '_' . wp_rand();
+        return 'camp_' . wp_generate_uuid4();
     }
 
     /**

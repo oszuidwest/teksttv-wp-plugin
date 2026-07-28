@@ -51,13 +51,7 @@ build(array $data, string $channel): array
 
 `$prefix` is `teksttv_blocks` for a loop block and `teksttv_ticker` for a ticker type. Use it in every field name. The registry adds the `type` key to saved data, so the `save` callback should not add it. Return `null` from `save` to discard an empty or invalid row.
 
-Date and weekday scheduling fields are added and persisted by TekstTV. Ticker scheduling is checked before its builder runs. A custom loop builder should enforce its stored schedule itself:
-
-```php
-if (!\TekstTV\Helpers::is_block_scheduled($data)) {
-    return [];
-}
-```
+Date and weekday scheduling fields are added and persisted by TekstTV. Both loop and ticker schedules are checked before the build callback runs.
 
 A registered type automatically appears in the matching admin selector and is processed by the REST pipeline.
 
