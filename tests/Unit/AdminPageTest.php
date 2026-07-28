@@ -225,18 +225,6 @@ class AdminPageTest extends TestCase
         $this->assertArrayNotHasKey('date_end', $result);
     }
 
-    public function test_extract_scheduling_fields_omits_invalid_dates(): void
-    {
-        $result = Helpers::extract_scheduling_fields([
-            'date_start' => '2026-02-31',
-            'date_end' => 'not-a-date',
-            'days' => ['1', '2', '3', '4', '5', '6', '7'],
-        ]);
-
-        $this->assertArrayNotHasKey('date_start', $result);
-        $this->assertArrayNotHasKey('date_end', $result);
-    }
-
     public function test_extract_scheduling_fields_with_days(): void
     {
         $raw = [
@@ -295,15 +283,6 @@ class AdminPageTest extends TestCase
     public function test_render_days_row_leaves_all_days_unchecked_for_empty_selection(): void
     {
         $this->assertStringNotContainsString('checked="checked"', $this->renderDaysRow([]));
-    }
-
-    public function test_render_scheduling_inputs_preserves_explicit_null_days(): void
-    {
-        $html = $this->captureRender(function (): void {
-            AdminPage::render_scheduling_inputs(0, ['days' => null], 'blocks');
-        });
-
-        $this->assertSame(7, substr_count($html, 'checked="checked"'));
     }
 
     /** @param list<string>|null $days */

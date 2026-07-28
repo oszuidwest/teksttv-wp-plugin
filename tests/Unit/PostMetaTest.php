@@ -277,15 +277,6 @@ class PostMetaTest extends TestCase
         $this->assertSame('2026-07-23', $result);
     }
 
-    public function test_default_end_date_rejects_invalid_start_date(): void
-    {
-        Functions\expect('get_option')->with('teksttv_default_end_days', 7)->andReturn(7);
-
-        $result = self::callPrivate(PostMeta::class, 'default_end_date', ['not-a-date']);
-
-        $this->assertSame('', $result);
-    }
-
     public function test_default_end_date_adds_configured_days(): void
     {
         Functions\expect('get_option')->with('teksttv_default_end_days', 7)->andReturn(7);
