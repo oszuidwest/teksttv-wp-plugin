@@ -71,12 +71,12 @@ rm -f -- "$DEST/composer.json" "$DEST/composer.lock"
 
 # Normalize metadata and feed zip a stable file order so repeated builds from
 # the same source produce the same archive bytes, not just equivalent contents.
-find "$DEST" -exec touch -t 198001010000 {} +
+TZ=UTC find "$DEST" -exec touch -t 198001010000 {} +
 (
     cd "$RELEASE_DIR"
     find "$SLUG" -type f -print \
         | LC_ALL=C sort \
-        | zip -q -X "$ZIP_PATH" -@
+        | TZ=UTC zip -q -X "$ZIP_PATH" -@
 )
 
 "$ROOT/bin/verify-package.sh" "$DEST" "$ZIP_PATH"
