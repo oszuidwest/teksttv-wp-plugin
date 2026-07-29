@@ -10,8 +10,11 @@ on:
       - 'tests/e2e/**'
       - '.wp-env.json'
       - 'playwright.config.ts'
-      - 'bin/package-plugin.sh'
+      - 'bin/**'
+      - 'composer.json'
+      - 'composer.lock'
       - 'package.json'
+      - 'bun.lock'
       - '.github/workflows/e2e.yml'
   pull_request:
     paths:
@@ -20,8 +23,11 @@ on:
       - 'tests/e2e/**'
       - '.wp-env.json'
       - 'playwright.config.ts'
-      - 'bin/package-plugin.sh'
+      - 'bin/**'
+      - 'composer.json'
+      - 'composer.lock'
       - 'package.json'
+      - 'bun.lock'
       - '.github/workflows/e2e.yml'
   workflow_dispatch:
 
@@ -43,15 +49,12 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Install production PHP dependencies
-        run: composer install --no-dev --no-progress --prefer-dist --optimize-autoloader
-
       - uses: oven-sh/setup-bun@v2
 
       - name: Install JS dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build assets and package the plugin artifact
+      - name: Build and validate canonical plugin artifact
         run: bun run build:package
 
       - name: Start WordPress (wp-env)

@@ -13,9 +13,11 @@ on:
       - 'composer.lock'
       - 'package.json'
       - 'bun.lock'
+      - 'bin/**'
       - 'teksttv.php'
       - 'src/**'
       - 'resources/**'
+      - '.github/workflows/build-plugin.yml'
   pull_request:
     paths:
       - '**/*.php'
@@ -26,9 +28,11 @@ on:
       - 'composer.lock'
       - 'package.json'
       - 'bun.lock'
+      - 'bin/**'
       - 'teksttv.php'
       - 'src/**'
       - 'resources/**'
+      - '.github/workflows/build-plugin.yml'
   workflow_dispatch:
 
 permissions:
@@ -45,16 +49,31 @@ jobs:
         with:
           php-version: "8.3"
           coverage: none
+          tools: composer:v2
 
       - uses: oven-sh/setup-bun@v2
 
-      - uses: ramsey/composer-install@v4
-        with:
-          composer-options: "--no-dev --optimize-autoloader"
+      - name: Assert package preflight rejects missing build output
+        run: |
+          if OUTPUT=$(bash bin/package-plugin.sh 2>&1); then
+            echo "::error::Packager unexpectedly accepted a clean checkout without built assets."
+            exit 1
+          fi
+          echo "$OUTPUT"
+          grep -F "Required built asset 'assets/admin.css' is missing" <<< "$OUTPUT"
 
       - run: bun install --frozen-lockfile
 
-      - run: bun run build
+      - name: Build, validate, and audit canonical plugin artifact
+        run: |
+          trap 'rm -f PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js' EXIT
+          mkdir -p assets
+          printf 'root canary\n' > PACKAGE_AUDIT_CANARY.md
+          printf '<?php // source canary\n' > src/package-audit-canary.php
+          printf '// asset canary\n' > assets/package-audit-canary.js
 
-      - name: Verify build output
-        run: test -f assets/admin.js && test -f assets/admin.css
+          bun run build:package
+
+          test ! -e release/teksttv/PACKAGE_AUDIT_CANARY.md
+          test ! -e release/teksttv/src/package-audit-canary.php
+          test ! -e release/teksttv/assets/package-audit-canary.js
