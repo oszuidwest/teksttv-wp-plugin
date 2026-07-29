@@ -30,9 +30,6 @@ class RestApi
         'teksttv_openweather_api_key',
     ];
 
-    /** @var array<string, true> Channels already auto-invalidated in this request. */
-    private static array $automatically_invalidated_channels = [];
-
     /** @var array<string, mixed> Old values for supported options awaiting deletion. */
     private static array $pending_option_deletions = [];
 
@@ -205,10 +202,6 @@ class RestApi
                 'ticker' => SlidesBuilder::build_ticker($channel),
             ];
             set_transient($cache_key, $data, self::SLIDES_CACHE_TTL);
-
-            // A later supported mutation in this request must be able to
-            // invalidate data that was re-cached after an earlier mutation.
-            unset(self::$automatically_invalidated_channels[$channel]);
         }
 
         $response = new WP_REST_Response($data, 200);
@@ -355,11 +348,7 @@ class RestApi
     }
 
     /**
-     * Delete each automatically affected channel at most once per request.
-     *
-     * Plugin form handlers often update multiple related options in one
-     * logical save. A cache rebuilt between mutations clears this marker in
-     * get_slides(), so a later mutation still invalidates the rebuilt value.
+     * Delete each automatically affected channel for every supported mutation.
      */
     private static function invalidate_automatically(string $channel = ''): void
     {
@@ -370,11 +359,6 @@ class RestApi
             return;
         }
 
-        if (isset(self::$automatically_invalidated_channels[$channel])) {
-            return;
-        }
-
-        self::$automatically_invalidated_channels[$channel] = true;
         self::invalidate_slides_cache($channel);
     }
 
