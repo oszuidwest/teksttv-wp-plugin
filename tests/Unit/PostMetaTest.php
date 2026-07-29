@@ -22,8 +22,6 @@ class PostMetaTest extends TestCase
 
         $pending = new \ReflectionProperty(PostMeta::class, 'pending_term_invalidations');
         $pending->setValue(null, []);
-        $registered = new \ReflectionProperty(PostMeta::class, 'term_flush_registered');
-        $registered->setValue(null, false);
     }
 
     /**
@@ -349,7 +347,6 @@ class PostMetaTest extends TestCase
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('wp_unslash')->alias(fn ($value) => $value);
         Functions\when('current_user_can')->justReturn(true);
-        Functions\when('delete_transient')->justReturn(true);
         $this->setupProcessSave(['scheduling', 'extra_images']);
 
         PostMeta::save_meta(1, $post);
@@ -370,7 +367,6 @@ class PostMetaTest extends TestCase
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('wp_unslash')->alias(fn ($value) => $value);
         Functions\when('current_user_can')->justReturn(true);
-        Functions\when('delete_transient')->justReturn(true);
         $this->setupProcessSave(['scheduling']);
 
         PostMeta::save_meta(1, $post);
@@ -388,7 +384,6 @@ class PostMetaTest extends TestCase
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('wp_unslash')->alias(fn ($value) => $value);
         Functions\when('current_user_can')->justReturn(true);
-        Functions\when('delete_transient')->justReturn(true);
         $this->setupProcessSave(['scheduling']);
 
         PostMeta::save_meta(1, $post);

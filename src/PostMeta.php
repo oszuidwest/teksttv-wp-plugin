@@ -7,8 +7,6 @@ class PostMeta
     /** @var array<int, true> Post term changes awaiting end-of-request invalidation. */
     private static array $pending_term_invalidations = [];
 
-    private static bool $term_flush_registered = false;
-
     public static function init(): void
     {
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
@@ -54,10 +52,7 @@ class PostMeta
         }
 
         self::$pending_term_invalidations[$post_id] = true;
-        if (!self::$term_flush_registered) {
-            self::$term_flush_registered = true;
-            add_action('shutdown', [self::class, 'flush_pending_term_invalidations']);
-        }
+        add_action('shutdown', [self::class, 'flush_pending_term_invalidations']);
     }
 
     /**
@@ -65,7 +60,6 @@ class PostMeta
      */
     public static function flush_pending_term_invalidations(): void
     {
-        self::$term_flush_registered = false;
         if (self::$pending_term_invalidations === []) {
             return;
         }

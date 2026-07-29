@@ -7,6 +7,7 @@ use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Common\RecentPostsQuery;
 use TekstTV\Blocks\Common\TaxonomyFilters;
 use TekstTV\Blocks\Contracts\LoopBlock;
+use TekstTV\CategoryMeta;
 use TekstTV\Helpers;
 use WP_Query;
 
@@ -253,7 +254,7 @@ final class ArticlesLoopBlock implements LoopBlock
      */
     private static function get_category_image_data(int $term_id): ?array
     {
-        $image_id = get_term_meta($term_id, '_teksttv_category_image', true);
+        $image_id = get_term_meta($term_id, CategoryMeta::META_KEY, true);
         if (!$image_id) {
             return null;
         }

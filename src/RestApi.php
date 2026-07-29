@@ -11,16 +11,14 @@ class RestApi
     private const NAMESPACE = 'teksttv/v1';
 
     /**
-     * Options read while building slide or ticker payloads.
+     * Non-duration options read while building slide or ticker payloads.
      *
      * Loop and ticker options are handled separately because their suffix
-     * identifies the only channel whose cache needs invalidating.
+     * identifies the only channel whose cache needs invalidating. Duration
+     * option names come from Helpers::DURATION_DEFAULTS.
      */
-    private const GLOBAL_SLIDE_OPTIONS = [
+    private const OTHER_GLOBAL_SLIDE_OPTIONS = [
         'teksttv_campaigns',
-        'teksttv_duration_text',
-        'teksttv_duration_image',
-        'teksttv_duration_iframe',
         'teksttv_enabled_taxonomies',
         'teksttv_features',
         'teksttv_max_post_age',
@@ -295,7 +293,10 @@ class RestApi
             return;
         }
 
-        if (in_array($option, self::GLOBAL_SLIDE_OPTIONS, true)) {
+        if (
+            isset(Helpers::DURATION_DEFAULTS[$option]) ||
+            in_array($option, self::OTHER_GLOBAL_SLIDE_OPTIONS, true)
+        ) {
             self::invalidate_automatically();
         }
     }
@@ -310,8 +311,8 @@ class RestApi
     private static function invalidate_automatically(string $channel = ''): void
     {
         if ($channel === '') {
-            foreach (Helpers::get_channels() as $configured_channel) {
-                self::invalidate_automatically($configured_channel['slug']);
+            foreach (Helpers::channel_slugs() as $configured_channel_slug) {
+                self::invalidate_automatically($configured_channel_slug);
             }
             return;
         }
