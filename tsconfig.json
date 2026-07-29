@@ -9,5 +9,5 @@
         "noEmit": true,
         "skipLibCheck": true
     },
-    "include": ["resources/ts", "tests/js", "tests/e2e", "playwright.config.ts"]
+    "include": ["resources/ts", "tests", "playwright.config.ts"]
 }

@@ -39,17 +39,5 @@
             "semicolons": "always"
         },
         "globals": ["tinymce", "wp", "teksttvPost", "TomSelect"]
-    },
-    "overrides": [
-        {
-            "includes": ["resources/ts/tinymce-separator.js"],
-            "linter": {
-                "rules": {
-                    "complexity": {
-                        "useArrowFunction": "off"
-                    }
-                }
-            }
-        }
-    ]
+    }
 }
