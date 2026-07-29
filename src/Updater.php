@@ -11,7 +11,6 @@ class Updater
 {
     private const REPO_URL = 'https://github.com/oszuidwest/teksttv-wp-plugin/';
     private const SLUG = 'teksttv';
-    private const RELEASE_ASSET_PATTERN = '/^teksttv-[0-9].*\.zip$/';
 
     public static function init(string $plugin_file): void
     {
@@ -39,7 +38,7 @@ class Updater
     {
         if (method_exists($api, 'enableReleaseAssets')) {
             $api->enableReleaseAssets(
-                self::RELEASE_ASSET_PATTERN,
+                '/^' . self::SLUG . '-[0-9].*\.zip$/',
                 $api::REQUIRE_RELEASE_ASSETS
             );
         }
