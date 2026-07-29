@@ -519,6 +519,7 @@ class AdminPage
      * their prior positions.
      *
      * @param array<int|string, mixed> $raw_items Unslashed POST items.
+     * @param string                   $option_name Stored option name to read preserved rows from.
      * @param string                   $context   Target registry context.
      * @return array{0: list<array<string, mixed>>, 1: bool}
      */
