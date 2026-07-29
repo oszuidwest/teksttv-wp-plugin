@@ -532,9 +532,6 @@ class AdminPageTest extends TestCase
     {
         Functions\when('esc_attr')->alias(fn ($value) => $value);
         Functions\when('esc_html')->alias(fn ($value) => $value);
-        Functions\when('esc_html_e')->alias(function ($value): void {
-            echo $value;
-        });
         Functions\when('checked')->alias(function ($checked, $current = true, $echo = true) {
             $result = $checked === $current ? 'checked="checked"' : '';
             if ($echo) {

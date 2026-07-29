@@ -13,7 +13,7 @@ namespace TekstTV;
 defined('ABSPATH') || exit;
 
 echo '<div class="wrap">';
-echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>';
+echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
 ?>
 <div class="teksttv-tab-content" x-data="teksttvSettingsPage">
@@ -22,106 +22,106 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
 
         <!-- Channels -->
         <div class="teksttv-card">
-            <h3><?php esc_html_e('Kanalen', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Beheer de kanalen waarvoor Tekst TV slides worden gegenereerd. Elk kanaal krijgt een eigen loop en API endpoint.', 'teksttv-wp-plugin'); ?></p>
+            <h3><?php echo esc_html('Kanalen'); ?></h3>
+            <p class="description"><?php echo esc_html('Beheer de kanalen waarvoor Tekst TV slides worden gegenereerd. Elk kanaal krijgt een eigen loop en API endpoint.'); ?></p>
             <table class="widefat teksttv-channels-table" id="teksttv-channels" @click="channelsClick($event)">
                 <thead>
                     <tr>
-                        <th><?php esc_html_e('Slug', 'teksttv-wp-plugin'); ?></th>
-                        <th><?php esc_html_e('Naam', 'teksttv-wp-plugin'); ?></th>
+                        <th><?php echo esc_html('Slug'); ?></th>
+                        <th><?php echo esc_html('Naam'); ?></th>
                         <th class="teksttv-channel-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($channels as $i => $ch) : ?>
                     <tr class="teksttv-channel-row">
-                        <td><input type="text" name="teksttv_channels[<?php echo $i; ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr__('bijv. tv1', 'teksttv-wp-plugin'); ?>" /></td>
-                        <td><input type="text" name="teksttv_channels[<?php echo $i; ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr__('bijv. TV 1', 'teksttv-wp-plugin'); ?>" /></td>
+                        <td><input type="text" name="teksttv_channels[<?php echo $i; ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" /></td>
+                        <td><input type="text" name="teksttv_channels[<?php echo $i; ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" /></td>
                         <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-channel"><span class="dashicons dashicons-trash"></span></button></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
             <p class="teksttv-card-actions">
-                <button type="button" class="button" id="teksttv-add-channel" @click.prevent="addChannelRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Kanaal toevoegen', 'teksttv-wp-plugin'); ?></button>
+                <button type="button" class="button" id="teksttv-add-channel" @click.prevent="addChannelRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php echo esc_html('Kanaal toevoegen'); ?></button>
             </p>
         </div>
 
         <!-- Features -->
         <div class="teksttv-card">
-            <h3><?php esc_html_e('Post editor features', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Bepaal welke opties beschikbaar zijn bij het bewerken van een post.', 'teksttv-wp-plugin'); ?></p>
+            <h3><?php echo esc_html('Post editor features'); ?></h3>
+            <p class="description"><?php echo esc_html('Bepaal welke opties beschikbaar zijn bij het bewerken van een post.'); ?></p>
             <fieldset class="teksttv-checkbox-list">
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="custom_title" <?php checked(in_array('custom_title', $features, true)); ?> />
-                    <?php esc_html_e('Kop overschrijven', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('Kop overschrijven'); ?>
                 </label>
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="sidebar_image" <?php checked(in_array('sidebar_image', $features, true)); ?> />
-                    <?php esc_html_e('Sidebar afbeelding kiezen', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('Sidebar afbeelding kiezen'); ?>
                 </label>
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="extra_images" <?php checked(in_array('extra_images', $features, true)); ?> />
-                    <?php esc_html_e('Extra afbeeldingen', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('Extra afbeeldingen'); ?>
                 </label>
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="scheduling" <?php checked(in_array('scheduling', $features, true)); ?> />
-                    <?php esc_html_e('Planning (datums & weekdagen)', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('Planning (datums & weekdagen)'); ?>
                 </label>
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="page_separator" <?php checked(in_array('page_separator', $features, true)); ?> />
-                    <?php esc_html_e('Paginascheiding (meerdere slides)', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('Paginascheiding (meerdere slides)'); ?>
                 </label>
             </fieldset>
-            <h4><?php esc_html_e('Tekst opmaak', 'teksttv-wp-plugin'); ?></h4>
+            <h4><?php echo esc_html('Tekst opmaak'); ?></h4>
             <fieldset class="teksttv-checkbox-list teksttv-checkbox-list--inline">
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="bold" <?php checked(in_array('bold', $features, true)); ?> />
-                    <strong><?php esc_html_e('Vet', 'teksttv-wp-plugin'); ?></strong>
+                    <strong><?php echo esc_html('Vet'); ?></strong>
                 </label>
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="italic" <?php checked(in_array('italic', $features, true)); ?> />
-                    <em><?php esc_html_e('Cursief', 'teksttv-wp-plugin'); ?></em>
+                    <em><?php echo esc_html('Cursief'); ?></em>
                 </label>
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="underline" <?php checked(in_array('underline', $features, true)); ?> />
-                    <u><?php esc_html_e('Onderstreept', 'teksttv-wp-plugin'); ?></u>
+                    <u><?php echo esc_html('Onderstreept'); ?></u>
                 </label>
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="lists" <?php checked(in_array('lists', $features, true)); ?> />
-                    <?php esc_html_e('Lijsten', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('Lijsten'); ?>
                 </label>
             </fieldset>
-            <h4><?php esc_html_e('AI', 'teksttv-wp-plugin'); ?></h4>
+            <h4><?php echo esc_html('AI'); ?></h4>
             <fieldset class="teksttv-checkbox-list">
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="ai_generate" <?php checked(in_array('ai_generate', $features, true)); ?> />
-                    <?php esc_html_e('AI tekst genereren', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('AI tekst genereren'); ?>
                 </label>
             </fieldset>
         </div>
 
         <!-- Slide duur -->
         <div class="teksttv-card">
-            <h3><?php esc_html_e('Slide duur', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Standaard weergaveduur per slide type. Kan per post worden overschreven.', 'teksttv-wp-plugin'); ?></p>
+            <h3><?php echo esc_html('Slide duur'); ?></h3>
+            <p class="description"><?php echo esc_html('Standaard weergaveduur per slide type. Kan per post worden overschreven.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
-                    <th scope="row"><label for="teksttv_duration_text"><?php esc_html_e('Tekstslide', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_duration_text"><?php echo esc_html('Tekstslide'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_text" name="teksttv_duration_text" value="<?php echo esc_attr(get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text'])); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
+                        <input type="number" id="teksttv_duration_text" name="teksttv_duration_text" value="<?php echo esc_attr(get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text'])); ?>" min="1" max="120" class="small-text" /> <?php echo esc_html('seconden'); ?>
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="teksttv_duration_image"><?php esc_html_e('Afbeeldingslide', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_duration_image"><?php echo esc_html('Afbeeldingslide'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_image" name="teksttv_duration_image" value="<?php echo esc_attr(get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image'])); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
+                        <input type="number" id="teksttv_duration_image" name="teksttv_duration_image" value="<?php echo esc_attr(get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image'])); ?>" min="1" max="120" class="small-text" /> <?php echo esc_html('seconden'); ?>
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="teksttv_duration_iframe"><?php esc_html_e('Iframe-slide', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_duration_iframe"><?php echo esc_html('Iframe-slide'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_iframe" name="teksttv_duration_iframe" value="<?php echo esc_attr(get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe'])); ?>" min="1" max="120" class="small-text" /> <?php esc_html_e('seconden', 'teksttv-wp-plugin'); ?>
+                        <input type="number" id="teksttv_duration_iframe" name="teksttv_duration_iframe" value="<?php echo esc_attr(get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe'])); ?>" min="1" max="120" class="small-text" /> <?php echo esc_html('seconden'); ?>
                     </td>
                 </tr>
             </table>
@@ -129,8 +129,8 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
 
         <!-- Taxonomies -->
         <div class="teksttv-card">
-            <h3><?php esc_html_e('Taxonomy filters', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Kies welke taxonomies beschikbaar zijn als filter in de loop-blokken.', 'teksttv-wp-plugin'); ?></p>
+            <h3><?php echo esc_html('Taxonomy filters'); ?></h3>
+            <p class="description"><?php echo esc_html('Kies welke taxonomies beschikbaar zijn als filter in de loop-blokken.'); ?></p>
             <fieldset class="teksttv-checkbox-list">
                 <?php foreach ($all_taxonomies as $tax) : ?>
                 <label class="teksttv-checkbox-list-item">
@@ -143,23 +143,23 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
 
         <!-- Standaardwaarden -->
         <div class="teksttv-card">
-            <h3><?php esc_html_e('Standaardwaarden', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Standaard instellingen voor nieuwe Tekst TV items op posts.', 'teksttv-wp-plugin'); ?></p>
+            <h3><?php echo esc_html('Standaardwaarden'); ?></h3>
+            <p class="description"><?php echo esc_html('Standaard instellingen voor nieuwe Tekst TV items op posts.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
-                    <th scope="row"><label for="teksttv_default_end_days"><?php esc_html_e('Standaard einddatum', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_default_end_days"><?php echo esc_html('Standaard einddatum'); ?></label></th>
                     <td>
                         <input type="number" id="teksttv_default_end_days" name="teksttv_default_end_days" value="<?php echo esc_attr(get_option('teksttv_default_end_days', 7)); ?>" min="0" max="365" class="small-text" />
-                        <?php esc_html_e('dagen na publicatiedatum', 'teksttv-wp-plugin'); ?>
-                        <p class="description"><?php esc_html_e('Stel 0 in om geen standaard einddatum te gebruiken.', 'teksttv-wp-plugin'); ?></p>
+                        <?php echo esc_html('dagen na publicatiedatum'); ?>
+                        <p class="description"><?php echo esc_html('Stel 0 in om geen standaard einddatum te gebruiken.'); ?></p>
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="teksttv_max_post_age"><?php esc_html_e('Maximale leeftijd berichten', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_max_post_age"><?php echo esc_html('Maximale leeftijd berichten'); ?></label></th>
                     <td>
                         <input type="number" id="teksttv_max_post_age" name="teksttv_max_post_age" value="<?php echo esc_attr(get_option('teksttv_max_post_age', 30)); ?>" min="0" max="365" class="small-text" />
-                        <?php esc_html_e('dagen', 'teksttv-wp-plugin'); ?>
-                        <p class="description"><?php esc_html_e('Berichten ouder dan dit worden niet meegenomen. Stel 0 in voor geen limiet.', 'teksttv-wp-plugin'); ?></p>
+                        <?php echo esc_html('dagen'); ?>
+                        <p class="description"><?php echo esc_html('Berichten ouder dan dit worden niet meegenomen. Stel 0 in voor geen limiet.'); ?></p>
                     </td>
                 </tr>
             </table>
@@ -167,14 +167,14 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
 
         <!-- Weather -->
         <div class="teksttv-card">
-            <h3><?php esc_html_e('Weer', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('OpenWeather API configuratie voor weer-slides.', 'teksttv-wp-plugin'); ?></p>
+            <h3><?php echo esc_html('Weer'); ?></h3>
+            <p class="description"><?php echo esc_html('OpenWeather API configuratie voor weer-slides.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
-                    <th scope="row"><label for="teksttv_openweather_api_key"><?php esc_html_e('API key', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_openweather_api_key"><?php echo esc_html('API key'); ?></label></th>
                     <td>
                         <input type="text" id="teksttv_openweather_api_key" name="teksttv_openweather_api_key" value="<?php echo esc_attr(get_option('teksttv_openweather_api_key', '')); ?>" class="regular-text" />
-                        <p class="description"><?php echo wp_kses(__('OneCall API 3.0 key van <a href="https://openweathermap.org/api" target="_blank" rel="noopener">openweathermap.org</a>.', 'teksttv-wp-plugin'), ['a' => ['href' => [], 'target' => [], 'rel' => []]]); ?></p>
+                        <p class="description"><?php echo wp_kses('OneCall API 3.0 key van <a href="https://openweathermap.org/api" target="_blank" rel="noopener">openweathermap.org</a>.', ['a' => ['href' => [], 'target' => [], 'rel' => []]]); ?></p>
                     </td>
                 </tr>
             </table>
@@ -182,20 +182,20 @@ echo '<h1>' . esc_html__('Tekst TV Instellingen', 'teksttv-wp-plugin') . '</h1>'
 
         <!-- Preview -->
         <div class="teksttv-card">
-            <h3><?php esc_html_e('Preview', 'teksttv-wp-plugin'); ?></h3>
-            <p class="description"><?php esc_html_e('Configureer de live preview die getoond wordt bij het bewerken van posts.', 'teksttv-wp-plugin'); ?></p>
+            <h3><?php echo esc_html('Preview'); ?></h3>
+            <p class="description"><?php echo esc_html('Configureer de live preview die getoond wordt bij het bewerken van posts.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
-                    <th scope="row"><label for="teksttv_preview_url"><?php esc_html_e('Preview URL', 'teksttv-wp-plugin'); ?></label></th>
+                    <th scope="row"><label for="teksttv_preview_url"><?php echo esc_html('Preview URL'); ?></label></th>
                     <td>
                         <input type="url" id="teksttv_preview_url" name="teksttv_preview_url" value="<?php echo esc_attr(Helpers::get_preview_url()); ?>" class="large-text" placeholder="https://teksttv.example.com/zuidwest-1/preview" />
-                        <p class="description"><?php esc_html_e('De volledige URL naar de TekstTV frontend preview pagina.', 'teksttv-wp-plugin'); ?></p>
+                        <p class="description"><?php echo esc_html('De volledige URL naar de TekstTV frontend preview pagina.'); ?></p>
                     </td>
                 </tr>
             </table>
         </div>
 
-        <?php submit_button(__('Instellingen opslaan', 'teksttv-wp-plugin')); ?>
+        <?php submit_button('Instellingen opslaan'); ?>
     </form>
 </div>
 <?php

@@ -44,7 +44,7 @@ settings_errors('teksttv');
                 ?>
                 <div class="teksttv-empty-state" id="teksttv-empty-state">
                     <span class="dashicons dashicons-playlist-video"></span><br />
-                    <?php esc_html_e('Nog geen blokken. Voeg een artikelen-blok toe om te beginnen.', 'teksttv-wp-plugin'); ?>
+                    <?php echo esc_html('Nog geen blokken. Voeg een artikelen-blok toe om te beginnen.'); ?>
                 </div>
                 <?php
             }
@@ -53,7 +53,7 @@ settings_errors('teksttv');
 
         <div class="teksttv-add-block-bar">
             <div class="teksttv-dropdown-button" @click.outside="menuBlockOpen = false">
-                <button type="button" class="button" id="teksttv-add-block-toggle" @click.prevent.stop="menuBlockOpen = !menuBlockOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Blok toevoegen', 'teksttv-wp-plugin'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                <button type="button" class="button" id="teksttv-add-block-toggle" @click.prevent.stop="menuBlockOpen = !menuBlockOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php echo esc_html('Blok toevoegen'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
                 <div class="teksttv-dropdown-menu" id="teksttv-add-block-menu" :class="{ 'is-open': menuBlockOpen }">
                     <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
                     <button type="button" data-type="<?php echo esc_attr($block_slug); ?>" @click.prevent="menuBlockOpen = false; addLoopBlock('<?php echo esc_js((string) $block_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($block_meta['icon']); ?>"></span> <?php echo esc_html($block_meta['label']); ?></button>
@@ -61,12 +61,12 @@ settings_errors('teksttv');
                 </div>
             </div>
             <span class="teksttv-bar-spacer"></span>
-            <button type="button" class="button-link teksttv-action-expand-blocks" id="teksttv-expand-all" @click.prevent="expandAllBlocks()"><?php esc_html_e('Alles openklappen', 'teksttv-wp-plugin'); ?></button>
-            <button type="button" class="button-link teksttv-action-collapse-blocks" id="teksttv-collapse-all" @click.prevent="collapseAllBlocks()"><?php esc_html_e('Alles dichtklappen', 'teksttv-wp-plugin'); ?></button>
+            <button type="button" class="button-link teksttv-action-expand-blocks" id="teksttv-expand-all" @click.prevent="expandAllBlocks()"><?php echo esc_html('Alles openklappen'); ?></button>
+            <button type="button" class="button-link teksttv-action-collapse-blocks" id="teksttv-collapse-all" @click.prevent="collapseAllBlocks()"><?php echo esc_html('Alles dichtklappen'); ?></button>
         </div>
 
         <!-- Ticker -->
-        <h2 class="teksttv-ticker-heading"><?php esc_html_e('Ticker berichten', 'teksttv-wp-plugin'); ?></h2>
+        <h2 class="teksttv-ticker-heading"><?php echo esc_html('Ticker berichten'); ?></h2>
         <div id="teksttv-ticker" class="teksttv-blocks" @click="tickerClick($event)" @change="tickerFieldChange($event)" @input="tickerFieldChange($event)">
             <?php if (!empty($ticker_items)) :
                 foreach ($ticker_items as $ti => $ticker_item) :
@@ -78,7 +78,7 @@ settings_errors('teksttv');
         <div class="teksttv-add-block-bar">
             <?php if (count($ticker_types) > 1) : ?>
             <div class="teksttv-dropdown-button" @click.outside="menuTickerOpen = false">
-                <button type="button" class="button" id="teksttv-add-ticker-toggle" @click.prevent.stop="menuTickerOpen = !menuTickerOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Ticker toevoegen', 'teksttv-wp-plugin'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
+                <button type="button" class="button" id="teksttv-add-ticker-toggle" @click.prevent.stop="menuTickerOpen = !menuTickerOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php echo esc_html('Ticker toevoegen'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon"></span></button>
                 <div class="teksttv-dropdown-menu" id="teksttv-add-ticker-menu" :class="{ 'is-open': menuTickerOpen }">
                     <?php foreach ($ticker_types as $ticker_slug => $ticker_meta) : ?>
                     <button type="button" data-type="<?php echo esc_attr($ticker_slug); ?>" @click.prevent="menuTickerOpen = false; addTickerBlock('<?php echo esc_js((string) $ticker_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($ticker_meta['icon']); ?>"></span> <?php echo esc_html($ticker_meta['label']); ?></button>
@@ -88,7 +88,7 @@ settings_errors('teksttv');
             <?php else :
                 $single_ticker = array_key_first($ticker_types);
                 ?>
-            <button type="button" class="button" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>" @click.prevent="addTickerBlock('<?php echo esc_js((string) $single_ticker); ?>')"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php esc_html_e('Ticker toevoegen', 'teksttv-wp-plugin'); ?></button>
+            <button type="button" class="button" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>" @click.prevent="addTickerBlock('<?php echo esc_js((string) $single_ticker); ?>')"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php echo esc_html('Ticker toevoegen'); ?></button>
             <?php endif; ?>
         </div>
 
@@ -102,10 +102,10 @@ settings_errors('teksttv');
 
         <div class="teksttv-add-block-bar">
             <span class="teksttv-bar-spacer"></span>
-            <button type="button" class="button-link teksttv-action-expand-blocks" @click.prevent="expandAllBlocks()"><?php esc_html_e('Alles openklappen', 'teksttv-wp-plugin'); ?></button>
-            <button type="button" class="button-link teksttv-action-collapse-blocks" @click.prevent="collapseAllBlocks()"><?php esc_html_e('Alles dichtklappen', 'teksttv-wp-plugin'); ?></button>
+            <button type="button" class="button-link teksttv-action-expand-blocks" @click.prevent="expandAllBlocks()"><?php echo esc_html('Alles openklappen'); ?></button>
+            <button type="button" class="button-link teksttv-action-collapse-blocks" @click.prevent="collapseAllBlocks()"><?php echo esc_html('Alles dichtklappen'); ?></button>
             <span class="teksttv-bar-spacer"></span>
-            <?php submit_button(__('Loop opslaan', 'teksttv-wp-plugin'), 'primary', 'submit', false); ?>
+            <?php submit_button('Loop opslaan', 'primary', 'submit', false); ?>
         </div>
     </form>
 

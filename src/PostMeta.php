@@ -86,7 +86,7 @@ class PostMeta
 
         add_meta_box(
             'teksttv_meta',
-            __('Tekst TV', 'teksttv-wp-plugin'),
+            'Tekst TV',
             [self::class, 'render_meta_box'],
             'post',
             'normal',

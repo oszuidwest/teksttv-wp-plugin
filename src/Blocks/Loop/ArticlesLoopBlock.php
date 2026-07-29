@@ -15,7 +15,7 @@ final class ArticlesLoopBlock implements LoopBlock
     public static function register(): void
     {
         BlockRegistry::register('articles', [
-            'label' => __('Artikelen', 'teksttv-wp-plugin'),
+            'label' => 'Artikelen',
             'icon' => 'admin-post',
             'color' => '#2271b1',
             'context' => 'loop',
@@ -39,18 +39,18 @@ final class ArticlesLoopBlock implements LoopBlock
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Aantal', 'teksttv-wp-plugin'); ?></label>
+                <label><?php echo esc_html('Aantal'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--duration">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Duur tekst', 'teksttv-wp-plugin'); ?></label>
+                <label><?php echo esc_html('Duur tekst'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_text]" value="<?php echo esc_attr((string) $dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Duur afbeelding', 'teksttv-wp-plugin'); ?></label>
+                <label><?php echo esc_html('Duur afbeelding'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_image]" value="<?php echo esc_attr((string) $dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>

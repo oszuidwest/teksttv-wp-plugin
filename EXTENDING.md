@@ -76,7 +76,7 @@ add_action('init', static function (): void {
     }
 
     \TekstTV\BlockRegistry::register('station_ticker_message', [
-        'label' => __('Station message', 'station-ticker'),
+        'label' => 'Stationsbericht',
         'icon' => 'megaphone',
         'color' => '#2271b1',
         'context' => 'ticker',
@@ -84,7 +84,7 @@ add_action('init', static function (): void {
             $name = sprintf('%s[%s][message]', $prefix, $index);
             ?>
             <label>
-                <?php esc_html_e('Message', 'station-ticker'); ?>
+                <?php echo esc_html('Bericht'); ?>
                 <input
                     type="text"
                     class="large-text"

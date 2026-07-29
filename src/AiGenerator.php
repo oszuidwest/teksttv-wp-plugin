@@ -70,7 +70,7 @@ class AiGenerator
         if (!in_array($field, ['title', 'body', 'both'], true)) {
             return new \WP_Error(
                 'teksttv_invalid_field',
-                __('Ongeldig veld voor AI-generatie.', 'teksttv-wp-plugin'),
+                'Ongeldig veld voor AI-generatie.',
                 ['status' => 400]
             );
         }
@@ -81,7 +81,7 @@ class AiGenerator
         if (empty($post_text) && empty($post_title)) {
             return new \WP_Error(
                 'teksttv_no_content',
-                __('Post heeft geen content om samen te vatten.', 'teksttv-wp-plugin'),
+                'Post heeft geen content om samen te vatten.',
                 ['status' => 422]
             );
         }
@@ -92,8 +92,7 @@ class AiGenerator
             if ($word_count < $min_words) {
                 return new \WP_Error(
                     'teksttv_input_too_short',
-                    /* translators: %1$d: actual word count, %2$d: minimum required words */
-                    sprintf(__('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', 'teksttv-wp-plugin'), $word_count, $min_words),
+                    sprintf('Artikel bevat te weinig tekst (%1$d woorden, minimaal %2$d vereist).', $word_count, $min_words),
                     ['status' => 422]
                 );
             }
@@ -106,8 +105,7 @@ class AiGenerator
             if (is_wp_error($result)) {
                 return new \WP_Error(
                     'teksttv_generation_failed',
-                    /* translators: %s: error message from AI provider */
-                    sprintf(__('AI-generatie mislukt: %s', 'teksttv-wp-plugin'), $result->get_error_message()),
+                    sprintf('AI-generatie mislukt: %s', $result->get_error_message()),
                     ['status' => 500]
                 );
             }
@@ -164,7 +162,7 @@ class AiGenerator
                 if ($attempt === $config['max_retries']) {
                     return new \WP_Error(
                         'teksttv_empty_output',
-                        __('AI gaf een leeg antwoord terug. Probeer het opnieuw.', 'teksttv-wp-plugin')
+                        'AI gaf een leeg antwoord terug. Probeer het opnieuw.'
                     );
                 }
                 continue;
@@ -287,8 +285,7 @@ class AiGenerator
             }
 
             return sprintf(
-                /* translators: %1$d: actual character count, %2$d: maximum allowed characters */
-                __('Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.', 'teksttv-wp-plugin'),
+                'Kop is %1$d tekens (limiet: %2$d). Controleer en kort eventueel handmatig in.',
                 mb_strlen($content),
                 $config['title_char_limit']
             );
@@ -302,8 +299,7 @@ class AiGenerator
         }
 
         return sprintf(
-            /* translators: %1$d: actual word count, %2$d: minimum words, %3$d: maximum words */
-            __('Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.', 'teksttv-wp-plugin'),
+            'Tekst bevat %1$d woorden (limiet: %2$d-%3$d). Controleer en pas eventueel handmatig aan.',
             $count,
             $min_words,
             $word_limit
