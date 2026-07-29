@@ -51,6 +51,8 @@ build(array $data, string $channel): array
 
 `$prefix` is `teksttv_blocks` for a loop block and `teksttv_ticker` for a ticker type. Use it in every field name. The registry adds the `type` key to saved data, so the `save` callback should not add it. Return `null` from `save` to discard an empty or invalid row.
 
+To show a live value in the collapsed row summary, add `data-summary` to a field rendered by the callback. Its optional value is a format string containing `%s`, for example `data-summary="%sx"`. Use `data-summary-label` to replace a non-empty value with a fixed label, and `data-summary-empty` to supply a fallback for empty values.
+
 Date and weekday scheduling fields are added and persisted by TekstTV. Both loop and ticker schedules are checked before the build callback runs.
 
 A registered type automatically appears in the matching admin selector and is processed by the REST pipeline.
@@ -234,7 +236,7 @@ Do not invalidate on every REST request. Invalidate when data changes, or accept
 - There is no filter for the final slides array, ticker array or complete REST payload.
 - Registering an existing slug silently replaces that type for the current request.
 - There is no unregister method.
-- If an add-on is disabled, its stored rows cannot be rendered and may be removed the next time the channel is saved.
+- If an add-on is disabled, its stored rows cannot be rendered. TekstTV preserves those rows when the channel is saved so they become available again when the type is registered.
 - Registry definitions are not validated when registered. Callback availability and saved array data are checked only when used.
 
 Treat the registry and interfaces as the current extension API and test add-ons against the TekstTV versions they support.

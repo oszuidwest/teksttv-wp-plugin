@@ -17,28 +17,42 @@ function ensureUnderscore(): void {
     }
 }
 
-/** Open wp.media after ensuring Underscore owns `_`. */
-export function wpMedia(options: WPMediaOptions): WPMediaFrame {
+/**
+ * Open wp.media after ensuring Underscore owns `_`. Returns null (with a
+ * console error) when the media scripts failed to load, so picker buttons
+ * degrade to a logged no-op instead of an uncaught TypeError.
+ */
+function wpMedia(options: WPMediaOptions): WPMediaFrame | null {
+    if (typeof wp === 'undefined' || typeof wp.media !== 'function') {
+        console.error('TekstTV: wp.media is niet beschikbaar; kan de mediabibliotheek niet openen.');
+        return null;
+    }
     ensureUnderscore();
     return wp.media(options);
 }
 
 /** Open a single-image media frame and call `onSelect` with the chosen attachment. */
-export function pickSingleImage(onSelect: (att: WPMediaAttachment) => void): WPMediaFrame {
+export function pickSingleImage(onSelect: (att: WPMediaAttachment) => void): WPMediaFrame | null {
     const frame = wpMedia({ multiple: false, library: { type: 'image' } });
+    if (!frame) return null;
     frame.on('select', () => {
-        onSelect(frame.state().get('selection').first().toJSON());
+        const att = frame.state().get('selection').first()?.toJSON();
+        if (att) onSelect(att);
     });
     frame.open();
     return frame;
 }
 
-/** Open a multi-image media frame and call `onSelect` with the chosen attachments. */
+/**
+ * Open a multi-image media frame and call `onSelect` with the chosen attachments.
+ * Callers that want to reuse the frame on later opens can hold the returned frame.
+ */
 export function pickImages(
     onSelect: (atts: WPMediaAttachment[]) => void,
-    options: Omit<Partial<WPMediaOptions>, 'multiple' | 'library'> = {},
-): WPMediaFrame {
+    options: Omit<WPMediaOptions, 'multiple' | 'library'> = {},
+): WPMediaFrame | null {
     const frame = wpMedia({ ...options, multiple: true, library: { type: 'image' } });
+    if (!frame) return null;
     frame.on('select', () => {
         onSelect(frame.state().get('selection').toJSON());
     });

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { buildSlidesFromDom } from '../../resources/ts/alpine/postMeta/buildSlides';
+import type { TeksttvPostConfig } from '../../resources/ts/modules/types';
 
 const originalDocument = globalThis.document;
 const originalHTMLElement = globalThis.HTMLElement;
@@ -26,5 +27,16 @@ describe('buildSlidesFromDom', () => {
 
         expect(slides).toHaveLength(1);
         expect(slides[0]).toMatchObject({ type: 'text', body: '<p>foo---bar</p>' });
+    });
+
+    test('does not split preview pages when the feature is disabled', () => {
+        const content = '<p>Pagina één</p><p>---</p><p>Pagina twee</p>';
+        globalThis.document = editorDocument(content);
+        globalThis.HTMLElement = class {} as typeof HTMLElement;
+
+        const slides = buildSlidesFromDom({ pageSeparator: false } as TeksttvPostConfig, null);
+
+        expect(slides).toHaveLength(1);
+        expect(slides[0]).toMatchObject({ type: 'text', body: content });
     });
 });

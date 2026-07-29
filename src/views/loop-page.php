@@ -67,7 +67,7 @@ settings_errors('teksttv');
 
         <!-- Ticker -->
         <h2 class="teksttv-ticker-heading"><?php esc_html_e('Ticker berichten', 'teksttv-wp-plugin'); ?></h2>
-        <div id="teksttv-ticker" class="teksttv-blocks" @click="tickerClick($event)" @change="tickerFieldChange($event)">
+        <div id="teksttv-ticker" class="teksttv-blocks" @click="tickerClick($event)" @change="tickerFieldChange($event)" @input="tickerFieldChange($event)">
             <?php if (!empty($ticker_items)) :
                 foreach ($ticker_items as $ti => $ticker_item) :
                     AdminPage::render_block_generic($ti, $ticker_item, 'teksttv_ticker');

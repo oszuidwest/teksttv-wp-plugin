@@ -25,8 +25,8 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     }
 
     function refreshSummaries(): void {
-        if (!blocksEl) return;
-        updateBlockSummaries(blocksEl);
+        if (blocksEl) updateBlockSummaries(blocksEl);
+        if (tickerEl) updateBlockSummaries(tickerEl);
     }
 
     const scheduleSummaries = debounce(refreshSummaries, 150);
@@ -62,6 +62,17 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         reindexBlocks,
         refreshSummaries,
     };
+
+    function handleFieldChange(root: HTMLElement | null, e: Event): void {
+        const t = e.target;
+        if (!(t instanceof HTMLElement) || !root?.contains(t)) return;
+        if (e.type === 'change' && t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
+            applySchedulingToggle(t);
+        }
+        if (t.closest('.teksttv-block-body')) {
+            scheduleSummaries();
+        }
+    }
 
     return {
         menuBlockOpen: false,
@@ -122,6 +133,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
             insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true });
+            refreshSummaries();
         },
 
         expandAllBlocks(): void {
@@ -149,39 +161,30 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         },
 
         blocksFieldChange(e: Event): void {
-            const t = e.target;
-            if (!(t instanceof HTMLElement) || !blocksEl?.contains(t)) return;
-            if (t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
-                applySchedulingToggle(t);
-            }
-            if (t.closest('.teksttv-block-body')) {
-                scheduleSummaries();
-            }
+            handleFieldChange(blocksEl, e);
         },
 
         tickerClick(e: MouseEvent): void {
             if (!(e.target instanceof Element) || !tickerEl) return;
 
-            const header = e.target.closest('.teksttv-block-header');
-            if (header && tickerEl.contains(header)) {
-                if (e.target.closest('.teksttv-remove-block')) return;
-                toggleBlockOpen(header);
-                return;
-            }
-
             const rem = e.target.closest('.teksttv-remove-block');
             if (rem && tickerEl.contains(rem)) {
                 e.stopPropagation();
-                removeClosestBlock(rem, reindexTicker);
+                removeClosestBlock(rem, () => {
+                    reindexTicker();
+                    refreshSummaries();
+                });
+                return;
+            }
+
+            const header = e.target.closest('.teksttv-block-header');
+            if (header && tickerEl.contains(header)) {
+                toggleBlockOpen(header);
             }
         },
 
         tickerFieldChange(e: Event): void {
-            const t = e.target;
-            if (!(t instanceof HTMLElement) || !tickerEl?.contains(t)) return;
-            if (t instanceof HTMLInputElement && t.matches('.teksttv-scheduling-checkbox')) {
-                applySchedulingToggle(t);
-            }
+            handleFieldChange(tickerEl, e);
         },
 
         addGroupRow(): void {

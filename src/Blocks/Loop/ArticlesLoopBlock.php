@@ -40,7 +40,7 @@ final class ArticlesLoopBlock implements LoopBlock
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
                 <label><?php esc_html_e('Aantal', 'teksttv-wp-plugin'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" />
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>

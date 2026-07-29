@@ -6,15 +6,6 @@ use TekstTV\BlockRegistry;
 
 class BlockRegistryTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Reset the static $types array before each test
-        $ref = new \ReflectionProperty(BlockRegistry::class, 'types');
-        $ref->setValue(null, []);
-    }
-
     private function registerTestBlock(string $slug = 'test_block', string $context = 'loop'): void
     {
         BlockRegistry::register($slug, [

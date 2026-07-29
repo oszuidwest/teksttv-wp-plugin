@@ -351,6 +351,174 @@ class AdminPageTest extends TestCase
         $this->assertStringNotContainsString('checked="checked"', $this->renderDaysRow([]));
     }
 
+    public function test_validate_loop_save_request_rejects_invalid_nonce(): void
+    {
+        $_POST = ['teksttv_loop_nonce' => 'invalid'];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')->with('invalid', 'teksttv_save_loop')->andReturn(false);
+        Functions\expect('add_settings_error')
+            ->with('teksttv', 'loop_nonce_failed', \Mockery::type('string'))
+            ->once();
+
+        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+    }
+
+    public function test_validate_loop_save_request_rejects_missing_capability(): void
+    {
+        $_POST = ['teksttv_loop_nonce' => 'valid'];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')->andReturn(true);
+        Functions\expect('current_user_can')->with('manage_teksttv')->andReturn(false);
+        Functions\expect('add_settings_error')
+            ->with('teksttv', 'loop_no_permission', \Mockery::type('string'))
+            ->once();
+
+        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+    }
+
+    public function test_validate_loop_save_request_rejects_unknown_channel(): void
+    {
+        $_POST = [
+            'teksttv_loop_nonce' => 'valid',
+            'teksttv_loop_channel' => 'unknown',
+        ];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')->andReturn(true);
+        Functions\expect('current_user_can')->andReturn(true);
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+        Functions\expect('add_settings_error')
+            ->with('teksttv', 'loop_unknown_channel', \Mockery::type('string'))
+            ->once();
+
+        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+    }
+
+    public function test_validate_loop_save_request_returns_known_channel(): void
+    {
+        $_POST = [
+            'teksttv_loop_nonce' => 'valid',
+            'teksttv_loop_channel' => 'TV1',
+        ];
+        Functions\when('wp_unslash')->returnArg();
+        Functions\expect('wp_verify_nonce')->andReturn(true);
+        Functions\expect('current_user_can')->andReturn(true);
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+
+        $this->assertSame('tv1', self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
+    }
+
+    public function test_sanitize_registry_items_preserves_unregistered_stored_rows(): void
+    {
+        $stored = [
+            ['type' => 'addon_weather', 'location' => 'Breda'],
+        ];
+        Functions\expect('get_option')->with('teksttv_loop_tv1', [])->andReturn($stored);
+
+        [$items, $preserved] = self::callPrivate(
+            AdminPage::class,
+            'sanitize_registry_items',
+            [[], 'teksttv_loop_tv1', 'loop']
+        );
+
+        $this->assertTrue($preserved);
+        $this->assertSame($stored, $items);
+    }
+
+    public function test_sanitize_registry_items_does_not_restore_registered_removed_rows(): void
+    {
+        \TekstTV\BlockRegistry::register('test_registered_row', [
+            'save' => static fn (array $raw): array => $raw,
+        ]);
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([['type' => 'test_registered_row', 'value' => 'removed']]);
+
+        [$items, $preserved] = self::callPrivate(
+            AdminPage::class,
+            'sanitize_registry_items',
+            [[], 'teksttv_loop_tv1', 'loop']
+        );
+
+        $this->assertFalse($preserved);
+        $this->assertSame([], $items);
+    }
+
+    public function test_sanitize_registry_items_restores_unregistered_rows_at_stored_positions(): void
+    {
+        \TekstTV\BlockRegistry::register('test_order_a', [
+            'context' => 'loop',
+            'save' => static fn (array $raw): array => ['value' => $raw['value']],
+        ]);
+        \TekstTV\BlockRegistry::register('test_order_b', [
+            'context' => 'loop',
+            'save' => static fn (array $raw): array => ['value' => $raw['value']],
+        ]);
+
+        Functions\expect('get_option')
+            ->with('teksttv_loop_tv1', [])
+            ->andReturn([
+                ['type' => 'addon_first'],
+                ['type' => 'test_order_a', 'value' => 'old-a'],
+                ['type' => 'addon_middle'],
+                ['type' => 'test_order_b', 'value' => 'old-b'],
+                ['type' => 'addon_last'],
+            ]);
+
+        [$items, $preserved] = self::callPrivate(
+            AdminPage::class,
+            'sanitize_registry_items',
+            [
+                [
+                    ['type' => 'test_order_a', 'value' => 'new-a'],
+                    ['type' => 'test_order_b', 'value' => 'new-b'],
+                ],
+                'teksttv_loop_tv1',
+                'loop',
+            ]
+        );
+
+        $this->assertTrue($preserved);
+        $this->assertSame(
+            ['addon_first', 'test_order_a', 'addon_middle', 'test_order_b', 'addon_last'],
+            array_column($items, 'type')
+        );
+        $this->assertSame('new-a', $items[1]['value']);
+        $this->assertSame('new-b', $items[3]['value']);
+    }
+
+    public function test_sanitize_registry_items_rejects_registered_type_from_other_context(): void
+    {
+        \TekstTV\BlockRegistry::register('test_loop_context', [
+            'context' => 'loop',
+            'save' => static fn (array $raw): array => ['value' => $raw['value']],
+        ]);
+        \TekstTV\BlockRegistry::register('test_ticker_context', [
+            'context' => 'ticker',
+            'save' => static fn (array $raw): array => ['value' => $raw['value']],
+        ]);
+        Functions\expect('get_option')->with('teksttv_loop_tv1', [])->andReturn([]);
+
+        [$items, $preserved] = self::callPrivate(
+            AdminPage::class,
+            'sanitize_registry_items',
+            [
+                [
+                    ['type' => 'test_loop_context', 'value' => 'allowed'],
+                    ['type' => 'test_ticker_context', 'value' => 'rejected'],
+                ],
+                'teksttv_loop_tv1',
+                'loop',
+            ]
+        );
+
+        $this->assertFalse($preserved);
+        $this->assertSame(['test_loop_context'], array_column($items, 'type'));
+    }
+
     /** @param list<string>|null $days */
     private function renderDaysRow(?array $days): string
     {
