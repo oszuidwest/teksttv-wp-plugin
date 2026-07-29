@@ -244,33 +244,18 @@ class RestApiTest extends TestCase
         $this->assertTrue(RestApi::validate_channel('tv1'));
     }
 
-    public function test_invalidate_slides_cache_single_channel(): void
+    public function test_get_slides_returns_loop_and_ticker_for_channel(): void
     {
-        Functions\expect('delete_transient')
-            ->once()
-            ->with('teksttv_slides_tv1')
-            ->andReturn(true);
+        Functions\when('get_option')->alias(fn ($key, $default = false) => match ($key) {
+            'teksttv_loop_tv1' => [],
+            'teksttv_ticker_tv1' => [],
+            default => $default,
+        });
 
-        RestApi::invalidate_slides_cache('tv1');
-    }
+        $response = RestApi::get_slides(self::requestMock(['channel' => 'tv1']));
 
-    public function test_invalidate_slides_cache_all_channels(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_channels', [])
-            ->andReturn([
-                ['slug' => 'tv1', 'label' => 'TV 1'],
-                ['slug' => 'tv2', 'label' => 'TV 2'],
-            ]);
-        Functions\expect('delete_transient')
-            ->with('teksttv_slides_tv1')
-            ->once()
-            ->andReturn(true);
-        Functions\expect('delete_transient')
-            ->with('teksttv_slides_tv2')
-            ->once()
-            ->andReturn(true);
-
-        RestApi::invalidate_slides_cache();
+        $this->assertInstanceOf(\WP_REST_Response::class, $response);
+        $this->assertSame(200, $response->get_status());
+        $this->assertSame(['slides' => [], 'ticker' => []], $response->get_data());
     }
 }

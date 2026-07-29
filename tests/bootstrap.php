@@ -131,9 +131,6 @@ if (!class_exists('WP_REST_Response')) {
         public $data;
         public int $status;
 
-        /** @var array<string, string> */
-        public array $headers = [];
-
         public function __construct($data = null, int $status = 200)
         {
             $this->data = $data;
@@ -149,11 +146,6 @@ if (!class_exists('WP_REST_Response')) {
         public function get_data()
         {
             return $this->data;
-        }
-
-        public function header(string $key, string $value): void
-        {
-            $this->headers[$key] = $value;
         }
     }
 }

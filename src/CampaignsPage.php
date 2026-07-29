@@ -144,11 +144,7 @@ class CampaignsPage
         // Save campaigns
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
-        $campaigns = self::sanitize_campaigns($raw, Helpers::channel_slugs());
-
-        update_option('teksttv_campaigns', $campaigns);
-
-        RestApi::invalidate_slides_cache();
+        update_option('teksttv_campaigns', self::sanitize_campaigns($raw, Helpers::channel_slugs()));
 
         add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv-wp-plugin'), 'success');
     }

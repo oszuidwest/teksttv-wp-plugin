@@ -95,8 +95,5 @@ class CategoryMeta
         } else {
             delete_term_meta($term_id, self::META_KEY);
         }
-
-        // The category image feeds the article sidebar fallback.
-        RestApi::invalidate_slides_cache();
     }
 }
