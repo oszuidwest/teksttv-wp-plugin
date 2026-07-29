@@ -148,8 +148,6 @@ class CampaignsPage
 
         update_option('teksttv_campaigns', $campaigns);
 
-        RestApi::invalidate_slides_cache();
-
         add_settings_error('teksttv_campaigns', 'saved', __('Campagnes opgeslagen.', 'teksttv-wp-plugin'), 'success');
     }
 

@@ -158,40 +158,13 @@ class RestApi
         return new WP_REST_Response($response, 200);
     }
 
-    private const SLIDES_CACHE_TTL = 180; // 3 minutes
-
     public static function get_slides(WP_REST_Request $request): WP_REST_Response
     {
         $channel = $request->get_param('channel');
-        $cache_key = 'teksttv_slides_' . $channel;
 
-        $data = get_transient($cache_key);
-        if ($data === false) {
-            $data = [
-                'slides' => SlidesBuilder::build($channel),
-                'ticker' => SlidesBuilder::build_ticker($channel),
-            ];
-            set_transient($cache_key, $data, self::SLIDES_CACHE_TTL);
-        }
-
-        $response = new WP_REST_Response($data, 200);
-        $response->header('Cache-Control', 'public, max-age=' . self::SLIDES_CACHE_TTL);
-
-        return $response;
-    }
-
-    /**
-     * Invalidate the slides cache for one or all channels.
-     */
-    public static function invalidate_slides_cache(string $channel = ''): void
-    {
-        if (!empty($channel)) {
-            delete_transient('teksttv_slides_' . $channel);
-            return;
-        }
-
-        foreach (Helpers::get_channels() as $ch) {
-            delete_transient('teksttv_slides_' . $ch['slug']);
-        }
+        return new WP_REST_Response([
+            'slides' => SlidesBuilder::build($channel),
+            'ticker' => SlidesBuilder::build_ticker($channel),
+        ], 200);
     }
 }

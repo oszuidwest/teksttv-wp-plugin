@@ -13,9 +13,6 @@ class PostMetaTest extends TestCase
     /** @var list<array{0: int, 1: string}> Captured delete_post_meta calls */
     private array $metaDeletes = [];
 
-    /** @var list<string> Captured meta-write and cache-invalidation events */
-    private array $saveEvents = [];
-
     /**
      * Set up WP function stubs for process_save().
      *
@@ -25,16 +22,13 @@ class PostMetaTest extends TestCase
     {
         $this->metaUpdates = [];
         $this->metaDeletes = [];
-        $this->saveEvents = [];
 
         Functions\when('update_post_meta')->alias(function (int $post_id, string $key, $value) {
             $this->metaUpdates[] = [$post_id, $key, $value];
-            $this->saveEvents[] = 'update:' . $key;
             return true;
         });
         Functions\when('delete_post_meta')->alias(function (int $post_id, string $key) {
             $this->metaDeletes[] = [$post_id, $key];
-            $this->saveEvents[] = 'delete:' . $key;
             return true;
         });
         Functions\when('wp_kses')->alias(function ($content) {
@@ -339,7 +333,6 @@ class PostMetaTest extends TestCase
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('wp_unslash')->alias(fn ($value) => $value);
         Functions\when('current_user_can')->justReturn(true);
-        Functions\when('delete_transient')->justReturn(true);
         $this->setupProcessSave(['scheduling', 'extra_images']);
 
         PostMeta::save_meta(1, $post);
@@ -360,7 +353,6 @@ class PostMetaTest extends TestCase
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('wp_unslash')->alias(fn ($value) => $value);
         Functions\when('current_user_can')->justReturn(true);
-        Functions\when('delete_transient')->justReturn(true);
         $this->setupProcessSave(['scheduling']);
 
         PostMeta::save_meta(1, $post);
@@ -378,103 +370,11 @@ class PostMetaTest extends TestCase
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('wp_unslash')->alias(fn ($value) => $value);
         Functions\when('current_user_can')->justReturn(true);
-        Functions\when('delete_transient')->justReturn(true);
         $this->setupProcessSave(['scheduling']);
 
         PostMeta::save_meta(1, $post);
 
         $this->assertSame([], $this->findMetaUpdate('_teksttv_days'));
         $this->assertFalse($this->wasMetaDeleted('_teksttv_days'));
-    }
-
-    public function test_save_meta_invalidates_slides_cache_after_meta_updates(): void
-    {
-        $_POST = [
-            'teksttv_meta_nonce' => 'valid',
-            'teksttv_active' => '1',
-        ];
-        $post = \Mockery::mock(\WP_Post::class);
-        $post->post_type = 'post';
-
-        Functions\when('wp_verify_nonce')->justReturn(true);
-        Functions\when('wp_unslash')->alias(fn ($v) => $v);
-        Functions\when('current_user_can')->justReturn(true);
-        $this->setupProcessSave();
-
-        // Regression: save_post_post invalidates BEFORE this callback writes
-        // the meta; a concurrent /slides request in that window can re-cache
-        // stale data, so save_meta() must invalidate again after writing.
-        Functions\expect('delete_transient')
-            ->once()
-            ->with('teksttv_slides_tv1')
-            ->andReturnUsing(function (string $key): bool {
-                $this->saveEvents[] = 'invalidate:' . $key;
-                return true;
-            });
-
-        PostMeta::save_meta(1, $post);
-
-        $this->assertNotEmpty($this->metaUpdates);
-        $this->assertSame('invalidate:teksttv_slides_tv1', end($this->saveEvents));
-    }
-
-    // =========================================================================
-    // Broader slides-cache invalidation on editorial changes
-    // =========================================================================
-
-    public function test_invalidate_on_terms_change_clears_cache_for_post(): void
-    {
-        Functions\expect('get_post_type')->with(10)->andReturn('post');
-        Functions\when('get_option')->justReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
-        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1');
-
-        PostMeta::invalidate_on_terms_change(10);
-
-        $this->assertTrue(true);
-    }
-
-    public function test_invalidate_on_terms_change_skips_non_post(): void
-    {
-        Functions\expect('get_post_type')->with(20)->andReturn('page');
-        Functions\expect('delete_transient')->never();
-
-        PostMeta::invalidate_on_terms_change(20);
-
-        $this->assertTrue(true);
-    }
-
-    public function test_invalidate_on_post_save_skips_autosave(): void
-    {
-        Functions\expect('wp_is_post_autosave')->with(5)->andReturn(true);
-        Functions\when('wp_is_post_revision')->justReturn(false);
-        Functions\expect('delete_transient')->never();
-
-        $post = \Mockery::mock(\WP_Post::class);
-        PostMeta::invalidate_on_post_save(5, $post);
-
-        $this->assertTrue(true);
-    }
-
-    public function test_invalidate_on_status_transition_clears_cache_on_publish(): void
-    {
-        $post = \Mockery::mock(\WP_Post::class);
-        $post->post_type = 'post';
-        Functions\when('get_option')->justReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
-        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1');
-
-        PostMeta::invalidate_on_status_transition('publish', 'future', $post);
-
-        $this->assertTrue(true);
-    }
-
-    public function test_invalidate_on_status_transition_skips_unchanged_and_non_publish(): void
-    {
-        $post = \Mockery::mock(\WP_Post::class);
-        $post->post_type = 'post';
-        Functions\expect('delete_transient')->never();
-
-        PostMeta::invalidate_on_status_transition('draft', 'pending', $post);
-
-        $this->assertTrue(true);
     }
 }

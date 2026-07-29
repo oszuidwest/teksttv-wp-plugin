@@ -243,34 +243,4 @@ class RestApiTest extends TestCase
 
         $this->assertTrue(RestApi::validate_channel('tv1'));
     }
-
-    public function test_invalidate_slides_cache_single_channel(): void
-    {
-        Functions\expect('delete_transient')
-            ->once()
-            ->with('teksttv_slides_tv1')
-            ->andReturn(true);
-
-        RestApi::invalidate_slides_cache('tv1');
-    }
-
-    public function test_invalidate_slides_cache_all_channels(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_channels', [])
-            ->andReturn([
-                ['slug' => 'tv1', 'label' => 'TV 1'],
-                ['slug' => 'tv2', 'label' => 'TV 2'],
-            ]);
-        Functions\expect('delete_transient')
-            ->with('teksttv_slides_tv1')
-            ->once()
-            ->andReturn(true);
-        Functions\expect('delete_transient')
-            ->with('teksttv_slides_tv2')
-            ->once()
-            ->andReturn(true);
-
-        RestApi::invalidate_slides_cache();
-    }
 }
