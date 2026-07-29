@@ -31,4 +31,10 @@ describe('splitPages', () => {
 
         expect(splitPages(html, false)).toEqual([html]);
     });
+
+    test('splits on a separator paragraph when enabled', () => {
+        const html = '<p>Pagina één</p><p>---</p><p>Pagina twee</p>';
+
+        expect(splitPages(html)).toEqual(['<p>Pagina één</p>', '<p>Pagina twee</p>']);
+    });
 });
