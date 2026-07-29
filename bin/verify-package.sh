@@ -143,6 +143,17 @@ if [[ -n "$ZIP_PATH" ]]; then
     if [[ ! -d "$VERIFY_TMP/$SLUG" ]]; then
         fail "ZIP does not contain the expected '$SLUG/' plugin directory."
     fi
+    zip_top_level_count=0
+    while IFS= read -r -d '' zip_top_level; do
+        zip_top_level_count=$((zip_top_level_count + 1))
+        if [[ "$zip_top_level" != "$VERIFY_TMP/$SLUG" ]]; then
+            fail "ZIP contains unexpected top-level entry '$(basename "$zip_top_level")'."
+        fi
+    done < <(find "$VERIFY_TMP" -mindepth 1 -maxdepth 1 -print0)
+    if [[ "$zip_top_level_count" -ne 1 ]]; then
+        fail "ZIP must contain exactly one top-level '$SLUG/' directory."
+    fi
+
     if ! diff -qr "$PACKAGE_DIR" "$VERIFY_TMP/$SLUG" >/dev/null; then
         diff -qr "$PACKAGE_DIR" "$VERIFY_TMP/$SLUG" >&2 || true
         fail "ZIP contents differ from the validated plugin directory."
