@@ -1,20 +1,29 @@
 {
-    "$schema": "https://biomejs.dev/schemas/2.4.9/schema.json",
+    "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
     "files": {
-        "includes": ["**/resources/ts/**/*.ts"]
+        "includes": [
+            "resources/**/*.ts",
+            "resources/**/*.js",
+            "resources/**/*.css",
+            "tests/**/*.ts",
+            "tests/**/*.js",
+            "playwright.config.ts"
+        ]
     },
     "linter": {
         "enabled": true,
         "rules": {
-            "recommended": true,
+            "preset": "recommended",
             "complexity": {
                 "noForEach": "off",
+                "noImportantStyles": "off",
                 "useOptionalChain": "off"
             },
             "correctness": {
                 "noUnusedVariables": "warn"
             },
             "style": {
+                "noDescendingSpecificity": "off",
                 "useTemplate": "off"
             }
         }
@@ -30,5 +39,17 @@
             "semicolons": "always"
         },
         "globals": ["tinymce", "wp", "teksttvPost", "TomSelect"]
-    }
+    },
+    "overrides": [
+        {
+            "includes": ["resources/ts/tinymce-separator.js"],
+            "linter": {
+                "rules": {
+                    "complexity": {
+                        "useArrowFunction": "off"
+                    }
+                }
+            }
+        }
+    ]
 }

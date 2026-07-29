@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { type FullConfig, chromium } from '@playwright/test';
+import { chromium, type FullConfig } from '@playwright/test';
 import { ADMIN_STORAGE_STATE, login } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 

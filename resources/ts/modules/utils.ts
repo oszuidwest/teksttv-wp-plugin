@@ -37,7 +37,7 @@ export function splitPages(html: string, enabled = true): string[] {
 
 /** Debounce `fn`: each call restarts the timer; only the last call within `ms` runs. */
 export function debounce(fn: () => void, ms: number): () => void {
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timer: number | undefined;
     return () => {
         clearTimeout(timer);
         timer = window.setTimeout(fn, ms);

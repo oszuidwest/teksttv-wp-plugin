@@ -1,4 +1,4 @@
-import { type Locator, type Page, expect } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Admin session saved by global-setup and loaded by every test (see playwright.config.ts). */
 export const ADMIN_STORAGE_STATE = '.playwright/auth/admin.json';

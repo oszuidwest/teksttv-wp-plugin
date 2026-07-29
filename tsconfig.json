@@ -4,9 +4,10 @@
         "lib": ["ES2022", "DOM", "DOM.Iterable"],
         "module": "ESNext",
         "moduleResolution": "bundler",
+        "types": ["bun", "node"],
         "strict": true,
         "noEmit": true,
         "skipLibCheck": true
     },
-    "include": ["resources/ts"]
+    "include": ["resources/ts", "tests/js", "tests/e2e", "playwright.config.ts"]
 }
