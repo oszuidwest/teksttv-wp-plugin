@@ -60,8 +60,9 @@ class CategoryMetaTest extends TestCase
         Functions\expect('update_term_meta')
             ->once()
             ->with(10, '_teksttv_category_image', 42);
-        Functions\when('get_option')->justReturn([]);
-        Functions\when('delete_transient')->justReturn(true);
+        // The generic term-meta hook owns invalidation, so this form handler
+        // must not perform a duplicate cache delete itself.
+        Functions\expect('delete_transient')->never();
 
         CategoryMeta::save_term_meta(10);
     }
@@ -79,8 +80,7 @@ class CategoryMetaTest extends TestCase
         Functions\expect('delete_term_meta')
             ->once()
             ->with(10, '_teksttv_category_image');
-        Functions\when('get_option')->justReturn([]);
-        Functions\when('delete_transient')->justReturn(true);
+        Functions\expect('delete_transient')->never();
 
         CategoryMeta::save_term_meta(10);
     }

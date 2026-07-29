@@ -4,6 +4,11 @@ namespace TekstTV;
 
 class PostMeta
 {
+    /** @var array<int, true> Post term changes awaiting end-of-request invalidation. */
+    private static array $pending_term_invalidations = [];
+
+    private static bool $term_flush_registered = false;
+
     public static function init(): void
     {
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
@@ -11,52 +16,62 @@ class PostMeta
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
         add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
 
-        // Broader slides-cache invalidation for editorial changes that affect
-        // output but do not go through the Tekst TV meta box: quick edits,
-        // scheduled publishes, category assignments and media caption edits.
-        add_action('save_post_post', [self::class, 'invalidate_on_post_save'], 10, 2);
-        add_action('transition_post_status', [self::class, 'invalidate_on_status_transition'], 10, 3);
+        // wp_after_insert_post runs after core and plugin meta/term writes,
+        // including scheduled publishes, so one invalidation sees final state.
+        add_action('wp_after_insert_post', [self::class, 'invalidate_after_post_save'], 10, 2);
         add_action('set_object_terms', [self::class, 'invalidate_on_terms_change'], 10, 1);
         add_action('attachment_updated', [self::class, 'invalidate_on_attachment_update'], 10, 1);
+        add_action('after_delete_post', [self::class, 'invalidate_after_post_delete'], 10, 2);
     }
 
     /**
-     * Invalidate the slides cache when a post is created or edited outside the
-     * Tekst TV meta box (e.g. quick edit, block editor, REST).
+     * Invalidate after a post, its terms and all save_post meta have settled.
      */
-    public static function invalidate_on_post_save(int $post_id, \WP_Post $post): void
+    public static function invalidate_after_post_save(int $post_id, \WP_Post $post): void
     {
+        if ($post->post_type !== 'post') {
+            return;
+        }
         if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
             return;
         }
+
+        unset(self::$pending_term_invalidations[$post_id]);
         RestApi::invalidate_slides_cache();
     }
 
     /**
-     * Invalidate when a post enters or leaves the published state, which covers
-     * scheduled publishes that never fire save_post.
+     * Queue standalone term assignments until the end of the request.
+     *
+     * Assignments inside wp_insert_post are consumed by
+     * invalidate_after_post_save(), preventing an early duplicate invalidation.
      */
-    public static function invalidate_on_status_transition(string $new_status, string $old_status, \WP_Post $post): void
+    public static function invalidate_on_terms_change(mixed $object_id): void
     {
-        if ($post->post_type !== 'post' || $new_status === $old_status) {
+        $post_id = (int) $object_id;
+        if (get_post_type($post_id) !== 'post') {
             return;
         }
-        if ($new_status === 'publish' || $old_status === 'publish') {
-            RestApi::invalidate_slides_cache();
+
+        self::$pending_term_invalidations[$post_id] = true;
+        if (!self::$term_flush_registered) {
+            self::$term_flush_registered = true;
+            add_action('shutdown', [self::class, 'flush_pending_term_invalidations']);
         }
     }
 
     /**
-     * Invalidate when a post's terms change (e.g. category reassignment), which
-     * can change category-derived sidebar images and taxonomy-filtered loops.
-     *
-     * @param mixed $object_id
+     * Invalidate once for all standalone term assignments in this request.
      */
-    public static function invalidate_on_terms_change($object_id): void
+    public static function flush_pending_term_invalidations(): void
     {
-        if (get_post_type((int) $object_id) === 'post') {
-            RestApi::invalidate_slides_cache();
+        self::$term_flush_registered = false;
+        if (self::$pending_term_invalidations === []) {
+            return;
         }
+
+        self::$pending_term_invalidations = [];
+        RestApi::invalidate_slides_cache();
     }
 
     /**
@@ -66,6 +81,17 @@ class PostMeta
     public static function invalidate_on_attachment_update(int $post_id): void
     {
         RestApi::invalidate_slides_cache();
+    }
+
+    /**
+     * Invalidate when a post is hard-deleted without a preceding trash update.
+     */
+    public static function invalidate_after_post_delete(int $post_id, \WP_Post $post): void
+    {
+        if ($post->post_type === 'post') {
+            unset(self::$pending_term_invalidations[$post_id]);
+            RestApi::invalidate_slides_cache();
+        }
     }
 
     /**
@@ -296,11 +322,6 @@ class PostMeta
         ];
 
         self::process_save($post_id, $data);
-
-        // save_post_post also invalidates for this save, but it fires BEFORE
-        // this callback writes the meta. A concurrent /slides request in that
-        // window can re-cache the old meta, so invalidate again after writing.
-        RestApi::invalidate_slides_cache();
     }
 
     /**

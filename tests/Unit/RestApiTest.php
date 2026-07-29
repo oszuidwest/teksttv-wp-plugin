@@ -3,10 +3,19 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\RestApi;
 
 class RestApiTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $tracking = new \ReflectionProperty(RestApi::class, 'automatically_invalidated_channels');
+        $tracking->setValue(null, []);
+    }
+
     /**
      * Request mock serving fixed params.
      *
@@ -272,5 +281,114 @@ class RestApiTest extends TestCase
             ->andReturn(true);
 
         RestApi::invalidate_slides_cache();
+    }
+
+    public function test_related_channel_options_invalidate_the_channel_once_per_request(): void
+    {
+        Functions\expect('delete_transient')
+            ->once()
+            ->with('teksttv_slides_tv1')
+            ->andReturn(true);
+
+        RestApi::invalidate_on_option_updated('teksttv_loop_tv1', [], [['type' => 'articles']]);
+        RestApi::invalidate_on_option_updated('teksttv_ticker_tv1', [], [['type' => 'text']]);
+    }
+
+    public function test_rebuilt_cache_can_be_invalidated_again_in_the_same_request(): void
+    {
+        Functions\expect('delete_transient')
+            ->twice()
+            ->with('teksttv_slides_tv1')
+            ->andReturn(true);
+        Functions\expect('get_transient')->once()->with('teksttv_slides_tv1')->andReturn(false);
+        Functions\expect('get_option')->twice()->andReturn([]);
+        Functions\expect('set_transient')->once()->with('teksttv_slides_tv1', [
+            'slides' => [],
+            'ticker' => [],
+        ], 180)->andReturn(true);
+
+        RestApi::invalidate_on_option_updated('teksttv_loop_tv1', [], [['type' => 'articles']]);
+        RestApi::get_slides(self::requestMock(['channel' => 'tv1']));
+        RestApi::invalidate_on_option_updated('teksttv_ticker_tv1', [], [['type' => 'text']]);
+    }
+
+    #[DataProvider('globalSlideOptionProvider')]
+    public function test_global_slide_option_invalidates_all_configured_channels(string $option): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn([
+                ['slug' => 'tv1', 'label' => 'TV 1'],
+                ['slug' => 'tv2', 'label' => 'TV 2'],
+            ]);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1')->andReturn(true);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv2')->andReturn(true);
+
+        RestApi::invalidate_on_option_updated($option, 'old', 'new');
+    }
+
+    /**
+     * @return list<array{string}>
+     */
+    public static function globalSlideOptionProvider(): array
+    {
+        return [
+            ['teksttv_campaigns'],
+            ['teksttv_duration_text'],
+            ['teksttv_duration_image'],
+            ['teksttv_duration_iframe'],
+            ['teksttv_enabled_taxonomies'],
+            ['teksttv_features'],
+            ['teksttv_max_post_age'],
+            ['teksttv_openweather_api_key'],
+        ];
+    }
+
+    public function test_channel_list_change_invalidates_old_and_new_channel_slugs(): void
+    {
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_old')->andReturn(true);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_new')->andReturn(true);
+
+        RestApi::invalidate_on_option_updated(
+            'teksttv_channels',
+            [['slug' => 'old', 'label' => 'Old']],
+            [['slug' => 'new', 'label' => 'New']]
+        );
+    }
+
+    public function test_deleting_channel_list_invalidates_old_slugs_and_default_fallback(): void
+    {
+        Functions\expect('get_option')
+            ->once()
+            ->with('teksttv_channels', [])
+            ->andReturn([['slug' => 'news', 'label' => 'News']]);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_news')->andReturn(true);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1')->andReturn(true);
+
+        RestApi::invalidate_before_option_delete('teksttv_channels');
+    }
+
+    public function test_unrelated_option_does_not_invalidate_slides(): void
+    {
+        Functions\expect('delete_transient')->never();
+
+        RestApi::invalidate_on_option_added('blogdescription', 'Example');
+    }
+
+    public function test_category_image_term_meta_change_invalidates_all_channels(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_channels', [])
+            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1')->andReturn(true);
+
+        RestApi::invalidate_on_term_meta_change(12, 34, '_teksttv_category_image');
+    }
+
+    public function test_unrelated_term_meta_does_not_invalidate_slides(): void
+    {
+        Functions\expect('delete_transient')->never();
+
+        RestApi::invalidate_on_term_meta_change(12, 34, 'unrelated_meta');
     }
 }

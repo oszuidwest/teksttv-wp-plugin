@@ -504,8 +504,6 @@ class AdminPage
         [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel, 'ticker');
         update_option('teksttv_ticker_' . $channel, $ticker);
 
-        RestApi::invalidate_slides_cache($channel);
-
         if ($blocks_preserved || $ticker_preserved) {
             add_settings_error('teksttv', 'loop_preserved_unknown', __('Sommige opgeslagen blokken horen bij een niet-actieve plugin. Ze zijn bewaard maar verschijnen pas weer als die plugin actief is.', 'teksttv-wp-plugin'), 'warning');
         }

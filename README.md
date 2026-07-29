@@ -69,6 +69,18 @@ The payload contains `slides` (the loop) and `ticker` entries. `channel` must ma
 
 Editor-only endpoints (image metadata, generation, …) need a user with `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
 
+### Slide-cache invalidation contract
+
+The server-side `/slides` transient lives for at most 180 seconds. WordPress API mutations to proven slide inputs invalidate it during the same request:
+
+- post saves (including scheduled publishing), post deletion, post term assignments and attachment updates;
+- add/update/delete of the `_teksttv_category_image` term meta;
+- channel, loop, ticker, campaign, duration, enabled-taxonomy, feature, maximum-post-age and OpenWeather options.
+
+Loop and ticker changes invalidate only their channel. Related mutations in one request are deduplicated, while a cache rebuilt between two mutations can be invalidated again. Standalone post term assignments are flushed once at the end of the request; a full post save consumes that pending change and invalidates once after all terms and meta are stored.
+
+Direct database writes, direct updates to TekstTV-owned post meta outside a post save, and custom block/provider data that does not use these WordPress APIs rely on the 180-second TTL. Integrations that mutate such inputs can call `TekstTV\RestApi::invalidate_slides_cache($channel)` (omit the channel to clear all configured channels). This contract concerns the server transient; clients may retain an already received response according to its `Cache-Control` header.
+
 ## Development scripts
 
 From [`package.json`](package.json):

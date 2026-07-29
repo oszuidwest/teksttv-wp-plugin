@@ -10,9 +10,35 @@ class RestApi
 {
     private const NAMESPACE = 'teksttv/v1';
 
+    /**
+     * Options read while building slide or ticker payloads.
+     *
+     * Loop and ticker options are handled separately because their suffix
+     * identifies the only channel whose cache needs invalidating.
+     */
+    private const GLOBAL_SLIDE_OPTIONS = [
+        'teksttv_campaigns',
+        'teksttv_duration_text',
+        'teksttv_duration_image',
+        'teksttv_duration_iframe',
+        'teksttv_enabled_taxonomies',
+        'teksttv_features',
+        'teksttv_max_post_age',
+        'teksttv_openweather_api_key',
+    ];
+
+    /** @var array<string, true> Channels already auto-invalidated in this request. */
+    private static array $automatically_invalidated_channels = [];
+
     public static function init(): void
     {
         add_action('rest_api_init', [self::class, 'register_routes']);
+        add_action('added_option', [self::class, 'invalidate_on_option_added'], 10, 2);
+        add_action('updated_option', [self::class, 'invalidate_on_option_updated'], 10, 3);
+        add_action('delete_option', [self::class, 'invalidate_before_option_delete']);
+        add_action('added_term_meta', [self::class, 'invalidate_on_term_meta_change'], 10, 3);
+        add_action('updated_term_meta', [self::class, 'invalidate_on_term_meta_change'], 10, 3);
+        add_action('deleted_term_meta', [self::class, 'invalidate_on_term_meta_change'], 10, 3);
     }
 
     public static function register_routes(): void
@@ -172,6 +198,10 @@ class RestApi
                 'ticker' => SlidesBuilder::build_ticker($channel),
             ];
             set_transient($cache_key, $data, self::SLIDES_CACHE_TTL);
+
+            // A later supported mutation in this request must be able to
+            // invalidate data that was re-cached after an earlier mutation.
+            unset(self::$automatically_invalidated_channels[$channel]);
         }
 
         $response = new WP_REST_Response($data, 200);
@@ -193,5 +223,133 @@ class RestApi
         foreach (Helpers::get_channels() as $ch) {
             delete_transient('teksttv_slides_' . $ch['slug']);
         }
+    }
+
+    /**
+     * Invalidate when a slide-input option is first created.
+     *
+     * @param mixed $value
+     */
+    public static function invalidate_on_option_added(string $option, mixed $value): void
+    {
+        self::invalidate_for_option($option, null, $value);
+    }
+
+    /**
+     * Invalidate when a stored slide-input option changes.
+     *
+     * @param mixed $old_value
+     * @param mixed $value
+     */
+    public static function invalidate_on_option_updated(string $option, mixed $old_value, mixed $value): void
+    {
+        self::invalidate_for_option($option, $old_value, $value);
+    }
+
+    /**
+     * Capture the old channel list before WordPress deletes the option.
+     */
+    public static function invalidate_before_option_delete(string $option): void
+    {
+        $old_value = $option === 'teksttv_channels' ? get_option($option, []) : null;
+        self::invalidate_for_option($option, $old_value, null);
+    }
+
+    /**
+     * Invalidate when the category image is changed through the Term Meta API.
+     *
+     * @param mixed $meta_id
+     */
+    public static function invalidate_on_term_meta_change(
+        mixed $meta_id,
+        int $term_id,
+        string $meta_key
+    ): void {
+        if ($meta_key === CategoryMeta::META_KEY) {
+            self::invalidate_automatically();
+        }
+    }
+
+    /**
+     * Route an option mutation to the smallest affected cache scope.
+     *
+     * @param mixed $old_value
+     * @param mixed $value
+     */
+    private static function invalidate_for_option(string $option, mixed $old_value, mixed $value): void
+    {
+        foreach (['teksttv_loop_', 'teksttv_ticker_'] as $prefix) {
+            if (str_starts_with($option, $prefix)) {
+                $channel = sanitize_key(substr($option, strlen($prefix)));
+                if ($channel !== '') {
+                    self::invalidate_automatically($channel);
+                }
+                return;
+            }
+        }
+
+        if ($option === 'teksttv_channels') {
+            foreach (self::channel_slugs_from_values($old_value, $value) as $channel) {
+                self::invalidate_automatically($channel);
+            }
+            return;
+        }
+
+        if (in_array($option, self::GLOBAL_SLIDE_OPTIONS, true)) {
+            self::invalidate_automatically();
+        }
+    }
+
+    /**
+     * Delete each automatically affected channel at most once per request.
+     *
+     * Plugin form handlers often update multiple related options in one
+     * logical save. A cache rebuilt between mutations clears this marker in
+     * get_slides(), so a later mutation still invalidates the rebuilt value.
+     */
+    private static function invalidate_automatically(string $channel = ''): void
+    {
+        if ($channel === '') {
+            foreach (Helpers::get_channels() as $configured_channel) {
+                self::invalidate_automatically($configured_channel['slug']);
+            }
+            return;
+        }
+
+        if (isset(self::$automatically_invalidated_channels[$channel])) {
+            return;
+        }
+
+        self::$automatically_invalidated_channels[$channel] = true;
+        self::invalidate_slides_cache($channel);
+    }
+
+    /**
+     * Return the union of channel slugs represented before and after a change.
+     *
+     * An absent or empty channel option means the built-in tv1 fallback.
+     *
+     * @return list<string>
+     */
+    private static function channel_slugs_from_values(mixed ...$values): array
+    {
+        $slugs = [];
+        foreach ($values as $channels) {
+            $value_slugs = [];
+            if (is_array($channels)) {
+                foreach ($channels as $channel) {
+                    if (!is_array($channel)) {
+                        continue;
+                    }
+                    $slug = sanitize_key($channel['slug'] ?? '');
+                    if ($slug !== '') {
+                        $value_slugs[] = $slug;
+                    }
+                }
+            }
+            $slugs = array_merge($slugs, $value_slugs ?: ['tv1']);
+        }
+
+        return array_values(array_unique($slugs));
     }
 }
