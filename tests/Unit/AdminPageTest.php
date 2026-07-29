@@ -10,7 +10,7 @@ class AdminPageTest extends TestCase
 {
     public function test_preview_url_shares_site_origin_true_for_exact_origin(): void
     {
-        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
+        $this->stubWpParseUrl();
 
         $this->assertTrue(AdminPage::preview_url_shares_site_origin(
             'https://bredanu.nl/preview',
@@ -20,7 +20,7 @@ class AdminPageTest extends TestCase
 
     public function test_preview_url_shares_site_origin_false_for_different_scheme(): void
     {
-        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
+        $this->stubWpParseUrl();
 
         $this->assertFalse(AdminPage::preview_url_shares_site_origin(
             'http://bredanu.nl/preview',
@@ -30,7 +30,7 @@ class AdminPageTest extends TestCase
 
     public function test_preview_url_shares_site_origin_false_for_different_port(): void
     {
-        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
+        $this->stubWpParseUrl();
 
         $this->assertFalse(AdminPage::preview_url_shares_site_origin(
             'https://bredanu.nl:8443/preview',
@@ -40,7 +40,7 @@ class AdminPageTest extends TestCase
 
     public function test_preview_url_shares_site_origin_normalizes_effective_port(): void
     {
-        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
+        $this->stubWpParseUrl();
 
         $this->assertTrue(AdminPage::preview_url_shares_site_origin(
             'https://bredanu.nl:443/preview',
@@ -50,7 +50,7 @@ class AdminPageTest extends TestCase
 
     public function test_preview_url_shares_site_origin_false_for_separate_host(): void
     {
-        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
+        $this->stubWpParseUrl();
 
         $this->assertFalse(AdminPage::preview_url_shares_site_origin(
             'https://bredanu.teksttv.pages.dev/bredanu/preview',
@@ -60,12 +60,14 @@ class AdminPageTest extends TestCase
 
     public function test_preview_url_shares_site_origin_false_when_empty(): void
     {
+        $this->stubWpParseUrl();
+
         $this->assertFalse(AdminPage::preview_url_shares_site_origin('', 'https://bredanu.nl'));
     }
 
     public function test_preview_url_shares_site_origin_false_for_invalid_url(): void
     {
-        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
+        $this->stubWpParseUrl();
 
         $this->assertFalse(AdminPage::preview_url_shares_site_origin(
             'not a valid URL',
@@ -75,7 +77,7 @@ class AdminPageTest extends TestCase
 
     public function test_preview_url_shares_site_origin_ignores_host_case(): void
     {
-        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
+        $this->stubWpParseUrl();
 
         $this->assertTrue(AdminPage::preview_url_shares_site_origin(
             'https://BredaNU.nl/preview',
@@ -557,6 +559,11 @@ class AdminPageTest extends TestCase
 
         $this->assertFalse($preserved);
         $this->assertSame(['test_loop_context'], array_column($items, 'type'));
+    }
+
+    private function stubWpParseUrl(): void
+    {
+        Functions\when('wp_parse_url')->alias(fn ($url, $comp = -1) => parse_url($url, $comp));
     }
 
     /** @param list<string>|null $days */

@@ -27,12 +27,8 @@ class AdminPage
     public static function preview_url_shares_site_origin(string $preview_url, string $site_url): bool
     {
         $preview_origin = self::parse_http_origin($preview_url);
-        if ($preview_origin === null) {
-            return false;
-        }
-        $site_origin = self::parse_http_origin($site_url);
 
-        return $preview_origin === $site_origin;
+        return $preview_origin !== null && $preview_origin === self::parse_http_origin($site_url);
     }
 
     /**
@@ -40,10 +36,6 @@ class AdminPage
      */
     private static function parse_http_origin(string $url): ?array
     {
-        if ($url === '') {
-            return null;
-        }
-
         $parts = wp_parse_url($url);
         if (!is_array($parts)) {
             return null;
@@ -51,15 +43,14 @@ class AdminPage
 
         $scheme = strtolower($parts['scheme'] ?? '');
         $host = strtolower($parts['host'] ?? '');
-        if ($scheme === '' || $host === '' || !isset(self::ORIGIN_DEFAULT_PORTS[$scheme])) {
+        if ($host === '' || !isset(self::ORIGIN_DEFAULT_PORTS[$scheme])) {
             return null;
         }
 
-        $port = $parts['port'] ?? self::ORIGIN_DEFAULT_PORTS[$scheme];
         return [
             'scheme' => $scheme,
             'host' => $host,
-            'port' => $port,
+            'port' => $parts['port'] ?? self::ORIGIN_DEFAULT_PORTS[$scheme],
         ];
     }
 
