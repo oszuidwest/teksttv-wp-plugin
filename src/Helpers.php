@@ -292,10 +292,14 @@ class Helpers
     {
         $temperature = $settings['temperature'] ?? '';
         $top_p = $settings['top_p'] ?? '';
+        $photo_word_limit = self::clamp_int($settings['word_limit_photo'] ?? 0, 0, 500);
+        if ($photo_word_limit > 0) {
+            $photo_word_limit = max(10, $photo_word_limit);
+        }
 
         return [
             'word_limit' => self::clamp_int($settings['word_limit'] ?? 100, 10, 500),
-            'word_limit_photo' => self::clamp_int($settings['word_limit_photo'] ?? 0, 0, 500),
+            'word_limit_photo' => $photo_word_limit,
             'title_char_limit' => self::clamp_int($settings['title_char_limit'] ?? 40, 10, 100),
             'min_input_words' => self::clamp_int($settings['min_input_words'] ?? 50, 0, 500),
             'max_retries' => self::clamp_int($settings['max_retries'] ?? 3, 1, 5),
