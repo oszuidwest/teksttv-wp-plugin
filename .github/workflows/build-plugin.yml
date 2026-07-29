@@ -51,15 +51,25 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Cache Composer downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/composer
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
-
       - uses: oven-sh/setup-bun@v2
 
       - run: bun install --frozen-lockfile
 
-      - name: Run packaging self-test (preflight, build, canary audit)
-        run: bash bin/test-package.sh
+      - name: Assert packaging rejects missing build output
+        run: |
+          if OUTPUT=$(bash bin/package-plugin.sh 2>&1); then
+            echo "::error::Packager accepted a checkout without built assets."
+            exit 1
+          fi
+          printf '%s\n' "$OUTPUT"
+          grep -Fq "Required built asset 'assets/admin.css' is missing" <<< "$OUTPUT"
+
+      - name: Build, validate, and audit canonical plugin artifact
+        run: |
+          trap 'rm -f PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js' EXIT
+          mkdir -p assets
+          touch PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js
+          bun run build:package
+          for CANARY in PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js; do
+            test ! -e "release/teksttv/$CANARY"
+          done

@@ -66,13 +66,6 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Cache Composer downloads
-        if: steps.decide.outputs.release_needed == 'true'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/composer
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
-
       - uses: oven-sh/setup-bun@v2
         if: steps.decide.outputs.release_needed == 'true'
 
