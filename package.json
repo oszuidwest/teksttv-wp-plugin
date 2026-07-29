@@ -12,7 +12,7 @@
         "lint": "bun run lint:js",
         "lint:php": "vendor/bin/phpcs",
         "lint:js": "biome check .",
-        "lint:fix": "vendor/bin/phpcbf; biome check --write .",
+        "lint:fix": "(vendor/bin/phpcbf; [ $? -le 1 ]) && biome check --write .",
         "typecheck": "tsc",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "test": "vendor/bin/phpunit",
