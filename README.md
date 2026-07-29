@@ -17,7 +17,10 @@ For development from a Git checkout you also need [Composer](https://getcomposer
 
 ### Pre-built zip (recommended)
 
-GitHub Actions builds `teksttv.zip` on `main` and on version tags: `composer install --no-dev`, asset build, zip with `src/`, `assets/`, `vendor/` and the bootstrap files. Upload it under Plugins → Add New → Upload Plugin and activate.
+The manual Release workflow publishes `teksttv-<version>.zip`. It uses the
+same canonical packager as the E2E suite: tracked production source, the exact
+built asset set, and a fresh `composer install --no-dev` inside the staged
+plugin. Upload the ZIP under Plugins → Add New → Upload Plugin and activate.
 
 ### Build from source
 
@@ -76,6 +79,7 @@ From [`package.json`](package.json):
 | Command            | Purpose |
 |--------------------|---------|
 | `bun run build`    | Minify JS/CSS to `assets/`, copy TinyMCE and tom-select vendor files |
+| `bun run build:package` | Build assets and create the validated `release/teksttv/` directory plus versioned ZIP |
 | `bun run dev`      | Watch JS and CSS |
 | `bun run lint`     | PHPCS + Biome on `resources/` |
 | `bun run lint:fix` | PHPCBF + Biome `--write` |
