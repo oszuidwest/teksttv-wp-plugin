@@ -46,6 +46,10 @@ class AdminPageTest extends TestCase
             'https://bredanu.nl:443/preview',
             'https://bredanu.nl'
         ));
+        $this->assertTrue(AdminPage::preview_url_shares_site_origin(
+            'http://bredanu.nl:80/preview',
+            'http://bredanu.nl'
+        ));
     }
 
     public function test_preview_url_shares_site_origin_false_for_separate_host(): void
