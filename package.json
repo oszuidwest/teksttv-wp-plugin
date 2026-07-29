@@ -16,6 +16,7 @@
         "test": "vendor/bin/phpunit",
         "test:js": "bun test tests/js",
         "build:package": "bun run build && bash bin/package-plugin.sh",
+        "test:package": "bash bin/test-package.sh",
         "env:start": "bun run build:package && wp-env start",
         "env:stop": "wp-env stop",
         "test:e2e:fixtures": "wp-env run cli wp eval-file wp-content/e2e/fixtures.php",

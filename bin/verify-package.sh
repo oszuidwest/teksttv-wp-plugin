@@ -4,64 +4,25 @@
 # contains the exact same files and bytes.
 set -euo pipefail
 
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=bin/package-lib.sh
+source "$BIN_DIR/package-lib.sh"
+FAIL_PREFIX="Package validation error"
+
 PACKAGE_DIR="${1:-}"
 ZIP_PATH="${2:-}"
-
-fail() {
-    echo "Package validation error: $*" >&2
-    exit 1
-}
 
 if [[ -z "$PACKAGE_DIR" || ! -d "$PACKAGE_DIR" ]]; then
     fail "Usage: $0 <plugin-directory> [plugin-zip]"
 fi
 PACKAGE_DIR="$(cd "$PACKAGE_DIR" && pwd -P)"
-SLUG="$(basename "$PACKAGE_DIR")"
 
 REQUIRED_FILES=(
-    "teksttv.php"
+    "$SLUG.php"
     "README.md"
     "EXTENDING.md"
     "vendor/autoload.php"
-    "assets/admin.css"
-    "assets/admin.js"
-    "assets/tinymce-content.css"
-    "assets/tinymce-separator.js"
-    "assets/tom-select.complete.min.js"
-    "assets/tom-select.default.min.css"
-)
-
-FORBIDDEN_PATHS=(
-    ".git"
-    ".github"
-    ".gitignore"
-    ".wp-env.json"
-    "bin"
-    "biome.json"
-    "bun.lock"
-    "composer.json"
-    "composer.lock"
-    "node_modules"
-    "package.json"
-    "patchwork.json"
-    "phpcs.xml"
-    "phpstan-bootstrap.php"
-    "phpstan.neon"
-    "phpunit.xml"
-    "playwright.config.ts"
-    "resources"
-    "stubs"
-    "tests"
-    "tsconfig.json"
-)
-
-EXPECTED_ASSETS=(
-    "admin.css"
-    "admin.js"
-    "tinymce-content.css"
-    "tinymce-separator.js"
-    "tom-select.complete.min.js"
-    "tom-select.default.min.css"
+    "${ASSET_FILES[@]/#/assets/}"
 )
 
 for required_file in "${REQUIRED_FILES[@]}"; do
@@ -70,35 +31,18 @@ for required_file in "${REQUIRED_FILES[@]}"; do
     fi
 done
 
-for forbidden_path in "${FORBIDDEN_PATHS[@]}"; do
-    if [[ -e "$PACKAGE_DIR/$forbidden_path" ]]; then
-        fail "Development-only path '$forbidden_path' is present."
-    fi
-done
-
+# Closed-world checks: the package may contain only the manifest's sources,
+# the declared assets, and the Composer vendor directory - nothing else.
 while IFS= read -r top_level_path; do
     top_level_name="$(basename "$top_level_path")"
-    case "$top_level_name" in
-        teksttv.php|README.md|EXTENDING.md|assets|src|vendor)
-            ;;
-        *)
-            fail "Unexpected top-level package entry '$top_level_name'."
-            ;;
-    esac
+    in_list "$top_level_name" "${TRACKED_PATHS[@]}" assets vendor \
+        || fail "Unexpected top-level package entry '$top_level_name'."
 done < <(find "$PACKAGE_DIR" -mindepth 1 -maxdepth 1 -print)
 
 while IFS= read -r asset_path; do
     asset_name="${asset_path#"$PACKAGE_DIR/assets/"}"
-    expected=false
-    for expected_asset in "${EXPECTED_ASSETS[@]}"; do
-        if [[ "$asset_name" == "$expected_asset" ]]; then
-            expected=true
-            break
-        fi
-    done
-    if [[ "$expected" != true ]]; then
-        fail "Unexpected generated asset 'assets/$asset_name'."
-    fi
+    in_list "$asset_name" "${ASSET_FILES[@]}" \
+        || fail "Unexpected generated asset 'assets/$asset_name'."
 done < <(find "$PACKAGE_DIR/assets" -type f -print)
 
 if find "$PACKAGE_DIR" -type l -print -quit | grep -q .; then
@@ -143,19 +87,14 @@ if [[ -n "$ZIP_PATH" ]]; then
     if [[ ! -d "$VERIFY_TMP/$SLUG" ]]; then
         fail "ZIP does not contain the expected '$SLUG/' plugin directory."
     fi
-    zip_top_level_count=0
     while IFS= read -r -d '' zip_top_level; do
-        zip_top_level_count=$((zip_top_level_count + 1))
         if [[ "$zip_top_level" != "$VERIFY_TMP/$SLUG" ]]; then
             fail "ZIP contains unexpected top-level entry '$(basename "$zip_top_level")'."
         fi
     done < <(find "$VERIFY_TMP" -mindepth 1 -maxdepth 1 -print0)
-    if [[ "$zip_top_level_count" -ne 1 ]]; then
-        fail "ZIP must contain exactly one top-level '$SLUG/' directory."
-    fi
 
-    if ! diff -qr "$PACKAGE_DIR" "$VERIFY_TMP/$SLUG" >/dev/null; then
-        diff -qr "$PACKAGE_DIR" "$VERIFY_TMP/$SLUG" >&2 || true
+    if ! diff_report="$(diff -qr "$PACKAGE_DIR" "$VERIFY_TMP/$SLUG")"; then
+        printf '%s\n' "$diff_report" >&2
         fail "ZIP contents differ from the validated plugin directory."
     fi
 fi

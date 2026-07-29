@@ -7,33 +7,14 @@
 # release/teksttv/ directory is used by wp-env and is also zipped for releases.
 set -euo pipefail
 
-SLUG="teksttv"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+# shellcheck source=bin/package-lib.sh
+source "$ROOT/bin/package-lib.sh"
+
 RELEASE_DIR="$ROOT/release"
 DEST="$RELEASE_DIR/$SLUG"
 
-TRACKED_PATHS=(
-    "$SLUG.php"
-    "src"
-    "README.md"
-    "EXTENDING.md"
-)
-
-ASSET_FILES=(
-    "admin.css"
-    "admin.js"
-    "tinymce-content.css"
-    "tinymce-separator.js"
-    "tom-select.complete.min.js"
-    "tom-select.default.min.css"
-)
-
-fail() {
-    echo "Packaging error: $*" >&2
-    exit 1
-}
-
-for command_name in composer git php rsync zip; do
+for command_name in composer git php rsync unzip zip; do
     command -v "$command_name" >/dev/null 2>&1 \
         || fail "Required command '$command_name' is not available."
 done
@@ -45,15 +26,7 @@ if [[ "$GIT_ROOT" != "$ROOT" ]]; then
     fail "Expected repository root '$ROOT', found '$GIT_ROOT'."
 fi
 
-VERSION="$(
-    sed -n \
-        's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' \
-        "$ROOT/$SLUG.php" \
-        | head -n 1
-)"
-if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
-    fail "Invalid or missing Version header in $SLUG.php: '$VERSION'."
-fi
+VERSION="$(read_plugin_version "$ROOT/$SLUG.php")"
 ZIP_PATH="$RELEASE_DIR/$SLUG-$VERSION.zip"
 
 for tracked_path in "${TRACKED_PATHS[@]}"; do
@@ -67,10 +40,6 @@ for asset_file in "${ASSET_FILES[@]}"; do
         fail "Required built asset 'assets/$asset_file' is missing; run 'bun run build' first."
     fi
 done
-
-if [[ "$DEST" != "$ROOT/release/$SLUG" || "$ZIP_PATH" != "$ROOT/release/$SLUG-$VERSION.zip" ]]; then
-    fail "Refusing to clean an unexpected output path."
-fi
 
 rm -rf -- "$DEST"
 rm -f -- "$ZIP_PATH"
@@ -100,8 +69,6 @@ COMPOSER_ROOT_VERSION="$VERSION" composer install \
     --optimize-autoloader
 rm -f -- "$DEST/composer.json" "$DEST/composer.lock"
 
-"$ROOT/bin/verify-package.sh" "$DEST"
-
 # Normalize metadata and feed zip a stable file order so repeated builds from
 # the same source produce the same archive bytes, not just equivalent contents.
 find "$DEST" -exec touch -t 198001010000 {} +
@@ -116,3 +83,8 @@ find "$DEST" -exec touch -t 198001010000 {} +
 
 echo "Packaged plugin directory: $DEST"
 echo "Packaged plugin ZIP: $ZIP_PATH"
+
+# Let CI consume the artifact path without re-deriving the naming convention.
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+    echo "zip=${ZIP_PATH#"$ROOT/"}" >> "$GITHUB_OUTPUT"
+fi

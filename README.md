@@ -80,6 +80,7 @@ From [`package.json`](package.json):
 |--------------------|---------|
 | `bun run build`    | Minify JS/CSS to `assets/`, copy TinyMCE and tom-select vendor files |
 | `bun run build:package` | Build assets and create the validated `release/teksttv/` directory plus versioned ZIP |
+| `bun run test:package` | Self-test the packager: preflight rejection plus canary-file exclusion audit |
 | `bun run dev`      | Watch JS and CSS |
 | `bun run lint`     | PHPCS + Biome on `resources/` |
 | `bun run lint:fix` | PHPCBF + Biome `--write` |
