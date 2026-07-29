@@ -10,6 +10,11 @@ class RestApi
 {
     private const NAMESPACE = 'teksttv/v1';
 
+    private const CHANNEL_SLIDE_OPTION_PREFIXES = [
+        'teksttv_loop_',
+        'teksttv_ticker_',
+    ];
+
     /**
      * Non-duration options read while building slide or ticker payloads.
      *
@@ -28,12 +33,16 @@ class RestApi
     /** @var array<string, true> Channels already auto-invalidated in this request. */
     private static array $automatically_invalidated_channels = [];
 
+    /** @var array<string, mixed> Old values for supported options awaiting deletion. */
+    private static array $pending_option_deletions = [];
+
     public static function init(): void
     {
         add_action('rest_api_init', [self::class, 'register_routes']);
         add_action('added_option', [self::class, 'invalidate_on_option_added'], 10, 2);
         add_action('updated_option', [self::class, 'invalidate_on_option_updated'], 10, 3);
-        add_action('delete_option', [self::class, 'invalidate_before_option_delete']);
+        add_action('delete_option', [self::class, 'capture_option_before_delete']);
+        add_action('deleted_option', [self::class, 'invalidate_after_option_delete']);
         add_action('added_term_meta', [self::class, 'invalidate_on_term_meta_change'], 10, 3);
         add_action('updated_term_meta', [self::class, 'invalidate_on_term_meta_change'], 10, 3);
         add_action('deleted_term_meta', [self::class, 'invalidate_on_term_meta_change'], 10, 3);
@@ -245,11 +254,31 @@ class RestApi
     }
 
     /**
-     * Capture the old channel list before WordPress deletes the option.
+     * Record a supported option before WordPress deletes it.
+     *
+     * The old channel list is needed after deletion to invalidate channels
+     * that are no longer configured.
      */
-    public static function invalidate_before_option_delete(string $option): void
+    public static function capture_option_before_delete(string $option): void
     {
-        $old_value = $option === 'teksttv_channels' ? get_option($option, []) : null;
+        if (!self::supports_option_invalidation($option)) {
+            return;
+        }
+
+        self::$pending_option_deletions[$option] = $option === 'teksttv_channels' ? get_option($option, []) : null;
+    }
+
+    /**
+     * Invalidate a supported option only after WordPress has deleted it.
+     */
+    public static function invalidate_after_option_delete(string $option): void
+    {
+        if (!array_key_exists($option, self::$pending_option_deletions)) {
+            return;
+        }
+
+        $old_value = self::$pending_option_deletions[$option];
+        unset(self::$pending_option_deletions[$option]);
         self::invalidate_for_option($option, $old_value, null);
     }
 
@@ -276,14 +305,10 @@ class RestApi
      */
     private static function invalidate_for_option(string $option, mixed $old_value, mixed $value): void
     {
-        foreach (['teksttv_loop_', 'teksttv_ticker_'] as $prefix) {
-            if (str_starts_with($option, $prefix)) {
-                $channel = sanitize_key(substr($option, strlen($prefix)));
-                if ($channel !== '') {
-                    self::invalidate_automatically($channel);
-                }
-                return;
-            }
+        $channel = self::channel_from_option($option);
+        if ($channel !== null) {
+            self::invalidate_automatically($channel);
+            return;
         }
 
         if ($option === 'teksttv_channels') {
@@ -299,6 +324,34 @@ class RestApi
         ) {
             self::invalidate_automatically();
         }
+    }
+
+    /**
+     * Whether an option is a supported slide input.
+     */
+    private static function supports_option_invalidation(string $option): bool
+    {
+        return self::channel_from_option($option) !== null ||
+            $option === 'teksttv_channels' ||
+            isset(Helpers::DURATION_DEFAULTS[$option]) ||
+            in_array($option, self::OTHER_GLOBAL_SLIDE_OPTIONS, true);
+    }
+
+    /**
+     * Return the affected channel for a channel-scoped option.
+     */
+    private static function channel_from_option(string $option): ?string
+    {
+        foreach (self::CHANNEL_SLIDE_OPTION_PREFIXES as $prefix) {
+            if (!str_starts_with($option, $prefix)) {
+                continue;
+            }
+
+            $channel = sanitize_key(substr($option, strlen($prefix)));
+            return $channel !== '' ? $channel : null;
+        }
+
+        return null;
     }
 
     /**

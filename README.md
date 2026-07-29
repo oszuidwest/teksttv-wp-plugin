@@ -77,7 +77,7 @@ The server-side `/slides` transient lives for at most 180 seconds. WordPress API
 - add/update/delete of the `_teksttv_category_image` term meta;
 - channel, loop, ticker, campaign, duration, enabled-taxonomy, feature, maximum-post-age and OpenWeather options.
 
-Loop and ticker changes invalidate only their channel. Related mutations in one request are deduplicated, while a cache rebuilt between two mutations can be invalidated again. Standalone post term assignments are flushed once at the end of the request; a full post save consumes that pending change and invalidates once after all terms and meta are stored.
+Loop and ticker changes invalidate only their channel. Related mutations in one request are deduplicated, while a cache rebuilt between two mutations can be invalidated again. Standalone post term assignments are flushed once at the end-of-request boundary; a full post save consumes that pending change and invalidates once after all terms and meta are stored.
 
 Direct database writes, direct updates to TekstTV-owned post meta outside a post save, and custom block/provider data that does not use these WordPress APIs rely on the 180-second TTL. Integrations that mutate such inputs can call `TekstTV\RestApi::invalidate_slides_cache($channel)` (omit the channel to clear all configured channels). This contract concerns the server transient; clients may retain an already received response according to its `Cache-Control` header.
 

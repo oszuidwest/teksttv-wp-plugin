@@ -14,6 +14,8 @@ class RestApiTest extends TestCase
 
         $tracking = new \ReflectionProperty(RestApi::class, 'automatically_invalidated_channels');
         $tracking->setValue(null, []);
+        $pending_deletions = new \ReflectionProperty(RestApi::class, 'pending_option_deletions');
+        $pending_deletions->setValue(null, []);
     }
 
     /**
@@ -356,16 +358,93 @@ class RestApiTest extends TestCase
         );
     }
 
+    public function test_option_delete_capture_records_supported_deletion_without_invalidating(): void
+    {
+        Functions\expect('delete_transient')->never();
+
+        RestApi::capture_option_before_delete('teksttv_campaigns');
+
+        $pending_deletions = new \ReflectionProperty(RestApi::class, 'pending_option_deletions');
+        $this->assertSame(['teksttv_campaigns' => null], $pending_deletions->getValue());
+    }
+
+    public function test_deleted_option_invalidates_and_clears_stored_state(): void
+    {
+        Functions\expect('get_option')
+            ->once()
+            ->with('teksttv_channels', [])
+            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1')->andReturn(true);
+
+        RestApi::capture_option_before_delete('teksttv_campaigns');
+        RestApi::invalidate_after_option_delete('teksttv_campaigns');
+        RestApi::invalidate_after_option_delete('teksttv_campaigns');
+
+        $pending_deletions = new \ReflectionProperty(RestApi::class, 'pending_option_deletions');
+        $this->assertSame([], $pending_deletions->getValue());
+    }
+
     public function test_deleting_channel_list_invalidates_old_slugs_and_default_fallback(): void
     {
         Functions\expect('get_option')
             ->once()
             ->with('teksttv_channels', [])
-            ->andReturn([['slug' => 'news', 'label' => 'News']]);
+            ->andReturn([
+                ['slug' => 'news', 'label' => 'News'],
+                ['slug' => 'sports', 'label' => 'Sports'],
+            ]);
         Functions\expect('delete_transient')->once()->with('teksttv_slides_news')->andReturn(true);
+        Functions\expect('delete_transient')->once()->with('teksttv_slides_sports')->andReturn(true);
         Functions\expect('delete_transient')->once()->with('teksttv_slides_tv1')->andReturn(true);
 
-        RestApi::invalidate_before_option_delete('teksttv_channels');
+        RestApi::capture_option_before_delete('teksttv_channels');
+        RestApi::invalidate_after_option_delete('teksttv_channels');
+    }
+
+    public function test_cache_rebuilt_between_option_delete_hooks_is_invalidated_after_deletion(): void
+    {
+        $cache_key = 'teksttv_slides_tv1';
+        $transients = [
+            $cache_key => ['slides' => [['type' => 'old']], 'ticker' => []],
+        ];
+        $cache_writes = 0;
+        $cache_deletes = [];
+
+        Functions\when('get_option')->alias(fn (string $option, mixed $default = false) => $default);
+        Functions\when('get_transient')->alias(
+            function (string $key) use (&$transients): mixed {
+                return $transients[$key] ?? false;
+            }
+        );
+        Functions\when('set_transient')->alias(
+            function (string $key, mixed $value) use (&$transients, &$cache_writes): bool {
+                $transients[$key] = $value;
+                $cache_writes++;
+                return true;
+            }
+        );
+        Functions\when('delete_transient')->alias(
+            function (string $key) use (&$transients, &$cache_deletes): bool {
+                unset($transients[$key]);
+                $cache_deletes[] = $key;
+                return true;
+            }
+        );
+
+        RestApi::capture_option_before_delete('teksttv_loop_tv1');
+        $this->assertArrayHasKey($cache_key, $transients, 'The pre-delete hook deleted the existing cache.');
+
+        // Simulate another callback rebuilding while the option still contains
+        // its old value between WordPress's pre- and post-delete hooks.
+        unset($transients[$cache_key]);
+        RestApi::get_slides(self::requestMock(['channel' => 'tv1']));
+        $this->assertArrayHasKey($cache_key, $transients);
+        $this->assertSame(1, $cache_writes);
+
+        RestApi::invalidate_after_option_delete('teksttv_loop_tv1');
+
+        $this->assertArrayNotHasKey($cache_key, $transients);
+        $this->assertSame([$cache_key], $cache_deletes);
     }
 
     public function test_unrelated_option_does_not_invalidate_slides(): void

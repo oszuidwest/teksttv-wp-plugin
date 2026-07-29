@@ -490,6 +490,10 @@ class PostMetaTest extends TestCase
 
         PostMeta::invalidate_after_post_delete(10, $post);
 
+        $page = \Mockery::mock(\WP_Post::class);
+        $page->post_type = 'page';
+        PostMeta::invalidate_after_post_delete(20, $page);
+
         $this->assertTrue(true);
     }
 }
