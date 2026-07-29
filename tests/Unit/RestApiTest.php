@@ -243,4 +243,19 @@ class RestApiTest extends TestCase
 
         $this->assertTrue(RestApi::validate_channel('tv1'));
     }
+
+    public function test_get_slides_returns_loop_and_ticker_for_channel(): void
+    {
+        Functions\when('get_option')->alias(fn ($key, $default = false) => match ($key) {
+            'teksttv_loop_tv1' => [],
+            'teksttv_ticker_tv1' => [],
+            default => $default,
+        });
+
+        $response = RestApi::get_slides(self::requestMock(['channel' => 'tv1']));
+
+        $this->assertInstanceOf(\WP_REST_Response::class, $response);
+        $this->assertSame(200, $response->get_status());
+        $this->assertSame(['slides' => [], 'ticker' => []], $response->get_data());
+    }
 }

@@ -220,7 +220,7 @@ The provider is resolved once per request. An add-on provider may implement its 
 
 ## REST output
 
-The `/teksttv/v1/slides` response is built fresh on every request; there is no plugin-side cache to invalidate. Block `build()` callbacks that call slow external services should do their own caching (see the weather provider note above).
+The `/teksttv/v1/slides` response is built fresh on every request; there is no plugin-side cache. The former `\TekstTV\RestApi::invalidate_slides_cache()` API has been removed - add-ons that still call it will fatal, so drop the call. Block `build()` callbacks that call slow external services should do their own caching (see the weather provider note above).
 
 ## Current limitations
 
