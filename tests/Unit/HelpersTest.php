@@ -919,6 +919,14 @@ class HelpersTest extends TestCase
         $this->assertSame([], Helpers::get_campaign_groups());
     }
 
+    public function test_admin_script_dependencies_exclude_i18n(): void
+    {
+        $this->assertSame(
+            ['jquery', 'underscore', 'media-editor'],
+            Helpers::admin_script_dependencies()
+        );
+    }
+
     // =========================================================================
     // get_loop_config()
     // =========================================================================

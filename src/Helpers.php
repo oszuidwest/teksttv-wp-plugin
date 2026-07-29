@@ -24,13 +24,13 @@ class Helpers
     public static function get_day_labels(): array
     {
         return [
-            '1' => __('Ma', 'teksttv-wp-plugin'),
-            '2' => __('Di', 'teksttv-wp-plugin'),
-            '3' => __('Wo', 'teksttv-wp-plugin'),
-            '4' => __('Do', 'teksttv-wp-plugin'),
-            '5' => __('Vr', 'teksttv-wp-plugin'),
-            '6' => __('Za', 'teksttv-wp-plugin'),
-            '7' => __('Zo', 'teksttv-wp-plugin'),
+            '1' => 'Ma',
+            '2' => 'Di',
+            '3' => 'Wo',
+            '4' => 'Do',
+            '5' => 'Vr',
+            '6' => 'Za',
+            '7' => 'Zo',
         ];
     }
 
@@ -174,7 +174,7 @@ class Helpers
     {
         $channels = get_option('teksttv_channels', []);
         if (!is_array($channels) || empty($channels)) {
-            return [['slug' => 'tv1', 'label' => __('TV 1', 'teksttv-wp-plugin')]];
+            return [['slug' => 'tv1', 'label' => 'TV 1']];
         }
         return $channels;
     }
@@ -620,7 +620,7 @@ class Helpers
      */
     public static function admin_script_dependencies(): array
     {
-        return ['jquery', 'underscore', 'media-editor', 'wp-i18n'];
+        return ['jquery', 'underscore', 'media-editor'];
     }
 
     /**

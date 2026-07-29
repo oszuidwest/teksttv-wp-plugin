@@ -61,13 +61,6 @@ if (!function_exists('wp_parse_args')) {
     }
 }
 
-if (!function_exists('__')) {
-    function __(string $text, string $domain = 'default'): string
-    {
-        return $text;
-    }
-}
-
 if (!function_exists('wp_strip_all_tags')) {
     function wp_strip_all_tags(string $text, bool $remove_breaks = false): string
     {

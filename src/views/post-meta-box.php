@@ -25,10 +25,10 @@ defined('ABSPATH') || exit;
         <label>
             <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" @change="onActiveChange()" />
             <span class="dashicons dashicons-desktop"></span>
-            <?php esc_html_e('Toon op Tekst TV', 'teksttv-wp-plugin'); ?>
+            <?php echo esc_html('Toon op Tekst TV'); ?>
         </label>
         <span class="teksttv-toggle-status <?php echo $active === '1' ? 'is-active' : ''; ?>" id="teksttv-toggle-status">
-            <?php echo $active === '1' ? esc_html__('Actief', 'teksttv-wp-plugin') : esc_html__('Inactief', 'teksttv-wp-plugin'); ?>
+            <?php echo $active === '1' ? esc_html('Actief') : esc_html('Inactief'); ?>
         </span>
     </div>
 
@@ -38,10 +38,10 @@ defined('ABSPATH') || exit;
             <div class="teksttv-editor-main">
                 <?php if ($ai_enabled) : ?>
                 <div class="teksttv-meta-section teksttv-ai-section">
-                    <button type="button" class="button button-small teksttv-generate-btn" data-field="both" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html__('Genereer kop & tekst', 'teksttv-wp-plugin'); ?></button>
+                    <button type="button" class="button button-small teksttv-generate-btn" data-field="both" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html('Genereer kop & tekst'); ?></button>
                     <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
                     <?php if (get_post_meta($post->ID, '_teksttv_ai_title', true) || get_post_meta($post->ID, '_teksttv_ai_body', true)) : ?>
-                    <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> <?php esc_html_e('AI gegenereerd', 'teksttv-wp-plugin'); ?></span>
+                    <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> <?php echo esc_html('AI gegenereerd'); ?></span>
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
@@ -50,15 +50,15 @@ defined('ABSPATH') || exit;
                 <!-- Title override -->
                 <div class="teksttv-meta-section">
                     <div class="teksttv-section-header">
-                        <label for="teksttv-title" class="teksttv-section-label"><?php esc_html_e('Kop', 'teksttv-wp-plugin'); ?></label>
+                        <label for="teksttv-title" class="teksttv-section-label"><?php echo esc_html('Kop'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv-wp-plugin'); ?></button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html('Genereer'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
                     <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" @input="onTitleInputMeta()" />
                     <div class="teksttv-title-footer">
-                        <p class="description"><?php esc_html_e('Laat leeg om de titel van het artikel te gebruiken.', 'teksttv-wp-plugin'); ?></p>
+                        <p class="description"><?php echo esc_html('Laat leeg om de titel van het artikel te gebruiken.'); ?></p>
                         <span class="teksttv-charcount" id="teksttv-charcount"></span>
                     </div>
                 </div>
@@ -67,9 +67,9 @@ defined('ABSPATH') || exit;
                 <!-- Content -->
                 <div class="teksttv-meta-section teksttv-content-wrap">
                     <div class="teksttv-section-header">
-                        <label class="teksttv-section-label"><?php esc_html_e('Tekst voor Tekst TV', 'teksttv-wp-plugin'); ?></label>
+                        <label class="teksttv-section-label"><?php echo esc_html('Tekst voor Tekst TV'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php esc_html_e('Genereer', 'teksttv-wp-plugin'); ?></button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html('Genereer'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php
@@ -116,7 +116,7 @@ defined('ABSPATH') || exit;
                 <?php if (Helpers::has_feature('sidebar_image')) : ?>
                 <!-- Sidebar image -->
                 <div class="teksttv-meta-section teksttv-sidebar-image-section">
-                    <span class="teksttv-section-label"><?php esc_html_e('Sidebar afbeelding', 'teksttv-wp-plugin'); ?></span>
+                    <span class="teksttv-section-label"><?php echo esc_html('Sidebar afbeelding'); ?></span>
                     <?php
                     $sidebar_image_id = get_post_meta($post->ID, '_teksttv_sidebar_image', true);
                     $is_none = $sidebar_image_id === '0';
@@ -128,7 +128,7 @@ defined('ABSPATH') || exit;
                     <input type="hidden" name="teksttv_sidebar_image" id="teksttv-sidebar-image-id" value="<?php echo esc_attr($sidebar_image_id); ?>" />
                     <div class="teksttv-image-cards" data-active="<?php echo esc_attr($active_state); ?>">
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'default' ? 'is-active' : ''; ?>" data-state="default" id="teksttv-sidebar-card-default" @click.prevent="activateSidebarCardDefault()">
-                            <span class="teksttv-image-card-label"><?php esc_html_e('Standaard', 'teksttv-wp-plugin'); ?></span>
+                            <span class="teksttv-image-card-label"><?php echo esc_html('Standaard'); ?></span>
                             <?php if ($fallback_url) : ?>
                                 <img src="<?php echo esc_url($fallback_url); ?>" alt="" class="teksttv-image-card-thumb" />
                             <?php else : ?>
@@ -136,7 +136,7 @@ defined('ABSPATH') || exit;
                             <?php endif; ?>
                         </button>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'custom' ? 'is-active' : ''; ?>" data-state="custom" id="teksttv-sidebar-card-custom" @click.prevent="openSidebarCustom()">
-                            <span class="teksttv-image-card-label"><?php esc_html_e('Eigen', 'teksttv-wp-plugin'); ?></span>
+                            <span class="teksttv-image-card-label"><?php echo esc_html('Eigen'); ?></span>
                             <?php if ($custom_url) : ?>
                                 <img src="<?php echo esc_url($custom_url); ?>" alt="" class="teksttv-image-card-thumb" id="teksttv-sidebar-image-img" />
                             <?php else : ?>
@@ -145,7 +145,7 @@ defined('ABSPATH') || exit;
                             <?php endif; ?>
                         </button>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'none' ? 'is-active' : ''; ?>" data-state="none" id="teksttv-sidebar-card-none" @click.prevent="activateSidebarCardNone()">
-                            <span class="teksttv-image-card-label"><?php esc_html_e('Geen', 'teksttv-wp-plugin'); ?></span>
+                            <span class="teksttv-image-card-label"><?php echo esc_html('Geen'); ?></span>
                             <span class="teksttv-image-card-icon"><span class="dashicons dashicons-hidden"></span></span>
                         </button>
                     </div>
@@ -155,8 +155,8 @@ defined('ABSPATH') || exit;
                 <?php if (Helpers::has_feature('extra_images')) : ?>
                 <!-- Extra images -->
                 <div class="teksttv-meta-section teksttv-images-section">
-                    <h4><?php esc_html_e('Extra afbeeldingen', 'teksttv-wp-plugin'); ?></h4>
-                    <p class="description"><?php esc_html_e('Worden als aparte fullscreen image-slides getoond na de tekst.', 'teksttv-wp-plugin'); ?></p>
+                    <h4><?php echo esc_html('Extra afbeeldingen'); ?></h4>
+                    <p class="description"><?php echo esc_html('Worden als aparte fullscreen image-slides getoond na de tekst.'); ?></p>
                     <div id="teksttv-images-list" class="teksttv-images-list" @click="onExtraImagesClick($event)">
                         <?php foreach ($images as $attachment_id) : ?>
                             <?php $thumb = wp_get_attachment_image_url($attachment_id, 'thumbnail'); ?>
@@ -169,7 +169,7 @@ defined('ABSPATH') || exit;
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="button" id="teksttv-add-images" @click="openExtraImages($event)"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php esc_html_e('Afbeeldingen toevoegen', 'teksttv-wp-plugin'); ?></button>
+                    <button type="button" class="button" id="teksttv-add-images" @click="openExtraImages($event)"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php echo esc_html('Afbeeldingen toevoegen'); ?></button>
                 </div>
                 <?php endif; ?>
 
@@ -177,31 +177,31 @@ defined('ABSPATH') || exit;
                 <!-- Scheduling -->
                 <div class="teksttv-meta-section teksttv-collapsible" x-data="{ planOpen: false }">
                     <button type="button" class="teksttv-collapsible-toggle" @click.prevent="planOpen = !planOpen" :aria-expanded="planOpen">
-                        <span class="teksttv-section-label"><?php esc_html_e('Planning', 'teksttv-wp-plugin'); ?></span>
+                        <span class="teksttv-section-label"><?php echo esc_html('Planning'); ?></span>
                         <span class="dashicons dashicons-arrow-down-alt2 teksttv-collapsible-icon"></span>
                     </button>
                     <div class="teksttv-collapsible-body" x-show="planOpen" x-cloak>
                     <div class="teksttv-scheduling">
                         <div class="teksttv-scheduling-group">
-                            <h4><?php esc_html_e('Periode', 'teksttv-wp-plugin'); ?></h4>
+                            <h4><?php echo esc_html('Periode'); ?></h4>
                             <div class="teksttv-dates-row">
                                 <div class="teksttv-date-field">
-                                    <label for="teksttv-date-start"><?php esc_html_e('Vanaf', 'teksttv-wp-plugin'); ?></label>
+                                    <label for="teksttv-date-start"><?php echo esc_html('Vanaf'); ?></label>
                                     <input type="date" name="teksttv_date_start" value="<?php echo esc_attr($date_start); ?>" id="teksttv-date-start" />
                                 </div>
                                 <div class="teksttv-date-field">
-                                    <label for="teksttv-date-end"><?php esc_html_e('Tot en met', 'teksttv-wp-plugin'); ?></label>
+                                    <label for="teksttv-date-end"><?php echo esc_html('Tot en met'); ?></label>
                                     <input type="date" name="teksttv_date_end" value="<?php echo esc_attr($date_end); ?>" id="teksttv-date-end" @change="onDateEndChange()" />
-                                    <button type="button" class="teksttv-date-reset is-hidden" id="teksttv-date-end-reset" title="<?php echo esc_attr__('Zet naar standaard einddatum', 'teksttv-wp-plugin'); ?>" @click.prevent="resetDateEnd($event)">
-                                        <span class="dashicons dashicons-image-rotate"></span> <?php esc_html_e('Standaard', 'teksttv-wp-plugin'); ?>
+                                    <button type="button" class="teksttv-date-reset is-hidden" id="teksttv-date-end-reset" title="<?php echo esc_attr('Zet naar standaard einddatum'); ?>" @click.prevent="resetDateEnd($event)">
+                                        <span class="dashicons dashicons-image-rotate"></span> <?php echo esc_html('Standaard'); ?>
                                     </button>
                                 </div>
                             </div>
                         </div>
                         <div class="teksttv-scheduling-group">
-                            <h4><?php esc_html_e('Weekdagen', 'teksttv-wp-plugin'); ?></h4>
+                            <h4><?php echo esc_html('Weekdagen'); ?></h4>
                             <?php AdminPage::render_days_row('teksttv_days[]', $days); ?>
-                            <p class="description"><?php esc_html_e('Bericht wordt alleen op geselecteerde dagen getoond.', 'teksttv-wp-plugin'); ?></p>
+                            <p class="description"><?php echo esc_html('Bericht wordt alleen op geselecteerde dagen getoond.'); ?></p>
                         </div>
                     </div>
                     </div>
@@ -212,7 +212,7 @@ defined('ABSPATH') || exit;
             <!-- Preview sidebar -->
             <div class="teksttv-editor-preview" id="teksttv-preview-wrap">
                 <div class="teksttv-preview-header">
-                    <span class="teksttv-section-label"><?php esc_html_e('Preview', 'teksttv-wp-plugin'); ?></span>
+                    <span class="teksttv-section-label"><?php echo esc_html('Preview'); ?></span>
                     <div class="teksttv-preview-nav" id="teksttv-preview-nav">
                         <button type="button" class="button button-small" id="teksttv-preview-prev" disabled @click.prevent="previewPrev()"><span class="dashicons dashicons-arrow-left-alt2"></span></button>
                         <span class="teksttv-preview-counter" id="teksttv-preview-counter">1 / 1</span>
@@ -229,7 +229,7 @@ defined('ABSPATH') || exit;
                     </div>
                 <?php else : ?>
                     <div class="teksttv-no-preview">
-                        <?php echo wp_kses(sprintf(/* translators: %s: settings page URL */ __('Stel een preview URL in bij <a href="%s">Tekst TV &rarr; Instellingen</a> om live preview te activeren.', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv&tab=settings'))), ['a' => ['href' => []]]); ?>
+                        <?php echo wp_kses(sprintf('Stel een preview URL in bij <a href="%s">Tekst TV &rarr; Instellingen</a> om live preview te activeren.', esc_url(admin_url('admin.php?page=teksttv&tab=settings'))), ['a' => ['href' => []]]); ?>
                     </div>
                 <?php endif; ?>
             </div>

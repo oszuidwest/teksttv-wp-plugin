@@ -13,7 +13,7 @@ final class CampaignLoopBlock implements LoopBlock
     public static function register(): void
     {
         BlockRegistry::register('campaign', [
-            'label' => __('Campagne', 'teksttv-wp-plugin'),
+            'label' => 'Campagne',
             'icon' => 'megaphone',
             'color' => '#d63638',
             'context' => 'loop',
@@ -39,27 +39,27 @@ final class CampaignLoopBlock implements LoopBlock
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Groep(en)', 'teksttv-wp-plugin'); ?></label>
+                <label><?php echo esc_html('Groep(en)'); ?></label>
                 <?php if (!empty($available_groups)) : ?>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr__('Kies groep(en)...', 'teksttv-wp-plugin'); ?>" data-summary data-summary-empty="<?php echo esc_attr__('Geen groep', 'teksttv-wp-plugin'); ?>" multiple>
+                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)...'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
                     <?php foreach ($available_groups as $group_option) : ?>
                     <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
-                <p class="description"><?php echo wp_kses(sprintf(/* translators: %s: campaigns admin page URL */ __('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
+                <p class="description"><?php echo wp_kses(sprintf('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Max. slides', 'teksttv-wp-plugin'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr__('Alle', 'teksttv-wp-plugin'); ?>" data-summary="max %s" />
-                <p class="description"><?php esc_html_e('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.', 'teksttv-wp-plugin'); ?></p>
+                <label><?php echo esc_html('Max. slides'); ?></label>
+                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max %s" />
+                <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--transitions">
             <?php
-            self::render_transition_picker(__('Intro afbeelding', 'teksttv-wp-plugin'), $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
-            self::render_transition_picker(__('Outro afbeelding', 'teksttv-wp-plugin'), $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');
+            self::render_transition_picker('Intro afbeelding', $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
+            self::render_transition_picker('Outro afbeelding', $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');
             ?>
         </div>
         <?php
@@ -79,8 +79,8 @@ final class CampaignLoopBlock implements LoopBlock
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
                 <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" />
             </div>
-            <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php esc_html_e('Kiezen', 'teksttv-wp-plugin'); ?></button>
-            <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php esc_html_e('Verwijderen', 'teksttv-wp-plugin'); ?></button>
+            <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php echo esc_html('Kiezen'); ?></button>
+            <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php echo esc_html('Verwijderen'); ?></button>
         </div>
         <?php
     }
