@@ -8,7 +8,10 @@ export async function login(page: Page, username: string, password: string): Pro
     await page.goto('/wp-login.php');
     await page.fill('#user_login', username);
     await page.fill('#user_pass', password);
-    await Promise.all([page.waitForURL(/wp-admin/), page.click('#wp-submit')]);
+    await page.locator('#wp-submit').click();
+    await expect(page).toHaveURL(
+        (url) => url.pathname === '/wp-admin' || url.pathname.startsWith('/wp-admin/'),
+    );
     await expect(page.locator('#wpadminbar')).toBeVisible();
 }
 
