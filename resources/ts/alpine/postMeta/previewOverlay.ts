@@ -5,19 +5,23 @@ import { previewSlideUrl } from '../../modules/utils';
 export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, initialIndex: number): void {
     if (!slides.length) return;
     let overlayIndex = initialIndex;
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const getOverlaySrc = (idx: number) => previewSlideUrl(previewUrl, slides[idx]);
 
     const overlay = document.createElement('div');
     overlay.className = 'teksttv-preview-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Preview');
     overlay.innerHTML =
         '<div class="teksttv-overlay-header">' +
-        '<button type="button" class="teksttv-overlay-nav-btn teksttv-overlay-prev" title="Vorige"><span class="dashicons dashicons-arrow-left-alt2"></span></button>' +
-        '<span class="teksttv-overlay-counter"></span>' +
-        '<button type="button" class="teksttv-overlay-nav-btn teksttv-overlay-next" title="Volgende"><span class="dashicons dashicons-arrow-right-alt2"></span></button>' +
-        '<button type="button" class="teksttv-preview-overlay-close" title="Sluiten">&times;</button>' +
+        '<button type="button" class="teksttv-overlay-nav-btn teksttv-overlay-prev" aria-label="Vorige previewslide" title="Vorige"><span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span></button>' +
+        '<span class="teksttv-overlay-counter" aria-live="polite"></span>' +
+        '<button type="button" class="teksttv-overlay-nav-btn teksttv-overlay-next" aria-label="Volgende previewslide" title="Volgende"><span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span></button>' +
+        '<button type="button" class="teksttv-preview-overlay-close" aria-label="Preview sluiten" title="Sluiten">&times;</button>' +
         '</div>' +
-        '<iframe sandbox="allow-scripts allow-same-origin"></iframe>';
+        '<iframe title="Tekst TV-preview" sandbox="allow-scripts allow-same-origin"></iframe>';
     overlay.querySelector('iframe')?.setAttribute('src', getOverlaySrc(overlayIndex));
 
     function updateOverlayNav(): void {
@@ -31,6 +35,7 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
 
     updateOverlayNav();
     document.body.appendChild(overlay);
+    overlay.querySelector<HTMLButtonElement>('.teksttv-preview-overlay-close')?.focus();
 
     overlay.querySelector('.teksttv-overlay-prev')?.addEventListener('click', () => {
         if (overlayIndex > 0) {
@@ -52,6 +57,7 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
     const teardownKeyNav = (): void => {
         keyCtl.abort();
         overlay.remove();
+        returnFocus?.focus();
     };
 
     overlay.addEventListener('click', (ev) => {

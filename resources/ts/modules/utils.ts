@@ -56,13 +56,24 @@ export function stripTags(html: string): string {
 export function removeImageItem(button: Element, onRemoved?: () => void): void {
     const item = button.closest('.teksttv-image-item');
     if (!(item instanceof HTMLElement)) return;
+    const adjacentRemove =
+        item.nextElementSibling?.querySelector<HTMLButtonElement>('.teksttv-remove-image') ??
+        item.previousElementSibling?.querySelector<HTMLButtonElement>('.teksttv-remove-image');
+    const fallback =
+        item
+            .closest('.teksttv-campaign-slides-section')
+            ?.querySelector<HTMLButtonElement>('.teksttv-campaign-add-slides') ??
+        document.querySelector<HTMLButtonElement>('#teksttv-add-images');
 
     item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
         'input, select, textarea',
     ).forEach((control) => {
         control.disabled = true;
     });
-    fadeOutRemove(item, 150, onRemoved);
+    fadeOutRemove(item, 150, () => {
+        onRemoved?.();
+        (adjacentRemove ?? fallback)?.focus();
+    });
 }
 
 /** HTML fragment for a removable image item in an image list. */
@@ -72,7 +83,7 @@ export function imageItemHtml(att: WPMediaAttachment, inputName: string): string
         `<div class="teksttv-image-item" data-id="${escAttr(att.id)}">` +
         `<img src="${escAttr(thumbUrl)}" alt="" />` +
         `<input type="hidden" name="${escAttr(inputName)}" value="${escAttr(att.id)}" />` +
-        '<button type="button" class="button-link teksttv-remove-image"><span class="dashicons dashicons-no-alt"></span></button>' +
+        '<button type="button" class="button-link teksttv-remove-image" aria-label="Afbeelding verwijderen"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>' +
         '</div>'
     );
 }

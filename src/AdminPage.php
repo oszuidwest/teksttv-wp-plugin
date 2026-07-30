@@ -410,18 +410,21 @@ class AdminPage
         if (!$reg) {
             return;
         }
+        $body_id = sanitize_html_class(str_replace('_', '-', $prefix) . '-' . (string) $index . '-body');
 
         ?>
         <div class="teksttv-block" data-type="<?php echo esc_attr($type); ?>">
             <div class="teksttv-block-header">
-                <span class="teksttv-block-handle dashicons dashicons-move"></span>
-                <span class="teksttv-block-icon" style="background:<?php echo esc_attr($reg['color']); ?>"><span class="dashicons dashicons-<?php echo esc_attr($reg['icon']); ?>"></span></span>
-                <span class="teksttv-block-title"><?php echo esc_html($reg['label']); ?></span>
-                <span class="teksttv-block-summary"></span>
-                <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2"></span>
-                <button type="button" class="button-link teksttv-remove-block"><span class="dashicons dashicons-trash"></span></button>
+                <span class="teksttv-block-handle dashicons dashicons-move" aria-hidden="true"></span>
+                <button type="button" class="teksttv-block-toggle-control" aria-expanded="false" aria-controls="<?php echo esc_attr($body_id); ?>">
+                    <span class="teksttv-block-icon" style="background:<?php echo esc_attr($reg['color']); ?>" aria-hidden="true"><span class="dashicons dashicons-<?php echo esc_attr($reg['icon']); ?>"></span></span>
+                    <span class="teksttv-block-title"><?php echo esc_html($reg['label']); ?></span>
+                    <span class="teksttv-block-summary"></span>
+                    <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="button-link teksttv-remove-block" aria-label="<?php echo esc_attr(sprintf('Verwijder blok %s', $reg['label'])); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
             </div>
-            <div class="teksttv-block-body">
+            <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][type]" value="<?php echo esc_attr($type); ?>" />
                 <?php BlockRegistry::render($type, $index, $block, $prefix); ?>
                 <?php self::render_scheduling_fields($index, $block, $prefix); ?>

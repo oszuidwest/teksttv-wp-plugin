@@ -37,7 +37,7 @@ settings_errors('teksttv_campaigns');
                         <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
                         <input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('Bijv. Campagne'); ?>" />
                     </td>
-                    <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group"><span class="dashicons dashicons-trash"></span></button></td>
+                    <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

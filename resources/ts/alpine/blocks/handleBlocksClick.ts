@@ -1,21 +1,51 @@
-import { slideToggle, slideUp } from '../../modules/dom';
+import { hide, show, slideDown, slideUp } from '../../modules/dom';
 import { imageItemHtml, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
-/** Toggle the accordion body of the block owning `header`. */
-export function toggleBlockOpen(header: Element): void {
-    const block = header.closest('.teksttv-block');
-    if (!(block instanceof HTMLElement)) return;
-    block.classList.toggle('is-expanded');
+/** Set one block accordion state and keep its disclosure button in sync. */
+export function setBlockOpen(block: HTMLElement, expanded: boolean, animate = true): void {
+    const wasExpanded = block.classList.contains('is-expanded');
+    block.classList.toggle('is-expanded', expanded);
+    block
+        .querySelector<HTMLButtonElement>('.teksttv-block-toggle-control')
+        ?.setAttribute('aria-expanded', String(expanded));
+
     const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-    if (body) slideToggle(body, 150);
+    if (!body) return;
+    if (!animate) {
+        if (expanded) show(body);
+        else hide(body);
+        return;
+    }
+    if (wasExpanded === expanded) return;
+    if (expanded) slideDown(body, 150);
+    else slideUp(body, 150);
+}
+
+/** Toggle the accordion body of the block owning `trigger`. */
+export function toggleBlockOpen(trigger: Element): void {
+    const block = trigger.closest('.teksttv-block');
+    if (!(block instanceof HTMLElement)) return;
+    setBlockOpen(block, !block.classList.contains('is-expanded'));
 }
 
 /** Slide up and remove the block owning `trigger`, then run `onRemoved`. */
 export function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
+    const adjacentToggle =
+        block.nextElementSibling?.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control') ??
+        block.previousElementSibling?.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
+    const rootId = block.parentElement?.id;
+    const fallbackSelector =
+        rootId === 'teksttv-ticker'
+            ? '#teksttv-add-ticker-toggle, #teksttv-add-ticker-single'
+            : rootId === 'teksttv-campaigns'
+              ? '#teksttv-add-campaign'
+              : '#teksttv-add-block-toggle, #teksttv-add-block-single';
+    const fallback = document.querySelector<HTMLButtonElement>(fallbackSelector);
+
     block
         .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')
         .forEach((control) => {
@@ -24,6 +54,7 @@ export function removeClosestBlock(trigger: Element, onRemoved: () => void): voi
     slideUp(block, 200, () => {
         block.remove();
         onRemoved();
+        (adjacentToggle ?? fallback)?.focus();
     });
 }
 
@@ -45,10 +76,9 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         return;
     }
 
-    const header = e.target.closest('.teksttv-block-header');
-    if (header && blocksRoot.contains(header)) {
-        if (e.target.closest('.teksttv-remove-block')) return;
-        toggleBlockOpen(header);
+    const toggle = e.target.closest('.teksttv-block-toggle-control');
+    if (toggle && blocksRoot.contains(toggle)) {
+        toggleBlockOpen(toggle);
         return;
     }
 
@@ -60,8 +90,12 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         const baseName = list?.dataset.name;
         if (!list || !baseName) return;
         pickImages((attachments) => {
+            const firstNewIndex = list.children.length;
             attachments.forEach((att) => {
                 list.insertAdjacentHTML('beforeend', imageItemHtml(att, baseName));
+            });
+            window.setTimeout(() => {
+                list.children[firstNewIndex]?.querySelector<HTMLButtonElement>('.teksttv-remove-image')?.focus();
             });
         });
         return;

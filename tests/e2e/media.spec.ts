@@ -185,9 +185,13 @@ test.describe('media picker interactions', () => {
         await expect(addedItem).toHaveCount(1);
         await expect(addedItem.locator('input[name="teksttv_images[]"]')).toHaveValue(attachmentId);
         await expect(addedItem.locator('img')).toHaveAttribute('src', /.+/);
+        const addedRemoveButton = addedItem.locator('.teksttv-remove-image');
+        await expect(addedRemoveButton).toHaveAccessibleName('Afbeelding verwijderen');
+        await expect(addedRemoveButton).toBeFocused();
 
-        await addedItem.locator('.teksttv-remove-image').click();
+        await addedRemoveButton.click();
         await expect(addedItem).toHaveCount(0);
         await expect(previewCounter).toHaveText('1 / 1');
+        await expect(addImagesButton).toBeFocused();
     });
 });

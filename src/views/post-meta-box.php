@@ -164,7 +164,7 @@ defined('ABSPATH') || exit;
                             <div class="teksttv-image-item" data-id="<?php echo esc_attr($attachment_id); ?>">
                                 <img src="<?php echo esc_url($thumb); ?>" alt="" />
                                 <input type="hidden" name="teksttv_images[]" value="<?php echo esc_attr($attachment_id); ?>" />
-                                <button type="button" class="button-link teksttv-remove-image"><span class="dashicons dashicons-no-alt"></span></button>
+                                <button type="button" class="button-link teksttv-remove-image" aria-label="<?php echo esc_attr('Afbeelding verwijderen'); ?>"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>
                             </div>
                             <?php endif; ?>
                         <?php endforeach; ?>
@@ -214,15 +214,15 @@ defined('ABSPATH') || exit;
                 <div class="teksttv-preview-header">
                     <span class="teksttv-section-label"><?php echo esc_html('Preview'); ?></span>
                     <div class="teksttv-preview-nav" id="teksttv-preview-nav">
-                        <button type="button" class="button button-small" id="teksttv-preview-prev" disabled @click.prevent="previewPrev()"><span class="dashicons dashicons-arrow-left-alt2"></span></button>
+                        <button type="button" class="button button-small" id="teksttv-preview-prev" aria-label="<?php echo esc_attr('Vorige previewslide'); ?>" disabled @click.prevent="previewPrev()"><span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span></button>
                         <span class="teksttv-preview-counter" id="teksttv-preview-counter">1 / 1</span>
-                        <button type="button" class="button button-small" id="teksttv-preview-next" disabled @click.prevent="previewNext()"><span class="dashicons dashicons-arrow-right-alt2"></span></button>
+                        <button type="button" class="button button-small" id="teksttv-preview-next" aria-label="<?php echo esc_attr('Volgende previewslide'); ?>" disabled @click.prevent="previewNext()"><span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span></button>
                     </div>
                 </div>
                 <?php if ($preview_url) : ?>
                     <div class="teksttv-preview-container">
                         <iframe id="teksttv-preview-iframe" class="teksttv-preview-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
-                        <button type="button" class="teksttv-preview-enlarge-btn" id="teksttv-preview-enlarge" title="Vergroot preview" @click.prevent="openPreviewOverlay()"><span class="dashicons dashicons-editor-expand"></span></button>
+                        <button type="button" class="teksttv-preview-enlarge-btn" id="teksttv-preview-enlarge" aria-label="<?php echo esc_attr('Preview vergroten'); ?>" title="<?php echo esc_attr('Preview vergroten'); ?>" @click.prevent="openPreviewOverlay()"><span class="dashicons dashicons-editor-expand" aria-hidden="true"></span></button>
                     </div>
                     <div class="teksttv-preview-thumbs" id="teksttv-preview-thumbs" @click="onPreviewThumbClick($event)">
                         <!-- Filled by JS: mini slide thumbnails -->
