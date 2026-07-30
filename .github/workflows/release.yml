@@ -54,6 +54,34 @@ jobs:
         id: package
         run: bun run build:package
 
+      - name: Stage the published ZIP for smoke testing
+        env:
+          ZIP: ${{ steps.package.outputs.zip }}
+        run: |
+          rm -rf release/teksttv
+          unzip -q "$ZIP" -d release
+
+      - name: Start WordPress
+        run: bunx wp-env start
+
+      - name: Assert the release artifact activated
+        run: |
+          bunx wp-env run cli wp plugin is-active teksttv
+          bunx wp-env run cli bash -c "test -f wp-content/plugins/teksttv/vendor/autoload.php && test -f wp-content/plugins/teksttv/assets/admin.js"
+
+      - name: Load fixtures
+        run: bun run test:e2e:fixtures
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Test the release artifact
+        run: bun run test:e2e
+
+      - name: Stop WordPress
+        if: always()
+        run: bunx wp-env stop
+
       - name: Publish immutable GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
