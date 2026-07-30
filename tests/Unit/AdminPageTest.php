@@ -99,6 +99,26 @@ class AdminPageTest extends TestCase
         ));
     }
 
+    public function test_preview_url_shares_site_origin_normalizes_unicode_host(): void
+    {
+        $this->stubWpParseUrl();
+
+        $this->assertTrue(AdminPage::preview_url_shares_site_origin(
+            'https://bücher.example/preview',
+            'https://xn--bcher-kva.example'
+        ));
+    }
+
+    public function test_preview_url_shares_site_origin_uses_nontransitional_idn_processing(): void
+    {
+        $this->stubWpParseUrl();
+
+        $this->assertTrue(AdminPage::preview_url_shares_site_origin(
+            'https://faß.de/preview',
+            'https://xn--fa-hia.de'
+        ));
+    }
+
     public function test_sanitize_ai_prompts_preserves_omitted_technical_fields(): void
     {
         Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);

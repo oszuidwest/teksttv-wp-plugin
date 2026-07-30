@@ -36,20 +36,38 @@ class AdminPage
      */
     private static function parse_http_origin(string $url): ?array
     {
-        $parts = wp_parse_url($url);
+        $encoded_url = preg_replace_callback(
+            '/[\x80-\xFF]/',
+            static fn (array $matches): string => rawurlencode($matches[0]),
+            $url
+        );
+        $parts = wp_parse_url($encoded_url ?? $url);
         if (!is_array($parts)) {
             return null;
         }
 
         $scheme = strtolower($parts['scheme'] ?? '');
-        $host = strtolower(rawurldecode($parts['host'] ?? ''));
+        $host = rawurldecode($parts['host'] ?? '');
         if ($host === '' || !isset(self::ORIGIN_DEFAULT_PORTS[$scheme])) {
             return null;
         }
 
+        if (preg_match('/[^\x00-\x7F]/', $host) === 1) {
+            $ascii_host = idn_to_ascii(
+                $host,
+                IDNA_CHECK_BIDI | IDNA_CHECK_CONTEXTJ | IDNA_NONTRANSITIONAL_TO_ASCII,
+                INTL_IDNA_VARIANT_UTS46
+            );
+            if ($ascii_host === false) {
+                return null;
+            }
+
+            $host = $ascii_host;
+        }
+
         return [
             'scheme' => $scheme,
-            'host' => $host,
+            'host' => strtolower($host),
             'port' => $parts['port'] ?? self::ORIGIN_DEFAULT_PORTS[$scheme],
         ];
     }
