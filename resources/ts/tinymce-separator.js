@@ -1,4 +1,4 @@
-// biome-ignore: TinyMCE 4 calls plugin callbacks with `new`, so these MUST be regular functions (not arrow functions).
+// biome-ignore-all lint/complexity/useArrowFunction: Preserve TinyMCE 4-compatible legacy function syntax.
 (function () {
     if (typeof tinymce === 'undefined') return;
 

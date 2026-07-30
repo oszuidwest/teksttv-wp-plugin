@@ -1,4 +1,4 @@
-import { type Page, expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { addLoopBlock } from './helpers';
 
 type EditorWindow = Window & {
@@ -56,9 +56,7 @@ async function openFixturePostEditor(page: Page): Promise<void> {
         await metaBoxesButton.focus();
         await page.keyboard.press('Enter');
     }
-    await expect
-        .poll(() => metaBoxesButton.getAttribute('aria-expanded'))
-        .toBe('true');
+    await expect.poll(() => metaBoxesButton.getAttribute('aria-expanded')).toBe('true');
 }
 
 // No reseed hooks here: none of these tests submit a form or save the post,

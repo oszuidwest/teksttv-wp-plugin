@@ -11,7 +11,8 @@ on:
       - 'package.json'
       - 'bun.lock'
       - 'biome.json'
-      - 'tsconfig.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/js-lint.yml'
   pull_request:
     paths:
       - '**/*.js'
@@ -20,23 +21,24 @@ on:
       - 'package.json'
       - 'bun.lock'
       - 'biome.json'
-      - 'tsconfig.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/js-lint.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Biome + TypeScript
+  frontend:
+    name: Biome + TypeScript + Bun tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
 
       - run: bun install --frozen-lockfile
 
-      - run: bun run lint
-
-      - run: bunx tsc --noEmit
+      - run: bun run check:frontend

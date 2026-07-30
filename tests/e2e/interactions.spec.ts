@@ -1,4 +1,4 @@
-import { type Locator, type Page, expect, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import { addLoopBlock, addTickerBlock, submitAndReload } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 
@@ -6,13 +6,15 @@ const LOOP_URL = '/wp-admin/admin.php?page=teksttv-loop-tv1';
 
 async function expectSequentialNames(root: Locator, itemSelector: string, prefix: string): Promise<void> {
     // One evaluate round-trip: every item's field names, in DOM order.
-    const itemNames = await root.locator(itemSelector).evaluateAll((items) =>
-        items.map((item) =>
-            Array.from(item.querySelectorAll('input[name], select[name], textarea[name], [data-name]')).map(
-                (field) => field.getAttribute('name') ?? field.getAttribute('data-name'),
+    const itemNames = await root
+        .locator(itemSelector)
+        .evaluateAll((items) =>
+            items.map((item) =>
+                Array.from(item.querySelectorAll('input[name], select[name], textarea[name], [data-name]')).map(
+                    (field) => field.getAttribute('name') ?? field.getAttribute('data-name'),
+                ),
             ),
-        ),
-    );
+        );
 
     expect(itemNames.length, `${prefix} should contain at least one item`).toBeGreaterThan(0);
     itemNames.forEach((names, index) => {
@@ -80,9 +82,9 @@ test.describe('admin interaction contracts', () => {
             .evaluate((button) => {
                 button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
                 const block = button.closest('.teksttv-block');
-                const controls = block?.querySelectorAll<
-                    HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-                >('input, select, textarea');
+                const controls = block?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+                    'input, select, textarea',
+                );
                 return Array.from(controls ?? [], (control) => control.disabled);
             });
         expect(disabledStates.length).toBeGreaterThan(0);

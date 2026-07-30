@@ -1,4 +1,4 @@
-import { type Locator, type Page, expect } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Admin session saved by global-setup and loaded by every test (see playwright.config.ts). */
 export const ADMIN_STORAGE_STATE = '.playwright/auth/admin.json';
@@ -9,9 +9,7 @@ export async function login(page: Page, username: string, password: string): Pro
     await page.fill('#user_login', username);
     await page.fill('#user_pass', password);
     await page.locator('#wp-submit').click();
-    await expect(page).toHaveURL(
-        (url) => url.pathname === '/wp-admin' || url.pathname.startsWith('/wp-admin/'),
-    );
+    await expect(page).toHaveURL((url) => url.pathname === '/wp-admin' || url.pathname.startsWith('/wp-admin/'));
     await expect(page.locator('#wpadminbar')).toBeVisible();
 }
 

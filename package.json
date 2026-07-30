@@ -1,17 +1,19 @@
 {
     "name": "teksttv-wp-plugin",
     "private": true,
+    "packageManager": "bun@1.3.14",
     "scripts": {
         "build": "bun run build:js && bun run build:css && bun run build:static",
         "build:js": "bun build resources/ts/admin.ts --outdir assets --minify-whitespace --minify-syntax",
         "build:css": "bun build resources/css/admin.css --outdir assets --minify",
         "build:static": "cp resources/ts/tinymce-separator.js assets/ && cp resources/css/tinymce-content.css assets/ && cp node_modules/tom-select/dist/css/tom-select.default.min.css assets/ && cp node_modules/tom-select/dist/js/tom-select.complete.min.js assets/",
         "dev": "bun run build:js -- --watch & bun run build:css -- --watch",
-        "check": "bun run lint:php && bun run lint:js",
-        "lint": "biome check resources/",
+        "check": "bun run lint:php && bun run check:frontend",
+        "check:frontend": "bun run lint:js && bun run typecheck && bun run test:js",
         "lint:php": "vendor/bin/phpcs",
-        "lint:js": "biome check resources/",
-        "lint:fix": "vendor/bin/phpcbf; bunx biome check --write resources/",
+        "lint:js": "biome check .",
+        "lint:fix": "vendor/bin/phpcbf; p=$?; biome check --write . && [ $p -le 1 ]",
+        "typecheck": "tsc && tsc -p tsconfig.tests.json",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "test": "vendor/bin/phpunit",
         "test:js": "bun test tests/js",
@@ -27,9 +29,11 @@
         "tom-select": "^2.6.2"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.5.5",
+        "@biomejs/biome": "2.5.5",
         "@playwright/test": "^1.62.0",
+        "@types/bun": "1.3.14",
         "@types/sortablejs": "^1.15.9",
-        "@wordpress/env": "^11.11.0"
+        "@wordpress/env": "^11.11.0",
+        "typescript": "7.0.2"
     }
 }
