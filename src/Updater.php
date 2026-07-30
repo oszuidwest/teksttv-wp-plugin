@@ -32,8 +32,26 @@ class Updater
         );
 
         $api = $checker->getVcsApi();
+        self::configure_release_assets($api);
+
+        // Without release assets there is nothing safe to offer: drop the
+        // tag/branch strategies so PUC never falls back to source archives.
+        $checker->addFilter(
+            'vcs_update_detection_strategies',
+            static fn(array $strategies): array => array_intersect_key(
+                $strategies,
+                [$api::STRATEGY_LATEST_RELEASE => true]
+            )
+        );
+    }
+
+    private static function configure_release_assets(object $api): void
+    {
         if (method_exists($api, 'enableReleaseAssets')) {
-            $api->enableReleaseAssets('/teksttv-.+\.zip$/');
+            $api->enableReleaseAssets(
+                '/^' . self::SLUG . '-[0-9].*\.zip$/',
+                $api::REQUIRE_RELEASE_ASSETS
+            );
         }
     }
 }

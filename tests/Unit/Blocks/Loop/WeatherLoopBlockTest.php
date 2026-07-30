@@ -202,10 +202,6 @@ class WeatherLoopBlockTest extends TestCase
             ->with('teksttv_weather_provider', \Mockery::type(OpenWeatherProvider::class))
             ->andReturn($mock_provider);
 
-        Functions\expect('date_i18n')->andReturnUsing(function ($format, $timestamp) {
-            return date($format, $timestamp);
-        });
-
         $block = ['location' => 'Breda,NL', 'title' => 'Het weer', 'duration' => 20];
         $result = WeatherLoopBlock::build($block);
 
@@ -218,6 +214,7 @@ class WeatherLoopBlockTest extends TestCase
         $this->assertCount(2, $slide['days']);
 
         $day1 = $slide['days'][0];
+        $this->assertSame('dinsdag 7 apr', $day1['date']);
         $this->assertSame('vandaag', $day1['day_short']);
         $this->assertSame(8, $day1['temp_min']);
         $this->assertSame(16, $day1['temp_max']);
@@ -226,7 +223,8 @@ class WeatherLoopBlockTest extends TestCase
         $this->assertSame(4, $day1['wind_beaufort']);
 
         $day2 = $slide['days'][1];
-        $this->assertNotSame('vandaag', $day2['day_short']);
+        $this->assertSame('woensdag 8 apr', $day2['date']);
+        $this->assertSame('wo', $day2['day_short']);
         $this->assertSame('W', $day2['wind_direction']);
     }
 
@@ -322,8 +320,6 @@ class WeatherLoopBlockTest extends TestCase
 
         Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('key');
         Functions\expect('apply_filters')->andReturn($mock_provider);
-        Functions\expect('date_i18n')->andReturn('dinsdag 7 apr');
-
         $block = ['location' => 'Breda,NL', 'title' => 'Weer'];
         $result = WeatherLoopBlock::build($block);
 

@@ -139,7 +139,4 @@ update_post_meta($teksttv_post_id, '_teksttv_active', '1');
 update_post_meta($teksttv_post_id, '_teksttv_content', '<p>Slide-inhoud voor de smoke test.</p>');
 update_post_meta($teksttv_post_id, '_teksttv_images', [$teksttv_attachment_id]);
 
-// Clear any cached slides so the REST assertion sees the fixtures.
-delete_transient('teksttv_slides_tv1');
-
 echo 'fixtures-ok post_id=' . $teksttv_post_id . ' attachment_id=' . $teksttv_attachment_id . "\n";

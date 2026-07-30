@@ -11,7 +11,6 @@ TekstTV can be extended from a separate WordPress plugin. Do not modify the Teks
 | `teksttv_image_attribution` | Add attribution to attachment data |
 | `teksttv_primary_category` | Select the category used for an article sidebar image |
 | `teksttv_weather_provider` | Replace the OpenWeather implementation |
-| `TekstTV\RestApi::invalidate_slides_cache()` | Invalidate cached REST output after external data changes |
 
 Built-in block types register on `init` at priority 5. Add-ons should register at priority 10 or later and guard against TekstTV being unavailable:
 
@@ -76,7 +75,7 @@ add_action('init', static function (): void {
     }
 
     \TekstTV\BlockRegistry::register('station_ticker_message', [
-        'label' => __('Station message', 'station-ticker'),
+        'label' => 'Stationsbericht',
         'icon' => 'megaphone',
         'color' => '#2271b1',
         'context' => 'ticker',
@@ -84,7 +83,7 @@ add_action('init', static function (): void {
             $name = sprintf('%s[%s][message]', $prefix, $index);
             ?>
             <label>
-                <?php esc_html_e('Message', 'station-ticker'); ?>
+                <?php echo esc_html('Bericht'); ?>
                 <input
                     type="text"
                     class="large-text"
@@ -219,16 +218,9 @@ add_filter(
 
 The provider is resolved once per request. An add-on provider may implement its own caching and error handling.
 
-## REST cache
+## REST output
 
-The `/teksttv/v1/slides` response is cached per channel for 180 seconds. Saving TekstTV content clears the relevant cache. Add-ons should invalidate it when their own underlying data changes:
-
-```php
-\TekstTV\RestApi::invalidate_slides_cache('tv1'); // One channel.
-\TekstTV\RestApi::invalidate_slides_cache();      // All configured channels.
-```
-
-Do not invalidate on every REST request. Invalidate when data changes, or accept the normal cache lifetime for external feeds.
+The `/teksttv/v1/slides` response is built fresh on every request; there is no plugin-side cache. The former `\TekstTV\RestApi::invalidate_slides_cache()` API has been removed - add-ons that still call it will fatal, so drop the call. Block `build()` callbacks that call slow external services should do their own caching (see the weather provider note above).
 
 ## Current limitations
 
@@ -248,4 +240,3 @@ Treat the registry and interfaces as the current extension API and test add-ons 
 - Save and reload the channel configuration.
 - Check scheduling boundaries when the type uses scheduling.
 - Validate the `/wp-json/teksttv/v1/slides?channel=<slug>` response against the frontend contract.
-- Verify cache invalidation when add-on data changes.

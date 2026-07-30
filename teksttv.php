@@ -7,7 +7,6 @@
  * Author URI: https://www.zuidwesttv.nl/
  * Plugin URI: https://github.com/oszuidwest/teksttv-wp-plugin
  * License: GPL-2.0-or-later
- * Text Domain: teksttv-wp-plugin
  * Requires at least: 7.0
  * Requires PHP: 8.3
  */

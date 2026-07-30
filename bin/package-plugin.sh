@@ -1,56 +1,90 @@
 #!/usr/bin/env bash
 #
-# Package the plugin exactly as the release ZIP does, into release/teksttv/.
-# Used by the e2e smoke suite so tests run against the built artifact (vendor +
-# compiled assets present, dev files excluded) rather than the raw checkout.
+# Build the canonical production plugin artifact.
 #
-# Assumes production composer deps and built assets already exist. Run:
-#   composer install --no-dev --optimize-autoloader
-#   bun install --frozen-lockfile && bun run build
-# before calling this script.
+# Input is deliberately limited to tracked production source files, the exact
+# generated asset set, and a fresh Composer --no-dev install. The resulting
+# release/teksttv/ directory is used by wp-env and is also zipped for releases.
 set -euo pipefail
 
-SLUG="teksttv"
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEST="$ROOT/release/$SLUG"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+# shellcheck source=bin/package-lib.sh
+source "$ROOT/bin/package-lib.sh"
 
-rm -rf "$ROOT/release"
-mkdir -p "$DEST"
+RELEASE_DIR="$ROOT/release"
+DEST="$RELEASE_DIR/$SLUG"
 
-rsync -a "$ROOT/" "$DEST/" \
-    --exclude='/release/' \
-    --exclude='/.git/' \
-    --exclude='/.github/' \
-    --exclude='/.claude/' \
-    --exclude='/node_modules/' \
-    --exclude='/resources/' \
-    --exclude='/tests/' \
-    --exclude='/bin/' \
-    --exclude='.phpunit.cache/' \
-    --exclude='.cache/' \
-    --exclude='test-results/' \
-    --exclude='playwright-report/' \
-    --exclude='composer.json' \
-    --exclude='composer.lock' \
-    --exclude='package.json' \
-    --exclude='bun.lock' \
-    --exclude='biome.json' \
-    --exclude='tsconfig*.json' \
-    --exclude='phpunit.xml' \
-    --exclude='patchwork.json' \
-    --exclude='phpcs.xml' \
-    --exclude='phpcs.xml.dist' \
-    --exclude='phpstan.neon' \
-    --exclude='phpstan-bootstrap.php' \
-    --exclude='phpstan-bootstrap.stub' \
-    --exclude='stubs/' \
-    --exclude='.wp-env.json' \
-    --exclude='playwright.config.ts' \
-    --exclude='*.log' \
-    --exclude='*.zip' \
-    --exclude='.gitignore' \
-    --exclude='CLAUDE.md' \
-    --exclude='AGENTS.md' \
-    --exclude='.DS_Store'
+for command_name in composer git php rsync unzip zip; do
+    command -v "$command_name" >/dev/null 2>&1 \
+        || fail "Required command '$command_name' is not available."
+done
 
-echo "Packaged plugin into $DEST"
+GIT_ROOT="$(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null)" \
+    || fail "The plugin source must be inside a Git worktree."
+GIT_ROOT="$(cd "$GIT_ROOT" && pwd -P)"
+if [[ "$GIT_ROOT" != "$ROOT" ]]; then
+    fail "Expected repository root '$ROOT', found '$GIT_ROOT'."
+fi
+
+VERSION="$(read_plugin_version "$ROOT/$SLUG.php")"
+ZIP_PATH="$RELEASE_DIR/$SLUG-$VERSION.zip"
+
+for tracked_path in "${TRACKED_PATHS[@]}"; do
+    if ! git -C "$ROOT" ls-files --error-unmatch -- "$tracked_path" >/dev/null 2>&1; then
+        fail "Required production source '$tracked_path' is not tracked by Git."
+    fi
+done
+
+for asset_file in "${ASSET_FILES[@]}"; do
+    if [[ ! -f "$ROOT/assets/$asset_file" ]]; then
+        fail "Required built asset 'assets/$asset_file' is missing; run 'bun run build' first."
+    fi
+done
+
+rm -rf -- "$DEST"
+rm -f -- "$ZIP_PATH"
+mkdir -p "$DEST/assets"
+
+# Copy only tracked files from the explicit production allowlist. This reads
+# the working-tree versions (useful for local development) while excluding
+# every untracked or ignored file, including files nested under src/.
+git -C "$ROOT" ls-files -z -- "${TRACKED_PATHS[@]}" \
+    | rsync -a --from0 --files-from=- "$ROOT/" "$DEST/"
+
+# assets/ is generated and ignored, so copy only the outputs declared by the
+# current Bun build instead of trusting everything left in that directory.
+for asset_file in "${ASSET_FILES[@]}"; do
+    cp "$ROOT/assets/$asset_file" "$DEST/assets/$asset_file"
+done
+
+# Install the locked production dependencies directly into the clean artifact.
+# The Composer manifests are build inputs only and are removed afterwards.
+cp "$ROOT/composer.json" "$ROOT/composer.lock" "$DEST/"
+COMPOSER_ROOT_VERSION="$VERSION" composer install \
+    --working-dir="$DEST" \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --optimize-autoloader
+rm -f -- "$DEST/composer.json" "$DEST/composer.lock"
+
+# Normalize metadata and feed zip a stable file order so repeated builds from
+# the same source produce the same archive bytes, not just equivalent contents.
+TZ=UTC find "$DEST" -exec touch -t 198001010000 {} +
+(
+    cd "$RELEASE_DIR"
+    find "$SLUG" -type f -print \
+        | LC_ALL=C sort \
+        | TZ=UTC zip -q -X "$ZIP_PATH" -@
+)
+
+"$ROOT/bin/verify-package.sh" "$DEST" "$ZIP_PATH"
+
+echo "Packaged plugin directory: $DEST"
+echo "Packaged plugin ZIP: $ZIP_PATH"
+
+# Let CI consume the artifact path without re-deriving the naming convention.
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+    echo "zip=${ZIP_PATH#"$ROOT/"}" >> "$GITHUB_OUTPUT"
+fi

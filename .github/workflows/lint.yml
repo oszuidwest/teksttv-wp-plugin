@@ -15,7 +15,6 @@ on:
       - 'phpunit.xml'
       - 'patchwork.json'
       - 'tests/**'
-      - 'languages/**'
   pull_request:
     paths:
       - '**/*.php'
@@ -28,7 +27,6 @@ on:
       - 'phpunit.xml'
       - 'patchwork.json'
       - 'tests/**'
-      - 'languages/**'
   workflow_dispatch:
 
 permissions:

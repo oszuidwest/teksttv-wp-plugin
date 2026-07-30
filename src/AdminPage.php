@@ -48,7 +48,7 @@ class AdminPage
 
         printf(
             '<div class="notice notice-warning"><p>%s</p></div>',
-            esc_html__('De TekstTV preview-URL draait op dezelfde origin als deze site. Gebruik een aparte origin voor de preview, anders is de iframe-sandbox effectief uitgeschakeld (XSS/CSRF-risico).', 'teksttv-wp-plugin')
+            esc_html('De TekstTV preview-URL draait op dezelfde origin als deze site. Gebruik een aparte origin voor de preview, anders is de iframe-sandbox effectief uitgeschakeld (XSS/CSRF-risico).')
         );
     }
 
@@ -59,8 +59,8 @@ class AdminPage
         $first_channel = $channels[0]['slug'] ?? '';
 
         add_menu_page(
-            __('Tekst TV', 'teksttv-wp-plugin'),
-            __('Tekst TV', 'teksttv-wp-plugin'),
+            'Tekst TV',
+            'Tekst TV',
             'manage_teksttv',
             'teksttv',
             $first_channel ? [self::class, 'render_loop_page'] : [self::class, 'render_settings_page'],
@@ -70,7 +70,7 @@ class AdminPage
 
         // Submenu per channel loop
         foreach ($channels as $ch) {
-            $loop_label = count($channels) > 1 ? sprintf(/* translators: %s: channel label */ __('Loop: %s', 'teksttv-wp-plugin'), $ch['label']) : __('Loop', 'teksttv-wp-plugin');
+            $loop_label = count($channels) > 1 ? sprintf('Loop: %s', $ch['label']) : 'Loop';
             add_submenu_page(
                 'teksttv',
                 $loop_label,
@@ -84,8 +84,8 @@ class AdminPage
         // Settings submenu
         add_submenu_page(
             'teksttv',
-            __('Instellingen', 'teksttv-wp-plugin'),
-            __('Instellingen', 'teksttv-wp-plugin'),
+            'Instellingen',
+            'Instellingen',
             'manage_teksttv',
             'teksttv-settings',
             [self::class, 'render_settings_page']
@@ -95,8 +95,8 @@ class AdminPage
         if (Helpers::has_feature('ai_generate')) {
             add_submenu_page(
                 'teksttv',
-                __('Content & AI', 'teksttv-wp-plugin'),
-                __('Content & AI', 'teksttv-wp-plugin'),
+                'Content & AI',
+                'Content & AI',
                 'manage_teksttv_content',
                 'teksttv-content',
                 [self::class, 'render_prompts_page']
@@ -202,8 +202,7 @@ class AdminPage
                     'teksttv-wp-plugin',
                     'duplicate_channel_slug',
                     sprintf(
-                        /* translators: %s: the duplicate channel slug */
-                        __('Kanaal-slug "%s" komt meerdere keren voor; alleen de eerste is bewaard.', 'teksttv-wp-plugin'),
+                        'Kanaal-slug "%s" komt meerdere keren voor; alleen de eerste is bewaard.',
                         $slug
                     ),
                     'error'
@@ -306,8 +305,8 @@ class AdminPage
     {
         $channel_slug = self::get_current_channel();
         if (empty($channel_slug)) {
-            echo '<div class="wrap"><h1>' . esc_html__('Tekst TV', 'teksttv-wp-plugin') . '</h1>';
-            echo '<p>' . wp_kses(sprintf(/* translators: %s: settings page URL */ __('Ga naar <a href="%s">Instellingen</a> om eerst een kanaal toe te voegen.', 'teksttv-wp-plugin'), esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]) . '</p>';
+            echo '<div class="wrap"><h1>' . esc_html('Tekst TV') . '</h1>';
+            echo '<p>' . wp_kses(sprintf('Ga naar <a href="%s">Instellingen</a> om eerst een kanaal toe te voegen.', esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]) . '</p>';
             echo '</div>';
             return;
         }
@@ -323,7 +322,7 @@ class AdminPage
 
         $blocks = Helpers::get_loop_config($channel_slug);
         $api_url = rest_url('teksttv/v1/slides?channel=' . $channel_slug);
-        $page_title = count($channels) > 1 ? sprintf(/* translators: %s: channel label */ __('Loop: %s', 'teksttv-wp-plugin'), $channel_label) : __('Loop', 'teksttv-wp-plugin');
+        $page_title = count($channels) > 1 ? sprintf('Loop: %s', $channel_label) : 'Loop';
         $ticker_items = Helpers::get_ticker_config($channel_slug);
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
@@ -405,7 +404,7 @@ class AdminPage
         <div class="teksttv-block-scheduling-toggle">
             <label>
                 <input type="checkbox" class="teksttv-scheduling-checkbox" <?php checked($has_scheduling); ?> />
-                <?php esc_html_e('Planning inschakelen', 'teksttv-wp-plugin'); ?>
+                <?php echo esc_html('Planning inschakelen'); ?>
             </label>
         </div>
         <div class="teksttv-block-fields teksttv-block-fields--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
@@ -428,15 +427,15 @@ class AdminPage
 
         ?>
         <div class="teksttv-block-field">
-            <label><?php esc_html_e('Vanaf', 'teksttv-wp-plugin'); ?></label>
+            <label><?php echo esc_html('Vanaf'); ?></label>
             <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
         </div>
         <div class="teksttv-block-field">
-            <label><?php esc_html_e('Tot en met', 'teksttv-wp-plugin'); ?></label>
+            <label><?php echo esc_html('Tot en met'); ?></label>
             <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
         </div>
         <div class="teksttv-block-field">
-            <label><?php esc_html_e('Dagen', 'teksttv-wp-plugin'); ?></label>
+            <label><?php echo esc_html('Dagen'); ?></label>
             <?php self::render_days_row($prefix . '[' . $index . '][days][]', Helpers::normalize_days($block['days'] ?? null)); ?>
         </div>
         <?php
@@ -469,18 +468,18 @@ class AdminPage
     private static function validate_loop_save_request(): ?string
     {
         if (!isset($_POST['teksttv_loop_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_loop_nonce'])), 'teksttv_save_loop')) {
-            add_settings_error('teksttv', 'loop_nonce_failed', __('Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.', 'teksttv-wp-plugin'));
+            add_settings_error('teksttv', 'loop_nonce_failed', 'Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.');
             return null;
         }
 
         if (!current_user_can('manage_teksttv')) {
-            add_settings_error('teksttv', 'loop_no_permission', __('Onvoldoende rechten; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
+            add_settings_error('teksttv', 'loop_no_permission', 'Onvoldoende rechten; wijzigingen zijn niet opgeslagen.');
             return null;
         }
 
         $channel = sanitize_key(wp_unslash($_POST['teksttv_loop_channel'] ?? ''));
         if (empty($channel) || !in_array($channel, Helpers::channel_slugs(), true)) {
-            add_settings_error('teksttv', 'loop_unknown_channel', __('Onbekend kanaal; wijzigingen zijn niet opgeslagen.', 'teksttv-wp-plugin'));
+            add_settings_error('teksttv', 'loop_unknown_channel', 'Onbekend kanaal; wijzigingen zijn niet opgeslagen.');
             return null;
         }
 
@@ -504,13 +503,11 @@ class AdminPage
         [$ticker, $ticker_preserved] = self::sanitize_registry_items($raw_ticker, 'teksttv_ticker_' . $channel, 'ticker');
         update_option('teksttv_ticker_' . $channel, $ticker);
 
-        RestApi::invalidate_slides_cache($channel);
-
         if ($blocks_preserved || $ticker_preserved) {
-            add_settings_error('teksttv', 'loop_preserved_unknown', __('Sommige opgeslagen blokken horen bij een niet-actieve plugin. Ze zijn bewaard maar verschijnen pas weer als die plugin actief is.', 'teksttv-wp-plugin'), 'warning');
+            add_settings_error('teksttv', 'loop_preserved_unknown', 'Sommige opgeslagen blokken horen bij een niet-actieve plugin. Ze zijn bewaard maar verschijnen pas weer als die plugin actief is.', 'warning');
         }
 
-        add_settings_error('teksttv', 'loop_saved', __('Loop configuratie opgeslagen.', 'teksttv-wp-plugin'), 'success');
+        add_settings_error('teksttv', 'loop_saved', 'Loop configuratie opgeslagen.', 'success');
     }
 
     /**

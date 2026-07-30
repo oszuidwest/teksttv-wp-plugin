@@ -17,7 +17,10 @@ For development from a Git checkout you also need [Composer](https://getcomposer
 
 ### Pre-built zip (recommended)
 
-GitHub Actions builds `teksttv.zip` on `main` and on version tags: `composer install --no-dev`, asset build, zip with `src/`, `assets/`, `vendor/` and the bootstrap files. Upload it under Plugins → Add New → Upload Plugin and activate.
+The manual Release workflow publishes `teksttv-<version>.zip`. It uses the
+same canonical packager as the E2E suite: tracked production source, the exact
+built asset set, and a fresh `composer install --no-dev` inside the staged
+plugin. Upload the ZIP under Plugins → Add New → Upload Plugin and activate.
 
 ### Build from source
 
@@ -65,7 +68,7 @@ Public endpoint, no login required:
 GET /wp-json/teksttv/v1/slides?channel=<channel-slug>
 ```
 
-The payload contains `slides` (the loop) and `ticker` entries. `channel` must match a configured slug (`validate_channel`). Responses carry short `Cache-Control` headers. The [playout app](https://github.com/oszuidwest/teksttv-frontend) consumes this shape on a timer (see Auto-Refresh in its README).
+The payload contains `slides` (the loop) and `ticker` entries. `channel` must match a configured slug (`validate_channel`). Responses are built fresh on every request; add edge caching at the hosting layer (e.g. Cloudflare) if needed. The [playout app](https://github.com/oszuidwest/teksttv-frontend) consumes this shape on a timer (see Auto-Refresh in its README).
 
 Editor-only endpoints (image metadata, generation, …) need a user with `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
 
@@ -76,6 +79,7 @@ From [`package.json`](package.json):
 | Command            | Purpose |
 |--------------------|---------|
 | `bun run build`    | Minify JS/CSS to `assets/`, copy TinyMCE and tom-select vendor files |
+| `bun run build:package` | Build assets and create the validated `release/teksttv/` directory plus versioned ZIP |
 | `bun run dev`      | Watch JS and CSS |
 | `bun run check`    | PHPCS plus all frontend checks |
 | `bun run check:frontend` | Biome, TypeScript and Bun unit tests |

@@ -748,6 +748,40 @@ class HelpersTest extends TestCase
         $this->assertSame(0, $limits['word_limit_photo']);
     }
 
+    public function test_normalize_ai_prompt_limits_clamps_positive_photo_word_limit(): void
+    {
+        foreach ([1 => 10, 9 => 10, 10 => 10, 500 => 500, 501 => 500] as $input => $expected) {
+            $limits = Helpers::normalize_ai_prompt_limits(['word_limit_photo' => $input]);
+
+            $this->assertSame($expected, $limits['word_limit_photo'], 'Input ' . $input);
+        }
+    }
+
+    public function test_get_ai_prompts_resolves_photo_inheritance_marker(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn([
+                'word_limit' => 250,
+                'word_limit_photo' => 0,
+            ]);
+
+        $result = Helpers::get_ai_prompts();
+
+        $this->assertSame(250, $result['word_limit_photo']);
+    }
+
+    public function test_get_ai_prompts_clamps_legacy_low_photo_word_limit(): void
+    {
+        Functions\expect('get_option')
+            ->with('teksttv_ai_prompts', [])
+            ->andReturn(['word_limit_photo' => 1]);
+
+        $result = Helpers::get_ai_prompts();
+
+        $this->assertSame(10, $result['word_limit_photo']);
+    }
+
     // =========================================================================
     // get_post_taxonomies()
     // =========================================================================
@@ -883,6 +917,14 @@ class HelpersTest extends TestCase
             ->andReturn(false);
 
         $this->assertSame([], Helpers::get_campaign_groups());
+    }
+
+    public function test_admin_script_dependencies_exclude_i18n(): void
+    {
+        $this->assertSame(
+            ['jquery', 'underscore', 'media-editor'],
+            Helpers::admin_script_dependencies()
+        );
     }
 
     // =========================================================================

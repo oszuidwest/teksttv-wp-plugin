@@ -90,7 +90,7 @@ class RestApi
         $slot = $request->get_param('slot') ?: null;
         $data = Helpers::get_image_data($id, 'large', $slot);
         if (!$data) {
-            return new WP_Error('teksttv_not_found', __('Bijlage niet gevonden.', 'teksttv-wp-plugin'), ['status' => 404]);
+            return new WP_Error('teksttv_not_found', 'Bijlage niet gevonden.', ['status' => 404]);
         }
 
         return new WP_REST_Response($data, 200);
@@ -106,7 +106,7 @@ class RestApi
         if (!Helpers::has_feature('ai_generate')) {
             return new WP_Error(
                 'teksttv_ai_disabled',
-                __('AI-generatie is uitgeschakeld.', 'teksttv-wp-plugin'),
+                'AI-generatie is uitgeschakeld.',
                 ['status' => 403]
             );
         }
@@ -114,7 +114,7 @@ class RestApi
         if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
             return new WP_Error(
                 'teksttv_ai_unavailable',
-                __('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.', 'teksttv-wp-plugin'),
+                'AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.',
                 ['status' => 503]
             );
         }
@@ -124,11 +124,11 @@ class RestApi
 
         $post = get_post($post_id);
         if (!$post) {
-            return new WP_Error('teksttv_post_not_found', __('Post niet gevonden.', 'teksttv-wp-plugin'), ['status' => 404]);
+            return new WP_Error('teksttv_post_not_found', 'Post niet gevonden.', ['status' => 404]);
         }
 
         if (!current_user_can('edit_post', $post_id)) {
-            return new WP_Error('teksttv_forbidden', __('Onvoldoende rechten.', 'teksttv-wp-plugin'), ['status' => 403]);
+            return new WP_Error('teksttv_forbidden', 'Onvoldoende rechten.', ['status' => 403]);
         }
 
         $config = Helpers::get_ai_prompts();
@@ -137,7 +137,7 @@ class RestApi
         if (!AiGenerator::within_rate_limit(get_current_user_id(), $config['rate_limit'])) {
             return new WP_Error(
                 'teksttv_rate_limited',
-                __('Te veel verzoeken. Probeer het over een minuut opnieuw.', 'teksttv-wp-plugin'),
+                'Te veel verzoeken. Probeer het over een minuut opnieuw.',
                 ['status' => 429]
             );
         }
@@ -158,40 +158,13 @@ class RestApi
         return new WP_REST_Response($response, 200);
     }
 
-    private const SLIDES_CACHE_TTL = 180; // 3 minutes
-
     public static function get_slides(WP_REST_Request $request): WP_REST_Response
     {
         $channel = $request->get_param('channel');
-        $cache_key = 'teksttv_slides_' . $channel;
 
-        $data = get_transient($cache_key);
-        if ($data === false) {
-            $data = [
-                'slides' => SlidesBuilder::build($channel),
-                'ticker' => SlidesBuilder::build_ticker($channel),
-            ];
-            set_transient($cache_key, $data, self::SLIDES_CACHE_TTL);
-        }
-
-        $response = new WP_REST_Response($data, 200);
-        $response->header('Cache-Control', 'public, max-age=' . self::SLIDES_CACHE_TTL);
-
-        return $response;
-    }
-
-    /**
-     * Invalidate the slides cache for one or all channels.
-     */
-    public static function invalidate_slides_cache(string $channel = ''): void
-    {
-        if (!empty($channel)) {
-            delete_transient('teksttv_slides_' . $channel);
-            return;
-        }
-
-        foreach (Helpers::get_channels() as $ch) {
-            delete_transient('teksttv_slides_' . $ch['slug']);
-        }
+        return new WP_REST_Response([
+            'slides' => SlidesBuilder::build($channel),
+            'ticker' => SlidesBuilder::build_ticker($channel),
+        ], 200);
     }
 }

@@ -12,6 +12,44 @@ final class WeatherLoopBlock implements LoopBlock
 {
     private const DEFAULT_DURATION_SECONDS = 15;
 
+    /** @var array<int, string> */
+    private const DUTCH_WEEKDAYS = [
+        1 => 'maandag',
+        2 => 'dinsdag',
+        3 => 'woensdag',
+        4 => 'donderdag',
+        5 => 'vrijdag',
+        6 => 'zaterdag',
+        7 => 'zondag',
+    ];
+
+    /** @var array<int, string> */
+    private const DUTCH_WEEKDAYS_SHORT = [
+        1 => 'ma',
+        2 => 'di',
+        3 => 'wo',
+        4 => 'do',
+        5 => 'vr',
+        6 => 'za',
+        7 => 'zo',
+    ];
+
+    /** @var array<int, string> */
+    private const DUTCH_MONTHS_SHORT = [
+        1 => 'jan',
+        2 => 'feb',
+        3 => 'mrt',
+        4 => 'apr',
+        5 => 'mei',
+        6 => 'jun',
+        7 => 'jul',
+        8 => 'aug',
+        9 => 'sep',
+        10 => 'okt',
+        11 => 'nov',
+        12 => 'dec',
+    ];
+
     private static ?WeatherProvider $weather_provider = null;
 
     private static bool $weather_provider_resolved = false;
@@ -19,7 +57,7 @@ final class WeatherLoopBlock implements LoopBlock
     public static function register(): void
     {
         BlockRegistry::register('weather', [
-            'label' => __('Weer', 'teksttv-wp-plugin'),
+            'label' => 'Weer',
             'icon' => 'cloud',
             'color' => '#72aee6',
             'context' => 'loop',
@@ -81,6 +119,19 @@ final class WeatherLoopBlock implements LoopBlock
         return 12;
     }
 
+    private static function format_dutch_date(\DateTimeInterface $date): string
+    {
+        $weekday = self::DUTCH_WEEKDAYS[(int) $date->format('N')];
+        $month = self::DUTCH_MONTHS_SHORT[(int) $date->format('n')];
+
+        return sprintf('%s %d %s', $weekday, (int) $date->format('j'), $month);
+    }
+
+    private static function format_dutch_day_short(\DateTimeInterface $date): string
+    {
+        return self::DUTCH_WEEKDAYS_SHORT[(int) $date->format('N')];
+    }
+
     /**
      * @param array<string, mixed> $block
      */
@@ -93,15 +144,15 @@ final class WeatherLoopBlock implements LoopBlock
         ?>
         <div class="teksttv-block-fields">
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Locatie', 'teksttv-wp-plugin'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Breda,NL', 'teksttv-wp-plugin'); ?>" data-summary data-summary-empty="<?php echo esc_attr__('Geen locatie', 'teksttv-wp-plugin'); ?>" />
+                <label><?php echo esc_html('Locatie'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda,NL'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Titel', 'teksttv-wp-plugin'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr__('Het weer', 'teksttv-wp-plugin'); ?>" />
+                <label><?php echo esc_html('Titel'); ?></label>
+                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" />
             </div>
             <div class="teksttv-block-field">
-                <label><?php esc_html_e('Duur', 'teksttv-wp-plugin'); ?></label>
+                <label><?php echo esc_html('Duur'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
         </div>
@@ -159,8 +210,8 @@ final class WeatherLoopBlock implements LoopBlock
         foreach ($weather['days'] as $index => $day) {
             $date = $day['date'];
             $days_output[] = [
-                'date' => date_i18n('l j M', $date->getTimestamp()),
-                'day_short' => $index === 0 ? 'vandaag' : date_i18n('D', $date->getTimestamp()),
+                'date' => self::format_dutch_date($date),
+                'day_short' => $index === 0 ? 'vandaag' : self::format_dutch_day_short($date),
                 'temp_min' => (int) round($day['temp_min']),
                 'temp_max' => (int) round($day['temp_max']),
                 'weather_id' => $day['weather_id'],
