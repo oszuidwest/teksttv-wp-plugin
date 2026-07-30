@@ -36,6 +36,9 @@ class AdminPage
      */
     private static function parse_http_origin(string $url): ?array
     {
+        // parse_url() replaces bytes 0x80-0x9F and 0xAD in hosts with "_",
+        // corrupting raw UTF-8 (e.g. the 0x9F in "ß"), so percent-encode
+        // high bytes first and decode the host after parsing.
         $encoded_url = preg_replace_callback(
             '/[\x80-\xFF]/',
             static fn (array $matches): string => rawurlencode($matches[0]),
