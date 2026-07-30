@@ -30,6 +30,20 @@ class UpdaterTest extends TestCase
         $this->assertSame($asset_url, $release->downloadUrl);
     }
 
+    public function test_only_release_detection_strategy_is_retained(): void
+    {
+        $release_strategy = static fn(): string => 'release';
+        $strategies = [
+            'latest_release' => $release_strategy,
+            'latest_tag' => static fn(): string => 'tag',
+            'branch' => static fn(): string => 'branch',
+        ];
+
+        $filtered = self::callPrivate(Updater::class, 'require_release_strategy', [$strategies]);
+
+        $this->assertSame(['latest_release' => $release_strategy], $filtered);
+    }
+
     private function make_github_api(string $asset_name): object
     {
         Functions\when('wp_parse_url')->alias(
