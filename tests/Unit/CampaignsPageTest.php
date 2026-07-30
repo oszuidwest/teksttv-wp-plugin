@@ -97,4 +97,20 @@ class CampaignsPageTest extends TestCase
         $this->assertSame('camp_generated-uuid', $campaigns[1]['id']);
         $this->assertCount(2, array_unique(array_column($campaigns, 'id')));
     }
+
+    public function test_campaign_save_preserves_empty_channel_selection(): void
+    {
+        $campaigns = self::callPrivate(
+            CampaignsPage::class,
+            'sanitize_campaigns',
+            [
+                [
+                    ['id' => 'camp_existing', 'name' => 'Inactief', 'channels' => []],
+                ],
+                ['tv1', 'tv2'],
+            ]
+        );
+
+        $this->assertSame([], $campaigns[0]['channels']);
+    }
 }

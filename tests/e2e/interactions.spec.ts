@@ -299,6 +299,49 @@ test.describe('admin interaction contracts', () => {
             await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
         });
 
+        test('preserves a campaign with no selected channels', async ({ page }) => {
+            await page.goto('/wp-admin/admin.php?page=teksttv-settings');
+            await page.locator('#teksttv-add-channel').click();
+
+            const channelRows = page.locator('#teksttv-channels .teksttv-channel-row');
+            await channelRows.last().locator('input[name$="[slug]"]').fill('tv2');
+            await channelRows.last().locator('input[name$="[label]"]').fill('TV 2');
+            await page.locator('#submit').click();
+            await expect(channelRows).toHaveCount(2);
+
+            await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+            let campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
+            await campaign.locator('.teksttv-block-header').click();
+
+            let channelCheckboxes = campaign.locator('input[name$="[channels][]"]');
+            await expect(channelCheckboxes).toHaveCount(2);
+            for (const checkbox of await channelCheckboxes.all()) {
+                await checkbox.uncheck();
+            }
+
+            await submitAndReload(page);
+
+            campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
+            channelCheckboxes = campaign.locator('input[name$="[channels][]"]');
+            await expect(channelCheckboxes).toHaveCount(2);
+            for (const checkbox of await channelCheckboxes.all()) {
+                await expect(checkbox).not.toBeChecked();
+            }
+
+            await page.goto(LOOP_URL);
+            const campaignBlock = await addLoopBlock(page, 'campaign');
+            await campaignBlock.locator('select[name$="[groups][]"]').selectOption('e2e-group-alpha');
+            await submitAndReload(page);
+
+            const response = await page.request.get('/wp-json/teksttv/v1/slides?channel=tv1');
+            expect(response.ok()).toBe(true);
+            const playlist = await response.json();
+            expect(
+                playlist.slides.some((slide: { type?: string }) => slide.type === 'commercial'),
+                'a campaign without channels stays inactive at runtime',
+            ).toBe(false);
+        });
+
         test('adds and removes campaign and group rows and persists the remaining values', async ({ page }) => {
             await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
 
