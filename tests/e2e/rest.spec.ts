@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('slides REST endpoint', () => {
-    test('returns the expected slide and ticker shape', async ({ request }) => {
+    test('backfills the expected slide after a newer scheduled post', async ({ request }) => {
         const res = await request.get('/wp-json/teksttv/v1/slides?channel=tv1');
         expect(res.ok()).toBeTruthy();
 
@@ -13,6 +13,10 @@ test.describe('slides REST endpoint', () => {
         expect(textSlide, 'a text slide is present').toBeTruthy();
         expect(textSlide.title).toBe('TekstTV Smoke Post');
         expect(typeof textSlide.duration).toBe('number');
+        expect(
+            data.slides.some((slide: { title?: string }) => slide.title === 'TekstTV Toekomstig Bericht'),
+            'the newer scheduled post is excluded',
+        ).toBe(false);
 
         const hasTicker = data.ticker.some(
             (t: { message?: string }) => typeof t.message === 'string' && t.message.length > 0,

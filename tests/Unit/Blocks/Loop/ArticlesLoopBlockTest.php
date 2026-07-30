@@ -525,7 +525,7 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame(30000, $result[0]['duration']);
     }
 
-    public function test_build_skips_empty_content(): void
+    public function test_build_skips_empty_content_without_marking_post_seen(): void
     {
         $post = (object) ['ID' => 10];
         $this->setupArticleSlides([$post], [
@@ -546,6 +546,7 @@ class ArticlesLoopBlockTest extends TestCase
         $result = ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
+        $this->assertSame([], BuildContext::get_seen_post_ids());
     }
 
     public function test_build_applies_taxonomy_filters_without_crash(): void

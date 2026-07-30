@@ -29,7 +29,7 @@ update_option('teksttv_features', [
 ]);
 
 update_option('teksttv_loop_tv1', [
-    ['type' => 'articles', 'count' => 5, 'taxonomy_filters' => []],
+    ['type' => 'articles', 'count' => 1, 'taxonomy_filters' => []],
 ]);
 
 update_option('teksttv_ticker_tv1', [
@@ -122,21 +122,71 @@ if (!get_user_by('login', 'teksttv_editor')) {
     (new WP_User($teksttv_uid))->set_role('teksttv_smoke_role');
 }
 
-// Published post that produces a text slide (active + content meta).
+// Published post that produces a text slide (active + content meta). Keep it
+// older than the scheduled-out fixture below so the REST test proves that the
+// articles block backfills past an ineligible newer query result.
 $teksttv_existing = get_posts([
     'name' => 'teksttv-smoke-post',
     'post_type' => 'post',
     'post_status' => 'any',
     'numberposts' => 1,
 ]);
-$teksttv_post_id = $teksttv_existing ? $teksttv_existing[0]->ID : wp_insert_post([
+$teksttv_post_data = [
     'post_title' => 'TekstTV Smoke Post',
     'post_name' => 'teksttv-smoke-post',
     'post_content' => '<p>Bronartikel voor de integratietest.</p>',
     'post_status' => 'publish',
-]);
+    'post_date' => wp_date('Y-m-d H:i:s', time() - HOUR_IN_SECONDS, wp_timezone()),
+];
+if ($teksttv_existing) {
+    $teksttv_post_data['ID'] = $teksttv_existing[0]->ID;
+}
+$teksttv_post_id = wp_insert_post($teksttv_post_data, true);
+if (is_wp_error($teksttv_post_id)) {
+    throw new RuntimeException('Could not create the E2E smoke post: ' . $teksttv_post_id->get_error_message());
+}
+
 update_post_meta($teksttv_post_id, '_teksttv_active', '1');
 update_post_meta($teksttv_post_id, '_teksttv_content', '<p>Slide-inhoud voor de smoke test.</p>');
 update_post_meta($teksttv_post_id, '_teksttv_images', [$teksttv_attachment_id]);
+delete_post_meta($teksttv_post_id, '_teksttv_days');
+delete_post_meta($teksttv_post_id, '_teksttv_date_start');
+delete_post_meta($teksttv_post_id, '_teksttv_date_end');
 
-echo 'fixtures-ok post_id=' . $teksttv_post_id . ' attachment_id=' . $teksttv_attachment_id . "\n";
+$teksttv_scheduled_existing = get_posts([
+    'name' => 'teksttv-scheduled-future-post',
+    'post_type' => 'post',
+    'post_status' => 'any',
+    'numberposts' => 1,
+]);
+$teksttv_scheduled_post_data = [
+    'post_title' => 'TekstTV Toekomstig Bericht',
+    'post_name' => 'teksttv-scheduled-future-post',
+    'post_content' => '<p>Dit recentere artikel mag nog niet worden uitgezonden.</p>',
+    'post_status' => 'publish',
+    'post_date' => wp_date('Y-m-d H:i:s', time(), wp_timezone()),
+];
+if ($teksttv_scheduled_existing) {
+    $teksttv_scheduled_post_data['ID'] = $teksttv_scheduled_existing[0]->ID;
+}
+$teksttv_scheduled_post_id = wp_insert_post($teksttv_scheduled_post_data, true);
+if (is_wp_error($teksttv_scheduled_post_id)) {
+    throw new RuntimeException(
+        'Could not create the scheduled E2E post: ' . $teksttv_scheduled_post_id->get_error_message()
+    );
+}
+
+update_post_meta($teksttv_scheduled_post_id, '_teksttv_active', '1');
+update_post_meta($teksttv_scheduled_post_id, '_teksttv_content', '<p>Nog niet uitzenden.</p>');
+update_post_meta(
+    $teksttv_scheduled_post_id,
+    '_teksttv_date_start',
+    wp_date('Y-m-d', time() + DAY_IN_SECONDS, wp_timezone())
+);
+delete_post_meta($teksttv_scheduled_post_id, '_teksttv_days');
+delete_post_meta($teksttv_scheduled_post_id, '_teksttv_date_end');
+delete_post_meta($teksttv_scheduled_post_id, '_teksttv_images');
+
+echo 'fixtures-ok post_id=' . $teksttv_post_id
+    . ' scheduled_post_id=' . $teksttv_scheduled_post_id
+    . ' attachment_id=' . $teksttv_attachment_id . "\n";

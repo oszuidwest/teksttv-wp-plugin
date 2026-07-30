@@ -12,6 +12,9 @@ use WP_Query;
 
 final class ArticlesLoopBlock implements LoopBlock
 {
+    /** Keep runtime scheduling filters from turning a small block into an unbounded post scan. */
+    private const MAX_QUERY_BATCHES = 10;
+
     public static function register(): void
     {
         BlockRegistry::register('articles', [
@@ -106,70 +109,95 @@ final class ArticlesLoopBlock implements LoopBlock
             $meta_query[] = Helpers::get_date_end_meta_query();
         }
 
-        $query = new WP_Query(RecentPostsQuery::args($count, $taxonomy_filters, [
-            'meta_query' => $meta_query,
-        ]));
-
         $text_duration = Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text');
         $image_duration = Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image');
+        $batch_size = min(50, max(10, $count));
+        $excluded_post_ids = BuildContext::get_seen_post_ids();
+        $emitted_post_count = 0;
 
-        while ($query->have_posts()) {
-            $query->the_post();
-            $post_id = get_the_ID();
+        for ($batch = 0; $batch < self::MAX_QUERY_BATCHES && $emitted_post_count < $count; $batch++) {
+            $extra_query_args = ['meta_query' => $meta_query];
+            if ($excluded_post_ids !== []) {
+                $extra_query_args['post__not_in'] = $excluded_post_ids;
+            }
 
-            if ($scheduling) {
-                $days = Helpers::normalize_days(get_post_meta($post_id, '_teksttv_days', true));
-                if (!Helpers::is_allowed_on_day($days)) {
+            $query = new WP_Query(RecentPostsQuery::args($batch_size, $taxonomy_filters, $extra_query_args));
+            $candidate_count = 0;
+
+            while ($query->have_posts()) {
+                $query->the_post();
+                $candidate_count++;
+                $post_id = get_the_ID();
+                $excluded_post_ids[] = (int) $post_id;
+
+                if ($scheduling) {
+                    $days = Helpers::normalize_days(get_post_meta($post_id, '_teksttv_days', true));
+                    if (!Helpers::is_allowed_on_day($days)) {
+                        continue;
+                    }
+
+                    $date_start = get_post_meta($post_id, '_teksttv_date_start', true);
+                    $date_end = get_post_meta($post_id, '_teksttv_date_end', true);
+                    if (!Helpers::is_within_date_range($date_start, $date_end)) {
+                        continue;
+                    }
+                }
+
+                $post_slides = [];
+                $title_override = $custom_title ? get_post_meta($post_id, '_teksttv_title', true) : '';
+                $title = !empty($title_override) ? $title_override : get_the_title();
+                $content = get_post_meta($post_id, '_teksttv_content', true);
+                $sidebar_image = self::get_sidebar_image_data($post_id);
+
+                if (!empty($content)) {
+                    $pages = self::split_pages($content);
+                    foreach ($pages as $page_content) {
+                        $slide = [
+                            'type' => 'text',
+                            'duration' => $text_duration,
+                            'title' => $title,
+                            'body' => wpautop($page_content),
+                        ];
+
+                        if (!empty($sidebar_image)) {
+                            $slide['image'] = $sidebar_image;
+                        }
+
+                        $post_slides[] = $slide;
+                    }
+                }
+
+                $images = $extra_images ? get_post_meta($post_id, '_teksttv_images', true) : [];
+                if (!empty($images) && is_array($images)) {
+                    foreach ($images as $attachment_id) {
+                        $image_data = Helpers::get_image_data((int) $attachment_id, 'large', 'image_slide');
+                        if ($image_data) {
+                            $post_slides[] = array_merge([
+                                'type' => 'image',
+                                'duration' => $image_duration,
+                            ], $image_data);
+                        }
+                    }
+                }
+
+                if ($post_slides === []) {
                     continue;
                 }
 
-                $date_start = get_post_meta($post_id, '_teksttv_date_start', true);
-                $date_end = get_post_meta($post_id, '_teksttv_date_end', true);
-                if (!Helpers::is_within_date_range($date_start, $date_end)) {
-                    continue;
+                array_push($slides, ...$post_slides);
+                BuildContext::mark_post_seen((int) $post_id);
+                $emitted_post_count++;
+
+                if ($emitted_post_count >= $count) {
+                    break;
                 }
             }
 
-            BuildContext::mark_post_seen((int) $post_id);
-
-            $title_override = $custom_title ? get_post_meta($post_id, '_teksttv_title', true) : '';
-            $title = !empty($title_override) ? $title_override : get_the_title();
-            $content = get_post_meta($post_id, '_teksttv_content', true);
-            $sidebar_image = self::get_sidebar_image_data($post_id);
-
-            if (!empty($content)) {
-                $pages = self::split_pages($content);
-                foreach ($pages as $page_content) {
-                    $slide = [
-                        'type' => 'text',
-                        'duration' => $text_duration,
-                        'title' => $title,
-                        'body' => wpautop($page_content),
-                    ];
-
-                    if (!empty($sidebar_image)) {
-                        $slide['image'] = $sidebar_image;
-                    }
-
-                    $slides[] = $slide;
-                }
-            }
-
-            $images = $extra_images ? get_post_meta($post_id, '_teksttv_images', true) : [];
-            if (!empty($images) && is_array($images)) {
-                foreach ($images as $attachment_id) {
-                    $image_data = Helpers::get_image_data((int) $attachment_id, 'large', 'image_slide');
-                    if ($image_data) {
-                        $slides[] = array_merge([
-                            'type' => 'image',
-                            'duration' => $image_duration,
-                        ], $image_data);
-                    }
-                }
+            wp_reset_postdata();
+            if ($candidate_count < $batch_size) {
+                break;
             }
         }
-
-        wp_reset_postdata();
 
         return $slides;
     }
