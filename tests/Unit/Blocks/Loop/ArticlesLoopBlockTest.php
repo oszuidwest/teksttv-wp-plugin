@@ -479,6 +479,7 @@ class ArticlesLoopBlockTest extends TestCase
         $result = ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
+        $this->assertSame([], BuildContext::get_seen_post_ids());
     }
 
     public function test_build_skips_post_with_no_selected_days(): void
@@ -490,21 +491,6 @@ class ArticlesLoopBlockTest extends TestCase
         ]);
 
         $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
-
-        $this->assertSame([], $result);
-    }
-
-    public function test_build_skips_post_outside_date_range(): void
-    {
-        $post = (object) ['ID' => 10];
-        $this->setupArticleSlides([$post], [
-            '10:_teksttv_days' => '',
-            '10:_teksttv_date_start' => '2026-05-01',
-            '10:_teksttv_date_end' => '2026-05-31',
-        ]);
-
-        $block = ['count' => 1];
-        $result = ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
     }
@@ -578,20 +564,6 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame([10], BuildContext::get_seen_post_ids());
     }
 
-    public function test_build_does_not_mark_post_filtered_by_scheduling(): void
-    {
-        $post = (object) ['ID' => 10];
-        $this->setupArticleSlides([$post], [
-            '10:_teksttv_days' => '',
-            '10:_teksttv_date_start' => '2026-05-01',
-            '10:_teksttv_date_end' => '2026-05-31',
-        ]);
-
-        ArticlesLoopBlock::build(['count' => 1], 'tv1');
-
-        $this->assertSame([], BuildContext::get_seen_post_ids());
-    }
-
     // =========================================================================
     // Features are runtime-authoritative — disabling one stops its stored meta
     // from acting, even though the values remain in the database.
@@ -641,7 +613,7 @@ class ArticlesLoopBlockTest extends TestCase
         ArticlesLoopBlock::build(['count' => 3], 'tv1');
 
         $meta_query = \WP_Query::$lastInstance->query_vars['meta_query'];
-        // Only relation + the _teksttv_active clause; no date_end sub-query.
+        // Only relation + the _teksttv_active clause; no date-range sub-query.
         $this->assertSame('AND', $meta_query['relation']);
         $this->assertCount(2, $meta_query);
         $this->assertSame('_teksttv_active', $meta_query[0]['key']);

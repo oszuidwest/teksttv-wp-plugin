@@ -674,21 +674,27 @@ class Helpers
     }
 
     /**
-     * Build a meta_query fragment that pre-filters expired posts in SQL.
-     *
-     * Excludes posts whose _teksttv_date_end is set and is before today.
-     * Posts without a date_end (or with empty value) pass through.
+     * Build a meta_query fragment for posts whose optional date range includes today.
      *
      * @return array<int|string, mixed>
      */
-    public static function get_date_end_meta_query(): array
+    public static function get_date_range_meta_query(): array
     {
         $today = current_datetime()->format('Y-m-d');
         return [
-            'relation' => 'OR',
-            ['key' => '_teksttv_date_end', 'compare' => 'NOT EXISTS'],
-            ['key' => '_teksttv_date_end', 'value' => '', 'compare' => '='],
-            ['key' => '_teksttv_date_end', 'value' => $today, 'compare' => '>=', 'type' => 'DATE'],
+            'relation' => 'AND',
+            [
+                'relation' => 'OR',
+                ['key' => '_teksttv_date_start', 'compare' => 'NOT EXISTS'],
+                ['key' => '_teksttv_date_start', 'value' => '', 'compare' => '='],
+                ['key' => '_teksttv_date_start', 'value' => $today, 'compare' => '<=', 'type' => 'DATE'],
+            ],
+            [
+                'relation' => 'OR',
+                ['key' => '_teksttv_date_end', 'compare' => 'NOT EXISTS'],
+                ['key' => '_teksttv_date_end', 'value' => '', 'compare' => '='],
+                ['key' => '_teksttv_date_end', 'value' => $today, 'compare' => '>=', 'type' => 'DATE'],
+            ],
         ];
     }
 }

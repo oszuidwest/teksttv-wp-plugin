@@ -376,25 +376,39 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // get_date_end_meta_query()
+    // get_date_range_meta_query()
     // =========================================================================
 
-    public function test_get_date_end_meta_query_structure(): void
+    public function test_get_date_range_meta_query_structure(): void
     {
         $now = new \DateTimeImmutable('2026-04-07');
         Functions\expect('current_datetime')->once()->andReturn($now);
 
-        $result = Helpers::get_date_end_meta_query();
-
-        $this->assertSame('OR', $result['relation']);
-        $this->assertCount(3, array_filter($result, 'is_array'));
-
-        // Check the date comparison uses today's date
-        $date_clause = $result[2];
-        $this->assertSame('_teksttv_date_end', $date_clause['key']);
-        $this->assertSame('2026-04-07', $date_clause['value']);
-        $this->assertSame('>=', $date_clause['compare']);
-        $this->assertSame('DATE', $date_clause['type']);
+        $this->assertSame([
+            'relation' => 'AND',
+            [
+                'relation' => 'OR',
+                ['key' => '_teksttv_date_start', 'compare' => 'NOT EXISTS'],
+                ['key' => '_teksttv_date_start', 'value' => '', 'compare' => '='],
+                [
+                    'key' => '_teksttv_date_start',
+                    'value' => '2026-04-07',
+                    'compare' => '<=',
+                    'type' => 'DATE',
+                ],
+            ],
+            [
+                'relation' => 'OR',
+                ['key' => '_teksttv_date_end', 'compare' => 'NOT EXISTS'],
+                ['key' => '_teksttv_date_end', 'value' => '', 'compare' => '='],
+                [
+                    'key' => '_teksttv_date_end',
+                    'value' => '2026-04-07',
+                    'compare' => '>=',
+                    'type' => 'DATE',
+                ],
+            ],
+        ], Helpers::get_date_range_meta_query());
     }
 
     // =========================================================================

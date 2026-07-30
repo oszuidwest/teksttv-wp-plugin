@@ -12,7 +12,7 @@ use WP_Query;
 
 final class ArticlesLoopBlock implements LoopBlock
 {
-    /** Keep runtime scheduling filters from turning a small block into an unbounded post scan. */
+    /** Cap backfill re-queries when runtime filters (weekdays, empty content) keep rejecting candidates. */
     private const MAX_QUERY_BATCHES = 10;
 
     public static function register(): void
@@ -106,27 +106,25 @@ final class ArticlesLoopBlock implements LoopBlock
             ['key' => '_teksttv_active', 'value' => '1', 'compare' => '='],
         ];
         if ($scheduling) {
-            $meta_query[] = Helpers::get_date_end_meta_query();
+            $meta_query[] = Helpers::get_date_range_meta_query();
         }
 
         $text_duration = Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text');
         $image_duration = Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image');
-        $batch_size = min(50, max(10, $count));
+        $batch_size = max(10, $count);
+        // Must also carry rejected candidates (which BuildContext deliberately
+        // does not track), so this list supersedes RecentPostsQuery's exclusion.
         $excluded_post_ids = BuildContext::get_seen_post_ids();
         $emitted_post_count = 0;
 
         for ($batch = 0; $batch < self::MAX_QUERY_BATCHES && $emitted_post_count < $count; $batch++) {
-            $extra_query_args = ['meta_query' => $meta_query];
-            if ($excluded_post_ids !== []) {
-                $extra_query_args['post__not_in'] = $excluded_post_ids;
-            }
+            $query = new WP_Query(RecentPostsQuery::args($batch_size, $taxonomy_filters, [
+                'meta_query' => $meta_query,
+                'post__not_in' => $excluded_post_ids,
+            ]));
 
-            $query = new WP_Query(RecentPostsQuery::args($batch_size, $taxonomy_filters, $extra_query_args));
-            $candidate_count = 0;
-
-            while ($query->have_posts()) {
+            while ($emitted_post_count < $count && $query->have_posts()) {
                 $query->the_post();
-                $candidate_count++;
                 $post_id = get_the_ID();
                 $excluded_post_ids[] = (int) $post_id;
 
@@ -135,21 +133,15 @@ final class ArticlesLoopBlock implements LoopBlock
                     if (!Helpers::is_allowed_on_day($days)) {
                         continue;
                     }
-
-                    $date_start = get_post_meta($post_id, '_teksttv_date_start', true);
-                    $date_end = get_post_meta($post_id, '_teksttv_date_end', true);
-                    if (!Helpers::is_within_date_range($date_start, $date_end)) {
-                        continue;
-                    }
                 }
 
                 $post_slides = [];
-                $title_override = $custom_title ? get_post_meta($post_id, '_teksttv_title', true) : '';
-                $title = !empty($title_override) ? $title_override : get_the_title();
                 $content = get_post_meta($post_id, '_teksttv_content', true);
-                $sidebar_image = self::get_sidebar_image_data($post_id);
 
                 if (!empty($content)) {
+                    $title_override = $custom_title ? get_post_meta($post_id, '_teksttv_title', true) : '';
+                    $title = !empty($title_override) ? $title_override : get_the_title();
+                    $sidebar_image = self::get_sidebar_image_data($post_id);
                     $pages = self::split_pages($content);
                     foreach ($pages as $page_content) {
                         $slide = [
@@ -187,14 +179,10 @@ final class ArticlesLoopBlock implements LoopBlock
                 array_push($slides, ...$post_slides);
                 BuildContext::mark_post_seen((int) $post_id);
                 $emitted_post_count++;
-
-                if ($emitted_post_count >= $count) {
-                    break;
-                }
             }
 
             wp_reset_postdata();
-            if ($candidate_count < $batch_size) {
+            if (count($query->posts) < $batch_size) {
                 break;
             }
         }
