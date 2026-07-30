@@ -89,6 +89,16 @@ class AdminPageTest extends TestCase
         ));
     }
 
+    public function test_preview_url_shares_site_origin_decodes_percent_encoded_host(): void
+    {
+        $this->stubWpParseUrl();
+
+        $this->assertTrue(AdminPage::preview_url_shares_site_origin(
+            'https://%62redanu.nl/preview',
+            'https://bredanu.nl'
+        ));
+    }
+
     public function test_sanitize_ai_prompts_preserves_omitted_technical_fields(): void
     {
         Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);

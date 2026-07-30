@@ -42,7 +42,7 @@ class AdminPage
         }
 
         $scheme = strtolower($parts['scheme'] ?? '');
-        $host = strtolower($parts['host'] ?? '');
+        $host = strtolower(rawurldecode($parts['host'] ?? ''));
         if ($host === '' || !isset(self::ORIGIN_DEFAULT_PORTS[$scheme])) {
             return null;
         }
