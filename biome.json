@@ -1,33 +1,31 @@
 {
     "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
     "files": {
-        "includes": [
-            "resources/**/*.ts",
-            "resources/**/*.js",
-            "resources/**/*.css",
-            "tests/**/*.ts",
-            "tests/**/*.js",
-            "playwright.config.ts"
-        ]
+        "includes": ["resources/**", "tests/**", "playwright.config.ts"]
     },
     "linter": {
         "enabled": true,
         "rules": {
-            "preset": "recommended",
             "complexity": {
-                "noForEach": "off",
-                "noImportantStyles": "off",
-                "useOptionalChain": "off"
+                "noImportantStyles": "off"
             },
             "correctness": {
                 "noUnusedVariables": "warn"
-            },
-            "style": {
-                "noDescendingSpecificity": "off",
-                "useTemplate": "off"
             }
         }
     },
+    "overrides": [
+        {
+            "includes": ["resources/css/partials/blocks.css"],
+            "linter": {
+                "rules": {
+                    "style": {
+                        "noDescendingSpecificity": "off"
+                    }
+                }
+            }
+        }
+    ],
     "formatter": {
         "indentStyle": "space",
         "indentWidth": 4,

@@ -79,7 +79,7 @@ From [`package.json`](package.json):
 | `bun run dev`      | Watch JS and CSS |
 | `bun run check`    | PHPCS plus all frontend checks |
 | `bun run check:frontend` | Biome, TypeScript and Bun unit tests |
-| `bun run lint`     | Biome on maintained JS, TS and CSS sources/tests |
+| `bun run lint:js`  | Biome on maintained JS, TS and CSS sources/tests |
 | `bun run lint:fix` | PHPCBF + Biome `--write` |
 | `bun run typecheck`| TypeScript type checking without emitting files |
 | `bun run analyse`  | PHPStan |

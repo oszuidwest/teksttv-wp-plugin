@@ -35,7 +35,7 @@ rsync -a "$ROOT/" "$DEST/" \
     --exclude='package.json' \
     --exclude='bun.lock' \
     --exclude='biome.json' \
-    --exclude='tsconfig.json' \
+    --exclude='tsconfig*.json' \
     --exclude='phpunit.xml' \
     --exclude='patchwork.json' \
     --exclude='phpcs.xml' \

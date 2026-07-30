@@ -10,11 +10,10 @@
         "dev": "bun run build:js -- --watch & bun run build:css -- --watch",
         "check": "bun run lint:php && bun run check:frontend",
         "check:frontend": "bun run lint:js && bun run typecheck && bun run test:js",
-        "lint": "bun run lint:js",
         "lint:php": "vendor/bin/phpcs",
         "lint:js": "biome check .",
-        "lint:fix": "(vendor/bin/phpcbf; [ $? -le 1 ]) && biome check --write .",
-        "typecheck": "tsc",
+        "lint:fix": "vendor/bin/phpcbf; p=$?; biome check --write . && [ $p -le 1 ]",
+        "typecheck": "tsc && tsc -p tsconfig.tests.json",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "test": "vendor/bin/phpunit",
         "test:js": "bun test tests/js",
@@ -30,10 +29,9 @@
         "tom-select": "^2.6.2"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.5.5",
+        "@biomejs/biome": "2.5.5",
         "@playwright/test": "^1.62.0",
         "@types/bun": "1.3.14",
-        "@types/node": "26.1.2",
         "@types/sortablejs": "^1.15.9",
         "@wordpress/env": "^11.11.0",
         "typescript": "7.0.2"
