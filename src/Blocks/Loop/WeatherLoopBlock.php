@@ -3,12 +3,11 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
 use TekstTV\Helpers;
 use TekstTV\OpenWeatherProvider;
 use TekstTV\WeatherProvider;
 
-final class WeatherLoopBlock implements LoopBlock
+final class WeatherLoopBlock
 {
     private const DEFAULT_DURATION_SECONDS = 15;
 

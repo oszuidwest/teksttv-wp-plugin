@@ -6,11 +6,10 @@ use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Common\RecentPostsQuery;
 use TekstTV\Blocks\Common\TaxonomyFilters;
-use TekstTV\Blocks\Contracts\TickerBlock;
 use TekstTV\Helpers;
 use WP_Query;
 
-final class TickerHeadlinesBlock implements TickerBlock
+final class TickerHeadlinesBlock
 {
     public static function register(): void
     {

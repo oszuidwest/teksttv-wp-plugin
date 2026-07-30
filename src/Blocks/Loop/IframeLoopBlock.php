@@ -3,10 +3,9 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
 use TekstTV\Helpers;
 
-final class IframeLoopBlock implements LoopBlock
+final class IframeLoopBlock
 {
     public static function register(): void
     {

@@ -40,7 +40,7 @@ Register a type with a unique, prefixed slug and these arguments:
 | `save` | Sanitizes one submitted row |
 | `build` | Produces REST output for one stored row |
 
-The callbacks have these signatures:
+Each callback may be any PHP callable with these signatures:
 
 ```php
 render(int|string $index, array $data, string $prefix): void
@@ -119,8 +119,6 @@ Ticker builders must return a list of entries containing a string `message`:
 ### Loop output
 
 Loop builders return a list of slides. Each slide must match a type supported by the [TekstTV frontend](https://github.com/oszuidwest/teksttv-frontend). Durations are expressed in milliseconds.
-
-The optional `TekstTV\Blocks\Contracts\LoopBlock` and `TekstTV\Blocks\Contracts\TickerBlock` interfaces document the class-based callback contract. The registry also accepts closures and other callables directly.
 
 ## Image data
 
@@ -231,7 +229,7 @@ The `/teksttv/v1/slides` response is built fresh on every request; there is no p
 - If an add-on is disabled, its stored rows cannot be rendered. TekstTV preserves those rows when the channel is saved so they become available again when the type is registered.
 - Registry definitions are not validated when registered. Callback availability and saved array data are checked only when used.
 
-Treat the registry and interfaces as the current extension API and test add-ons against the TekstTV versions they support.
+Treat the registry as the current extension API and test add-ons against the TekstTV versions they support.
 
 ## Verification checklist
 

@@ -3,9 +3,8 @@
 namespace TekstTV\Blocks\Ticker;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\TickerBlock;
 
-final class TickerTextBlock implements TickerBlock
+final class TickerTextBlock
 {
     public static function register(): void
     {
