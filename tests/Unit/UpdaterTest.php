@@ -2,6 +2,7 @@
 
 namespace TekstTV\Tests\Unit;
 
+use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
 use TekstTV\Updater;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
@@ -30,17 +31,44 @@ class UpdaterTest extends TestCase
         $this->assertSame($asset_url, $release->downloadUrl);
     }
 
-    public function test_only_release_detection_strategy_is_retained(): void
+    public function test_init_keeps_only_the_release_detection_strategy(): void
     {
+        // Constants and functions PUC needs to build a real update checker.
+        if (!defined('WP_DEBUG')) {
+            define('WP_DEBUG', false);
+        }
+        if (!defined('WP_PLUGIN_DIR')) {
+            define('WP_PLUGIN_DIR', dirname(__DIR__, 3));
+        }
+        if (!defined('WPMU_PLUGIN_DIR')) {
+            define('WPMU_PLUGIN_DIR', dirname(__DIR__, 3) . '/mu-plugins');
+        }
+        Functions\when('is_admin')->justReturn(true);
+        Functions\when('wp_next_scheduled')->justReturn(1234567890);
+        Functions\when('register_deactivation_hook')->justReturn(null);
+        Functions\when('plugin_basename')->alias(
+            static fn(string $file): string => basename(dirname($file)) . '/' . basename($file)
+        );
+        Functions\when('wp_parse_url')->alias(
+            static fn(string $url, int $component) => parse_url($url, $component)
+        );
+
+        $filter = null;
+        Filters\expectAdded('puc_vcs_update_detection_strategies-teksttv')
+            ->once()
+            ->whenHappen(static function (callable $callback) use (&$filter): void {
+                $filter = $callback;
+            });
+
+        Updater::init(dirname(__DIR__, 2) . '/teksttv.php');
+
+        $this->assertNotNull($filter);
         $release_strategy = static fn(): string => 'release';
-        $strategies = [
+        $filtered = $filter([
             'latest_release' => $release_strategy,
             'latest_tag' => static fn(): string => 'tag',
             'branch' => static fn(): string => 'branch',
-        ];
-
-        $filtered = self::callPrivate(Updater::class, 'require_release_strategy', [$strategies]);
-
+        ]);
         $this->assertSame(['latest_release' => $release_strategy], $filtered);
     }
 
@@ -49,7 +77,6 @@ class UpdaterTest extends TestCase
         Functions\when('wp_parse_url')->alias(
             static fn(string $url, int $component) => parse_url($url, $component)
         );
-        Functions\when('add_filter')->justReturn(true);
         Functions\when('is_wp_error')->justReturn(false);
         Functions\when('wp_doing_cron')->justReturn(false);
         Functions\when('wp_remote_retrieve_response_code')->justReturn(200);
@@ -72,9 +99,6 @@ class UpdaterTest extends TestCase
         Functions\when('wp_remote_get')->justReturn([]);
 
         $api_class = PucFactory::getLatestClassVersion('GitHubApi');
-        if (!is_string($api_class)) {
-            throw new \RuntimeException('No compatible GitHub API class is registered.');
-        }
         return new $api_class('https://github.com/oszuidwest/teksttv-wp-plugin/');
     }
 }
