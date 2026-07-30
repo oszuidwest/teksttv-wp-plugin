@@ -17,8 +17,7 @@ on:
       - 'teksttv.php'
       - 'src/**'
       - 'resources/**'
-      - 'tests/package-version.sh'
-      - 'tests/release-state.sh'
+      - 'tests/*.sh'
       - '.github/workflows/build-plugin.yml'
   pull_request:
     paths:
@@ -34,8 +33,7 @@ on:
       - 'teksttv.php'
       - 'src/**'
       - 'resources/**'
-      - 'tests/package-version.sh'
-      - 'tests/release-state.sh'
+      - 'tests/*.sh'
       - '.github/workflows/build-plugin.yml'
   workflow_dispatch:
 
@@ -55,15 +53,15 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - uses: oven-sh/setup-bun@v2
-
-      - run: bun install --frozen-lockfile
-
       - name: Test production version validation
         run: bash tests/package-version.sh
 
       - name: Test immutable release decisions
         run: bash tests/release-state.sh
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
 
       - name: Assert packaging rejects missing build output
         run: |

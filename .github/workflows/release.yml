@@ -49,8 +49,7 @@ jobs:
             bash bin/release-state.sh \
               "$VERSION" "$GITHUB_SHA" "$TAG_COMMIT" "$LATEST_TAG" "$RELEASE_EXISTS"
           )"
-          printf '%s\n' "$STATE"
-          printf '%s\nversion=%s\n' "$STATE" "$VERSION" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$STATE" | tee -a "$GITHUB_OUTPUT"
 
       - uses: oven-sh/setup-bun@v2
         if: steps.decide.outputs.release_needed == 'true'
@@ -69,7 +68,7 @@ jobs:
       - name: Tag the built commit
         if: steps.decide.outputs.release_needed == 'true' && steps.decide.outputs.tag_exists != 'true'
         env:
-          VERSION: ${{ steps.decide.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -80,7 +79,7 @@ jobs:
         if: steps.decide.outputs.release_needed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.decide.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
           ARGS=("$VERSION" "$ZIP" --verify-tag --title "$VERSION" --generate-notes)
@@ -91,5 +90,7 @@ jobs:
 
       - name: Report skipped release
         if: steps.decide.outputs.release_needed != 'true'
+        env:
+          REASON: ${{ steps.decide.outputs.reason }}
         run: |
-          echo "::notice::Skipping release: this immutable version is already published."
+          echo "::notice::Skipping release: $REASON."

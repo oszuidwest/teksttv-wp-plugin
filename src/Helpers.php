@@ -639,7 +639,7 @@ class Helpers
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
             $deps,
-            self::asset_version('assets/admin.js'),
+            TEKSTTV_VERSION,
             true
         );
 
@@ -647,7 +647,7 @@ class Helpers
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
             $style_deps,
-            self::asset_version('assets/admin.css')
+            TEKSTTV_VERSION
         );
 
         if (wp_script_is('underscore', 'registered')) {
@@ -671,16 +671,6 @@ class Helpers
         wp_print_inline_script_tag(
             '(function(){var u=window.wpUnderscore;if(u&&(!window._||typeof window._.defaults!=="function")){window._=u;}})();'
         );
-    }
-
-    /**
-     * Use the immutable release version for every shipped script and stylesheet.
-     *
-     * @param string $relative_path Path under the plugin root, retained for call-site clarity.
-     */
-    public static function asset_version(string $relative_path): string
-    {
-        return TEKSTTV_VERSION;
     }
 
     /**

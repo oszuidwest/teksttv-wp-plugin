@@ -312,13 +312,13 @@ class AdminPage
             'teksttv-tomselect',
             TEKSTTV_PLUGIN_URL . 'assets/tom-select.default.min.css',
             [],
-            Helpers::asset_version('assets/tom-select.default.min.css')
+            TEKSTTV_VERSION
         );
         wp_enqueue_script(
             'teksttv-tomselect',
             TEKSTTV_PLUGIN_URL . 'assets/tom-select.complete.min.js',
             [],
-            Helpers::asset_version('assets/tom-select.complete.min.js'),
+            TEKSTTV_VERSION,
             true
         );
         Helpers::enqueue_admin_script(['teksttv-tomselect'], ['teksttv-tomselect']);
