@@ -27,8 +27,18 @@ jobs:
 
       - name: Extract and validate version
         id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="$(bash bin/plugin-version.sh)"
+          LATEST_VERSION="$(gh release list --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName // empty')"
+          # The single-quoted snippet is evaluated by PHP.
+          # shellcheck disable=SC2016
+          if [[ -n "$LATEST_VERSION" ]] &&
+            ! php -r 'exit(version_compare($argv[1], $argv[2], ">") ? 0 : 1);' "$VERSION" "${LATEST_VERSION#v}"; then
+            echo "::error::Plugin version $VERSION is not newer than latest release $LATEST_VERSION."
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: oven-sh/setup-bun@v2
