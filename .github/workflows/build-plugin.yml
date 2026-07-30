@@ -56,9 +56,6 @@ jobs:
       - name: Test production version validation
         run: bash tests/package-version.sh
 
-      - name: Test immutable release decisions
-        run: bash tests/release-state.sh
-
       - uses: oven-sh/setup-bun@v2
 
       - run: bun install --frozen-lockfile

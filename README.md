@@ -22,10 +22,10 @@ same canonical packager as the E2E suite: tracked production source, the exact
 built asset set, and a fresh `composer install --no-dev` inside the staged
 plugin. Upload the ZIP under Plugins → Add New → Upload Plugin and activate.
 
-The workflow requires the plugin header and `TEKSTTV_VERSION` to match. Published
-version tags are immutable: a new build requires a higher version. Re-running a
-failed release can complete a missing GitHub release only when its existing tag
-still points to the same commit.
+The workflow requires the plugin header and `TEKSTTV_VERSION` to match. GitHub
+creates the version tag and publishes the ZIP using repository-native immutable
+releases, so published tags and assets cannot be replaced. An existing
+unpublished tag is accepted only when it points to the commit being released.
 
 ### Build from source
 

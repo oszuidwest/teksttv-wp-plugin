@@ -31,66 +31,40 @@ jobs:
           VERSION="$(bash bin/plugin-version.sh)"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Decide whether to release
-        id: decide
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          TAG_COMMIT="$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}" || true)"
-          LATEST_TAG=$(git describe --tags \
-            "$(git rev-list --tags --max-count=1)" 2>/dev/null || echo "")
-          RELEASE_EXISTS=false
-          if [ -n "$TAG_COMMIT" ] && gh release view "$VERSION" >/dev/null 2>&1; then
-            RELEASE_EXISTS=true
-          fi
-
-          STATE="$(
-            bash bin/release-state.sh \
-              "$VERSION" "$GITHUB_SHA" "$TAG_COMMIT" "$LATEST_TAG" "$RELEASE_EXISTS"
-          )"
-          printf '%s\n' "$STATE" | tee -a "$GITHUB_OUTPUT"
-
       - uses: oven-sh/setup-bun@v2
-        if: steps.decide.outputs.release_needed == 'true'
 
       - name: Install JS dependencies
-        if: steps.decide.outputs.release_needed == 'true'
         run: bun install --frozen-lockfile
 
       # The packager writes its zip= output to GITHUB_OUTPUT itself, so the
       # artifact naming convention lives only in bin/package-plugin.sh.
       - name: Build and validate canonical plugin artifact
-        if: steps.decide.outputs.release_needed == 'true'
         id: package
         run: bun run build:package
 
-      - name: Tag the built commit
-        if: steps.decide.outputs.release_needed == 'true' && steps.decide.outputs.tag_exists != 'true'
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$VERSION" "$GITHUB_SHA"
-          git push origin "refs/tags/$VERSION"
-
-      - name: Create GitHub release
-        if: steps.decide.outputs.release_needed == 'true'
+      - name: Publish immutable GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
-          ARGS=("$VERSION" "$ZIP" --verify-tag --title "$VERSION" --generate-notes)
+          TAG_COMMIT="$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}" || true)"
+          if [[ -n "$TAG_COMMIT" && "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "::error::Tag $VERSION already points to $TAG_COMMIT; bump the plugin version."
+            exit 1
+          fi
+
+          # GitHub CLI creates a draft, uploads the ZIP, and then publishes it.
+          # Repository-native immutability locks the resulting tag and asset.
+          ARGS=(
+            "$VERSION"
+            "$ZIP"
+            --target "$GITHUB_SHA"
+            --fail-on-no-commits
+            --title "$VERSION"
+            --generate-notes
+          )
           if [[ "$VERSION" == *-* ]]; then
             ARGS+=(--prerelease)
           fi
           gh release create "${ARGS[@]}"
-
-      - name: Report skipped release
-        if: steps.decide.outputs.release_needed != 'true'
-        env:
-          REASON: ${{ steps.decide.outputs.reason }}
-        run: |
-          echo "::notice::Skipping release: $REASON."
