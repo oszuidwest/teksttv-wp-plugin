@@ -4,6 +4,8 @@ name: Release
 on:
   workflow_dispatch:
 
+concurrency: release
+
 permissions:
   contents: read
 
