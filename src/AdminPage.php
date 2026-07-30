@@ -4,6 +4,11 @@ namespace TekstTV;
 
 class AdminPage
 {
+    private const ORIGIN_DEFAULT_PORTS = [
+        'http' => 80,
+        'https' => 443,
+    ];
+
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
@@ -13,7 +18,7 @@ class AdminPage
     }
 
     /**
-     * Whether the preview URL shares the site's origin (host).
+     * Whether the preview URL shares the site's HTTP(S) origin.
      *
      * The preview iframes run with sandbox="allow-scripts allow-same-origin",
      * which is safe for a preview app on a separate origin but effectively
@@ -21,15 +26,53 @@ class AdminPage
      */
     public static function preview_url_shares_site_origin(string $preview_url, string $site_url): bool
     {
-        if ($preview_url === '') {
-            return false;
+        $preview_origin = self::parse_http_origin($preview_url);
+
+        return $preview_origin !== null && $preview_origin === self::parse_http_origin($site_url);
+    }
+
+    /**
+     * @return array{scheme: string, host: string, port: int}|null
+     */
+    private static function parse_http_origin(string $url): ?array
+    {
+        // parse_url() replaces bytes 0x80-0x9F and 0xAD in hosts with "_",
+        // corrupting raw UTF-8 (e.g. the 0x9F in "ß"), so percent-encode
+        // high bytes first and decode the host after parsing.
+        $encoded_url = preg_replace_callback(
+            '/[\x80-\xFF]/',
+            static fn (array $matches): string => rawurlencode($matches[0]),
+            $url
+        );
+        $parts = wp_parse_url($encoded_url ?? $url);
+        if (!is_array($parts)) {
+            return null;
         }
-        $preview_host = wp_parse_url($preview_url, PHP_URL_HOST);
-        $site_host = wp_parse_url($site_url, PHP_URL_HOST);
-        if (!is_string($preview_host) || !is_string($site_host) || $preview_host === '' || $site_host === '') {
-            return false;
+
+        $scheme = strtolower($parts['scheme'] ?? '');
+        $host = rawurldecode($parts['host'] ?? '');
+        if ($host === '' || !isset(self::ORIGIN_DEFAULT_PORTS[$scheme])) {
+            return null;
         }
-        return strtolower($preview_host) === strtolower($site_host);
+
+        if (preg_match('/[^\x00-\x7F]/', $host) === 1) {
+            $ascii_host = idn_to_ascii(
+                $host,
+                IDNA_CHECK_BIDI | IDNA_CHECK_CONTEXTJ | IDNA_NONTRANSITIONAL_TO_ASCII,
+                INTL_IDNA_VARIANT_UTS46
+            );
+            if ($ascii_host === false) {
+                return null;
+            }
+
+            $host = $ascii_host;
+        }
+
+        return [
+            'scheme' => $scheme,
+            'host' => strtolower($host),
+            'port' => $parts['port'] ?? self::ORIGIN_DEFAULT_PORTS[$scheme],
+        ];
     }
 
     /**
