@@ -118,9 +118,7 @@ Ticker builders must return a list of entries containing a string `message`:
 
 ### Loop output
 
-Loop builders return a list of slides. Each slide must match a type supported by the [TekstTV frontend](https://github.com/oszuidwest/teksttv-frontend). Durations are expressed in milliseconds.
-
-The optional `TekstTV\Blocks\Contracts\LoopBlock` and `TekstTV\Blocks\Contracts\TickerBlock` interfaces document the class-based callback contract. The registry also accepts closures and other callables directly.
+Loop builders return a list of slides. Each slide must match a type supported by the [TekstTV frontend](https://github.com/oszuidwest/teksttv-frontend). Durations are expressed in milliseconds. The registry accepts any callable with the documented callback signature.
 
 ## Image data
 

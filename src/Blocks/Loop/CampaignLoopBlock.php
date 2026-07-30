@@ -3,10 +3,9 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
-use TekstTV\Blocks\Contracts\LoopBlock;
 use TekstTV\Helpers;
 
-final class CampaignLoopBlock implements LoopBlock
+final class CampaignLoopBlock
 {
     private const TRANSITION_DURATION = 5000;
 

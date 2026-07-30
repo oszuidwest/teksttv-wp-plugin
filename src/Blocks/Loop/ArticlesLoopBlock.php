@@ -6,11 +6,10 @@ use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Common\RecentPostsQuery;
 use TekstTV\Blocks\Common\TaxonomyFilters;
-use TekstTV\Blocks\Contracts\LoopBlock;
 use TekstTV\Helpers;
 use WP_Query;
 
-final class ArticlesLoopBlock implements LoopBlock
+final class ArticlesLoopBlock
 {
     public static function register(): void
     {
