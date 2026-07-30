@@ -3,11 +3,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      force:
-        description: 'Release even if the version was not bumped'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -23,6 +18,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+          tools: composer:v2
+
       - name: Extract and validate version
         id: version
         run: |
@@ -32,39 +34,23 @@ jobs:
       - name: Decide whether to release
         id: decide
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
-          FORCE: ${{ inputs.force }}
         run: |
+          TAG_COMMIT="$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}" || true)"
           LATEST_TAG=$(git describe --tags \
             "$(git rev-list --tags --max-count=1)" 2>/dev/null || echo "")
-          LATEST_BARE="${LATEST_TAG#v}"
-          version_gt() {
-            test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
-          }
-          if [ "$FORCE" = "true" ]; then
-            DECISION=true
-            REASON="forced"
-          elif [ -z "$LATEST_TAG" ]; then
-            DECISION=true
-            REASON="first release"
-          elif version_gt "$VERSION" "$LATEST_BARE"; then
-            DECISION=true
-            REASON="version bumped from $LATEST_TAG to $VERSION"
-          else
-            DECISION=false
-            REASON="no bump (latest: $LATEST_TAG, header: $VERSION)"
+          RELEASE_EXISTS=false
+          if [ -n "$TAG_COMMIT" ] && gh release view "$VERSION" >/dev/null 2>&1; then
+            RELEASE_EXISTS=true
           fi
-          echo "Release decision: $DECISION ($REASON)"
-          echo "release_needed=$DECISION" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Setup PHP
-        if: steps.decide.outputs.release_needed == 'true'
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.3"
-          coverage: none
-          tools: composer:v2
+          STATE="$(
+            bash bin/release-state.sh \
+              "$VERSION" "$GITHUB_SHA" "$TAG_COMMIT" "$LATEST_TAG" "$RELEASE_EXISTS"
+          )"
+          printf '%s\n' "$STATE"
+          printf '%s\nversion=%s\n' "$STATE" "$VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: oven-sh/setup-bun@v2
         if: steps.decide.outputs.release_needed == 'true'
@@ -81,23 +67,14 @@ jobs:
         run: bun run build:package
 
       - name: Tag the built commit
-        if: steps.decide.outputs.release_needed == 'true'
+        if: steps.decide.outputs.release_needed == 'true' && steps.decide.outputs.tag_exists != 'true'
         env:
           VERSION: ${{ steps.decide.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Tag only after the ZIP is proven, so a failed build never leaves an
-          # orphan tag. On the force path, move an existing tag to the built
-          # commit so the tag always matches the artifact just packaged.
-          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
-            echo "::notice::Tag $VERSION already exists; moving it to built commit $(git rev-parse --short HEAD) (force path)."
-            git tag -f "$VERSION"
-            git push -f origin "refs/tags/$VERSION"
-          else
-            git tag "$VERSION"
-            git push origin "refs/tags/$VERSION"
-          fi
+          git tag "$VERSION" "$GITHUB_SHA"
+          git push origin "refs/tags/$VERSION"
 
       - name: Create GitHub release
         if: steps.decide.outputs.release_needed == 'true'
@@ -106,7 +83,7 @@ jobs:
           VERSION: ${{ steps.decide.outputs.version }}
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
-          ARGS=("$VERSION" "$ZIP" --title "$VERSION" --generate-notes)
+          ARGS=("$VERSION" "$ZIP" --verify-tag --title "$VERSION" --generate-notes)
           if [[ "$VERSION" == *-* ]]; then
             ARGS+=(--prerelease)
           fi
@@ -115,5 +92,4 @@ jobs:
       - name: Report skipped release
         if: steps.decide.outputs.release_needed != 'true'
         run: |
-          echo "::notice::Skipping release: no version bump."
-          echo "Re-run the workflow with the 'force' input to release anyway."
+          echo "::notice::Skipping release: this immutable version is already published."

@@ -22,6 +22,11 @@ same canonical packager as the E2E suite: tracked production source, the exact
 built asset set, and a fresh `composer install --no-dev` inside the staged
 plugin. Upload the ZIP under Plugins → Add New → Upload Plugin and activate.
 
+The workflow requires the plugin header and `TEKSTTV_VERSION` to match. Published
+version tags are immutable: a new build requires a higher version. Re-running a
+failed release can complete a missing GitHub release only when its existing tag
+still points to the same commit.
+
 ### Build from source
 
 1. Drop the folder in `wp-content/plugins/` (any folder name, `teksttv` is fine).

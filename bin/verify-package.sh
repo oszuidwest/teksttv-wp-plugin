@@ -31,6 +31,8 @@ for required_file in "${REQUIRED_FILES[@]}"; do
     fi
 done
 
+validate_plugin_version "$PACKAGE_DIR/$SLUG.php" >/dev/null
+
 # Closed-world checks: the package may contain only the manifest's sources,
 # the declared assets, and the Composer vendor directory - nothing else.
 while IFS= read -r top_level_path; do

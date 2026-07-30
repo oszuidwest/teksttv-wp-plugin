@@ -674,18 +674,13 @@ class Helpers
     }
 
     /**
-     * WordPress script/style version string from file mtime (cache bust on deploy/edit).
+     * Use the immutable release version for every shipped script and stylesheet.
      *
-     * @param string $relative_path Path under the plugin root, e.g. assets/admin.js
+     * @param string $relative_path Path under the plugin root, retained for call-site clarity.
      */
     public static function asset_version(string $relative_path): string
     {
-        $path = TEKSTTV_PLUGIN_DIR . ltrim($relative_path, '/');
-        if (!is_readable($path)) {
-            return TEKSTTV_VERSION;
-        }
-
-        return (string) filemtime($path);
+        return TEKSTTV_VERSION;
     }
 
     /**

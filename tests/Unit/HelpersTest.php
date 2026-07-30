@@ -7,6 +7,12 @@ use TekstTV\Helpers;
 
 class HelpersTest extends TestCase
 {
+    public function test_asset_version_uses_release_version_instead_of_file_timestamp(): void
+    {
+        $this->assertSame(TEKSTTV_VERSION, Helpers::asset_version('src/Helpers.php'));
+        $this->assertSame(TEKSTTV_VERSION, Helpers::asset_version('assets/missing.js'));
+    }
+
     // =========================================================================
     // clamp_int()
     // =========================================================================

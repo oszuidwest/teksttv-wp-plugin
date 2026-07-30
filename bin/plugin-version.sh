@@ -8,4 +8,5 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 # shellcheck source=bin/package-lib.sh
 source "$ROOT/bin/package-lib.sh"
 
-read_plugin_version "$ROOT/$SLUG.php"
+FAIL_PREFIX="Version validation error"
+validate_plugin_version "$ROOT/$SLUG.php"

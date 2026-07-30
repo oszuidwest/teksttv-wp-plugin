@@ -26,7 +26,7 @@ if [[ "$GIT_ROOT" != "$ROOT" ]]; then
     fail "Expected repository root '$ROOT', found '$GIT_ROOT'."
 fi
 
-VERSION="$(read_plugin_version "$ROOT/$SLUG.php")"
+VERSION="$(validate_plugin_version "$ROOT/$SLUG.php")"
 ZIP_PATH="$RELEASE_DIR/$SLUG-$VERSION.zip"
 
 for tracked_path in "${TRACKED_PATHS[@]}"; do
