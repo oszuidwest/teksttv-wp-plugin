@@ -51,15 +51,20 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     function insertBlockFromTemplate(
         root: HTMLElement,
         templateId: string,
-        reindex: () => void,
         options: { focusText?: boolean } = {},
-    ): boolean {
+    ): void {
+        const reindex = root === tickerEl ? reindexTicker : root === blocksEl ? reindexBlocks : null;
+        if (!reindex) return;
         const template = document.getElementById(templateId);
-        if (!(template instanceof HTMLTemplateElement)) return false;
+        if (!(template instanceof HTMLTemplateElement)) return;
         const newBlock = template.content.firstElementChild?.cloneNode(true);
-        if (!(newBlock instanceof HTMLElement)) return false;
+        if (!(newBlock instanceof HTMLElement)) return;
         root.append(newBlock);
         reindex();
+        if (root === blocksEl) {
+            // Only the blocks list renders an empty-state; a ticker insert must not remove it.
+            document.querySelector('#teksttv-empty-state')?.remove();
+        }
         setBlockOpen(newBlock, true, false);
         // A no-op for templates without .teksttv-tomselect fields — the
         // class on the rendered fields is the declaration.
@@ -68,7 +73,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             ? newBlock.querySelector<HTMLInputElement>('input[type="text"]')
             : newBlock.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
         focusTarget?.focus();
-        return true;
+        refreshSummaries();
     }
 
     const clickCtx: BlocksWorkbenchContext = {
@@ -124,24 +129,17 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addLoopBlock(type: string): void {
             if (!blocksEl) return;
-            document.querySelector('#teksttv-empty-state')?.remove();
-            if (insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, reindexBlocks)) {
-                refreshSummaries();
-            }
+            insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`);
         },
 
         addCampaignBlock(): void {
             if (!blocksEl || !opts.campaignAdd) return;
-            document.querySelector('#teksttv-empty-state')?.remove();
-            if (insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign', reindexBlocks)) {
-                refreshSummaries();
-            }
+            insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign');
         },
 
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
-            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, reindexTicker, { focusText: true });
-            refreshSummaries();
+            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, { focusText: true });
         },
 
         expandAllBlocks(): void {
