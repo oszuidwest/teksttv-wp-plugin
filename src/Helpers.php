@@ -620,7 +620,7 @@ class Helpers
      */
     public static function admin_script_dependencies(): array
     {
-        return ['jquery', 'underscore', 'media-editor'];
+        return ['jquery', 'underscore', 'media-editor', 'wp-api-fetch'];
     }
 
     /**

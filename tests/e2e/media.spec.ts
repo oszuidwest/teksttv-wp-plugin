@@ -76,6 +76,7 @@ test.describe('media picker interactions', () => {
         });
 
         await page.route('**/wp-json/teksttv/v1/image-data?**', async (route) => {
+            expect(route.request().headers()['x-wp-nonce']).toBeTruthy();
             markRequestStarted();
             await responseReleased;
             await route.fulfill({

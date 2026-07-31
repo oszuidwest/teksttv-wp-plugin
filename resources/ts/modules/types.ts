@@ -26,7 +26,6 @@ export type Slide = TextSlide | ImageSlide;
 /** Config passed from PHP via an inline script encoded with wp_json_encode. */
 export interface TeksttvPostConfig {
     previewUrl: string;
-    restNonce: string;
     imageDataUrl: string;
     defaultEndDate: string;
     fallbackImage: ImageData | '';
@@ -92,6 +91,7 @@ export interface WPMediaOptions {
 /** WordPress global (partial — media library) */
 interface WPGlobal {
     media(options: WPMediaOptions): WPMediaFrame;
+    apiFetch<T>(options: { url: string; method?: 'GET' | 'POST'; data?: Record<string, unknown> }): Promise<T>;
 }
 
 /** Underscore.js subset used by wp.media */

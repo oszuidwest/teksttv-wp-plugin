@@ -84,7 +84,6 @@ class PostMeta
 
         $config = [
             'previewUrl' => $preview_url,
-            'restNonce' => wp_create_nonce('wp_rest'),
             'imageDataUrl' => rest_url('teksttv/v1/image-data'),
             'defaultEndDate' => $default_end,
             'fallbackImage' => $fallback_image ?: '',
