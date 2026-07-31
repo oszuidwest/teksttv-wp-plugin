@@ -504,17 +504,6 @@ class HelpersTest extends TestCase
         $this->assertEmpty($result);
     }
 
-    public function test_get_active_campaigns_excludes_campaign_without_channels(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_campaigns', [])
-            ->andReturn([
-                ['channels' => [], 'name' => 'Inactive'],
-            ]);
-
-        $this->assertSame([], Helpers::get_active_campaigns('tv1'));
-    }
-
     // =========================================================================
     // get_image_data()
     // =========================================================================

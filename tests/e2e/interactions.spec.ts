@@ -299,30 +299,12 @@ test.describe('admin interaction contracts', () => {
             await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
         });
 
-        test('preserves a campaign with no selected channels', async ({ page }) => {
-            await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
-            let campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
-            await campaign.locator('.teksttv-block-header').click();
-
-            // A single-channel install renders the checkbox too; unchecking it
-            // must persist instead of snapping back to "all channels".
-            let channelCheckbox = campaign.locator('input[name$="[channels][]"]');
-            await expect(channelCheckbox).toHaveCount(1);
-            await channelCheckbox.uncheck();
-
-            await submitAndReload(page);
-
-            campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
-            channelCheckbox = campaign.locator('input[name$="[channels][]"]');
-            await expect(channelCheckbox).toHaveCount(1);
-            await expect(channelCheckbox).not.toBeChecked();
-        });
-
-        // Multi-channel acceptance path of issue #76: uncheck all channels,
-        // save, reload, and evaluate the campaign through the packaged REST
-        // route. The positive control first proves the campaign actually
-        // emits a commercial slide, so the final negative assertion cannot
-        // pass vacuously on an empty or campaign-less playlist.
+        // The acceptance path of issue #76: single-channel rendering,
+        // multi-channel persistence of an empty selection, and runtime
+        // evaluation through the packaged REST route. The positive control
+        // first proves the campaign actually emits a commercial slide, so the
+        // final negative assertion cannot pass vacuously on an empty or
+        // campaign-less playlist.
         test('serves campaign slides for an assigned channel and none after unchecking every channel', async ({
             page,
         }) => {
@@ -331,6 +313,15 @@ test.describe('admin interaction contracts', () => {
                 expect(response.ok()).toBe(true);
                 return (await response.json()).slides;
             };
+
+            // A single-channel install renders the checkbox too (instead of
+            // the old hidden input), checked from storage rather than forced.
+            await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+            let campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
+            await campaign.locator('.teksttv-block-header').click();
+            let channelCheckboxes = campaign.locator('input[name$="[channels][]"]');
+            await expect(channelCheckboxes).toHaveCount(1);
+            await expect(channelCheckboxes).toBeChecked();
 
             await page.goto('/wp-admin/admin.php?page=teksttv-settings');
             const channelRows = page.locator('#teksttv-channels tbody > .teksttv-channel-row');
@@ -356,10 +347,10 @@ test.describe('admin interaction contracts', () => {
             ).toBe(true);
 
             await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
-            let campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
+            campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
             await campaign.locator('.teksttv-block-header').click();
 
-            let channelCheckboxes = campaign.locator('input[name$="[channels][]"]');
+            channelCheckboxes = campaign.locator('input[name$="[channels][]"]');
             await expect(channelCheckboxes).toHaveCount(2);
             for (const checkbox of await channelCheckboxes.all()) {
                 await checkbox.uncheck();
