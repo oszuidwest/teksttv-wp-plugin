@@ -100,17 +100,3 @@ export function imageItemHtml(att: WPMediaAttachment, inputName: string): string
         '</div>'
     );
 }
-
-/** Initialize TomSelect on elements within a container. */
-export function initTomSelectIn(container: Element | Document = document): void {
-    if (typeof TomSelect === 'undefined') return;
-
-    container.querySelectorAll<HTMLSelectElement>('.teksttv-tomselect').forEach((el) => {
-        if ((el as unknown as { tomselect?: unknown }).tomselect) return;
-        new TomSelect(el, {
-            plugins: ['remove_button'],
-            placeholder: el.dataset.placeholder || 'Filter...',
-            allowEmptyOption: true,
-        });
-    });
-}

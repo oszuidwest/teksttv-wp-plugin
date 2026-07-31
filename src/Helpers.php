@@ -624,21 +624,16 @@ class Helpers
     }
 
     /**
-     * Enqueue admin.js and its styles. Call wp_enqueue_media() first.
-     *
-     * @param list<string> $extra_deps Additional script handles to load before admin.js.
-     * @param list<string> $style_deps Additional style handles to load before admin.css.
+     * Enqueue admin.js and its styles.
      */
-    public static function enqueue_admin_script(array $extra_deps = [], array $style_deps = []): void
+    public static function enqueue_admin_script(): void
     {
         wp_enqueue_media();
-
-        $deps = array_merge(self::admin_script_dependencies(), $extra_deps);
 
         wp_enqueue_script(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
-            $deps,
+            self::admin_script_dependencies(),
             TEKSTTV_VERSION,
             true
         );
@@ -646,7 +641,7 @@ class Helpers
         wp_enqueue_style(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
-            $style_deps,
+            [],
             TEKSTTV_VERSION
         );
 

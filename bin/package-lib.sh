@@ -23,8 +23,6 @@ ASSET_FILES=(
     "admin.js"
     "tinymce-content.css"
     "tinymce-separator.js"
-    "tom-select.complete.min.js"
-    "tom-select.default.min.css"
 )
 
 fail() {
