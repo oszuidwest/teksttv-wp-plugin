@@ -313,10 +313,8 @@ class ArticlesLoopBlockTest extends TestCase
 
         \WP_Query::$stubPosts = $posts;
 
-        $postIndex = -1;
-        Functions\when('get_the_ID')->alias(function () use ($posts, &$postIndex) {
-            $postIndex++;
-            return $posts[$postIndex]->ID ?? 0;
+        Functions\when('get_the_ID')->alias(function () {
+            return \WP_Query::$lastInstance?->current_post()?->ID ?? 0;
         });
 
         Functions\when('get_post_meta')->alias(function (int $post_id, string $key, bool $single) use ($metaMap) {
@@ -345,6 +343,59 @@ class ArticlesLoopBlockTest extends TestCase
         $result = ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
+    }
+
+    public function test_build_stops_after_maximum_full_batches_of_rejected_candidates(): void
+    {
+        BuildContext::mark_post_seen(999);
+
+        $posts = [];
+        $metaMap = [];
+        for ($postId = 1; $postId <= 100; $postId++) {
+            $posts[] = (object) ['ID' => $postId];
+            // The test date is a Tuesday; Monday-only posts are rejected at runtime.
+            $metaMap[$postId . ':_teksttv_days'] = ['1'];
+        }
+        $this->setupArticleSlides($posts, $metaMap);
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertSame([], $result);
+        $this->assertCount(10, \WP_Query::$instances);
+        $this->assertSame(range(1, 10), array_map(
+            static fn (\WP_Query $query): int => (int) $query->query_vars['paged'],
+            \WP_Query::$instances
+        ));
+        foreach (\WP_Query::$instances as $query) {
+            $this->assertCount(10, $query->posts);
+            $this->assertSame([999], $query->query_vars['post__not_in']);
+            $this->assertSame(['date' => 'DESC', 'ID' => 'DESC'], $query->query_vars['orderby']);
+            $this->assertTrue($query->query_vars['ignore_sticky_posts']);
+        }
+    }
+
+    public function test_build_backfills_from_the_next_query_page(): void
+    {
+        $posts = [];
+        $metaMap = [];
+        for ($postId = 1; $postId <= 10; $postId++) {
+            $posts[] = (object) ['ID' => $postId];
+            $metaMap[$postId . ':_teksttv_days'] = ['1'];
+        }
+
+        $posts[] = (object) ['ID' => 11];
+        $metaMap['11:_teksttv_days'] = ['2'];
+        $metaMap['11:_teksttv_content'] = 'Ouder geschikt artikel';
+        $metaMap['11:_teksttv_sidebar_image'] = '0';
+        $this->setupArticleSlides($posts, $metaMap);
+        Functions\expect('get_the_title')->once()->andReturn('Geschikt artikel');
+
+        $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Geschikt artikel', $result[0]['title']);
+        $this->assertCount(2, \WP_Query::$instances);
+        $this->assertSame(2, \WP_Query::$lastInstance->query_vars['paged']);
     }
 
     public function test_build_creates_text_slides_from_content(): void
@@ -479,6 +530,7 @@ class ArticlesLoopBlockTest extends TestCase
         $result = ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
+        $this->assertSame([], BuildContext::get_seen_post_ids());
     }
 
     public function test_build_skips_post_with_no_selected_days(): void
@@ -490,21 +542,6 @@ class ArticlesLoopBlockTest extends TestCase
         ]);
 
         $result = ArticlesLoopBlock::build(['count' => 1], 'tv1');
-
-        $this->assertSame([], $result);
-    }
-
-    public function test_build_skips_post_outside_date_range(): void
-    {
-        $post = (object) ['ID' => 10];
-        $this->setupArticleSlides([$post], [
-            '10:_teksttv_days' => '',
-            '10:_teksttv_date_start' => '2026-05-01',
-            '10:_teksttv_date_end' => '2026-05-31',
-        ]);
-
-        $block = ['count' => 1];
-        $result = ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
     }
@@ -525,7 +562,7 @@ class ArticlesLoopBlockTest extends TestCase
         $this->assertSame(30000, $result[0]['duration']);
     }
 
-    public function test_build_skips_empty_content(): void
+    public function test_build_skips_empty_content_without_marking_post_seen(): void
     {
         $post = (object) ['ID' => 10];
         $this->setupArticleSlides([$post], [
@@ -546,6 +583,7 @@ class ArticlesLoopBlockTest extends TestCase
         $result = ArticlesLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
+        $this->assertSame([], BuildContext::get_seen_post_ids());
     }
 
     public function test_build_applies_taxonomy_filters_without_crash(): void
@@ -575,20 +613,6 @@ class ArticlesLoopBlockTest extends TestCase
         ArticlesLoopBlock::build(['count' => 1], 'tv1');
 
         $this->assertSame([10], BuildContext::get_seen_post_ids());
-    }
-
-    public function test_build_does_not_mark_post_filtered_by_scheduling(): void
-    {
-        $post = (object) ['ID' => 10];
-        $this->setupArticleSlides([$post], [
-            '10:_teksttv_days' => '',
-            '10:_teksttv_date_start' => '2026-05-01',
-            '10:_teksttv_date_end' => '2026-05-31',
-        ]);
-
-        ArticlesLoopBlock::build(['count' => 1], 'tv1');
-
-        $this->assertSame([], BuildContext::get_seen_post_ids());
     }
 
     // =========================================================================
@@ -640,7 +664,7 @@ class ArticlesLoopBlockTest extends TestCase
         ArticlesLoopBlock::build(['count' => 3], 'tv1');
 
         $meta_query = \WP_Query::$lastInstance->query_vars['meta_query'];
-        // Only relation + the _teksttv_active clause; no date_end sub-query.
+        // Only relation + the _teksttv_active clause; no date-range sub-query.
         $this->assertSame('AND', $meta_query['relation']);
         $this->assertCount(2, $meta_query);
         $this->assertSame('_teksttv_active', $meta_query[0]['key']);

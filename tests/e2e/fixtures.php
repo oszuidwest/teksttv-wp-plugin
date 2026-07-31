@@ -29,7 +29,7 @@ update_option('teksttv_features', [
 ]);
 
 update_option('teksttv_loop_tv1', [
-    ['type' => 'articles', 'count' => 5, 'taxonomy_filters' => []],
+    ['type' => 'articles', 'count' => 1, 'taxonomy_filters' => []],
 ]);
 
 update_option('teksttv_ticker_tv1', [
@@ -122,21 +122,106 @@ if (!get_user_by('login', 'teksttv_editor')) {
     (new WP_User($teksttv_uid))->set_role('teksttv_smoke_role');
 }
 
-// Published post that produces a text slide (active + content meta).
-$teksttv_existing = get_posts([
-    'name' => 'teksttv-smoke-post',
-    'post_type' => 'post',
-    'post_status' => 'any',
-    'numberposts' => 1,
-]);
-$teksttv_post_id = $teksttv_existing ? $teksttv_existing[0]->ID : wp_insert_post([
+$teksttv_now = current_datetime();
+
+// Upsert a fixture post by slug: reset every per-post TekstTV meta to a
+// known-absent state (a reused wp-env keeps meta from earlier runs), then
+// apply exactly the meta the fixture needs.
+$teksttv_seed_post = static function (array $post_data, array $meta): int {
+    $existing = get_page_by_path($post_data['post_name'], OBJECT, 'post');
+    if ($existing) {
+        $post_data['ID'] = $existing->ID;
+    }
+    $post_id = wp_insert_post($post_data, true);
+    if (is_wp_error($post_id)) {
+        throw new RuntimeException(
+            'Could not seed the E2E post ' . $post_data['post_name'] . ': ' . $post_id->get_error_message()
+        );
+    }
+
+    $teksttv_meta_keys = [
+        '_teksttv_active',
+        '_teksttv_title',
+        '_teksttv_content',
+        '_teksttv_days',
+        '_teksttv_date_start',
+        '_teksttv_date_end',
+        '_teksttv_images',
+        '_teksttv_sidebar_image',
+    ];
+    foreach ($teksttv_meta_keys as $key) {
+        delete_post_meta($post_id, $key);
+    }
+    foreach ($meta as $key => $value) {
+        update_post_meta($post_id, $key, $value);
+    }
+
+    return $post_id;
+};
+
+// Published post that produces a text slide (active + content meta). Keep it
+// older than every ineligible fixture so the REST test must backfill to it.
+$teksttv_post_id = $teksttv_seed_post([
     'post_title' => 'TekstTV Smoke Post',
     'post_name' => 'teksttv-smoke-post',
     'post_content' => '<p>Bronartikel voor de integratietest.</p>',
     'post_status' => 'publish',
+    'post_date' => $teksttv_now->modify('-1 hour')->format('Y-m-d H:i:s'),
+], [
+    '_teksttv_active' => '1',
+    '_teksttv_content' => '<p>Slide-inhoud voor de smoke test.</p>',
+    '_teksttv_images' => [$teksttv_attachment_id],
 ]);
-update_post_meta($teksttv_post_id, '_teksttv_active', '1');
-update_post_meta($teksttv_post_id, '_teksttv_content', '<p>Slide-inhoud voor de smoke test.</p>');
-update_post_meta($teksttv_post_id, '_teksttv_images', [$teksttv_attachment_id]);
 
-echo 'fixtures-ok post_id=' . $teksttv_post_id . ' attachment_id=' . $teksttv_attachment_id . "\n";
+$teksttv_scheduled_post_id = $teksttv_seed_post([
+    'post_title' => 'TekstTV Toekomstig Bericht',
+    'post_name' => 'teksttv-scheduled-future-post',
+    'post_content' => '<p>Dit recentere artikel mag nog niet worden uitgezonden.</p>',
+    'post_status' => 'publish',
+    'post_date' => $teksttv_now->format('Y-m-d H:i:s'),
+], [
+    '_teksttv_active' => '1',
+    '_teksttv_content' => '<p>Nog niet uitzenden.</p>',
+    '_teksttv_date_start' => $teksttv_now->modify('+1 day')->format('Y-m-d'),
+]);
+
+// Ten filler posts, all newer than the smoke post, that pass the SQL-side
+// filters but are rejected at runtime (an empty weekday list, or no content
+// and no images). At loop count 1 the articles block queries batches of ten,
+// so these fill the first batch completely: serving the smoke post then
+// requires the backfill loop to issue a second query.
+$teksttv_seeded_post_ids = [$teksttv_post_id, $teksttv_scheduled_post_id];
+for ($teksttv_i = 1; $teksttv_i <= 10; $teksttv_i++) {
+    $teksttv_filler_meta = ['_teksttv_active' => '1'];
+    if ($teksttv_i % 2 === 0) {
+        $teksttv_filler_meta['_teksttv_content'] = '<p>Geblokkeerd op weekdag.</p>';
+        $teksttv_filler_meta['_teksttv_days'] = [];
+    }
+    $teksttv_seeded_post_ids[] = $teksttv_seed_post([
+        'post_title' => 'TekstTV Backfill Vulling ' . $teksttv_i,
+        'post_name' => 'teksttv-backfill-filler-' . $teksttv_i,
+        'post_content' => '<p>Vulartikel voor de backfilltest.</p>',
+        'post_status' => 'publish',
+        'post_date' => $teksttv_now->modify('-' . $teksttv_i . ' minutes')->format('Y-m-d H:i:s'),
+    ], $teksttv_filler_meta);
+}
+
+// The suite assumes a fully known post table (the smoke post must stay on
+// page one of wp-admin/edit.php, and only seeded posts may reach the slides
+// feed), so drop everything this file did not seed - including leftovers
+// from older fixture versions in a reused wp-env database.
+$teksttv_all_post_ids = get_posts([
+    'post_type' => 'post',
+    'post_status' => 'any',
+    'numberposts' => -1,
+    'fields' => 'ids',
+]);
+foreach ($teksttv_all_post_ids as $teksttv_stale_id) {
+    if (!in_array((int) $teksttv_stale_id, $teksttv_seeded_post_ids, true)) {
+        wp_delete_post((int) $teksttv_stale_id, true);
+    }
+}
+
+echo 'fixtures-ok post_id=' . $teksttv_post_id
+    . ' scheduled_post_id=' . $teksttv_scheduled_post_id
+    . ' attachment_id=' . $teksttv_attachment_id . "\n";
