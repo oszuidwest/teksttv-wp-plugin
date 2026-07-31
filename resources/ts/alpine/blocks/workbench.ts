@@ -1,5 +1,5 @@
 import Sortable from 'sortablejs';
-import { reindexNames, tmplHtml } from '../../modules/dom';
+import { reindexNames, siblingFocusTarget, tmplHtml } from '../../modules/dom';
 import { debounce, initTomSelectIn } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
 import { handleBlocksClick, removeClosestBlock, setBlockOpen, toggleBlockOpen } from './handleBlocksClick';
@@ -15,6 +15,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let newGroupSeq = 0;
 
     function reindexDisclosureIds(root: HTMLElement): void {
+        // The id scheme must match the server-rendered ids (AdminPage /
+        // CampaignsPage build them from the option prefix, which mirrors the
+        // list root's id).
         root.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block, index) => {
             const body = block.querySelector<HTMLElement>('.teksttv-block-body');
             const toggle = block.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
@@ -111,15 +114,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                         if (evt.oldIndex !== evt.newIndex) reindexTicker();
                     },
                 });
-                tickerEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                    if (block instanceof HTMLElement) setBlockOpen(block, false, false);
-                });
             }
 
             refreshSummaries();
-            blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                if (block instanceof HTMLElement) setBlockOpen(block, false, false);
-            });
 
             if (opts.groups) {
                 groupsTbody = document.querySelector('#teksttv-groups')?.querySelector('tbody') ?? null;
@@ -130,7 +127,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!blocksEl) return;
             document.querySelector('#teksttv-empty-state')?.remove();
             if (insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, /__INDEX__/g)) {
-                reindexBlocks();
                 refreshSummaries();
             }
         },
@@ -139,16 +135,13 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!blocksEl || !opts.campaignAdd) return;
             document.querySelector('#teksttv-empty-state')?.remove();
             if (insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign', /__INDEX__/g)) {
-                reindexBlocks();
                 refreshSummaries();
             }
         },
 
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
-            if (insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true })) {
-                reindexTicker();
-            }
+            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true });
             refreshSummaries();
         },
 
@@ -224,10 +217,11 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!(tgt instanceof HTMLElement) || !groupsTbody?.contains(tgt)) return;
             const row = tgt.closest('tr');
             if (!row) return;
-            const focusTarget =
-                row.nextElementSibling?.querySelector<HTMLInputElement>('input[name$="[label]"]') ??
-                row.previousElementSibling?.querySelector<HTMLInputElement>('input[name$="[label]"]') ??
-                document.querySelector<HTMLButtonElement>('#teksttv-add-group');
+            const focusTarget = siblingFocusTarget(
+                row,
+                'input[name$="[label]"]',
+                document.querySelector<HTMLElement>('#teksttv-add-group'),
+            );
             row.remove();
             focusTarget?.focus();
         },

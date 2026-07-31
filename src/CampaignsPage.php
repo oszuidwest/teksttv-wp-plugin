@@ -51,20 +51,11 @@ class CampaignsPage
         $duration = $campaign['duration'] ?? '';
         $slides = $campaign['slides'] ?? [];
         $default_duration = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
-        $body_id = sanitize_html_class('teksttv-campaigns-' . (string) $index . '-body');
+        $body_id = 'teksttv-campaigns-' . (string) $index . '-body';
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
-            <div class="teksttv-block-header">
-                <span class="teksttv-block-handle dashicons dashicons-move" aria-hidden="true"></span>
-                <button type="button" class="teksttv-block-toggle-control" aria-expanded="false" aria-controls="<?php echo esc_attr($body_id); ?>">
-                    <span class="teksttv-block-icon" style="background:#d63638" aria-hidden="true"><span class="dashicons dashicons-megaphone"></span></span>
-                    <span class="teksttv-block-title"><?php echo esc_html($name ?: 'Campagne'); ?></span>
-                    <span class="teksttv-block-summary"></span>
-                    <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
-                </button>
-                <button type="button" class="button-link teksttv-remove-block" aria-label="<?php echo esc_attr('Campagne verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
-            </div>
+            <?php AdminPage::render_block_header($body_id, $name ?: 'Campagne', 'megaphone', '#d63638', 'Campagne verwijderen'); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />
                 <div class="teksttv-block-fields">

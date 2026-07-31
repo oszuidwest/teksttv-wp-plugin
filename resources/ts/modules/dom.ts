@@ -62,6 +62,19 @@ export function fadeOutRemove(el: HTMLElement, durationMs: number, onRemoved?: (
     }, durationMs);
 }
 
+/**
+ * Focus target for after removing a list item: the same control in the next
+ * sibling, else the previous sibling, else `fallback`. Resolve it before the
+ * item is removed (or animated out) so the siblings still exist.
+ */
+export function siblingFocusTarget(item: Element, selector: string, fallback: HTMLElement | null): HTMLElement | null {
+    return (
+        item.nextElementSibling?.querySelector<HTMLElement>(selector) ??
+        item.previousElementSibling?.querySelector<HTMLElement>(selector) ??
+        fallback
+    );
+}
+
 export function tmplHtml(templateId: string): string | null {
     const el = document.getElementById(templateId);
     return el?.innerHTML?.trim() ? el.innerHTML : null;

@@ -48,7 +48,7 @@ settings_errors('teksttv_campaigns');
     </div>
 
     <h2><?php echo esc_html('Campagnes'); ?></h2>
-    <div id="teksttv-campaigns" class="teksttv-blocks" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
+    <div id="teksttv-campaigns" class="teksttv-blocks" data-empty-focus="#teksttv-add-campaign" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
         <?php
         if (!empty($campaigns)) {
             foreach ($campaigns as $i => $campaign) {

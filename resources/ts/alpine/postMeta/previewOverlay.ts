@@ -9,10 +9,10 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
 
     const getOverlaySrc = (idx: number) => previewSlideUrl(previewUrl, slides[idx]);
 
-    const overlay = document.createElement('div');
+    // Native <dialog> + showModal(): focus trap, Escape-to-close, and an
+    // inert background come from the platform.
+    const overlay = document.createElement('dialog');
     overlay.className = 'teksttv-preview-overlay';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', 'Preview');
     overlay.innerHTML =
         '<div class="teksttv-overlay-header">' +
@@ -35,6 +35,7 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
 
     updateOverlayNav();
     document.body.appendChild(overlay);
+    overlay.showModal();
     overlay.querySelector<HTMLButtonElement>('.teksttv-preview-overlay-close')?.focus();
 
     overlay.querySelector('.teksttv-overlay-prev')?.addEventListener('click', () => {
@@ -53,33 +54,23 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
         }
     });
 
-    const keyCtl = new AbortController();
-    const teardownKeyNav = (): void => {
-        keyCtl.abort();
+    overlay.addEventListener('close', () => {
         overlay.remove();
         returnFocus?.focus();
-    };
+    });
 
     overlay.addEventListener('click', (ev) => {
-        const tgt = ev.target as Element | null;
-        if (
-            tgt instanceof Element &&
-            (tgt.matches('.teksttv-preview-overlay') || tgt.closest('.teksttv-preview-overlay-close'))
-        ) {
-            teardownKeyNav();
+        const tgt = ev.target;
+        if (tgt instanceof Element && (tgt === overlay || tgt.closest('.teksttv-preview-overlay-close'))) {
+            overlay.close();
         }
     });
-    document.addEventListener(
-        'keydown',
-        (ev) => {
-            if (ev.key === 'Escape') {
-                teardownKeyNav();
-            } else if (ev.key === 'ArrowLeft') {
-                overlay.querySelector<HTMLButtonElement>('.teksttv-overlay-prev')?.click();
-            } else if (ev.key === 'ArrowRight') {
-                overlay.querySelector<HTMLButtonElement>('.teksttv-overlay-next')?.click();
-            }
-        },
-        { signal: keyCtl.signal },
-    );
+
+    overlay.addEventListener('keydown', (ev) => {
+        if (ev.key === 'ArrowLeft') {
+            overlay.querySelector<HTMLButtonElement>('.teksttv-overlay-prev')?.click();
+        } else if (ev.key === 'ArrowRight') {
+            overlay.querySelector<HTMLButtonElement>('.teksttv-overlay-next')?.click();
+        }
+    });
 }

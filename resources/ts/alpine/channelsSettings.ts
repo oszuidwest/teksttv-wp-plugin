@@ -1,4 +1,4 @@
-import { reindexNames } from '../modules/dom';
+import { reindexNames, siblingFocusTarget } from '../modules/dom';
 
 /** Settings tab: repeatable channel rows. */
 export function createChannelsSettingsPage() {
@@ -35,10 +35,11 @@ export function createChannelsSettingsPage() {
             if (!(tgt instanceof HTMLElement) || !channelsTbody?.contains(tgt)) return;
             const row = tgt.closest('tr');
             if (!row) return;
-            const focusTarget =
-                row.nextElementSibling?.querySelector<HTMLInputElement>('input[name$="[slug]"]') ??
-                row.previousElementSibling?.querySelector<HTMLInputElement>('input[name$="[slug]"]') ??
-                document.querySelector<HTMLButtonElement>('#teksttv-add-channel');
+            const focusTarget = siblingFocusTarget(
+                row,
+                'input[name$="[slug]"]',
+                document.querySelector<HTMLElement>('#teksttv-add-channel'),
+            );
             row.remove();
             reindexChannels();
             focusTarget?.focus();

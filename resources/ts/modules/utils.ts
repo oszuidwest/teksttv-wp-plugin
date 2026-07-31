@@ -1,4 +1,4 @@
-import { fadeOutRemove } from './dom';
+import { fadeOutRemove, siblingFocusTarget } from './dom';
 import type { Slide, WPMediaAttachment } from './types';
 
 /** Escape a string for safe insertion into an HTML attribute. */
@@ -56,14 +56,12 @@ export function stripTags(html: string): string {
 export function removeImageItem(button: Element, onRemoved?: () => void): void {
     const item = button.closest('.teksttv-image-item');
     if (!(item instanceof HTMLElement)) return;
-    const adjacentRemove =
-        item.nextElementSibling?.querySelector<HTMLButtonElement>('.teksttv-remove-image') ??
-        item.previousElementSibling?.querySelector<HTMLButtonElement>('.teksttv-remove-image');
-    const fallback =
-        item
-            .closest('.teksttv-campaign-slides-section')
-            ?.querySelector<HTMLButtonElement>('.teksttv-campaign-add-slides') ??
-        document.querySelector<HTMLButtonElement>('#teksttv-add-images');
+    const focusTarget = siblingFocusTarget(
+        item,
+        '.teksttv-remove-image',
+        item.closest('.teksttv-campaign-slides-section')?.querySelector<HTMLElement>('.teksttv-campaign-add-slides') ??
+            document.querySelector<HTMLElement>('#teksttv-add-images'),
+    );
 
     item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
         'input, select, textarea',
@@ -72,7 +70,22 @@ export function removeImageItem(button: Element, onRemoved?: () => void): void {
     });
     fadeOutRemove(item, 150, () => {
         onRemoved?.();
-        (adjacentRemove ?? fallback)?.focus();
+        focusTarget?.focus();
+    });
+}
+
+/**
+ * Insert picked attachments into an image list, then focus the first new
+ * item's remove button. The focus is deferred because wp.media returns
+ * focus to its opener when the modal closes.
+ */
+export function appendImageItems(list: Element, attachments: WPMediaAttachment[], inputName: string): void {
+    const firstNewIndex = list.children.length;
+    for (const att of attachments) {
+        list.insertAdjacentHTML('beforeend', imageItemHtml(att, inputName));
+    }
+    window.setTimeout(() => {
+        list.children[firstNewIndex]?.querySelector<HTMLButtonElement>('.teksttv-remove-image')?.focus();
     });
 }
 

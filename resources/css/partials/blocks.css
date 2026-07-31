@@ -78,7 +78,8 @@
     cursor: pointer;
 }
 
-.teksttv-block-toggle-control:focus-visible {
+.teksttv-block-toggle-control:focus-visible,
+.teksttv-remove-block:focus-visible {
     outline: 2px solid #2271b1;
     outline-offset: 2px;
 }
@@ -133,11 +134,6 @@
 
 .teksttv-remove-block:hover {
     color: #b32d2e !important;
-}
-
-.teksttv-remove-block:focus-visible {
-    outline: 2px solid #2271b1;
-    outline-offset: 2px;
 }
 
 .teksttv-block-body {

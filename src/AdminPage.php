@@ -410,25 +410,38 @@ class AdminPage
         if (!$reg) {
             return;
         }
-        $body_id = sanitize_html_class(str_replace('_', '-', $prefix) . '-' . (string) $index . '-body');
+        $body_id = str_replace('_', '-', $prefix) . '-' . (string) $index . '-body';
 
         ?>
         <div class="teksttv-block" data-type="<?php echo esc_attr($type); ?>">
-            <div class="teksttv-block-header">
-                <span class="teksttv-block-handle dashicons dashicons-move" aria-hidden="true"></span>
-                <button type="button" class="teksttv-block-toggle-control" aria-expanded="false" aria-controls="<?php echo esc_attr($body_id); ?>">
-                    <span class="teksttv-block-icon" style="background:<?php echo esc_attr($reg['color']); ?>" aria-hidden="true"><span class="dashicons dashicons-<?php echo esc_attr($reg['icon']); ?>"></span></span>
-                    <span class="teksttv-block-title"><?php echo esc_html($reg['label']); ?></span>
-                    <span class="teksttv-block-summary"></span>
-                    <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
-                </button>
-                <button type="button" class="button-link teksttv-remove-block" aria-label="<?php echo esc_attr(sprintf('Verwijder blok %s', $reg['label'])); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
-            </div>
+            <?php self::render_block_header($body_id, $reg['label'], $reg['icon'], $reg['color'], sprintf('Verwijder blok %s', $reg['label'])); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][type]" value="<?php echo esc_attr($type); ?>" />
                 <?php BlockRegistry::render($type, $index, $block, $prefix); ?>
                 <?php self::render_scheduling_fields($index, $block, $prefix); ?>
             </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render the shared block header: drag handle, accordion toggle wired to
+     * the body via `$body_id`, and the remove button. The classes and ARIA
+     * wiring are a contract with the workbench JS; keep every accordion
+     * (loop, ticker, campaigns) on this one renderer.
+     */
+    public static function render_block_header(string $body_id, string $title, string $icon, string $color, string $remove_label): void
+    {
+        ?>
+        <div class="teksttv-block-header">
+            <span class="teksttv-block-handle dashicons dashicons-move" aria-hidden="true"></span>
+            <button type="button" class="teksttv-block-toggle-control" aria-expanded="false" aria-controls="<?php echo esc_attr($body_id); ?>">
+                <span class="teksttv-block-icon" style="background:<?php echo esc_attr($color); ?>" aria-hidden="true"><span class="dashicons dashicons-<?php echo esc_attr($icon); ?>"></span></span>
+                <span class="teksttv-block-title"><?php echo esc_html($title); ?></span>
+                <span class="teksttv-block-summary"></span>
+                <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="button-link teksttv-remove-block" aria-label="<?php echo esc_attr($remove_label); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
         </div>
         <?php
     }

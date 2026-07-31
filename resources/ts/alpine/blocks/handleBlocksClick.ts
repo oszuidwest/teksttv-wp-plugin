@@ -1,5 +1,5 @@
-import { hide, show, slideDown, slideUp } from '../../modules/dom';
-import { imageItemHtml, removeImageItem } from '../../modules/utils';
+import { hide, show, siblingFocusTarget, slideDown, slideUp } from '../../modules/dom';
+import { appendImageItems, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
@@ -34,17 +34,13 @@ export function toggleBlockOpen(trigger: Element): void {
 export function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
-    const adjacentToggle =
-        block.nextElementSibling?.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control') ??
-        block.previousElementSibling?.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
-    const rootId = block.parentElement?.id;
-    const fallbackSelector =
-        rootId === 'teksttv-ticker'
-            ? '#teksttv-add-ticker-toggle, #teksttv-add-ticker-single'
-            : rootId === 'teksttv-campaigns'
-              ? '#teksttv-add-campaign'
-              : '#teksttv-add-block-toggle, #teksttv-add-block-single';
-    const fallback = document.querySelector<HTMLButtonElement>(fallbackSelector);
+    // The list root declares where focus goes when its last block is removed.
+    const emptyFocus = block.parentElement?.dataset.emptyFocus;
+    const focusTarget = siblingFocusTarget(
+        block,
+        '.teksttv-block-toggle-control',
+        emptyFocus ? document.querySelector<HTMLElement>(emptyFocus) : null,
+    );
 
     block
         .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')
@@ -54,7 +50,7 @@ export function removeClosestBlock(trigger: Element, onRemoved: () => void): voi
     slideUp(block, 200, () => {
         block.remove();
         onRemoved();
-        (adjacentToggle ?? fallback)?.focus();
+        focusTarget?.focus();
     });
 }
 
@@ -90,13 +86,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         const baseName = list?.dataset.name;
         if (!list || !baseName) return;
         pickImages((attachments) => {
-            const firstNewIndex = list.children.length;
-            attachments.forEach((att) => {
-                list.insertAdjacentHTML('beforeend', imageItemHtml(att, baseName));
-            });
-            window.setTimeout(() => {
-                list.children[firstNewIndex]?.querySelector<HTMLButtonElement>('.teksttv-remove-image')?.focus();
-            });
+            appendImageItems(list, attachments, baseName);
         });
         return;
     }
