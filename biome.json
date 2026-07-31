@@ -36,6 +36,6 @@
             "quoteStyle": "single",
             "semicolons": "always"
         },
-        "globals": ["tinymce", "wp", "teksttvPost", "TomSelect"]
+        "globals": ["tinymce", "wp", "teksttvPost"]
     }
 }

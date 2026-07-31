@@ -104,7 +104,6 @@ declare global {
     interface Window {
         teksttvPost?: TeksttvPostConfig;
         tinymce?: WPTinyMCE;
-        TomSelect: typeof import('tom-select').default;
         /** Set by PHP inline script on the `underscore` handle. */
         wpUnderscore?: WPUnderscore;
         _: WPUnderscore;
@@ -112,5 +111,4 @@ declare global {
 
     const teksttvPost: TeksttvPostConfig | undefined;
     const tinymce: WPTinyMCE | undefined;
-    const TomSelect: typeof import('tom-select').default;
 }
