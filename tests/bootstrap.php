@@ -154,6 +154,9 @@ if (!class_exists('WP_Query')) {
         /** @var WP_Query|null Last instance constructed — inspect query_vars from tests. */
         public static ?WP_Query $lastInstance = null;
 
+        /** @var list<WP_Query> Constructed instances in query order. */
+        public static array $instances = [];
+
         /** @var array<string, mixed> The query args passed to the constructor. */
         public array $query_vars = [];
 
@@ -171,7 +174,7 @@ if (!class_exists('WP_Query')) {
 
             $exclude = (array) ($args['post__not_in'] ?? []);
             if (!empty($exclude)) {
-                $this->posts = array_values(array_filter(
+                $candidatePosts = array_values(array_filter(
                     self::$stubPosts,
                     function ($post) use ($exclude) {
                         $id = is_object($post) ? ($post->ID ?? null) : $post;
@@ -179,11 +182,22 @@ if (!class_exists('WP_Query')) {
                     }
                 ));
             } else {
-                $this->posts = self::$stubPosts;
+                $candidatePosts = self::$stubPosts;
             }
 
-            $this->found_posts = count($this->posts);
+            $this->found_posts = count($candidatePosts);
+            $postsPerPage = (int) ($args['posts_per_page'] ?? 0);
+            if ($postsPerPage > 0) {
+                $page = max(1, (int) ($args['paged'] ?? 1));
+                $offset = ($page - 1) * $postsPerPage;
+                $this->posts = array_slice($candidatePosts, $offset, $postsPerPage);
+                $this->max_num_pages = (int) ceil($this->found_posts / $postsPerPage);
+            } else {
+                $this->posts = $candidatePosts;
+            }
+
             self::$lastInstance = $this;
+            self::$instances[] = $this;
         }
 
         public function have_posts(): bool
@@ -207,6 +221,7 @@ if (!class_exists('WP_Query')) {
         {
             self::$stubPosts = [];
             self::$lastInstance = null;
+            self::$instances = [];
         }
     }
 }

@@ -112,21 +112,24 @@ final class ArticlesLoopBlock implements LoopBlock
         $text_duration = Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text');
         $image_duration = Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image');
         $batch_size = max(10, $count);
-        // Must also carry rejected candidates (which BuildContext deliberately
-        // does not track), so this list supersedes RecentPostsQuery's exclusion.
-        $excluded_post_ids = BuildContext::get_seen_post_ids();
+        // Keep the cross-block exclusion fixed while paging through this block's
+        // candidate set. Adding every rejected candidate to post__not_in would
+        // make both the SQL clause and its query-cache key grow per batch.
+        $seen_post_ids = BuildContext::get_seen_post_ids();
         $emitted_post_count = 0;
 
         for ($batch = 0; $batch < self::MAX_QUERY_BATCHES && $emitted_post_count < $count; $batch++) {
             $query = new WP_Query(RecentPostsQuery::args($batch_size, $taxonomy_filters, [
                 'meta_query' => $meta_query,
-                'post__not_in' => $excluded_post_ids,
+                'post__not_in' => $seen_post_ids,
+                'paged' => $batch + 1,
+                'orderby' => ['date' => 'DESC', 'ID' => 'DESC'],
+                'ignore_sticky_posts' => true,
             ]));
 
             while ($emitted_post_count < $count && $query->have_posts()) {
                 $query->the_post();
                 $post_id = get_the_ID();
-                $excluded_post_ids[] = (int) $post_id;
 
                 if ($scheduling) {
                     $days = Helpers::normalize_days(get_post_meta($post_id, '_teksttv_days', true));
