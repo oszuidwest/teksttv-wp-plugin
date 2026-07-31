@@ -1,6 +1,7 @@
 import Sortable from 'sortablejs';
 import { reindexNames, siblingFocusTarget, tmplHtml } from '../../modules/dom';
-import { debounce, initTomSelectIn } from '../../modules/utils';
+import { initTomSelectIn } from '../../modules/tomSelect';
+import { debounce } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
 import { handleBlocksClick, removeClosestBlock, setBlockOpen, toggleBlockOpen } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';

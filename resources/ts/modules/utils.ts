@@ -1,9 +1,5 @@
-import TomSelect from 'tom-select/base';
-import removeButtonPlugin from 'tom-select/plugins/remove_button/plugin.js';
 import { fadeOutRemove, siblingFocusTarget } from './dom';
 import type { Slide, WPMediaAttachment } from './types';
-
-TomSelect.define('remove_button', removeButtonPlugin);
 
 /** Escape a string for safe insertion into an HTML attribute. */
 export function escAttr(value: string | number): string {
@@ -103,16 +99,4 @@ export function imageItemHtml(att: WPMediaAttachment, inputName: string): string
         '<button type="button" class="button-link teksttv-remove-image" aria-label="Afbeelding verwijderen"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>' +
         '</div>'
     );
-}
-
-/** Initialize TomSelect on elements within a container. */
-export function initTomSelectIn(container: Element | Document = document): void {
-    container.querySelectorAll<HTMLSelectElement>('.teksttv-tomselect').forEach((el) => {
-        if ((el as unknown as { tomselect?: unknown }).tomselect) return;
-        new TomSelect(el, {
-            plugins: ['remove_button'],
-            placeholder: el.dataset.placeholder || 'Filter...',
-            allowEmptyOption: true,
-        });
-    });
 }

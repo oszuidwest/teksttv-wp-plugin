@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs';
-import { initTomSelectIn } from '../modules/utils';
+import { initTomSelectIn } from '../modules/tomSelect';
 import { createBlocksWorkbench } from './blocks/workbench';
 import { createCategoryMediaPage } from './categoryMedia';
 import { createChannelsSettingsPage } from './channelsSettings';
