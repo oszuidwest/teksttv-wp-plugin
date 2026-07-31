@@ -100,11 +100,6 @@ export function siblingFocusTarget(item: Element, selector: string, fallback: HT
     );
 }
 
-export function tmplHtml(templateId: string): string | null {
-    const el = document.getElementById(templateId);
-    return el?.innerHTML?.trim() ? el.innerHTML : null;
-}
-
 export function dispatchInput(el: Element): void {
     el.dispatchEvent(new Event('input', { bubbles: true }));
 }

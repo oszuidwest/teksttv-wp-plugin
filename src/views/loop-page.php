@@ -95,9 +95,9 @@ settings_errors('teksttv');
         <?php
         // Ticker templates per type
         foreach ($ticker_types as $ticker_type => $ticker_meta) : ?>
-        <script type="text/html" id="tmpl-teksttv-ticker-<?php echo esc_attr($ticker_type); ?>">
-            <?php AdminPage::render_block_generic('__TINDEX__', ['type' => $ticker_type], 'teksttv_ticker'); ?>
-        </script>
+        <template id="tmpl-teksttv-ticker-<?php echo esc_attr($ticker_type); ?>">
+            <?php AdminPage::render_block_generic(0, ['type' => $ticker_type], 'teksttv_ticker'); ?>
+        </template>
         <?php endforeach; ?>
 
         <div class="teksttv-add-block-bar">
@@ -111,9 +111,9 @@ settings_errors('teksttv');
 
     <!-- Block templates (generated from registry) -->
     <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
-    <script type="text/html" id="tmpl-teksttv-block-<?php echo esc_attr($block_slug); ?>">
-        <?php AdminPage::render_block_generic('__INDEX__', ['type' => $block_slug]); ?>
-    </script>
+    <template id="tmpl-teksttv-block-<?php echo esc_attr($block_slug); ?>">
+        <?php AdminPage::render_block_generic(0, ['type' => $block_slug]); ?>
+    </template>
     <?php endforeach; ?>
 </div>
 <?php
