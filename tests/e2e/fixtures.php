@@ -104,10 +104,6 @@ if ($teksttv_attachments) {
     update_post_meta($teksttv_attachment_id, '_teksttv_e2e_fixture', '1');
 }
 
-$teksttv_campaigns = get_option('teksttv_campaigns', []);
-$teksttv_campaigns[0]['slides'] = [$teksttv_attachment_id];
-update_option('teksttv_campaigns', $teksttv_campaigns);
-
 // Custom role with exactly the intended TekstTV capabilities (no manage_options).
 remove_role('teksttv_smoke_role');
 add_role('teksttv_smoke_role', 'TekstTV Smoke Role', [
