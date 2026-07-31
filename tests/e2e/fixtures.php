@@ -41,25 +41,6 @@ update_option('teksttv_campaign_groups', [
     ['id' => 'e2e-group-beta', 'label' => 'E2E Seed Group Beta'],
 ]);
 
-update_option('teksttv_campaigns', [
-    [
-        'id' => 'e2e-campaign-alpha',
-        'name' => 'E2E Seed Campaign Alpha',
-        'group' => 'e2e-group-alpha',
-        'channels' => ['tv1'],
-        'duration' => 12,
-        'slides' => [],
-    ],
-    [
-        'id' => 'e2e-campaign-beta',
-        'name' => 'E2E Seed Campaign Beta',
-        'group' => 'e2e-group-beta',
-        'channels' => ['tv1'],
-        'duration' => 14,
-        'slides' => [],
-    ],
-]);
-
 // Real media-library attachment used by the isolated picker interaction spec.
 $teksttv_attachments = get_posts([
     'post_type' => 'attachment',
@@ -103,6 +84,27 @@ if ($teksttv_attachments) {
     );
     update_post_meta($teksttv_attachment_id, '_teksttv_e2e_fixture', '1');
 }
+
+// Seeded after the attachment so campaign alpha can carry a real slide: the
+// campaign runtime spec needs a campaign that actually emits a commercial.
+update_option('teksttv_campaigns', [
+    [
+        'id' => 'e2e-campaign-alpha',
+        'name' => 'E2E Seed Campaign Alpha',
+        'group' => 'e2e-group-alpha',
+        'channels' => ['tv1'],
+        'duration' => 12,
+        'slides' => [$teksttv_attachment_id],
+    ],
+    [
+        'id' => 'e2e-campaign-beta',
+        'name' => 'E2E Seed Campaign Beta',
+        'group' => 'e2e-group-beta',
+        'channels' => ['tv1'],
+        'duration' => 14,
+        'slides' => [],
+    ],
+]);
 
 // Custom role with exactly the intended TekstTV capabilities (no manage_options).
 remove_role('teksttv_smoke_role');

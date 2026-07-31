@@ -80,23 +80,18 @@ class CampaignsPage
                 <div class="teksttv-block-fields">
                     <?php AdminPage::render_scheduling_inputs($index, $campaign, 'teksttv_campaigns'); ?>
                 </div>
-                <?php if (count($channels) > 1) : ?>
                 <div class="teksttv-block-fields">
                     <div class="teksttv-block-field">
                         <span class="teksttv-field-label"><?php echo esc_html('Kanalen'); ?></span>
                         <?php foreach ($channels as $ch) : ?>
                         <label class="teksttv-inline-checkbox">
-                            <input type="checkbox" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][channels][]" value="<?php echo esc_attr($ch['slug']); ?>" <?php checked(in_array($ch['slug'], $campaign_channels, true) || empty($campaign_channels)); ?> />
+                            <input type="checkbox" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][channels][]" value="<?php echo esc_attr($ch['slug']); ?>" <?php checked(in_array($ch['slug'], $campaign_channels, true)); ?> />
                             <?php echo esc_html($ch['label']); ?>
                         </label>
                         <?php endforeach; ?>
+                        <p class="description"><?php echo esc_html('Zonder geselecteerde kanalen is deze campagne nergens actief.'); ?></p>
                     </div>
                 </div>
-                <?php else : ?>
-                    <?php foreach ($channels as $ch) : ?>
-                    <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][channels][]" value="<?php echo esc_attr($ch['slug']); ?>" />
-                    <?php endforeach; ?>
-                <?php endif; ?>
                 <div class="teksttv-campaign-slides-section">
                     <label class="teksttv-section-label"><?php echo esc_html('Slides'); ?></label>
                     <div class="teksttv-campaign-slides teksttv-images-list" data-name="teksttv_campaigns[<?php echo esc_attr($index); ?>][slides][]">
