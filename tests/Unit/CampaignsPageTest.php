@@ -97,5 +97,4 @@ class CampaignsPageTest extends TestCase
         $this->assertSame('camp_generated-uuid', $campaigns[1]['id']);
         $this->assertCount(2, array_unique(array_column($campaigns, 'id')));
     }
-
 }
