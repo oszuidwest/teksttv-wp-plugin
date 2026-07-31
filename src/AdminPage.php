@@ -308,20 +308,7 @@ class AdminPage
             return;
         }
 
-        wp_enqueue_style(
-            'teksttv-tomselect',
-            TEKSTTV_PLUGIN_URL . 'assets/tom-select.default.min.css',
-            [],
-            TEKSTTV_VERSION
-        );
-        wp_enqueue_script(
-            'teksttv-tomselect',
-            TEKSTTV_PLUGIN_URL . 'assets/tom-select.complete.min.js',
-            [],
-            TEKSTTV_VERSION,
-            true
-        );
-        Helpers::enqueue_admin_script(['teksttv-tomselect'], ['teksttv-tomselect']);
+        Helpers::enqueue_admin_script();
     }
 
     /**

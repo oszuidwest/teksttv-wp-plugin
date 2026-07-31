@@ -84,7 +84,7 @@ From [`package.json`](package.json):
 
 | Command            | Purpose |
 |--------------------|---------|
-| `bun run build`    | Minify JS/CSS to `assets/`, copy TinyMCE and tom-select vendor files |
+| `bun run build`    | Bundle and minify JS/CSS to `assets/`, copy TinyMCE support files |
 | `bun run build:package` | Build assets and create the validated `release/teksttv/` directory plus versioned ZIP |
 | `bun run dev`      | Watch JS and CSS |
 | `bun run check`    | PHPCS plus all frontend checks |
