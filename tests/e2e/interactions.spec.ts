@@ -318,6 +318,73 @@ test.describe('admin interaction contracts', () => {
             await expect(channelCheckbox).not.toBeChecked();
         });
 
+        // Multi-channel acceptance path of issue #76: uncheck all channels,
+        // save, reload, and evaluate the campaign through the packaged REST
+        // route. The positive control first proves the campaign actually
+        // emits a commercial slide, so the final negative assertion cannot
+        // pass vacuously on an empty or campaign-less playlist.
+        test('serves campaign slides for an assigned channel and none after unchecking every channel', async ({
+            page,
+        }) => {
+            const fetchSlides = async (): Promise<Array<{ type?: string; title?: string }>> => {
+                const response = await page.request.get('/wp-json/teksttv/v1/slides?channel=tv1');
+                expect(response.ok()).toBe(true);
+                return (await response.json()).slides;
+            };
+
+            await page.goto('/wp-admin/admin.php?page=teksttv-settings');
+            const channelRows = page.locator('#teksttv-channels tbody > .teksttv-channel-row');
+            await page.locator('#teksttv-add-channel').click();
+            await channelRows.last().locator('input[name$="[slug]"]').fill('tv2');
+            await channelRows.last().locator('input[name$="[label]"]').fill('TV 2');
+            await page.locator('#submit').click();
+            await expect(channelRows).toHaveCount(2);
+
+            await page.goto(LOOP_URL);
+            let campaignBlock = await addLoopBlock(page, 'campaign');
+            await campaignBlock.locator('select[name$="[groups][]"]').selectOption('e2e-group-alpha');
+            await submitAndReload(page);
+
+            campaignBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="campaign"]').first();
+            await expect(campaignBlock.locator('select[name$="[groups][]"]')).toHaveValues(['e2e-group-alpha']);
+
+            // Campaign alpha is seeded on tv1 with a real slide.
+            let slides = await fetchSlides();
+            expect(
+                slides.some((slide) => slide.type === 'commercial'),
+                'an assigned campaign contributes a commercial slide',
+            ).toBe(true);
+
+            await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+            let campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
+            await campaign.locator('.teksttv-block-header').click();
+
+            let channelCheckboxes = campaign.locator('input[name$="[channels][]"]');
+            await expect(channelCheckboxes).toHaveCount(2);
+            for (const checkbox of await channelCheckboxes.all()) {
+                await checkbox.uncheck();
+            }
+
+            await submitAndReload(page);
+
+            campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
+            channelCheckboxes = campaign.locator('input[name$="[channels][]"]');
+            await expect(channelCheckboxes).toHaveCount(2);
+            for (const checkbox of await channelCheckboxes.all()) {
+                await expect(checkbox).not.toBeChecked();
+            }
+
+            slides = await fetchSlides();
+            expect(
+                slides.some((slide) => slide.type === 'text' && slide.title === 'TekstTV Smoke Post'),
+                'the loop still serves regular slides',
+            ).toBe(true);
+            expect(
+                slides.some((slide) => slide.type === 'commercial'),
+                'a campaign without channels stays inactive at runtime',
+            ).toBe(false);
+        });
+
         test('adds and removes campaign and group rows and persists the remaining values', async ({ page }) => {
             await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
 
