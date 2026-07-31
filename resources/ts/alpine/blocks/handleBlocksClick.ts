@@ -1,4 +1,4 @@
-import { hide, show, siblingFocusTarget, slideDown, slideUp } from '../../modules/dom';
+import { cancelSlideAnimation, hide, show, siblingFocusTarget, slideDown, slideUp } from '../../modules/dom';
 import { appendImageItems, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -14,6 +14,7 @@ export function setBlockOpen(block: HTMLElement, expanded: boolean, animate = tr
     const body = block.querySelector<HTMLElement>('.teksttv-block-body');
     if (!body) return;
     if (!animate) {
+        cancelSlideAnimation(body);
         if (expanded) show(body);
         else hide(body);
         return;

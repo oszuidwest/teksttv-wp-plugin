@@ -17,7 +17,7 @@ export function updatePreviewThumbnails(
             const src = previewSlideUrl(baseUrl, slide);
             const html =
                 '<div class="teksttv-preview-thumb-shell">' +
-                `<iframe src="${src}" sandbox="allow-scripts allow-same-origin" tabindex="-1"></iframe>` +
+                `<iframe src="${src}" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` +
                 `<button type="button" class="${cls}" data-index="${idx}" aria-label="Toon previewslide ${idx + 1}" aria-pressed="${idx === activeIndex}">` +
                 `<span class="teksttv-preview-thumb-number" aria-hidden="true">${idx + 1}</span>` +
                 '</button>' +

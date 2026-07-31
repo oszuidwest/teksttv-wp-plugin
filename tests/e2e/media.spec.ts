@@ -167,6 +167,12 @@ test.describe('media picker interactions', () => {
 
         await expect(items).toHaveCount(1);
         await expect(previewCounter).toHaveText('1 / 2');
+        const thumbnailFrames = page.locator('#teksttv-preview-thumbs iframe');
+        await expect(thumbnailFrames).toHaveCount(2);
+        for (const frame of await thumbnailFrames.all()) {
+            await expect(frame).toHaveAttribute('tabindex', '-1');
+            await expect(frame).toHaveAttribute('aria-hidden', 'true');
+        }
 
         const inputDisabledImmediately = await existingItem.locator('.teksttv-remove-image').evaluate((button) => {
             button.dispatchEvent(new MouseEvent('click', { bubbles: true }));

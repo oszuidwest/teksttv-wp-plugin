@@ -90,6 +90,19 @@ test.describe('admin interaction contracts', () => {
         await expect(firstToggle).toHaveAttribute('aria-expanded', 'false');
         await expect(firstBlock.locator('.teksttv-block-body')).toBeHidden();
 
+        // A stale collapse completion must not hide a block that was reopened
+        // before the previous transition finished.
+        await firstToggle.click();
+        await page.waitForTimeout(175);
+        await firstToggle.evaluate((toggle) => {
+            if (!(toggle instanceof HTMLButtonElement)) return;
+            toggle.click();
+            window.setTimeout(() => toggle.click(), 25);
+        });
+        await page.waitForTimeout(200);
+        await expect(firstToggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(firstBlock.locator('.teksttv-block-body')).toBeVisible();
+
         await addLoopBlock(page, 'image');
         await expect(blocks.nth(initialCount).locator('.teksttv-block-toggle-control')).toBeFocused();
         await expect(blocks.nth(initialCount).locator('.teksttv-remove-block')).toHaveAccessibleName(/verwijder blok/i);
