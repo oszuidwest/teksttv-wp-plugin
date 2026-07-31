@@ -1,5 +1,5 @@
 import type { WPMediaFrame } from '../../modules/types';
-import { imageItemHtml } from '../../modules/utils';
+import { appendImageItems } from '../../modules/utils';
 import { pickImages } from '../../modules/wpMedia';
 
 /** Per post-meta Alpine instance: één hergebruikt wp.media frame voor extra afbeeldingen. */
@@ -15,9 +15,7 @@ export function createExtraImagesOpener(onChanged?: () => void): (e: Event) => v
             (attachments) => {
                 const list = document.querySelector('#teksttv-images-list');
                 if (!list) return;
-                for (const att of attachments) {
-                    list.insertAdjacentHTML('beforeend', imageItemHtml(att, 'teksttv_images[]'));
-                }
+                appendImageItems(list, attachments, 'teksttv_images[]');
                 onChanged?.();
             },
             { title: 'Afbeeldingen selecteren', button: { text: 'Toevoegen' } },

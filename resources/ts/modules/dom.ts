@@ -1,5 +1,28 @@
 /** Helpers to replace lightweight jQuery-style patterns in WP admin scripts. */
 
+const slideTimers = new WeakMap<HTMLElement, number>();
+
+/** Cancel a pending slide completion and remove its temporary inline styles. */
+export function cancelSlideAnimation(el: HTMLElement): void {
+    const timer = slideTimers.get(el);
+    if (timer !== undefined) {
+        window.clearTimeout(timer);
+        slideTimers.delete(el);
+    }
+    el.style.removeProperty('height');
+    el.style.removeProperty('overflow');
+    el.style.removeProperty('transition');
+}
+
+function scheduleSlideCompletion(el: HTMLElement, durationMs: number, onComplete: () => void): void {
+    const timer = window.setTimeout(() => {
+        if (slideTimers.get(el) !== timer) return;
+        slideTimers.delete(el);
+        onComplete();
+    }, durationMs);
+    slideTimers.set(el, timer);
+}
+
 export function hide(el: HTMLElement): void {
     el.style.display = 'none';
 }
@@ -14,6 +37,7 @@ export function isHidden(el: HTMLElement): boolean {
 }
 
 export function slideDown(el: HTMLElement, durationMs = 150): void {
+    cancelSlideAnimation(el);
     show(el);
     el.style.overflow = 'hidden';
     const target = el.scrollHeight;
@@ -22,27 +46,28 @@ export function slideDown(el: HTMLElement, durationMs = 150): void {
     void el.offsetHeight;
     el.style.transition = `height ${durationMs}ms ease`;
     el.style.height = `${target}px`;
-    window.setTimeout(() => {
+    scheduleSlideCompletion(el, durationMs, () => {
         el.style.removeProperty('height');
         el.style.removeProperty('overflow');
         el.style.removeProperty('transition');
-    }, durationMs);
+    });
 }
 
 export function slideUp(el: HTMLElement, durationMs = 150, onComplete?: () => void): void {
+    cancelSlideAnimation(el);
     el.style.overflow = 'hidden';
     el.style.transition = '';
     el.style.height = `${el.offsetHeight}px`;
     void el.offsetHeight;
     el.style.transition = `height ${durationMs}ms ease`;
     el.style.height = '0';
-    window.setTimeout(() => {
+    scheduleSlideCompletion(el, durationMs, () => {
         hide(el);
         el.style.removeProperty('height');
         el.style.removeProperty('overflow');
         el.style.removeProperty('transition');
         onComplete?.();
-    }, durationMs);
+    });
 }
 
 export function slideToggle(el: HTMLElement, durationMs = 150): void {
@@ -60,6 +85,19 @@ export function fadeOutRemove(el: HTMLElement, durationMs: number, onRemoved?: (
         el.remove();
         onRemoved?.();
     }, durationMs);
+}
+
+/**
+ * Focus target for after removing a list item: the same control in the next
+ * sibling, else the previous sibling, else `fallback`. Resolve it before the
+ * item is removed (or animated out) so the siblings still exist.
+ */
+export function siblingFocusTarget(item: Element, selector: string, fallback: HTMLElement | null): HTMLElement | null {
+    return (
+        item.nextElementSibling?.querySelector<HTMLElement>(selector) ??
+        item.previousElementSibling?.querySelector<HTMLElement>(selector) ??
+        fallback
+    );
 }
 
 export function tmplHtml(templateId: string): string | null {

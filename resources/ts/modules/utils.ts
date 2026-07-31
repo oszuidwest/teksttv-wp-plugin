@@ -1,4 +1,4 @@
-import { fadeOutRemove } from './dom';
+import { fadeOutRemove, siblingFocusTarget } from './dom';
 import type { Slide, WPMediaAttachment } from './types';
 
 /** Escape a string for safe insertion into an HTML attribute. */
@@ -56,13 +56,37 @@ export function stripTags(html: string): string {
 export function removeImageItem(button: Element, onRemoved?: () => void): void {
     const item = button.closest('.teksttv-image-item');
     if (!(item instanceof HTMLElement)) return;
+    const focusTarget = siblingFocusTarget(
+        item,
+        '.teksttv-remove-image',
+        item.closest('.teksttv-campaign-slides-section')?.querySelector<HTMLElement>('.teksttv-campaign-add-slides') ??
+            document.querySelector<HTMLElement>('#teksttv-add-images'),
+    );
 
     item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
         'input, select, textarea',
     ).forEach((control) => {
         control.disabled = true;
     });
-    fadeOutRemove(item, 150, onRemoved);
+    fadeOutRemove(item, 150, () => {
+        onRemoved?.();
+        focusTarget?.focus();
+    });
+}
+
+/**
+ * Insert picked attachments into an image list, then focus the first new
+ * item's remove button. The focus is deferred because wp.media returns
+ * focus to its opener when the modal closes.
+ */
+export function appendImageItems(list: Element, attachments: WPMediaAttachment[], inputName: string): void {
+    const firstNewIndex = list.children.length;
+    for (const att of attachments) {
+        list.insertAdjacentHTML('beforeend', imageItemHtml(att, inputName));
+    }
+    window.setTimeout(() => {
+        list.children[firstNewIndex]?.querySelector<HTMLButtonElement>('.teksttv-remove-image')?.focus();
+    });
 }
 
 /** HTML fragment for a removable image item in an image list. */
@@ -72,7 +96,7 @@ export function imageItemHtml(att: WPMediaAttachment, inputName: string): string
         `<div class="teksttv-image-item" data-id="${escAttr(att.id)}">` +
         `<img src="${escAttr(thumbUrl)}" alt="" />` +
         `<input type="hidden" name="${escAttr(inputName)}" value="${escAttr(att.id)}" />` +
-        '<button type="button" class="button-link teksttv-remove-image"><span class="dashicons dashicons-no-alt"></span></button>' +
+        '<button type="button" class="button-link teksttv-remove-image" aria-label="Afbeelding verwijderen"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>' +
         '</div>'
     );
 }

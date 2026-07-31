@@ -16,9 +16,11 @@ export function updatePreviewThumbnails(
             const cls = idx === activeIndex ? 'teksttv-preview-thumb is-active' : 'teksttv-preview-thumb';
             const src = previewSlideUrl(baseUrl, slide);
             const html =
-                `<div class="${cls}" data-index="${idx}">` +
-                `<iframe src="${src}" sandbox="allow-scripts allow-same-origin" tabindex="-1"></iframe>` +
-                `<span class="teksttv-preview-thumb-number">${idx + 1}</span>` +
+                '<div class="teksttv-preview-thumb-shell">' +
+                `<iframe src="${src}" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` +
+                `<button type="button" class="${cls}" data-index="${idx}" aria-label="Toon previewslide ${idx + 1}" aria-pressed="${idx === activeIndex}">` +
+                `<span class="teksttv-preview-thumb-number" aria-hidden="true">${idx + 1}</span>` +
+                '</button>' +
                 '</div>';
             thumbs.insertAdjacentHTML('beforeend', html);
         });
@@ -28,7 +30,9 @@ export function updatePreviewThumbnails(
             if (!el || !slides[idx]) return;
             const newSrc = previewSlideUrl(baseUrl, slides[idx]);
             const iframeEl = el.querySelector<HTMLIFrameElement>('iframe');
-            el.classList.toggle('is-active', idx === activeIndex);
+            const button = el.querySelector<HTMLButtonElement>('.teksttv-preview-thumb');
+            button?.classList.toggle('is-active', idx === activeIndex);
+            button?.setAttribute('aria-pressed', String(idx === activeIndex));
             if (iframeEl && iframeEl.getAttribute('src') !== newSrc) {
                 iframeEl.setAttribute('src', newSrc);
             }

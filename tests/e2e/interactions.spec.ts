@@ -70,6 +70,55 @@ test.describe('admin interaction contracts', () => {
         }
     });
 
+    test('supports keyboard accordions and preserves focus while adding and removing blocks', async ({ page }) => {
+        await page.goto(LOOP_URL);
+
+        const blocks = page.locator('#teksttv-blocks > .teksttv-block');
+        const initialCount = await blocks.count();
+        const firstBlock = blocks.first();
+        const firstToggle = firstBlock.locator('.teksttv-block-toggle-control');
+
+        await expect(firstToggle).toHaveAttribute('aria-expanded', 'false');
+        const controlledBodyId = await firstToggle.getAttribute('aria-controls');
+        expect(controlledBodyId).not.toBeNull();
+        await expect(firstBlock.locator('.teksttv-block-body')).toHaveAttribute('id', controlledBodyId as string);
+        await firstToggle.focus();
+        await page.keyboard.press('Enter');
+        await expect(firstToggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(firstBlock.locator('.teksttv-block-body')).toBeVisible();
+        await page.keyboard.press('Space');
+        await expect(firstToggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(firstBlock.locator('.teksttv-block-body')).toBeHidden();
+
+        // A stale collapse completion must not hide a block that was reopened
+        // before the previous transition finished.
+        await firstToggle.click();
+        await page.waitForTimeout(175);
+        await firstToggle.evaluate((toggle) => {
+            if (!(toggle instanceof HTMLButtonElement)) return;
+            toggle.click();
+            window.setTimeout(() => toggle.click(), 25);
+        });
+        await page.waitForTimeout(200);
+        await expect(firstToggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(firstBlock.locator('.teksttv-block-body')).toBeVisible();
+
+        await addLoopBlock(page, 'image');
+        await expect(blocks.nth(initialCount).locator('.teksttv-block-toggle-control')).toBeFocused();
+        await expect(blocks.nth(initialCount).locator('.teksttv-remove-block')).toHaveAccessibleName(/verwijder blok/i);
+
+        await addLoopBlock(page, 'iframe');
+        await expect(blocks.nth(initialCount + 1).locator('.teksttv-block-toggle-control')).toBeFocused();
+        await blocks.nth(initialCount).locator('.teksttv-remove-block').click();
+
+        await expect(blocks).toHaveCount(initialCount + 1);
+        await expect(blocks.nth(initialCount).locator('.teksttv-block-toggle-control')).toBeFocused();
+        const controlledIds = await blocks
+            .locator('.teksttv-block-toggle-control')
+            .evaluateAll((toggles) => toggles.map((toggle) => toggle.getAttribute('aria-controls')));
+        expect(new Set(controlledIds).size).toBe(controlledIds.length);
+    });
+
     test('removes a middle loop block and reindexes every remaining field', async ({ page }) => {
         await page.goto(LOOP_URL);
         await addLoopBlock(page, 'image');
@@ -111,7 +160,7 @@ test.describe('admin interaction contracts', () => {
         await page.goto(LOOP_URL);
 
         const block = page.locator('#teksttv-blocks > .teksttv-block').first();
-        await block.locator('.teksttv-block-header').click();
+        await block.locator('.teksttv-block-toggle-control').click();
         const toggle = block.locator('.teksttv-scheduling-checkbox');
         const scheduling = block.locator('.teksttv-block-fields--scheduling');
         const startDate = scheduling.locator('input[type="date"]').first();
@@ -136,7 +185,7 @@ test.describe('admin interaction contracts', () => {
         await page.goto(LOOP_URL);
 
         const articleBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
-        await articleBlock.locator('.teksttv-block-header').click();
+        await articleBlock.locator('.teksttv-block-toggle-control').click();
         await articleBlock.locator('input[name$="[count]"]').fill('17');
         await expect(articleBlock.locator('.teksttv-block-summary')).toContainText('17x');
     });
@@ -160,9 +209,11 @@ test.describe('admin interaction contracts', () => {
 
         const rows = page.locator('#teksttv-channels tbody > .teksttv-channel-row');
         await page.locator('#teksttv-add-channel').click();
+        await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-two');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Two');
         await page.locator('#teksttv-add-channel').click();
+        await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-three');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Three');
 
@@ -175,6 +226,7 @@ test.describe('admin interaction contracts', () => {
 
         await expect(rows).toHaveCount(2);
         await expect(rows.nth(1).locator('input[name$="[slug]"]')).toHaveValue('e2e-three');
+        await expect(rows.nth(1).locator('input[name$="[slug]"]')).toBeFocused();
         await expectSequentialNames(
             page.locator('#teksttv-channels tbody'),
             ':scope > .teksttv-channel-row',
@@ -194,7 +246,7 @@ test.describe('admin interaction contracts', () => {
             await page.goto(LOOP_URL);
 
             let block = page.locator('#teksttv-blocks > .teksttv-block').first();
-            await block.locator('.teksttv-block-header').click();
+            await block.locator('.teksttv-block-toggle-control').click();
             await block.locator('.teksttv-scheduling-checkbox').check();
 
             let dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
@@ -220,7 +272,7 @@ test.describe('admin interaction contracts', () => {
             await page.goto(LOOP_URL);
 
             const articleBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
-            await articleBlock.locator('.teksttv-block-header').click();
+            await articleBlock.locator('.teksttv-block-toggle-control').click();
             await articleBlock.locator('input[name$="[count]"]').fill('9');
             await articleBlock.locator('input[name$="[duration_text]"]').fill('23');
 
@@ -228,7 +280,7 @@ test.describe('admin interaction contracts', () => {
             if ((await iframeBlock.count()) === 0) {
                 iframeBlock = await addLoopBlock(page, 'iframe');
             } else if (!(await iframeBlock.locator('.teksttv-block-body').isVisible())) {
-                await iframeBlock.locator('.teksttv-block-header').click();
+                await iframeBlock.locator('.teksttv-block-toggle-control').click();
             }
             await iframeBlock.locator('input[name$="[name]"]').fill('E2E dashboard');
             await iframeBlock.locator('input[name$="[url]"]').fill('https://example.test/dashboard');
@@ -253,6 +305,7 @@ test.describe('admin interaction contracts', () => {
             const groups = page.locator('#teksttv-groups tbody > .teksttv-group-row');
             await page.locator('#teksttv-add-group').click();
             const addedGroup = groups.last();
+            await expect(addedGroup.locator('input[name$="[label]"]')).toBeFocused();
             await addedGroup.locator('input[name$="[label]"]').fill('E2E Added Group');
             await expect(addedGroup.locator('input[name]').first()).toHaveAttribute(
                 'name',

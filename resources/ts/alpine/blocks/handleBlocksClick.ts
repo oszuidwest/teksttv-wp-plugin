@@ -1,21 +1,48 @@
-import { slideToggle, slideUp } from '../../modules/dom';
-import { imageItemHtml, removeImageItem } from '../../modules/utils';
+import { cancelSlideAnimation, hide, show, siblingFocusTarget, slideDown, slideUp } from '../../modules/dom';
+import { appendImageItems, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
-/** Toggle the accordion body of the block owning `header`. */
-export function toggleBlockOpen(header: Element): void {
-    const block = header.closest('.teksttv-block');
-    if (!(block instanceof HTMLElement)) return;
-    block.classList.toggle('is-expanded');
+/** Set one block accordion state and keep its disclosure button in sync. */
+export function setBlockOpen(block: HTMLElement, expanded: boolean, animate = true): void {
+    const wasExpanded = block.classList.contains('is-expanded');
+    block.classList.toggle('is-expanded', expanded);
+    block
+        .querySelector<HTMLButtonElement>('.teksttv-block-toggle-control')
+        ?.setAttribute('aria-expanded', String(expanded));
+
     const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-    if (body) slideToggle(body, 150);
+    if (!body) return;
+    if (!animate) {
+        cancelSlideAnimation(body);
+        if (expanded) show(body);
+        else hide(body);
+        return;
+    }
+    if (wasExpanded === expanded) return;
+    if (expanded) slideDown(body, 150);
+    else slideUp(body, 150);
+}
+
+/** Toggle the accordion body of the block owning `trigger`. */
+export function toggleBlockOpen(trigger: Element): void {
+    const block = trigger.closest('.teksttv-block');
+    if (!(block instanceof HTMLElement)) return;
+    setBlockOpen(block, !block.classList.contains('is-expanded'));
 }
 
 /** Slide up and remove the block owning `trigger`, then run `onRemoved`. */
 export function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
+    // The list root declares where focus goes when its last block is removed.
+    const emptyFocus = block.parentElement?.dataset.emptyFocus;
+    const focusTarget = siblingFocusTarget(
+        block,
+        '.teksttv-block-toggle-control',
+        emptyFocus ? document.querySelector<HTMLElement>(emptyFocus) : null,
+    );
+
     block
         .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')
         .forEach((control) => {
@@ -24,6 +51,7 @@ export function removeClosestBlock(trigger: Element, onRemoved: () => void): voi
     slideUp(block, 200, () => {
         block.remove();
         onRemoved();
+        focusTarget?.focus();
     });
 }
 
@@ -45,10 +73,9 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         return;
     }
 
-    const header = e.target.closest('.teksttv-block-header');
-    if (header && blocksRoot.contains(header)) {
-        if (e.target.closest('.teksttv-remove-block')) return;
-        toggleBlockOpen(header);
+    const toggle = e.target.closest('.teksttv-block-toggle-control');
+    if (toggle && blocksRoot.contains(toggle)) {
+        toggleBlockOpen(toggle);
         return;
     }
 
@@ -60,9 +87,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         const baseName = list?.dataset.name;
         if (!list || !baseName) return;
         pickImages((attachments) => {
-            attachments.forEach((att) => {
-                list.insertAdjacentHTML('beforeend', imageItemHtml(att, baseName));
-            });
+            appendImageItems(list, attachments, baseName);
         });
         return;
     }

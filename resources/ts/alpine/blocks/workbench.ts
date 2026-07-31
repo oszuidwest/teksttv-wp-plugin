@@ -1,8 +1,8 @@
 import Sortable from 'sortablejs';
-import { hide, reindexNames, show, slideDown, slideUp, tmplHtml } from '../../modules/dom';
+import { reindexNames, siblingFocusTarget, tmplHtml } from '../../modules/dom';
 import { debounce, initTomSelectIn } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
-import { handleBlocksClick, removeClosestBlock, toggleBlockOpen } from './handleBlocksClick';
+import { handleBlocksClick, removeClosestBlock, setBlockOpen, toggleBlockOpen } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -14,14 +14,30 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let groupsTbody: HTMLTableSectionElement | null = null;
     let newGroupSeq = 0;
 
+    function reindexDisclosureIds(root: HTMLElement): void {
+        // The id scheme must match the server-rendered ids (AdminPage /
+        // CampaignsPage build them from the option prefix, which mirrors the
+        // list root's id).
+        root.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block, index) => {
+            const body = block.querySelector<HTMLElement>('.teksttv-block-body');
+            const toggle = block.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
+            if (!(body && toggle)) return;
+            const bodyId = `${root.id}-${index}-body`;
+            body.id = bodyId;
+            toggle.setAttribute('aria-controls', bodyId);
+        });
+    }
+
     function reindexBlocks(): void {
         if (!blocksEl) return;
         reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/);
+        reindexDisclosureIds(blocksEl);
     }
 
     function reindexTicker(): void {
         if (!tickerEl) return;
         reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/);
+        reindexDisclosureIds(tickerEl);
     }
 
     function refreshSummaries(): void {
@@ -44,13 +60,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         root.insertAdjacentHTML('beforeend', templateHtml.replace(placeholder, String(index)));
         const newBlock = root.querySelector(':scope > .teksttv-block:last-of-type');
         if (newBlock instanceof HTMLElement) {
-            const body = newBlock.querySelector<HTMLElement>('.teksttv-block-body');
-            if (body) show(body);
-            newBlock.classList.add('is-expanded');
+            setBlockOpen(newBlock, true, false);
             // A no-op for templates without .teksttv-tomselect fields — the
             // class on the rendered fields is the declaration.
             initTomSelectIn(newBlock);
-            if (options.focusText) newBlock.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
+            const focusTarget = options.focusText
+                ? newBlock.querySelector<HTMLInputElement>('input[type="text"]')
+                : newBlock.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
+            focusTarget?.focus();
         }
         return true;
     }
@@ -97,17 +114,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                         if (evt.oldIndex !== evt.newIndex) reindexTicker();
                     },
                 });
-                tickerEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                    const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-                    if (body) hide(body);
-                });
             }
 
             refreshSummaries();
-            blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-                if (body) hide(body);
-            });
 
             if (opts.groups) {
                 groupsTbody = document.querySelector('#teksttv-groups')?.querySelector('tbody') ?? null;
@@ -140,9 +149,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!blocksEl) return;
             blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
                 if (!(block instanceof HTMLElement)) return;
-                block.classList.add('is-expanded');
-                const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-                if (body) slideDown(body, 150);
+                setBlockOpen(block, true);
             });
         },
 
@@ -150,9 +157,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!blocksEl) return;
             blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
                 if (!(block instanceof HTMLElement)) return;
-                block.classList.remove('is-expanded');
-                const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-                if (body) slideUp(body, 150);
+                setBlockOpen(block, false);
             });
         },
 
@@ -177,9 +182,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 return;
             }
 
-            const header = e.target.closest('.teksttv-block-header');
-            if (header && tickerEl.contains(header)) {
-                toggleBlockOpen(header);
+            const toggle = e.target.closest('.teksttv-block-toggle-control');
+            if (toggle && tickerEl.contains(toggle)) {
+                toggleBlockOpen(toggle);
             }
         },
 
@@ -198,16 +203,27 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 `<input type="hidden" name="teksttv_campaign_groups[${key}][id]" value="" />` +
                 `<input type="text" name="teksttv_campaign_groups[${key}][label]" value="" class="regular-text" required placeholder="Bijv. Campagne" />` +
                 '</td>' +
-                '<td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group"><span class="dashicons dashicons-trash"></span></button></td>' +
+                '<td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="Groep verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
                 '</tr>';
             groupsTbody.insertAdjacentHTML('beforeend', row);
+            groupsTbody
+                .querySelector<HTMLInputElement>(':scope > .teksttv-group-row:last-of-type input[name$="[label]"]')
+                ?.focus();
         },
 
         groupsClick(e: MouseEvent): void {
             if (!(e.target instanceof Element)) return;
             const tgt = e.target.closest('.teksttv-remove-group');
             if (!(tgt instanceof HTMLElement) || !groupsTbody?.contains(tgt)) return;
-            tgt.closest('tr')?.remove();
+            const row = tgt.closest('tr');
+            if (!row) return;
+            const focusTarget = siblingFocusTarget(
+                row,
+                'input[name$="[label]"]',
+                document.querySelector<HTMLElement>('#teksttv-add-group'),
+            );
+            row.remove();
+            focusTarget?.focus();
         },
     };
 }
