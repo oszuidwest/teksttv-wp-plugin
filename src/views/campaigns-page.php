@@ -75,8 +75,8 @@ settings_errors('teksttv_campaigns');
     </div>
 </form>
 
-<script type="text/html" id="tmpl-teksttv-campaign">
-    <?php CampaignsPage::render_campaign('__INDEX__', [], $channels, $groups); ?>
-</script>
+<template id="tmpl-teksttv-campaign">
+    <?php CampaignsPage::render_campaign(0, [], $channels, $groups); ?>
+</template>
 
 </div>

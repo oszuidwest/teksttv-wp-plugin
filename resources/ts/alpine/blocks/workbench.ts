@@ -1,5 +1,5 @@
 import Sortable from 'sortablejs';
-import { reindexNames, siblingFocusTarget, tmplHtml } from '../../modules/dom';
+import { reindexNames, siblingFocusTarget } from '../../modules/dom';
 import { debounce, initTomSelectIn } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
 import { handleBlocksClick, removeClosestBlock, setBlockOpen, toggleBlockOpen } from './handleBlocksClick';
@@ -51,24 +51,23 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     function insertBlockFromTemplate(
         root: HTMLElement,
         templateId: string,
-        placeholder: RegExp,
+        reindex: () => void,
         options: { focusText?: boolean } = {},
     ): boolean {
-        const templateHtml = tmplHtml(templateId);
-        if (!templateHtml) return false;
-        const index = root.querySelectorAll(':scope > .teksttv-block').length;
-        root.insertAdjacentHTML('beforeend', templateHtml.replace(placeholder, String(index)));
-        const newBlock = root.querySelector(':scope > .teksttv-block:last-of-type');
-        if (newBlock instanceof HTMLElement) {
-            setBlockOpen(newBlock, true, false);
-            // A no-op for templates without .teksttv-tomselect fields — the
-            // class on the rendered fields is the declaration.
-            initTomSelectIn(newBlock);
-            const focusTarget = options.focusText
-                ? newBlock.querySelector<HTMLInputElement>('input[type="text"]')
-                : newBlock.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
-            focusTarget?.focus();
-        }
+        const template = document.getElementById(templateId);
+        if (!(template instanceof HTMLTemplateElement)) return false;
+        const newBlock = template.content.firstElementChild?.cloneNode(true);
+        if (!(newBlock instanceof HTMLElement)) return false;
+        root.append(newBlock);
+        reindex();
+        setBlockOpen(newBlock, true, false);
+        // A no-op for templates without .teksttv-tomselect fields — the
+        // class on the rendered fields is the declaration.
+        initTomSelectIn(newBlock);
+        const focusTarget = options.focusText
+            ? newBlock.querySelector<HTMLInputElement>('input[type="text"]')
+            : newBlock.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
+        focusTarget?.focus();
         return true;
     }
 
@@ -126,7 +125,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         addLoopBlock(type: string): void {
             if (!blocksEl) return;
             document.querySelector('#teksttv-empty-state')?.remove();
-            if (insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, /__INDEX__/g)) {
+            if (insertBlockFromTemplate(blocksEl, `tmpl-teksttv-block-${type}`, reindexBlocks)) {
                 refreshSummaries();
             }
         },
@@ -134,14 +133,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         addCampaignBlock(): void {
             if (!blocksEl || !opts.campaignAdd) return;
             document.querySelector('#teksttv-empty-state')?.remove();
-            if (insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign', /__INDEX__/g)) {
+            if (insertBlockFromTemplate(blocksEl, 'tmpl-teksttv-campaign', reindexBlocks)) {
                 refreshSummaries();
             }
         },
 
         addTickerBlock(type: string): void {
             if (!(opts.ticker && tickerEl)) return;
-            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, /__TINDEX__/g, { focusText: true });
+            insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, reindexTicker, { focusText: true });
             refreshSummaries();
         },
 
