@@ -43,7 +43,7 @@ class AuditPage
         $posts = $query_result['posts'];
         $total_posts = $query_result['total'];
         $total_pages = (int) ceil($total_posts / self::PER_PAGE);
-        $stats = self::compute_stats($posts);
+        $stats = self::compute_stats(self::query_ai_post_statuses());
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html('AI Audit') . '</h1>';
@@ -204,31 +204,20 @@ class AuditPage
      */
     private static function query_ai_posts(int $paged = 1): array
     {
-        $query = new \WP_Query([
-            'post_type' => 'post',
+        $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
             'posts_per_page' => self::PER_PAGE,
             'paged' => $paged,
-            'meta_query' => [
-                'relation' => 'OR',
-                ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
-                ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
-            ],
-            'orderby' => 'modified',
-            'order' => 'DESC',
-        ]);
+        ]));
 
         $results = [];
         foreach ($query->posts as $post) {
-            $ai_title = get_post_meta($post->ID, '_teksttv_ai_title', true);
-            $ai_body = get_post_meta($post->ID, '_teksttv_ai_body', true);
-            $current_title = get_post_meta($post->ID, '_teksttv_title', true);
-            $current_body = get_post_meta($post->ID, '_teksttv_content', true);
+            $statuses = self::get_post_statuses($post->ID);
 
             $results[] = [
                 'id' => $post->ID,
                 'title' => $post->post_title,
-                'title_status' => self::compare($ai_title, $current_title),
-                'body_status' => self::compare($ai_body, $current_body),
+                'title_status' => $statuses['title_status'],
+                'body_status' => $statuses['body_status'],
                 'date' => get_the_modified_date('j M Y H:i', $post),
             ];
         }
@@ -240,19 +229,86 @@ class AuditPage
     }
 
     /**
-     * Compute stats from an already-fetched posts array.
+     * Fetch audit statuses in bounded batches without loading full post objects.
      *
-     * @param list<array{title_status: string, body_status: string}> $posts
+     * @return \Generator<int, array{title_status: string, body_status: string}>
+     */
+    private static function query_ai_post_statuses(): \Generator
+    {
+        $paged = 1;
+
+        do {
+            $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
+                'fields' => 'ids',
+                'posts_per_page' => self::PER_PAGE,
+                'paged' => $paged,
+                'no_found_rows' => true,
+                'orderby' => 'ID',
+                'order' => 'ASC',
+                'update_post_term_cache' => false,
+            ]));
+            $post_ids = $query->posts;
+            update_meta_cache('post', $post_ids);
+
+            foreach ($post_ids as $post_id) {
+                yield self::get_post_statuses((int) $post_id);
+            }
+
+            $paged++;
+        } while (count($post_ids) === self::PER_PAGE);
+    }
+
+    /**
+     * Query arguments shared by the table and aggregate statistics.
+     *
+     * @return array<string, mixed>
+     */
+    private static function ai_post_query_args(): array
+    {
+        return [
+            'post_type' => 'post',
+            'meta_query' => [
+                'relation' => 'OR',
+                ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
+                ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
+            ],
+            'orderby' => 'modified',
+            'order' => 'DESC',
+        ];
+    }
+
+    /**
+     * @return array{title_status: string, body_status: string}
+     */
+    private static function get_post_statuses(int $post_id): array
+    {
+        return [
+            'title_status' => self::compare(
+                get_post_meta($post_id, '_teksttv_ai_title', true),
+                get_post_meta($post_id, '_teksttv_title', true)
+            ),
+            'body_status' => self::compare(
+                get_post_meta($post_id, '_teksttv_ai_body', true),
+                get_post_meta($post_id, '_teksttv_content', true)
+            ),
+        ];
+    }
+
+    /**
+     * Compute stats from fetched post statuses.
+     *
+     * @param iterable<array{title_status: string, body_status: string}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}
      */
-    public static function compute_stats(array $posts): array
+    public static function compute_stats(iterable $posts): array
     {
-        $total = count($posts);
+        $total = 0;
         $title_modified = 0;
         $body_modified = 0;
         $any_modified = 0;
 
         foreach ($posts as $post_data) {
+            $total++;
             $t = $post_data['title_status'] === 'modified';
             $b = $post_data['body_status'] === 'modified';
             if ($t) {
