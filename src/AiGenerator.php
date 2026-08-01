@@ -26,7 +26,12 @@ class AiGenerator
      */
     public static function within_rate_limit(int $user_id, int $rate_limit): bool
     {
-        $key = 'teksttv_ai_rate_' . $user_id;
+        // Use the same calendar-aligned minute bucket for both persistence
+        // paths. Rewriting a transient may extend that entry's TTL, but the
+        // next minute uses a different key, so it cannot extend the active
+        // rate-limit window.
+        $window = intdiv(time(), MINUTE_IN_SECONDS);
+        $key = 'teksttv_ai_rate_' . $user_id . '_' . $window;
 
         if (wp_using_ext_object_cache()) {
             $group = 'teksttv_ai_rate';
