@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import { addLoopBlock } from './helpers';
 
 type EditorWindow = Window & {
@@ -9,6 +9,49 @@ type EditorWindow = Window & {
         preferences?: { store?: unknown };
     };
 };
+
+const editorModalOverlays = (page: Page) => page.locator('.components-modal__screen-overlay:visible');
+
+async function describeEditorModal(overlay: Locator): Promise<string> {
+    return overlay.evaluate((element) => {
+        const dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+        const labelledBy = dialog?.getAttribute('aria-labelledby');
+        const labelledByText = labelledBy ? document.getElementById(labelledBy)?.textContent?.trim() : '';
+        const heading = element.querySelector<HTMLElement>('h1, h2, h3, [role="heading"]')?.textContent?.trim();
+        const label = dialog?.getAttribute('aria-label')?.trim();
+        const text = element.textContent?.replace(/\s+/g, ' ').trim().slice(0, 200);
+
+        return label || labelledByText || heading || text || 'unlabelled modal';
+    });
+}
+
+async function dismissEditorModal(overlay: Locator): Promise<void> {
+    const welcomeGuide = overlay.locator(
+        '.edit-post-welcome-guide, .editor-welcome-guide, [role="dialog"][aria-label="Welcome to the editor"]',
+    );
+
+    if ((await welcomeGuide.count()) > 0) {
+        await overlay.getByRole('button', { name: 'Close', exact: true }).click();
+        return;
+    }
+
+    throw new Error(`Unexpected WordPress editor modal blocks TekstTV controls: ${await describeEditorModal(overlay)}`);
+}
+
+async function guardAgainstEditorModalOverlays(page: Page): Promise<void> {
+    const overlays = editorModalOverlays(page);
+
+    while ((await overlays.count()) > 0) {
+        const overlay = overlays.first();
+        await dismissEditorModal(overlay);
+        await expect(overlay).toBeHidden();
+    }
+
+    // WordPress can mount onboarding after the preference store first becomes
+    // available. Handle that race at the next attempted interaction.
+    await page.addLocatorHandler(overlays, async (overlay) => dismissEditorModal(overlay.first()));
+    await expect(overlays, 'no WordPress editor modal should block the TekstTV meta box').toHaveCount(0);
+}
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
@@ -43,20 +86,19 @@ async function openFixturePostEditor(page: Page): Promise<void> {
         const { wp } = window as EditorWindow;
         return typeof wp?.data?.dispatch === 'function' && wp?.preferences?.store !== undefined;
     });
-    await page.evaluate(() => {
-        const { wp } = window as EditorWindow;
-        if (!wp?.data?.dispatch || !wp.preferences) return;
-        wp.data.dispatch(wp.preferences.store).set('core/edit-post', 'welcomeGuide', false);
-    });
+
+    await guardAgainstEditorModalOverlays(page);
 
     const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
-    await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
     await expect(metaBoxesButton).toBeVisible();
     if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
         await metaBoxesButton.focus();
         await page.keyboard.press('Enter');
     }
     await expect.poll(() => metaBoxesButton.getAttribute('aria-expanded')).toBe('true');
+    await expect(editorModalOverlays(page), 'no WordPress editor modal should block the TekstTV meta box').toHaveCount(
+        0,
+    );
 }
 
 // No reseed hooks here: none of these tests submit a form or save the post,
