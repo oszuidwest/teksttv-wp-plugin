@@ -59,6 +59,7 @@ abstract class TestCase extends PHPUnitTestCase
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
         $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('is_supported_for_text_generation')->zeroOrMoreTimes()->andReturn(true);
         $builder->shouldReceive('generate_text')
             ->times(count($responses))
             ->andReturn(...$responses);

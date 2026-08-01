@@ -34,6 +34,54 @@ class AiGeneratorTest extends TestCase
         ];
     }
 
+    public function test_supports_text_generation_returns_false_when_ai_is_disabled(): void
+    {
+        Functions\expect('wp_supports_ai')->once()->andReturn(false);
+        Functions\expect('wp_ai_client_prompt')->never();
+
+        $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig()));
+    }
+
+    public function test_supports_text_generation_returns_false_without_a_matching_provider(): void
+    {
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->with('Test')->once()->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->with(2048)->once()->andReturnSelf();
+        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
+        Functions\expect('wp_ai_client_prompt')
+            ->with('Controleer of TekstTV tekst kan genereren.')
+            ->once()
+            ->andReturn($builder);
+
+        $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig()));
+    }
+
+    public function test_support_check_uses_the_configured_generation_requirements(): void
+    {
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->with('Test')->once()->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->with(4096)->once()->andReturnSelf();
+        $builder->shouldReceive('using_temperature')->with(0.7)->once()->andReturnSelf();
+        $builder->shouldReceive('using_top_p')->with(0.8)->once()->andReturnSelf();
+        $builder->shouldReceive('using_model_preference')
+            ->with(['anthropic', 'claude-sonnet'])
+            ->once()
+            ->andReturnSelf();
+        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn($builder);
+
+        $this->assertTrue(AiGenerator::supports_text_generation(self::aiConfig([
+            'temperature' => 0.7,
+            'top_p' => 0.8,
+            'max_tokens' => 4096,
+            'model' => 'anthropic/claude-sonnet',
+        ])));
+    }
+
     public function test_within_rate_limit_uses_atomic_incr_with_object_cache(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(true);

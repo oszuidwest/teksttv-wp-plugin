@@ -9,6 +9,7 @@
  *     using_top_p: callable(float): object,
  *     using_model_preference: callable(array): object,
  *     using_provider: callable(string): object,
+ *     is_supported_for_text_generation: callable(): bool,
  *     generate_text: callable(): (string|\WP_Error)
  * }
  */

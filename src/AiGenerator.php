@@ -12,6 +12,40 @@ namespace TekstTV;
 class AiGenerator
 {
     /**
+     * Whether the current WordPress AI configuration can satisfy the same
+     * requirements used for TekstTV generation requests.
+     *
+     * wp_supports_ai() is only an environment-level switch and defaults to
+     * true even when no provider is configured. The prompt-level support
+     * check also verifies the registered providers, credentials, models, and
+     * configured generation parameters.
+     *
+     * @param AiConfig $config Config from Helpers::get_ai_prompts().
+     */
+    public static function supports_text_generation(array $config): bool
+    {
+        if (
+            !function_exists('wp_supports_ai')
+            || !wp_supports_ai()
+            || !function_exists('wp_ai_client_prompt')
+        ) {
+            return false;
+        }
+
+        try {
+            $builder = self::configure_prompt_builder(
+                'Controleer of TekstTV tekst kan genereren.',
+                $config['system'],
+                $config
+            );
+
+            return (bool) $builder->is_supported_for_text_generation();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * Count one request against the per-user, per-minute AI generation limit.
      *
      * With a persistent object cache, wp_cache_incr() is atomic and avoids the
@@ -246,6 +280,19 @@ class AiGenerator
      */
     private static function call_ai(string $user_prompt, string $system, array $config)
     {
+        return self::configure_prompt_builder($user_prompt, $system, $config)->generate_text();
+    }
+
+    /**
+     * Apply the generation requirements shared by capability checks and real
+     * requests so the UI cannot advertise a configuration that later fails
+     * model discovery.
+     *
+     * @param AiConfig $config
+     * @return object
+     */
+    private static function configure_prompt_builder(string $user_prompt, string $system, array $config)
+    {
         $builder = wp_ai_client_prompt($user_prompt)
             ->using_system_instruction($system)
             ->using_max_tokens($config['max_tokens']);
@@ -266,7 +313,7 @@ class AiGenerator
             $builder = $builder->using_provider($provider_setting);
         }
 
-        return $builder->generate_text();
+        return $builder;
     }
 
     /**

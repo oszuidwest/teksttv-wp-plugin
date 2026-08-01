@@ -79,8 +79,8 @@ class PostMeta
         }
         $default_end = self::default_end_date((string) $saved_start);
 
-        $ai_supported = Helpers::ai_supported();
-        $prompts = $ai_supported ? Helpers::get_ai_prompts() : [];
+        $prompts = Helpers::get_ai_prompts();
+        $ai_supported = Helpers::ai_supported($prompts);
 
         $config = [
             'previewUrl' => $preview_url,
@@ -92,9 +92,9 @@ class PostMeta
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
             'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
-            'titleCharLimit' => $prompts['title_char_limit'] ?? 0,
-            'wordLimit' => $prompts['word_limit'] ?? 0,
-            'wordLimitPhoto' => $prompts['word_limit_photo'] ?? 0,
+            'titleCharLimit' => $prompts['title_char_limit'],
+            'wordLimit' => $prompts['word_limit'],
+            'wordLimitPhoto' => $prompts['word_limit_photo'],
             'pageSeparator' => Helpers::has_feature('page_separator'),
         ];
         wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');

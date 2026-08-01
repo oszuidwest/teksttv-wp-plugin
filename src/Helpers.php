@@ -212,11 +212,18 @@ class Helpers
     }
 
     /**
-     * Whether AI generation is enabled and the WP AI Client is available.
+     * Whether AI generation is enabled and a provider supports the configured
+     * TekstTV text-generation requirements.
+     *
+     * @param AiConfig|null $config Preloaded config to avoid duplicate option reads.
      */
-    public static function ai_supported(): bool
+    public static function ai_supported(?array $config = null): bool
     {
-        return self::has_feature('ai_generate') && function_exists('wp_supports_ai') && wp_supports_ai();
+        if (!self::has_feature('ai_generate')) {
+            return false;
+        }
+
+        return AiGenerator::supports_text_generation($config ?? self::get_ai_prompts());
     }
 
     /**

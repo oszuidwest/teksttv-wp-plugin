@@ -444,8 +444,28 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // get_ai_prompts()
+    // ai_supported() / get_ai_prompts()
     // =========================================================================
+
+    public function test_ai_supported_returns_false_when_environment_allows_ai_but_no_provider_matches(): void
+    {
+        Functions\when('get_option')->alias(function ($key, $default = false) {
+            return match ($key) {
+                'teksttv_features' => ['ai_generate'],
+                'teksttv_ai_prompts' => [],
+                default => $default,
+            };
+        });
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->once()->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->once()->andReturnSelf();
+        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn($builder);
+
+        $this->assertFalse(Helpers::ai_supported());
+    }
 
     public function test_get_ai_prompts_returns_defaults_when_empty(): void
     {
