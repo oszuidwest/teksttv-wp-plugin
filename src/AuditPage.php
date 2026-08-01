@@ -6,6 +6,15 @@ class AuditPage
 {
     private const PER_PAGE = 50;
 
+    private const STATS_CHUNK = 500;
+
+    private const AUDIT_META_KEYS = [
+        '_teksttv_ai_title',
+        '_teksttv_title',
+        '_teksttv_ai_body',
+        '_teksttv_content',
+    ];
+
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
@@ -207,6 +216,8 @@ class AuditPage
         $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
             'posts_per_page' => self::PER_PAGE,
             'paged' => $paged,
+            'orderby' => 'modified',
+            'order' => 'DESC',
         ]));
 
         $results = [];
@@ -229,37 +240,88 @@ class AuditPage
     }
 
     /**
-     * Fetch audit statuses in bounded batches without loading full post objects.
+     * Stream audit statuses for every matching post. Only the ID list is held
+     * in full; post objects are never loaded and metadata is read per chunk
+     * of only the audited keys, so neither the query cache nor the
+     * request-wide meta cache grows with the dataset.
      *
      * @return \Generator<int, array{title_status: string, body_status: string}>
      */
     private static function query_ai_post_statuses(): \Generator
     {
-        $paged = 1;
+        $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
+            'fields' => 'ids',
+            'posts_per_page' => -1,
+            'no_found_rows' => true,
+            'cache_results' => false,
+            'orderby' => 'none',
+        ]));
+        $post_ids = $query->posts;
+        unset($query);
 
-        do {
-            $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
-                'fields' => 'ids',
-                'posts_per_page' => self::PER_PAGE,
-                'paged' => $paged,
-                'no_found_rows' => true,
-                'orderby' => 'ID',
-                'order' => 'ASC',
-                'update_post_term_cache' => false,
-            ]));
-            $post_ids = $query->posts;
-            update_meta_cache('post', $post_ids);
+        for ($offset = 0; $offset < count($post_ids); $offset += self::STATS_CHUNK) {
+            $chunk = array_slice($post_ids, $offset, self::STATS_CHUNK);
+            $meta = self::first_meta_values(self::query_audit_meta_rows($chunk));
 
-            foreach ($post_ids as $post_id) {
-                yield self::get_post_statuses((int) $post_id);
+            foreach ($chunk as $post_id) {
+                yield self::statuses_from_meta($meta[$post_id] ?? []);
             }
-
-            $paged++;
-        } while (count($post_ids) === self::PER_PAGE);
+        }
     }
 
     /**
-     * Query arguments shared by the table and aggregate statistics.
+     * Read only the audited meta keys for a chunk of posts, bypassing the
+     * meta API so the object cache is not filled with every key of every post.
+     *
+     * @param list<int> $post_ids
+     * @return list<array{post_id: string, meta_key: string, meta_value: string}>
+     */
+    private static function query_audit_meta_rows(array $post_ids): array
+    {
+        global $wpdb;
+
+        if ($post_ids === []) {
+            return [];
+        }
+
+        $id_placeholders = implode(',', array_fill(0, count($post_ids), '%d'));
+        $key_placeholders = implode(',', array_fill(0, count(self::AUDIT_META_KEYS), '%s'));
+
+        // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- the IN() lists contain only placeholders; all values go through prepare()
+        $sql = $wpdb->prepare(
+            'SELECT post_id, meta_key, meta_value FROM ' . $wpdb->postmeta
+                . ' WHERE post_id IN (' . $id_placeholders . ') AND meta_key IN (' . $key_placeholders . ')'
+                . ' ORDER BY meta_id',
+            array_merge($post_ids, self::AUDIT_META_KEYS)
+        );
+
+        return $wpdb->get_results($sql, ARRAY_A);
+        // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+    }
+
+    /**
+     * First value per post and key, deserialized - rows arrive ordered by
+     * meta_id, matching get_post_meta's single-value semantics for duplicate
+     * keys. This is the only place raw database values are normalized.
+     *
+     * @param list<array{post_id: string|int, meta_key: string, meta_value: string}> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private static function first_meta_values(array $rows): array
+    {
+        $meta = [];
+        foreach ($rows as $row) {
+            $post_id = (int) $row['post_id'];
+            if (!isset($meta[$post_id][$row['meta_key']])) {
+                $meta[$post_id][$row['meta_key']] = maybe_unserialize($row['meta_value']);
+            }
+        }
+
+        return $meta;
+    }
+
+    /**
+     * Which posts count as AI-audited; shared by the table and the statistics.
      *
      * @return array<string, mixed>
      */
@@ -272,8 +334,6 @@ class AuditPage
                 ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
                 ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
             ],
-            'orderby' => 'modified',
-            'order' => 'DESC',
         ];
     }
 
@@ -282,20 +342,45 @@ class AuditPage
      */
     private static function get_post_statuses(int $post_id): array
     {
+        $meta = [];
+        foreach (self::AUDIT_META_KEYS as $key) {
+            $meta[$key] = get_post_meta($post_id, $key, true);
+        }
+
+        return self::statuses_from_meta($meta);
+    }
+
+    /**
+     * Pair each AI meta value with its current counterpart; the single source
+     * of which keys the audit compares.
+     *
+     * @param array<string, mixed> $meta Already-deserialized meta values keyed by meta key.
+     * @return array{title_status: string, body_status: string}
+     */
+    private static function statuses_from_meta(array $meta): array
+    {
         return [
             'title_status' => self::compare(
-                get_post_meta($post_id, '_teksttv_ai_title', true),
-                get_post_meta($post_id, '_teksttv_title', true)
+                self::meta_string($meta['_teksttv_ai_title'] ?? ''),
+                self::meta_string($meta['_teksttv_title'] ?? '')
             ),
             'body_status' => self::compare(
-                get_post_meta($post_id, '_teksttv_ai_body', true),
-                get_post_meta($post_id, '_teksttv_content', true)
+                self::meta_string($meta['_teksttv_ai_body'] ?? ''),
+                self::meta_string($meta['_teksttv_content'] ?? '')
             ),
         ];
     }
 
     /**
-     * Compute stats from fetched post statuses.
+     * Non-scalar meta (deserialized arrays or objects) audits as absent.
+     */
+    private static function meta_string(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
+    }
+
+    /**
+     * Compute stats from streamed post statuses.
      *
      * @param iterable<array{title_status: string, body_status: string}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}

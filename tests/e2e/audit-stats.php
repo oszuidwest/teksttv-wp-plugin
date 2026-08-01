@@ -5,12 +5,14 @@
 
 defined('ABSPATH') || exit;
 
-for ($teksttv_i = 0; $teksttv_i < 51; $teksttv_i++) {
+// The last post is private: the audit page must count it for a viewer with
+// read_private_posts, exactly like the WP_Query behind the results table does.
+for ($teksttv_i = 0; $teksttv_i < 52; $teksttv_i++) {
     $post_data = [
         'post_title' => 'TekstTV Audit Statistiek ' . ($teksttv_i + 1),
         'post_name' => 'teksttv-audit-stat-' . ($teksttv_i + 1),
         'post_content' => '<p>Bronartikel voor de auditstatistiek.</p>',
-        'post_status' => 'publish',
+        'post_status' => $teksttv_i === 51 ? 'private' : 'publish',
     ];
     $existing = get_page_by_path($post_data['post_name'], OBJECT, 'post');
     if ($existing) {
@@ -31,4 +33,4 @@ for ($teksttv_i = 0; $teksttv_i < 51; $teksttv_i++) {
     );
 }
 
-echo "audit-stats-ok count=51\n";
+echo "audit-stats-ok count=52\n";

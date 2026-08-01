@@ -1,5 +1,5 @@
-import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
+import { runEvalFile } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 
 test.describe('AI audit statistics', () => {
@@ -8,17 +8,15 @@ test.describe('AI audit statistics', () => {
     });
 
     test('represent all matching posts on every results page', async ({ page }) => {
-        const output = execFileSync(
-            'bun',
-            ['x', 'wp-env', 'run', 'cli', 'wp', 'eval-file', 'wp-content/e2e/audit-stats.php'],
-            { encoding: 'utf8', timeout: 120_000 },
-        );
-        expect(output).toContain('audit-stats-ok count=51');
+        const output = runEvalFile('audit-stats.php');
+        expect(output).toContain('audit-stats-ok count=52');
 
+        // 52 posts (one private, visible to the admin session), 1 of 52 bodies
+        // edited: round(1 / 52 * 100) = 2%.
         const assertStats = async () => {
             const cards = page.locator('.teksttv-audit-stat-number');
             await expect(cards).toHaveCount(4);
-            await expect(cards.nth(0)).toHaveText('51');
+            await expect(cards.nth(0)).toHaveText('52');
             await expect(cards.nth(1)).toHaveText('0%');
             await expect(cards.nth(2)).toHaveText('2%');
             await expect(cards.nth(3)).toHaveText('2%');
@@ -30,6 +28,6 @@ test.describe('AI audit statistics', () => {
 
         await page.goto('/wp-admin/admin.php?page=teksttv-audit&paged=2');
         await assertStats();
-        await expect(page.locator('.teksttv-audit-table tbody tr')).toHaveCount(1);
+        await expect(page.locator('.teksttv-audit-table tbody tr')).toHaveCount(2);
     });
 });
