@@ -62,6 +62,7 @@ class RestApiTest extends TestCase
         Functions\when('get_current_user_id')->justReturn(7);
         self::stubRateLimitOk();
         Functions\when('is_wp_error')->alias(fn ($thing) => $thing instanceof \WP_Error);
+        Functions\when('wp_slash')->returnArg();
     }
 
     /**
