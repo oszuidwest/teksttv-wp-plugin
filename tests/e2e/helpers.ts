@@ -1,7 +1,16 @@
+import { execFileSync } from 'node:child_process';
 import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Admin session saved by global-setup and loaded by every test (see playwright.config.ts). */
 export const ADMIN_STORAGE_STATE = '.playwright/auth/admin.json';
+
+/** Run a PHP file from tests/e2e/ inside wp-env via `wp eval-file` and return its output. */
+export function runEvalFile(file: string): string {
+    return execFileSync('bun', ['x', 'wp-env', 'run', 'cli', 'wp', 'eval-file', `wp-content/e2e/${file}`], {
+        encoding: 'utf8',
+        timeout: 120_000,
+    });
+}
 
 /** Log in through wp-login.php and wait for the admin dashboard. */
 export async function login(page: Page, username: string, password: string): Promise<void> {
