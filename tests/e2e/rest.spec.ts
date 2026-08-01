@@ -1,5 +1,5 @@
-import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
+import { runEvalFile } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 
 test.describe('slides REST endpoint', () => {
@@ -40,11 +40,7 @@ test.describe('slides REST endpoint', () => {
         });
 
         test('saves through WordPress and changes the packaged REST payload', async ({ request }) => {
-            const output = execFileSync(
-                'bun',
-                ['x', 'wp-env', 'run', 'cli', 'wp', 'eval-file', 'wp-content/e2e/save-post-meta.php'],
-                { encoding: 'utf8', timeout: 120_000 },
-            );
+            const output = runEvalFile('save-post-meta.php');
             expect(output).toContain('post-meta-save-ok ');
 
             const response = await request.get('/wp-json/teksttv/v1/slides?channel=tv1');

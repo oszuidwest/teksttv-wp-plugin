@@ -92,4 +92,18 @@ class AuditPageTest extends TestCase
         $this->assertSame(100.0, $result['body_modified_pct']);
         $this->assertSame(100.0, $result['any_modified_pct']);
     }
+
+    public function test_compute_stats_rounds_uneven_ratio(): void
+    {
+        $posts = [['title_status' => 'no_ai', 'body_status' => 'modified']];
+        for ($i = 0; $i < 50; $i++) {
+            $posts[] = ['title_status' => 'no_ai', 'body_status' => 'unmodified'];
+        }
+
+        $result = AuditPage::compute_stats($posts);
+
+        $this->assertSame(0.0, $result['title_modified_pct']);
+        $this->assertSame(2.0, $result['body_modified_pct']);
+        $this->assertSame(2.0, $result['any_modified_pct']);
+    }
 }

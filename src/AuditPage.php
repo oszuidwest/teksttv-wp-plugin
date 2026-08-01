@@ -43,7 +43,7 @@ class AuditPage
         $posts = $query_result['posts'];
         $total_posts = $query_result['total'];
         $total_pages = (int) ceil($total_posts / self::PER_PAGE);
-        $stats = self::compute_stats($posts);
+        $stats = self::compute_stats(self::query_ai_post_statuses());
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html('AI Audit') . '</h1>';
@@ -204,31 +204,22 @@ class AuditPage
      */
     private static function query_ai_posts(int $paged = 1): array
     {
-        $query = new \WP_Query([
-            'post_type' => 'post',
+        $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
             'posts_per_page' => self::PER_PAGE,
             'paged' => $paged,
-            'meta_query' => [
-                'relation' => 'OR',
-                ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
-                ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
-            ],
             'orderby' => 'modified',
             'order' => 'DESC',
-        ]);
+        ]));
 
         $results = [];
         foreach ($query->posts as $post) {
-            $ai_title = get_post_meta($post->ID, '_teksttv_ai_title', true);
-            $ai_body = get_post_meta($post->ID, '_teksttv_ai_body', true);
-            $current_title = get_post_meta($post->ID, '_teksttv_title', true);
-            $current_body = get_post_meta($post->ID, '_teksttv_content', true);
+            $statuses = self::get_post_statuses($post->ID);
 
             $results[] = [
                 'id' => $post->ID,
                 'title' => $post->post_title,
-                'title_status' => self::compare($ai_title, $current_title),
-                'body_status' => self::compare($ai_body, $current_body),
+                'title_status' => $statuses['title_status'],
+                'body_status' => $statuses['body_status'],
                 'date' => get_the_modified_date('j M Y H:i', $post),
             ];
         }
@@ -240,7 +231,61 @@ class AuditPage
     }
 
     /**
-     * Compute stats from an already-fetched posts array.
+     * Fetch audit statuses for every matching post without loading post
+     * objects or writing the ID result to the query cache.
+     *
+     * @return list<array{title_status: string, body_status: string}>
+     */
+    private static function query_ai_post_statuses(): array
+    {
+        $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
+            'fields' => 'ids',
+            'posts_per_page' => -1,
+            'no_found_rows' => true,
+            'cache_results' => false,
+            'orderby' => 'none',
+        ]));
+        update_meta_cache('post', $query->posts);
+
+        return array_map([self::class, 'get_post_statuses'], $query->posts);
+    }
+
+    /**
+     * Which posts count as AI-audited; shared by the table and the statistics.
+     *
+     * @return array<string, mixed>
+     */
+    private static function ai_post_query_args(): array
+    {
+        return [
+            'post_type' => 'post',
+            'meta_query' => [
+                'relation' => 'OR',
+                ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
+                ['key' => '_teksttv_ai_body', 'compare' => 'EXISTS'],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{title_status: string, body_status: string}
+     */
+    private static function get_post_statuses(int $post_id): array
+    {
+        return [
+            'title_status' => self::compare(
+                get_post_meta($post_id, '_teksttv_ai_title', true),
+                get_post_meta($post_id, '_teksttv_title', true)
+            ),
+            'body_status' => self::compare(
+                get_post_meta($post_id, '_teksttv_ai_body', true),
+                get_post_meta($post_id, '_teksttv_content', true)
+            ),
+        ];
+    }
+
+    /**
+     * Compute stats from an already-fetched post statuses array.
      *
      * @param list<array{title_status: string, body_status: string}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}
