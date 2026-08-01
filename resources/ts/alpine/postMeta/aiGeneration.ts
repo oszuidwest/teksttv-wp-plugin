@@ -36,9 +36,14 @@ interface GenerateResponse {
     body?: string;
     content?: string;
     warning?: string;
-    // Every failure - plugin WP_Error or core rejection (expired nonce,
-    // invalid param) - arrives as {code, message} with a non-ok status.
-    message?: string;
+}
+
+export function getAiGenerationErrorMessage(
+    error: { message?: string; data?: { status?: number } } | null | undefined,
+): string {
+    return typeof error?.data?.status === 'number' && error.message
+        ? error.message
+        : 'Er ging iets mis bij het genereren.';
 }
 
 export function requestAiGeneration(
@@ -79,21 +84,12 @@ export function requestAiGeneration(
         }
     };
 
-    fetch(config.generateUrl, {
+    wp.apiFetch<GenerateResponse>({
+        url: config.generateUrl,
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-WP-Nonce': config.restNonce,
-        },
-        body: JSON.stringify({ post_id: config.postId, field, has_photo: hasPhoto }),
+        data: { post_id: config.postId, field, has_photo: hasPhoto },
     })
-        .then(async (res) => ({ ok: res.ok, data: (await res.json()) as GenerateResponse }))
-        .then(({ ok, data }) => {
-            if (!ok) {
-                showError(data.message || 'Er ging iets mis bij het genereren.');
-                return;
-            }
-
+        .then((data) => {
             if (field === 'both') {
                 if (data.title) applyTeksttvTitle(data.title);
                 if (data.body) applyTeksttvBody(data.body);
@@ -120,9 +116,7 @@ export function requestAiGeneration(
                 statusEl.classList.add('is-warning');
             }
         })
-        .catch(() => {
-            showError('Er ging iets mis bij het genereren.');
-        })
+        .catch((error) => showError(getAiGenerationErrorMessage(error)))
         .finally(() => {
             window.clearInterval(msgInterval);
             btn.disabled = false;

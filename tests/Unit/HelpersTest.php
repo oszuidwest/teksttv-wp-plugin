@@ -933,10 +933,10 @@ class HelpersTest extends TestCase
         $this->assertSame([], Helpers::get_campaign_groups());
     }
 
-    public function test_admin_script_dependencies_exclude_i18n(): void
+    public function test_admin_script_dependencies_include_api_fetch(): void
     {
         $this->assertSame(
-            ['jquery', 'underscore', 'media-editor'],
+            ['jquery', 'underscore', 'media-editor', 'wp-api-fetch'],
             Helpers::admin_script_dependencies()
         );
     }

@@ -38,17 +38,13 @@ export function createSidebarCustomPicker(
                 const selectionIsCurrent = (): boolean =>
                     document.querySelector<HTMLInputElement>('#teksttv-sidebar-image-id')?.value === selectedId;
 
-                void fetch(`${config.imageDataUrl}?${new URLSearchParams({ id: selectedId, slot: 'text_sidebar' })}`, {
-                    headers: { 'X-WP-Nonce': config.restNonce },
-                    credentials: 'same-origin',
-                })
-                    .then(async (res) => ({
-                        ok: res.ok,
-                        data: (await res.json()) as ImageData,
-                    }))
-                    .then(({ ok, data }) => {
+                void wp
+                    .apiFetch<ImageData>({
+                        url: `${config.imageDataUrl}?${new URLSearchParams({ id: selectedId, slot: 'text_sidebar' })}`,
+                    })
+                    .then((data) => {
                         if (!selectionIsCurrent()) return;
-                        if (!ok || !data.url) {
+                        if (!data.url) {
                             throw new Error('image-data request failed');
                         }
                         setCustomImageData(data);
