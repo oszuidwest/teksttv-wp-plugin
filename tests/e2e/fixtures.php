@@ -124,6 +124,24 @@ if (!get_user_by('login', 'teksttv_editor')) {
     (new WP_User($teksttv_uid))->set_role('teksttv_smoke_role');
 }
 
+// Disable the block-editor welcome guide via the persisted preference core
+// preloads into the editor, so the onboarding modal never mounts and cannot
+// race the specs. The post editor reads core/edit-post; `_modified` must be
+// current or a stale localStorage copy wins the client-side persistence merge.
+$teksttv_prefs_key = $GLOBALS['wpdb']->get_blog_prefix() . 'persisted_preferences';
+foreach (['admin', 'teksttv_editor'] as $teksttv_login) {
+    $teksttv_user = get_user_by('login', $teksttv_login);
+    if ($teksttv_user) {
+        update_user_meta($teksttv_user->ID, $teksttv_prefs_key, [
+            '_modified' => gmdate('Y-m-d\TH:i:s.v\Z'),
+            'core/edit-post' => [
+                'welcomeGuide' => false,
+                'welcomeGuideTemplate' => false,
+            ],
+        ]);
+    }
+}
+
 $teksttv_now = current_datetime();
 
 // Upsert a fixture post by slug: reset every per-post TekstTV meta to a
