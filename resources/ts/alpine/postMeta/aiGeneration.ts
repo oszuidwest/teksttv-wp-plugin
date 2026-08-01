@@ -38,6 +38,14 @@ interface GenerateResponse {
     warning?: string;
 }
 
+export function getAiGenerationErrorMessage(
+    error: { message?: string; data?: { status?: number } } | null | undefined,
+): string {
+    return typeof error?.data?.status === 'number' && error.message
+        ? error.message
+        : 'Er ging iets mis bij het genereren.';
+}
+
 export function requestAiGeneration(
     config: TeksttvPostConfig,
     btn: HTMLButtonElement,
@@ -108,10 +116,7 @@ export function requestAiGeneration(
                 statusEl.classList.add('is-warning');
             }
         })
-        .catch((error: { code?: string; message?: string }) => {
-            const message = error.code ? error.message : null;
-            showError(message || 'Er ging iets mis bij het genereren.');
-        })
+        .catch((error) => showError(getAiGenerationErrorMessage(error)))
         .finally(() => {
             window.clearInterval(msgInterval);
             btn.disabled = false;
