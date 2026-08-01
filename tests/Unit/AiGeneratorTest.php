@@ -449,14 +449,16 @@ class AiGeneratorTest extends TestCase
         Functions\expect('is_wp_error')->andReturn(false);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
 
+        $saved_body = null;
         Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_title', 'Korte kop');
-        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_body', \Mockery::type('string'));
+        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_body', \Mockery::capture($saved_body));
 
         $result = AiGenerator::generate_for_post(self::makePost(), 'both', self::aiConfig());
 
         $this->assertIsArray($result);
         $this->assertSame('Korte kop', $result['fields']['title']);
         $this->assertStringStartsWith('<p>', $result['fields']['body']);
+        $this->assertSame($result['fields']['body'], $saved_body);
     }
 
     public function test_generate_for_post_maps_provider_failure_to_500(): void

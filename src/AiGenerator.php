@@ -55,8 +55,8 @@ class AiGenerator
     }
 
     /**
-     * Generate the requested field(s) for a post, persist the audit-trail meta,
-     * and apply the region prefix to the body.
+     * Generate the requested field(s) for a post, apply the region prefix to
+     * the body, and persist the audit-trail meta.
      *
      * Validation errors and provider failures are returned as WP_Error with a
      * `status` entry in the error data for HTTP mapping.
@@ -115,18 +115,17 @@ class AiGenerator
             }
         }
 
-        // Store the final output so the audit page compares against exactly what
-        // the editor received.
-        if (isset($fields['title'])) {
-            update_post_meta($post->ID, '_teksttv_ai_title', $fields['title']);
-        }
         if (isset($fields['body'])) {
             $region_prefix = self::get_region_prefix($post->ID, $config['region_taxonomy']);
             if (!empty($region_prefix)) {
                 $fields['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $fields['body']));
             }
+        }
 
-            update_post_meta($post->ID, '_teksttv_ai_body', $fields['body']);
+        // Persist after all transforms: the audit baseline must match exactly
+        // what the editor received.
+        foreach ($fields as $key => $value) {
+            update_post_meta($post->ID, '_teksttv_ai_' . $key, $value);
         }
 
         return ['fields' => $fields, 'warning' => implode(' ', $warnings)];
