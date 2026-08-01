@@ -57,6 +57,7 @@ class RestApiTest extends TestCase
     {
         self::stubOptions($option_overrides);
         Functions\when('wp_supports_ai')->justReturn(true);
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder());
         Functions\when('current_user_can')->justReturn(true);
         Functions\when('get_post')->justReturn(self::makePost());
         Functions\when('get_current_user_id')->justReturn(7);
@@ -105,10 +106,24 @@ class RestApiTest extends TestCase
         $this->assertNotSame('', $response->get_error_message());
     }
 
+    public function test_generate_content_returns_503_when_no_provider_supports_the_prompt(): void
+    {
+        self::stubOptions();
+        Functions\when('wp_supports_ai')->justReturn(true);
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockUnsupportedAiBuilder());
+        Functions\expect('get_post')->never();
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
+
+        $this->assertErrorStatus(503, $response);
+        $this->assertSame('teksttv_ai_unavailable', $response->get_error_code());
+    }
+
     public function test_generate_content_returns_403_without_edit_post_and_skips_rate_limit(): void
     {
         self::stubOptions();
         Functions\when('wp_supports_ai')->justReturn(true);
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder());
         Functions\when('get_post')->justReturn(self::makePost());
         Functions\when('current_user_can')->justReturn(false);
         // Forbidden requests must not consume rate-limit quota.
@@ -124,6 +139,7 @@ class RestApiTest extends TestCase
     {
         self::stubOptions();
         Functions\when('wp_supports_ai')->justReturn(true);
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder());
         Functions\when('get_post')->justReturn(null);
         Functions\expect('current_user_can')->never();
 

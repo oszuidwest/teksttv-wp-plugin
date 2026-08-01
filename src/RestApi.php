@@ -111,7 +111,7 @@ class RestApi
             );
         }
 
-        if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
+        if (!Helpers::ai_supported()) {
             return new WP_Error(
                 'teksttv_ai_unavailable',
                 'AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.',

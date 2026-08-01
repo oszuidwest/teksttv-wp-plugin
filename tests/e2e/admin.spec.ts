@@ -20,9 +20,10 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#teksttv-blocks')).toBeVisible();
     });
 
-    test('post editor shows the Tekst TV meta box', async ({ page }) => {
+    test('post editor hides AI controls when no provider connector is configured', async ({ page }) => {
         await page.goto('/wp-admin/edit.php');
         await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
         await expect(page.locator('#teksttv_meta')).toBeAttached();
+        await expect(page.locator('.teksttv-generate-btn')).toHaveCount(0);
     });
 });

@@ -444,8 +444,47 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // get_ai_prompts()
+    // ai_supported() / get_ai_prompts()
     // =========================================================================
+
+    public function test_ai_supported_returns_false_when_environment_allows_ai_but_no_provider_matches(): void
+    {
+        Functions\when('get_option')->alias(function ($key, $default = false) {
+            return match ($key) {
+                'teksttv_features' => ['ai_generate'],
+                'teksttv_ai_prompts' => [],
+                default => $default,
+            };
+        });
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockUnsupportedAiBuilder());
+
+        $this->assertFalse(Helpers::ai_supported());
+    }
+
+    public function test_ai_supported_memoizes_a_supported_probe_result(): void
+    {
+        Functions\when('get_option')->alias(function ($key, $default = false) {
+            return $key === 'teksttv_features' ? ['ai_generate'] : $default;
+        });
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockAiBuilder());
+
+        $this->assertTrue(Helpers::ai_supported());
+        $this->assertTrue(Helpers::ai_supported());
+    }
+
+    public function test_ai_supported_memoizes_an_unsupported_probe_result(): void
+    {
+        Functions\when('get_option')->alias(function ($key, $default = false) {
+            return $key === 'teksttv_features' ? ['ai_generate'] : $default;
+        });
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockUnsupportedAiBuilder());
+
+        $this->assertFalse(Helpers::ai_supported());
+        $this->assertFalse(Helpers::ai_supported());
+    }
 
     public function test_get_ai_prompts_returns_defaults_when_empty(): void
     {
