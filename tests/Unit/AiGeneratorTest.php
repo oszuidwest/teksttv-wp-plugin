@@ -416,7 +416,7 @@ class AiGeneratorTest extends TestCase
         $this->assertSame(422, $result->get_error_data()['status']);
     }
 
-    public function test_generate_for_post_saves_audit_meta_before_region_prefix(): void
+    public function test_generate_for_post_saves_prefixed_body_as_audit_baseline(): void
     {
         $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
 
@@ -424,10 +424,10 @@ class AiGeneratorTest extends TestCase
         Functions\expect('is_wp_error')->andReturn(false);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
 
-        // The audit meta must receive the body WITHOUT the region prefix.
+        $saved_body = null;
         Functions\expect('update_post_meta')
             ->once()
-            ->with(42, '_teksttv_ai_body', \Mockery::on(fn($body) => !str_contains($body, 'LEIDEN')));
+            ->with(42, '_teksttv_ai_body', \Mockery::capture($saved_body));
 
         Functions\expect('taxonomy_exists')->with('regio')->andReturn(true);
         Functions\expect('wp_get_post_terms')->andReturn(['Leiden']);
@@ -437,6 +437,7 @@ class AiGeneratorTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertStringStartsWith('<p>LEIDEN - ', $result['fields']['body']);
+        $this->assertSame($result['fields']['body'], $saved_body);
         $this->assertSame('', $result['warning']);
     }
 

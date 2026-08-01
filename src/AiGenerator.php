@@ -115,18 +115,18 @@ class AiGenerator
             }
         }
 
-        // Store the raw output, before the region prefix, so the audit page diffs
-        // what the model produced against what the editor kept.
+        // Store the final output so the audit page compares against exactly what
+        // the editor received.
         if (isset($fields['title'])) {
             update_post_meta($post->ID, '_teksttv_ai_title', $fields['title']);
         }
         if (isset($fields['body'])) {
-            update_post_meta($post->ID, '_teksttv_ai_body', $fields['body']);
-
             $region_prefix = self::get_region_prefix($post->ID, $config['region_taxonomy']);
             if (!empty($region_prefix)) {
                 $fields['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $fields['body']));
             }
+
+            update_post_meta($post->ID, '_teksttv_ai_body', $fields['body']);
         }
 
         return ['fields' => $fields, 'warning' => implode(' ', $warnings)];
