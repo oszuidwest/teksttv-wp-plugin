@@ -13,6 +13,9 @@ class Helpers
     /** @var list<array{name: string, label: string, terms: array<int, string>}>|null */
     private static ?array $post_taxonomies_cache = null;
 
+    /** Memoized provider capability probe; it runs model discovery, so at most once per request. */
+    private static ?bool $ai_supported_cache = null;
+
     /**
      * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
      *
@@ -214,16 +217,14 @@ class Helpers
     /**
      * Whether AI generation is enabled and a provider supports the configured
      * TekstTV text-generation requirements.
-     *
-     * @param AiConfig|null $config Preloaded config to avoid duplicate option reads.
      */
-    public static function ai_supported(?array $config = null): bool
+    public static function ai_supported(): bool
     {
         if (!self::has_feature('ai_generate')) {
             return false;
         }
 
-        return AiGenerator::supports_text_generation($config ?? self::get_ai_prompts());
+        return self::$ai_supported_cache ??= AiGenerator::supports_text_generation(self::get_ai_prompts());
     }
 
     /**

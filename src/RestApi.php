@@ -111,8 +111,7 @@ class RestApi
             );
         }
 
-        $config = Helpers::get_ai_prompts();
-        if (!Helpers::ai_supported($config)) {
+        if (!Helpers::ai_supported()) {
             return new WP_Error(
                 'teksttv_ai_unavailable',
                 'AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.',
@@ -131,6 +130,8 @@ class RestApi
         if (!current_user_can('edit_post', $post_id)) {
             return new WP_Error('teksttv_forbidden', 'Onvoldoende rechten.', ['status' => 403]);
         }
+
+        $config = Helpers::get_ai_prompts();
 
         // Counted last so requests that can only 403/404 do not consume quota.
         if (!AiGenerator::within_rate_limit(get_current_user_id(), $config['rate_limit'])) {

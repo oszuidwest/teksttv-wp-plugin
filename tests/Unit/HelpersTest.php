@@ -457,13 +457,32 @@ class HelpersTest extends TestCase
             };
         });
         Functions\expect('wp_supports_ai')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockUnsupportedAiBuilder());
 
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->once()->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->once()->andReturnSelf();
-        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
-        Functions\expect('wp_ai_client_prompt')->once()->andReturn($builder);
+        $this->assertFalse(Helpers::ai_supported());
+    }
 
+    public function test_ai_supported_memoizes_a_supported_probe_result(): void
+    {
+        Functions\when('get_option')->alias(function ($key, $default = false) {
+            return $key === 'teksttv_features' ? ['ai_generate'] : $default;
+        });
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockAiBuilder());
+
+        $this->assertTrue(Helpers::ai_supported());
+        $this->assertTrue(Helpers::ai_supported());
+    }
+
+    public function test_ai_supported_memoizes_an_unsupported_probe_result(): void
+    {
+        Functions\when('get_option')->alias(function ($key, $default = false) {
+            return $key === 'teksttv_features' ? ['ai_generate'] : $default;
+        });
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockUnsupportedAiBuilder());
+
+        $this->assertFalse(Helpers::ai_supported());
         $this->assertFalse(Helpers::ai_supported());
     }
 

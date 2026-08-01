@@ -6,6 +6,7 @@ use Brain\Monkey;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use TekstTV\BlockRegistry;
+use TekstTV\Helpers;
 
 abstract class TestCase extends PHPUnitTestCase
 {
@@ -17,6 +18,8 @@ abstract class TestCase extends PHPUnitTestCase
         Monkey\setUp();
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
+        $ai_cache = new \ReflectionProperty(Helpers::class, 'ai_supported_cache');
+        $ai_cache->setValue(null, null);
     }
 
     protected function tearDown(): void
@@ -63,6 +66,20 @@ abstract class TestCase extends PHPUnitTestCase
         $builder->shouldReceive('generate_text')
             ->times(count($responses))
             ->andReturn(...$responses);
+
+        return $builder;
+    }
+
+    /**
+     * Build the fluent WordPress AI prompt mock whose capability probe
+     * reports that no provider matches the configured requirements.
+     */
+    protected static function mockUnsupportedAiBuilder(): \Mockery\MockInterface
+    {
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
 
         return $builder;
     }

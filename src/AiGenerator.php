@@ -24,20 +24,12 @@ class AiGenerator
      */
     public static function supports_text_generation(array $config): bool
     {
-        if (
-            !function_exists('wp_supports_ai')
-            || !wp_supports_ai()
-            || !function_exists('wp_ai_client_prompt')
-        ) {
+        if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
             return false;
         }
 
         try {
-            $builder = self::configure_prompt_builder(
-                'Controleer of TekstTV tekst kan genereren.',
-                $config['system'],
-                $config
-            );
+            $builder = self::configure_prompt_builder('Capability check', $config['system'], $config);
 
             return (bool) $builder->is_supported_for_text_generation();
         } catch (\Throwable) {
@@ -284,9 +276,8 @@ class AiGenerator
     }
 
     /**
-     * Apply the generation requirements shared by capability checks and real
-     * requests so the UI cannot advertise a configuration that later fails
-     * model discovery.
+     * Build the prompt builder with the generation requirements shared by
+     * capability checks and real requests.
      *
      * @param AiConfig $config
      * @return object

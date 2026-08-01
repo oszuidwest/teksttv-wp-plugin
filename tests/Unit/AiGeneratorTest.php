@@ -45,15 +45,7 @@ class AiGeneratorTest extends TestCase
     public function test_supports_text_generation_returns_false_without_a_matching_provider(): void
     {
         Functions\expect('wp_supports_ai')->once()->andReturn(true);
-
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->with('Test')->once()->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->with(2048)->once()->andReturnSelf();
-        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
-        Functions\expect('wp_ai_client_prompt')
-            ->with('Controleer of TekstTV tekst kan genereren.')
-            ->once()
-            ->andReturn($builder);
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockUnsupportedAiBuilder());
 
         $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig()));
     }

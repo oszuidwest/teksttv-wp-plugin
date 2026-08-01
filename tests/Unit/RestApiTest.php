@@ -110,12 +110,7 @@ class RestApiTest extends TestCase
     {
         self::stubOptions();
         Functions\when('wp_supports_ai')->justReturn(true);
-
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->once()->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->once()->andReturnSelf();
-        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
-        Functions\when('wp_ai_client_prompt')->justReturn($builder);
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockUnsupportedAiBuilder());
         Functions\expect('get_post')->never();
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));

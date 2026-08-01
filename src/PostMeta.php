@@ -80,7 +80,7 @@ class PostMeta
         $default_end = self::default_end_date((string) $saved_start);
 
         $prompts = Helpers::get_ai_prompts();
-        $ai_supported = Helpers::ai_supported($prompts);
+        $ai_supported = Helpers::ai_supported();
 
         $config = [
             'previewUrl' => $preview_url,
