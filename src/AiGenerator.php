@@ -125,7 +125,7 @@ class AiGenerator
         // Persist after all transforms: the audit baseline must match exactly
         // what the editor received.
         foreach ($fields as $key => $value) {
-            update_post_meta($post->ID, '_teksttv_ai_' . $key, $value);
+            update_post_meta($post->ID, '_teksttv_ai_' . $key, wp_slash($value));
         }
 
         return ['fields' => $fields, 'warning' => implode(' ', $warnings)];

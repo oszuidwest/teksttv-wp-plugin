@@ -416,29 +416,41 @@ class AiGeneratorTest extends TestCase
         $this->assertSame(422, $result->get_error_data()['status']);
     }
 
-    public function test_generate_for_post_saves_prefixed_body_as_audit_baseline(): void
+    public function test_generate_for_post_refreshes_slash_safe_prefixed_audit_baseline(): void
     {
-        $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
+        $body_text = implode(' ', array_fill(0, 49, 'woord')) . ' C:\\Nieuws';
+        $builder = self::mockAiBuilder($body_text, $body_text);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
+        Functions\when('wp_slash')->alias('addslashes');
 
-        $saved_body = null;
+        $saved_bodies = [];
         Functions\expect('update_post_meta')
-            ->once()
-            ->with(42, '_teksttv_ai_body', \Mockery::capture($saved_body));
+            ->twice()
+            ->with(42, '_teksttv_ai_body', \Mockery::on(function ($body) use (&$saved_bodies): bool {
+                $saved_bodies[] = $body;
+                return true;
+            }));
 
-        Functions\expect('taxonomy_exists')->with('regio')->andReturn(true);
-        Functions\expect('wp_get_post_terms')->andReturn(['Leiden']);
+        Functions\expect('taxonomy_exists')->twice()->with('regio')->andReturn(true);
+        Functions\expect('wp_get_post_terms')->twice()->andReturn(['Leiden'], ['Den Haag']);
         Functions\when('esc_html')->returnArg();
 
-        $result = AiGenerator::generate_for_post(self::makePost(), 'body', self::aiConfig(['region_taxonomy' => 'regio']));
+        $config = self::aiConfig(['region_taxonomy' => 'regio']);
+        $first_result = AiGenerator::generate_for_post(self::makePost(), 'body', $config);
+        $second_result = AiGenerator::generate_for_post(self::makePost(), 'body', $config);
 
-        $this->assertIsArray($result);
-        $this->assertStringStartsWith('<p>LEIDEN - ', $result['fields']['body']);
-        $this->assertSame($result['fields']['body'], $saved_body);
-        $this->assertSame('', $result['warning']);
+        $this->assertIsArray($first_result);
+        $this->assertIsArray($second_result);
+        $this->assertStringStartsWith('<p>LEIDEN - ', $first_result['fields']['body']);
+        $this->assertStringStartsWith('<p>DEN HAAG - ', $second_result['fields']['body']);
+        $this->assertSame($first_result['fields']['body'], stripslashes($saved_bodies[0]));
+        $this->assertSame($second_result['fields']['body'], stripslashes($saved_bodies[1]));
+        $this->assertStringContainsString('C:\\\\Nieuws', $saved_bodies[0]);
+        $this->assertSame('', $first_result['warning']);
+        $this->assertSame('', $second_result['warning']);
     }
 
     public function test_generate_for_post_generates_both_fields(): void
@@ -448,6 +460,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
+        Functions\when('wp_slash')->returnArg();
 
         $saved_body = null;
         Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_title', 'Korte kop');
