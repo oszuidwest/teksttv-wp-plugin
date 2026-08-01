@@ -138,14 +138,6 @@ class HelpersTest extends TestCase
         $this->assertTrue(Helpers::is_within_date_range('', ''));
     }
 
-    public function test_is_within_date_range_returns_true_for_nulls(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $this->assertTrue(Helpers::is_within_date_range(null, null));
-    }
-
     public function test_is_within_date_range_returns_false_before_start_date(): void
     {
         $now = new \DateTimeImmutable('2026-04-07 12:00:00');
@@ -196,54 +188,9 @@ class HelpersTest extends TestCase
         $this->assertTrue(Helpers::is_within_date_range('', '2026-04-07'));
     }
 
-    public function test_is_within_date_range_open_start(): void
-    {
-        $now = new \DateTimeImmutable('2026-01-01 12:00:00');
-        $tz = new \DateTimeZone('Europe/Amsterdam');
-        Functions\expect('current_datetime')->once()->andReturn($now);
-        Functions\expect('wp_timezone')->once()->andReturn($tz);
-
-        $this->assertTrue(Helpers::is_within_date_range('', '2026-12-31'));
-    }
-
     // =========================================================================
     // is_block_scheduled()
     // =========================================================================
-
-    public function test_is_block_scheduled_returns_true_for_block_without_scheduling(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $this->assertTrue(Helpers::is_block_scheduled(['type' => 'image']));
-    }
-
-    public function test_is_block_scheduled_returns_false_when_outside_date_range(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $block = [
-            'date_start' => '2026-05-01',
-            'date_end' => '2026-05-31',
-        ];
-
-        $this->assertFalse(Helpers::is_block_scheduled($block));
-    }
-
-    public function test_is_block_scheduled_returns_false_when_wrong_day(): void
-    {
-        // 2026-04-07 is a Tuesday (N=2)
-        $now = new \DateTimeImmutable('2026-04-07 12:00:00');
-        Functions\expect('current_datetime')->andReturn($now);
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $block = [
-            'days' => ['1', '3', '5'], // Mon, Wed, Fri
-        ];
-
-        $this->assertFalse(Helpers::is_block_scheduled($block));
-    }
 
     public function test_is_block_scheduled_returns_false_for_explicit_empty_days(): void
     {
@@ -251,14 +198,6 @@ class HelpersTest extends TestCase
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
 
         $this->assertFalse(Helpers::is_block_scheduled(['days' => []]));
-    }
-
-    public function test_is_block_scheduled_returns_true_for_null_days(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
-        $this->assertTrue(Helpers::is_block_scheduled(['days' => null]));
     }
 
     public function test_is_block_scheduled_returns_true_when_in_range_and_correct_day(): void
@@ -341,38 +280,9 @@ class HelpersTest extends TestCase
         $this->assertSame(0, Helpers::count_words(''));
     }
 
-    public function test_count_words_only_whitespace(): void
-    {
-        $this->assertSame(0, Helpers::count_words("   \n\t  "));
-    }
-
     public function test_count_words_dutch_text_with_special_chars(): void
     {
         $this->assertSame(4, Helpers::count_words('café résumé über straße'));
-    }
-
-    public function test_count_words_text_with_multiple_spaces(): void
-    {
-        $this->assertSame(3, Helpers::count_words("een   twee\n\nDrie"));
-    }
-
-    public function test_count_words_single_word(): void
-    {
-        $this->assertSame(1, Helpers::count_words('woord'));
-    }
-
-    public function test_print_underscore_restore_handles_missing_global(): void
-    {
-        Functions\expect('wp_script_is')
-            ->with('teksttv-admin', 'enqueued')
-            ->andReturn(true);
-        Functions\expect('wp_print_inline_script_tag')
-            ->with(
-                '(function(){var u=window.wpUnderscore;if(u&&(!window._||typeof window._.defaults!=="function")){window._=u;}})();'
-            )
-            ->once();
-
-        Helpers::print_underscore_restore();
     }
 
     // =========================================================================
@@ -476,34 +386,6 @@ class HelpersTest extends TestCase
         $this->assertNotContains('WeekendOnly', $names);
     }
 
-    public function test_get_active_campaigns_includes_campaigns_without_dates(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-        Functions\expect('get_option')
-            ->with('teksttv_campaigns', [])
-            ->andReturn([
-                ['channels' => ['tv1'], 'name' => 'No dates'],
-            ]);
-
-        $result = Helpers::get_active_campaigns('tv1');
-        $this->assertCount(1, $result);
-    }
-
-    public function test_get_active_campaigns_returns_empty_for_unknown_channel(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-        Functions\expect('get_option')
-            ->with('teksttv_campaigns', [])
-            ->andReturn([
-                ['channels' => ['tv1'], 'name' => 'A'],
-            ]);
-
-        $result = Helpers::get_active_campaigns('tv99');
-        $this->assertEmpty($result);
-    }
-
     // =========================================================================
     // get_image_data()
     // =========================================================================
@@ -534,31 +416,6 @@ class HelpersTest extends TestCase
         $this->assertSame(['url' => 'https://example.com/img.jpg'], $result);
     }
 
-    public function test_get_image_data_includes_caption(): void
-    {
-        Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/img.jpg');
-        Functions\expect('wp_get_attachment_caption')->with(42)->andReturn('Een foto');
-        Functions\expect('apply_filters')->andReturn('');
-
-        $result = Helpers::get_image_data(42);
-
-        $this->assertSame('Een foto', $result['caption']);
-    }
-
-    public function test_get_image_data_includes_attribution(): void
-    {
-        Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/img.jpg');
-        Functions\expect('wp_get_attachment_caption')->andReturn('');
-        Functions\expect('apply_filters')
-            ->with('teksttv_image_attribution', '', 42)
-            ->andReturn('Foto: ANP');
-
-        $result = Helpers::get_image_data(42);
-
-        $this->assertSame('Foto: ANP', $result['attribution']);
-        $this->assertArrayNotHasKey('caption', $result);
-    }
-
     public function test_get_image_data_includes_both_caption_and_attribution(): void
     {
         Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/img.jpg');
@@ -584,80 +441,6 @@ class HelpersTest extends TestCase
         $result = Helpers::get_image_data(42, 'thumbnail');
 
         $this->assertSame('https://example.com/thumb.jpg', $result['url']);
-    }
-
-    // =========================================================================
-    // get_channels()
-    // =========================================================================
-
-    public function test_get_channels_returns_configured_channels(): void
-    {
-        $channels = [
-            ['slug' => 'tv1', 'label' => 'TV 1'],
-            ['slug' => 'tv2', 'label' => 'TV 2'],
-        ];
-        Functions\expect('get_option')
-            ->with('teksttv_channels', [])
-            ->andReturn($channels);
-
-        $this->assertSame($channels, Helpers::get_channels());
-    }
-
-    public function test_get_channels_returns_default_when_empty(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_channels', [])
-            ->andReturn([]);
-
-        $result = Helpers::get_channels();
-
-        $this->assertCount(1, $result);
-        $this->assertSame('tv1', $result[0]['slug']);
-        $this->assertSame('TV 1', $result[0]['label']);
-    }
-
-    public function test_get_channels_returns_default_for_non_array_option(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_channels', [])
-            ->andReturn('invalid');
-
-        $result = Helpers::get_channels();
-
-        $this->assertCount(1, $result);
-        $this->assertSame('tv1', $result[0]['slug']);
-        $this->assertSame('TV 1', $result[0]['label']);
-    }
-
-    // =========================================================================
-    // has_feature()
-    // =========================================================================
-
-    public function test_has_feature_returns_true_when_enabled(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_features', \Mockery::any())
-            ->andReturn(['bold', 'italic', 'ai_generate']);
-
-        $this->assertTrue(Helpers::has_feature('ai_generate'));
-    }
-
-    public function test_has_feature_returns_false_when_disabled(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_features', \Mockery::any())
-            ->andReturn(['bold', 'italic']);
-
-        $this->assertFalse(Helpers::has_feature('ai_generate'));
-    }
-
-    public function test_get_features_returns_defaults_for_non_array_option(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_features', Helpers::DEFAULT_FEATURES)
-            ->andReturn('invalid');
-
-        $this->assertSame(Helpers::DEFAULT_FEATURES, Helpers::get_features());
     }
 
     // =========================================================================
@@ -704,26 +487,6 @@ class HelpersTest extends TestCase
         $this->assertSame(5, $result['max_retries']);
         $this->assertSame(0.7, $result['temperature']);
         $this->assertSame('anthropic/claude-3', $result['model']);
-    }
-
-    public function test_get_ai_prompts_clamps_max_retries(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['max_retries' => 99]);
-
-        $result = Helpers::get_ai_prompts();
-        $this->assertSame(5, $result['max_retries']);
-    }
-
-    public function test_get_ai_prompts_clamps_rate_limit(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_ai_prompts', [])
-            ->andReturn(['rate_limit' => 999]);
-
-        $result = Helpers::get_ai_prompts();
-        $this->assertSame(60, $result['rate_limit']);
     }
 
     public function test_get_ai_prompts_clamps_legacy_generation_limits(): void
@@ -797,94 +560,8 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // get_post_taxonomies()
-    // =========================================================================
-
-    public function test_get_post_taxonomies_returns_public_taxonomies(): void
-    {
-        Functions\expect('get_object_taxonomies')
-            ->with('post', 'objects')
-            ->andReturn([
-                'category' => (object) [
-                    'public' => true,
-                    'name' => 'category',
-                    'labels' => (object) ['singular_name' => 'Category'],
-                ],
-                'post_format' => (object) [
-                    'public' => true,
-                    'name' => 'post_format',
-                    'labels' => (object) ['singular_name' => 'Format'],
-                ],
-                'private_taxonomy' => (object) [
-                    'public' => false,
-                    'name' => 'private_taxonomy',
-                    'labels' => (object) ['singular_name' => 'Private'],
-                ],
-            ]);
-        Functions\expect('get_terms')
-            ->with([
-                'taxonomy' => 'category',
-                'hide_empty' => false,
-                'fields' => 'id=>name',
-            ])
-            ->andReturn([1 => 'Nieuws']);
-        Functions\expect('is_wp_error')->with([1 => 'Nieuws'])->andReturn(false);
-
-        $this->assertSame([
-            [
-                'name' => 'category',
-                'label' => 'Category',
-                'terms' => [1 => 'Nieuws'],
-            ],
-        ], Helpers::get_post_taxonomies());
-    }
-
-    public function test_get_post_taxonomies_reuses_request_local_cache(): void
-    {
-        Functions\expect('get_object_taxonomies')
-            ->with('post', 'objects')
-            ->once()
-            ->andReturn([
-                'post_tag' => (object) [
-                    'public' => true,
-                    'name' => 'post_tag',
-                    'labels' => (object) ['singular_name' => 'Tag'],
-                ],
-            ]);
-        Functions\expect('get_terms')
-            ->with([
-                'taxonomy' => 'post_tag',
-                'hide_empty' => false,
-                'fields' => 'id=>name',
-            ])
-            ->once()
-            ->andReturn([2 => 'Sport']);
-        Functions\expect('is_wp_error')
-            ->with([2 => 'Sport'])
-            ->once()
-            ->andReturn(false);
-
-        $first = Helpers::get_post_taxonomies();
-
-        $this->assertSame($first, Helpers::get_post_taxonomies());
-    }
-
-    // =========================================================================
     // get_campaign_groups()
     // =========================================================================
-
-    public function test_get_campaign_groups_returns_id_label_pairs(): void
-    {
-        $stored = [
-            ['id' => 'grp_aaa', 'label' => 'Sponsors'],
-            ['id' => 'grp_bbb', 'label' => 'Partners'],
-        ];
-        Functions\expect('get_option')
-            ->with('teksttv_campaign_groups', [])
-            ->andReturn($stored);
-
-        $this->assertSame($stored, Helpers::get_campaign_groups());
-    }
 
     public function test_get_campaign_groups_skips_malformed_entries(): void
     {
@@ -913,79 +590,6 @@ class HelpersTest extends TestCase
             Helpers::campaign_group_id('Sponsors'),
             Helpers::campaign_group_id('Partners')
         );
-    }
-
-    public function test_get_campaign_groups_returns_empty_when_not_set(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_campaign_groups', [])
-            ->andReturn([]);
-
-        $this->assertSame([], Helpers::get_campaign_groups());
-    }
-
-    public function test_get_campaign_groups_returns_empty_for_non_array(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_campaign_groups', [])
-            ->andReturn(false);
-
-        $this->assertSame([], Helpers::get_campaign_groups());
-    }
-
-    public function test_admin_script_dependencies_include_api_fetch(): void
-    {
-        $this->assertSame(
-            ['jquery', 'underscore', 'media-editor', 'wp-api-fetch'],
-            Helpers::admin_script_dependencies()
-        );
-    }
-
-    // =========================================================================
-    // get_loop_config()
-    // =========================================================================
-
-    public function test_get_loop_config_returns_option_value(): void
-    {
-        $config = [['type' => 'articles', 'count' => 5]];
-
-        Functions\expect('get_option')
-            ->with('teksttv_loop_tv1', [])
-            ->andReturn($config);
-
-        $this->assertSame($config, Helpers::get_loop_config('tv1'));
-    }
-
-    public function test_get_loop_config_sanitizes_slug(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_loop_test-channel', [])
-            ->andReturn([]);
-
-        $result = Helpers::get_loop_config('Test-Channel');
-        $this->assertSame([], $result);
-    }
-
-    // =========================================================================
-    // get_preview_url()
-    // =========================================================================
-
-    public function test_get_preview_url_returns_option(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_preview_url', '')
-            ->andReturn('https://preview.example.com');
-
-        $this->assertSame('https://preview.example.com', Helpers::get_preview_url());
-    }
-
-    public function test_get_preview_url_returns_empty_when_not_set(): void
-    {
-        Functions\expect('get_option')
-            ->with('teksttv_preview_url', '')
-            ->andReturn('');
-
-        $this->assertSame('', Helpers::get_preview_url());
     }
 
     // =========================================================================

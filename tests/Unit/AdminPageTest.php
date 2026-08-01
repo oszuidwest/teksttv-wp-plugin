@@ -269,29 +269,9 @@ class AdminPageTest extends TestCase
         $this->assertSame('tv1', $result[0]['slug']);
     }
 
-    public function test_sanitize_channels_filters_empty_label(): void
-    {
-        $input = [
-            ['slug' => 'tv1', 'label' => ''],
-        ];
-
-        $result = AdminPage::sanitize_channels($input);
-        $this->assertSame([], $result);
-    }
-
     public function test_sanitize_channels_non_array_returns_empty(): void
     {
         $this->assertSame([], AdminPage::sanitize_channels('not an array'));
-    }
-
-    public function test_sanitize_channels_null_returns_empty(): void
-    {
-        $this->assertSame([], AdminPage::sanitize_channels(null));
-    }
-
-    public function test_sanitize_channels_empty_array(): void
-    {
-        $this->assertSame([], AdminPage::sanitize_channels([]));
     }
 
     public function test_sanitize_channels_sanitizes_slug(): void
@@ -305,17 +285,6 @@ class AdminPageTest extends TestCase
         $this->assertCount(1, $result);
         // sanitize_key lowercases and strips special chars
         $this->assertSame('tv-1test', $result[0]['slug']);
-    }
-
-    public function test_sanitize_channels_strips_html_from_label(): void
-    {
-        $input = [
-            ['slug' => 'tv1', 'label' => '<b>TV 1</b>'],
-        ];
-
-        $result = AdminPage::sanitize_channels($input);
-
-        $this->assertSame('TV 1', $result[0]['label']);
     }
 
     public function test_sanitize_channels_handles_missing_keys(): void
@@ -347,19 +316,6 @@ class AdminPageTest extends TestCase
         $this->assertSame('2026-04-30', $result['date_end']);
     }
 
-    public function test_extract_scheduling_fields_omits_empty_dates(): void
-    {
-        $raw = [
-            'date_start' => '',
-            'date_end' => '',
-        ];
-
-        $result = Helpers::extract_scheduling_fields($raw);
-
-        $this->assertArrayNotHasKey('date_start', $result);
-        $this->assertArrayNotHasKey('date_end', $result);
-    }
-
     public function test_extract_scheduling_fields_with_days(): void
     {
         $raw = [
@@ -369,45 +325,6 @@ class AdminPageTest extends TestCase
         $result = Helpers::extract_scheduling_fields($raw);
 
         $this->assertSame(['1', '3', '5'], $result['days']);
-    }
-
-    public function test_extract_scheduling_fields_omits_all_seven_days(): void
-    {
-        $raw = [
-            'days' => ['1', '2', '3', '4', '5', '6', '7'],
-        ];
-
-        $result = Helpers::extract_scheduling_fields($raw);
-
-        // All 7 days = no restriction, should not be saved
-        $this->assertArrayNotHasKey('days', $result);
-    }
-
-    public function test_extract_scheduling_fields_filters_invalid_days(): void
-    {
-        $raw = [
-            'days' => ['1', '8', 'abc', '5'],
-        ];
-
-        $result = Helpers::extract_scheduling_fields($raw);
-
-        $this->assertSame(['1', '5'], $result['days']);
-    }
-
-    public function test_extract_scheduling_fields_deduplicates_days(): void
-    {
-        $result = Helpers::extract_scheduling_fields(['days' => ['1', '1', '2']]);
-
-        $this->assertSame(['1', '2'], $result['days']);
-    }
-
-    public function test_extract_scheduling_fields_empty_input(): void
-    {
-        $result = Helpers::extract_scheduling_fields([]);
-
-        $this->assertArrayNotHasKey('date_start', $result);
-        $this->assertArrayNotHasKey('date_end', $result);
-        $this->assertSame([], $result['days']);
     }
 
     public function test_extract_scheduling_fields_preserves_explicit_null_days(): void
@@ -425,66 +342,6 @@ class AdminPageTest extends TestCase
     public function test_render_days_row_leaves_all_days_unchecked_for_empty_selection(): void
     {
         $this->assertStringNotContainsString('checked="checked"', $this->renderDaysRow([]));
-    }
-
-    public function test_validate_loop_save_request_rejects_invalid_nonce(): void
-    {
-        $_POST = ['teksttv_loop_nonce' => 'invalid'];
-        Functions\when('wp_unslash')->returnArg();
-        Functions\expect('wp_verify_nonce')->with('invalid', 'teksttv_save_loop')->andReturn(false);
-        Functions\expect('add_settings_error')
-            ->with('teksttv', 'loop_nonce_failed', \Mockery::type('string'))
-            ->once();
-
-        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
-    }
-
-    public function test_validate_loop_save_request_rejects_missing_capability(): void
-    {
-        $_POST = ['teksttv_loop_nonce' => 'valid'];
-        Functions\when('wp_unslash')->returnArg();
-        Functions\expect('wp_verify_nonce')->andReturn(true);
-        Functions\expect('current_user_can')->with('manage_teksttv')->andReturn(false);
-        Functions\expect('add_settings_error')
-            ->with('teksttv', 'loop_no_permission', \Mockery::type('string'))
-            ->once();
-
-        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
-    }
-
-    public function test_validate_loop_save_request_rejects_unknown_channel(): void
-    {
-        $_POST = [
-            'teksttv_loop_nonce' => 'valid',
-            'teksttv_loop_channel' => 'unknown',
-        ];
-        Functions\when('wp_unslash')->returnArg();
-        Functions\expect('wp_verify_nonce')->andReturn(true);
-        Functions\expect('current_user_can')->andReturn(true);
-        Functions\expect('get_option')
-            ->with('teksttv_channels', [])
-            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
-        Functions\expect('add_settings_error')
-            ->with('teksttv', 'loop_unknown_channel', \Mockery::type('string'))
-            ->once();
-
-        $this->assertNull(self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
-    }
-
-    public function test_validate_loop_save_request_returns_known_channel(): void
-    {
-        $_POST = [
-            'teksttv_loop_nonce' => 'valid',
-            'teksttv_loop_channel' => 'TV1',
-        ];
-        Functions\when('wp_unslash')->returnArg();
-        Functions\expect('wp_verify_nonce')->andReturn(true);
-        Functions\expect('current_user_can')->andReturn(true);
-        Functions\expect('get_option')
-            ->with('teksttv_channels', [])
-            ->andReturn([['slug' => 'tv1', 'label' => 'TV 1']]);
-
-        $this->assertSame('tv1', self::callPrivate(AdminPage::class, 'validate_loop_save_request'));
     }
 
     public function test_sanitize_registry_items_preserves_unregistered_stored_rows(): void

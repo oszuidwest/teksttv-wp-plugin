@@ -243,11 +243,10 @@ class PostMeta
 
     /**
      * Sanitize feature-owned values and persist normalized meta input.
-     * Separated from save_meta() for testability without $_POST.
      *
      * @param array<string, mixed> $data Normalized field values.
      */
-    public static function process_save(int $post_id, array $data): void
+    private static function process_save(int $post_id, array $data): void
     {
         // Active toggle
         update_post_meta($post_id, '_teksttv_active', $data['active'] ? '1' : '0');

@@ -530,14 +530,6 @@ class Helpers
     }
 
     /**
-     * Clear the request-local post taxonomy cache.
-     */
-    public static function reset_post_taxonomies_cache(): void
-    {
-        self::$post_taxonomies_cache = null;
-    }
-
-    /**
      * Build a tax_query array from taxonomy filters.
      *
      * @param array<string, mixed> $taxonomy_filters Keyed by taxonomy name, values are term ID arrays.

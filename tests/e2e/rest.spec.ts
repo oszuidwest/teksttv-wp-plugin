@@ -1,4 +1,6 @@
+import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
+import { reseedFixtures } from './reseed-fixtures';
 
 test.describe('slides REST endpoint', () => {
     test('backfills the eligible slide past a full batch of ineligible newer posts', async ({ request }) => {
@@ -30,5 +32,33 @@ test.describe('slides REST endpoint', () => {
     test('rejects an unknown channel', async ({ request }) => {
         const res = await request.get('/wp-json/teksttv/v1/slides?channel=does-not-exist');
         expect(res.ok()).toBeFalsy();
+    });
+
+    test.describe('post metadata persistence', () => {
+        test.afterEach(() => {
+            reseedFixtures();
+        });
+
+        test('saves through WordPress and changes the packaged REST payload', async ({ request }) => {
+            const output = execFileSync(
+                'bun',
+                ['x', 'wp-env', 'run', 'cli', 'wp', 'eval-file', 'wp-content/e2e/save-post-meta.php'],
+                { encoding: 'utf8', timeout: 120_000 },
+            );
+            expect(output).toContain('post-meta-save-ok ');
+
+            const response = await request.get('/wp-json/teksttv/v1/slides?channel=tv1');
+            expect(response.ok()).toBe(true);
+            const data = await response.json();
+            const slide = data.slides.find(
+                (candidate: { title?: string }) => candidate.title === 'Opgeslagen via WordPress',
+            );
+
+            expect(slide).toMatchObject({
+                type: 'text',
+                title: 'Opgeslagen via WordPress',
+            });
+            expect(slide.body.trim()).toBe('<p>Opgeslagen contractinhoud.</p>');
+        });
     });
 });

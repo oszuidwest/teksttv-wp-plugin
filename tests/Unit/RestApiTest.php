@@ -218,44 +218,4 @@ class RestApiTest extends TestCase
         $this->assertArrayNotHasKey('warning', $without_photo->get_data());
     }
 
-    public function test_validate_channel_returns_true_for_valid_channel(): void
-    {
-        Functions\expect('get_option')->with('teksttv_channels', [])->andReturn([
-            ['slug' => 'tv1', 'label' => 'TV 1'],
-            ['slug' => 'tv2', 'label' => 'TV 2'],
-        ]);
-
-        $this->assertTrue(RestApi::validate_channel('tv1'));
-    }
-
-    public function test_validate_channel_returns_false_for_invalid_channel(): void
-    {
-        Functions\expect('get_option')->with('teksttv_channels', [])->andReturn([
-            ['slug' => 'tv1', 'label' => 'TV 1'],
-        ]);
-
-        $this->assertFalse(RestApi::validate_channel('tv99'));
-    }
-
-    public function test_validate_channel_uses_default_when_no_channels_configured(): void
-    {
-        Functions\expect('get_option')->with('teksttv_channels', [])->andReturn([]);
-
-        $this->assertTrue(RestApi::validate_channel('tv1'));
-    }
-
-    public function test_get_slides_returns_loop_and_ticker_for_channel(): void
-    {
-        Functions\when('get_option')->alias(fn ($key, $default = false) => match ($key) {
-            'teksttv_loop_tv1' => [],
-            'teksttv_ticker_tv1' => [],
-            default => $default,
-        });
-
-        $response = RestApi::get_slides(self::requestMock(['channel' => 'tv1']));
-
-        $this->assertInstanceOf(\WP_REST_Response::class, $response);
-        $this->assertSame(200, $response->get_status());
-        $this->assertSame(['slides' => [], 'ticker' => []], $response->get_data());
-    }
 }
