@@ -7,6 +7,12 @@ use TekstTV\AiGenerator;
 
 class AiGeneratorTest extends TestCase
 {
+    /** Pin the clock to 120s, putting user 7 in the literal key teksttv_ai_rate_7_2. */
+    private static function stubRateLimitTime(): void
+    {
+        Functions\when('TekstTV\\time')->justReturn(120);
+    }
+
     /**
      * Complete AI config as produced by Helpers::get_ai_prompts().
      *
@@ -76,10 +82,11 @@ class AiGeneratorTest extends TestCase
 
     public function test_within_rate_limit_uses_atomic_incr_with_object_cache(): void
     {
+        self::stubRateLimitTime();
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
-        Functions\when('wp_cache_add')->justReturn(true);
+        Functions\expect('wp_cache_add')->with('teksttv_ai_rate_7_2', 0, 'teksttv_ai_rate', 60)->andReturn(true);
         // Counter lands on the limit exactly - still allowed.
-        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7', 1, 'teksttv_ai_rate')->andReturn(10);
+        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7_2', 1, 'teksttv_ai_rate')->andReturn(10);
 
         $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
     }
@@ -106,9 +113,10 @@ class AiGeneratorTest extends TestCase
 
     public function test_within_rate_limit_falls_back_to_transient_without_object_cache(): void
     {
+        self::stubRateLimitTime();
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
-        Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(3);
-        Functions\expect('set_transient')->once()->with('teksttv_ai_rate_7', 4, 60)->andReturn(true);
+        Functions\expect('get_transient')->with('teksttv_ai_rate_7_2')->andReturn(3);
+        Functions\expect('set_transient')->once()->with('teksttv_ai_rate_7_2', 4, 60)->andReturn(true);
 
         $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
     }
@@ -116,7 +124,7 @@ class AiGeneratorTest extends TestCase
     public function test_within_rate_limit_fails_closed_when_transient_write_fails(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
-        Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(3);
+        Functions\when('get_transient')->justReturn(3);
         Functions\expect('set_transient')->once()->andReturn(false);
         Functions\expect('error_log')->once()->andReturn(true);
 
@@ -126,10 +134,47 @@ class AiGeneratorTest extends TestCase
     public function test_within_rate_limit_transient_blocks_at_limit(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
-        Functions\expect('get_transient')->with('teksttv_ai_rate_7')->andReturn(10);
+        Functions\when('get_transient')->justReturn(10);
         Functions\expect('set_transient')->never();
 
         $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
+    }
+
+    public function test_within_rate_limit_transient_resets_at_fixed_window_boundary(): void
+    {
+        $now = 60;
+        $counts = [];
+        $writes = [];
+
+        Functions\when('TekstTV\\time')->alias(static function () use (&$now): int {
+            return $now;
+        });
+        Functions\when('wp_using_ext_object_cache')->justReturn(false);
+        Functions\when('get_transient')->alias(static function (string $key) use (&$counts): int|false {
+            return $counts[$key] ?? false;
+        });
+        Functions\when('set_transient')->alias(
+            static function (string $key, int $count, int $expiration) use (&$counts, &$writes): bool {
+                $counts[$key] = $count;
+                $writes[] = [$key, $count, $expiration];
+                return true;
+            }
+        );
+
+        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
+        $now = 119;
+        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
+        $this->assertFalse(AiGenerator::within_rate_limit(7, 2));
+
+        $now = 120;
+        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
+
+        // TTLs run to the end of each minute bucket: 60 at :00, 1 at :59.
+        $this->assertSame([
+            ['teksttv_ai_rate_7_1', 1, 60],
+            ['teksttv_ai_rate_7_1', 2, 1],
+            ['teksttv_ai_rate_7_2', 1, 60],
+        ], $writes);
     }
 
     public function test_validate_ai_output_title_over_limit_returns_warning(): void
