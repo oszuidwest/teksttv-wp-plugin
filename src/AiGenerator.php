@@ -26,18 +26,17 @@ class AiGenerator
      */
     public static function within_rate_limit(int $user_id, int $rate_limit): bool
     {
-        // Use the same calendar-aligned minute bucket for both persistence
-        // paths. Rewriting a transient may extend that entry's TTL, but the
-        // next minute uses a different key, so it cannot extend the active
-        // rate-limit window.
-        $window = intdiv(time(), MINUTE_IN_SECONDS);
-        $key = 'teksttv_ai_rate_' . $user_id . '_' . $window;
+        // Fixed calendar-minute buckets: rewrites can touch an entry's TTL but
+        // never the active window, because the next minute uses a new key.
+        // TTLs run to the end of the bucket's own minute.
+        $now = time();
+        $key = 'teksttv_ai_rate_' . $user_id . '_' . intdiv($now, MINUTE_IN_SECONDS);
+        $ttl = MINUTE_IN_SECONDS - ($now % MINUTE_IN_SECONDS);
 
         if (wp_using_ext_object_cache()) {
             $group = 'teksttv_ai_rate';
-            // add() seeds the counter only if absent, so the TTL is set once per
-            // window; incr() then bumps it atomically.
-            wp_cache_add($key, 0, $group, MINUTE_IN_SECONDS);
+            // add() seeds the counter only if absent; incr() then bumps it atomically.
+            wp_cache_add($key, 0, $group, $ttl);
             $count = wp_cache_incr($key, 1, $group);
             if ($count === false) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -51,7 +50,7 @@ class AiGenerator
         if ($count >= $rate_limit) {
             return false;
         }
-        if (!set_transient($key, $count + 1, MINUTE_IN_SECONDS)) {
+        if (!set_transient($key, $count + 1, $ttl)) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log('TekstTV AI rate limiter: set_transient() failed, rejecting uncounted request.');
             return false;

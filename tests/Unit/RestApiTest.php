@@ -41,7 +41,6 @@ class RestApiTest extends TestCase
     /** Rate limiter passes via the transient path. */
     private static function stubRateLimitOk(): void
     {
-        Functions\when('TekstTV\\time')->justReturn(120);
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
         Functions\when('get_transient')->justReturn(0);
         Functions\when('set_transient')->justReturn(true);

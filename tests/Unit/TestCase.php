@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey;
+use Brain\Monkey\Functions;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use TekstTV\BlockRegistry;
@@ -15,6 +16,11 @@ abstract class TestCase extends PHPUnitTestCase
     {
         parent::setUp();
         Monkey\setUp();
+        // Once any test stubs TekstTV\time(), Brain Monkey's definition of it
+        // persists for the whole PHPUnit process and throws in tests that don't
+        // stub it. Default every test to the real clock; override per test with
+        // Functions\when() where the value matters.
+        Functions\when('TekstTV\\time')->alias('time');
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
     }
