@@ -13,14 +13,11 @@ class PostMeta
 
     /**
      * @param array<string, string> $plugins
-     * @param string $editor_id
      * @return array<string, string>
      */
-    public static function register_tinymce_plugin(array $plugins, string $editor_id): array
+    public static function register_tinymce_plugin(array $plugins): array
     {
-        if ($editor_id === 'teksttv_content') {
-            $plugins['teksttv_separator'] = TEKSTTV_PLUGIN_URL . 'assets/tinymce-separator.js';
-        }
+        $plugins['teksttv_separator'] = TEKSTTV_PLUGIN_URL . 'assets/tinymce-separator.js';
         return $plugins;
     }
 
@@ -57,7 +54,11 @@ class PostMeta
 
         $page_separator = Helpers::has_feature('page_separator');
         if ($page_separator) {
-            add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin'], 10, 2);
+            // mce_external_plugins is page-level: core applies it once, for the
+            // first TinyMCE editor initialized, and merges the result into every
+            // editor on the page. Per-editor scoping happens via the toolbar in
+            // render_meta_box, so don't gate on the filter's $editor_id here.
+            add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
         }
 
         Helpers::enqueue_admin_script();

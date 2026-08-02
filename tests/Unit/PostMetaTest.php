@@ -11,21 +11,14 @@ use TekstTV\PostMeta;
 
 class PostMetaTest extends TestCase
 {
-    public function test_register_tinymce_plugin_adds_separator_to_teksttv_editor(): void
+    public function test_register_tinymce_plugin_adds_separator(): void
     {
         $plugins = ['existing' => 'https://example.com/existing.js'];
 
         $this->assertSame([
             'existing' => 'https://example.com/existing.js',
             'teksttv_separator' => TEKSTTV_PLUGIN_URL . 'assets/tinymce-separator.js',
-        ], PostMeta::register_tinymce_plugin($plugins, 'teksttv_content'));
-    }
-
-    public function test_register_tinymce_plugin_leaves_unrelated_editor_unchanged(): void
-    {
-        $plugins = ['existing' => 'https://example.com/existing.js'];
-
-        $this->assertSame($plugins, PostMeta::register_tinymce_plugin($plugins, 'content'));
+        ], PostMeta::register_tinymce_plugin($plugins));
     }
 
     public function test_enqueue_assets_skips_unrelated_admin_hook(): void
@@ -84,7 +77,7 @@ class PostMetaTest extends TestCase
     public function test_enqueue_assets_loads_on_supported_post_screen_for_authorized_user(string $hook): void
     {
         Filters\expectAdded('mce_external_plugins')
-            ->with([PostMeta::class, 'register_tinymce_plugin'], 10, 2)
+            ->with([PostMeta::class, 'register_tinymce_plugin'])
             ->once();
         $this->stubSuccessfulAssetEnqueue(true);
 
