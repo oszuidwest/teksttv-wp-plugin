@@ -1,8 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { getBrowserErrors } from './helpers';
+import { reseedFixtures } from './reseed-fixtures';
 
 test.afterEach(async ({ page }) => {
-    expect(await getBrowserErrors(page)).toEqual([]);
+    try {
+        expect(await getBrowserErrors(page)).toEqual([]);
+    } finally {
+        reseedFixtures();
+    }
 });
 
 test.describe('administrator admin screens', () => {

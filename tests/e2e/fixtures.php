@@ -135,10 +135,17 @@ add_role('teksttv_smoke_role', 'TekstTV Smoke Role', [
     'manage_teksttv_content' => true,
 ]);
 
-if (!get_user_by('login', 'teksttv_editor')) {
+$teksttv_editor = get_user_by('login', 'teksttv_editor');
+if ($teksttv_editor) {
+    wp_set_password('password', $teksttv_editor->ID);
+} else {
     $teksttv_uid = wp_create_user('teksttv_editor', 'password', 'teksttv_editor@example.test');
-    (new WP_User($teksttv_uid))->set_role('teksttv_smoke_role');
+    if (is_wp_error($teksttv_uid)) {
+        throw new RuntimeException('Could not create the TekstTV editor fixture: ' . $teksttv_uid->get_error_message());
+    }
+    $teksttv_editor = new WP_User($teksttv_uid);
 }
+$teksttv_editor->set_role('teksttv_smoke_role');
 
 // Content editors may change prompts, but must not gain general TekstTV
 // administration or the hidden provider/model controls.
@@ -149,8 +156,15 @@ add_role('teksttv_content_role', 'TekstTV Content Role', [
 ]);
 
 $teksttv_content_user = get_user_by('login', 'teksttv_content_editor');
-if (!$teksttv_content_user) {
+if ($teksttv_content_user) {
+    wp_set_password('password', $teksttv_content_user->ID);
+} else {
     $teksttv_content_uid = wp_create_user('teksttv_content_editor', 'password', 'teksttv_content_editor@example.test');
+    if (is_wp_error($teksttv_content_uid)) {
+        throw new RuntimeException(
+            'Could not create the TekstTV content editor fixture: ' . $teksttv_content_uid->get_error_message()
+        );
+    }
     $teksttv_content_user = new WP_User($teksttv_content_uid);
 }
 $teksttv_content_user->set_role('teksttv_content_role');
