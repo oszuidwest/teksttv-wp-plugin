@@ -1,11 +1,16 @@
-/** Tekst-TV editor textarea of TinyMCE-instantie. */
-export function getTeksttvEditorHtml(): string {
-    const editor = typeof tinymce !== 'undefined' ? tinymce?.get('teksttv_content') : null;
+/** Zichtbare TinyMCE-instantie of de bijbehorende textarea; null als geen van beide bestaat. */
+function getEditorHtml(id: string): string | null {
+    const editor = typeof tinymce !== 'undefined' ? tinymce?.get(id) : null;
     if (editor && !editor.isHidden()) {
         return editor.getContent();
     }
-    const ta = document.querySelector<HTMLTextAreaElement>('#teksttv_content');
-    return ta?.value ?? '';
+    const ta = document.querySelector<HTMLTextAreaElement>(`#${id}`);
+    return ta ? ta.value : null;
+}
+
+/** Tekst-TV editor textarea of TinyMCE-instantie. */
+export function getTeksttvEditorHtml(): string {
+    return getEditorHtml('teksttv_content') ?? '';
 }
 
 export interface CurrentPostEditorState {
@@ -25,12 +30,8 @@ export function getCurrentPostEditorState(): CurrentPostEditorState | null {
     }
 
     const titleInput = document.querySelector<HTMLInputElement>('#title');
-    const contentTextarea = document.querySelector<HTMLTextAreaElement>('#content');
-    const editor = typeof tinymce !== 'undefined' ? tinymce?.get('content') : null;
-    if (!titleInput || (!editor && !contentTextarea)) return null;
+    const content = getEditorHtml('content');
+    if (!titleInput || content === null) return null;
 
-    return {
-        title: titleInput.value,
-        content: editor && !editor.isHidden() ? editor.getContent() : (contentTextarea?.value ?? ''),
-    };
+    return { title: titleInput.value, content };
 }

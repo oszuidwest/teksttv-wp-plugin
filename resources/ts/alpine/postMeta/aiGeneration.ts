@@ -54,15 +54,19 @@ export function requestAiGeneration(
     onApplied?: () => void,
 ): void {
     const statusEl = document.querySelector('#teksttv-generate-status');
-    const editorState = getCurrentPostEditorState();
-    if (!editorState) {
-        const message = 'De actuele titel en artikeltekst konden niet worden gelezen. Genereren is gestopt.';
+    const showError = (message: string): void => {
         if (statusEl) {
             statusEl.textContent = message;
             statusEl.classList.add('is-error');
         } else {
+            // Errors must never depend on the status element existing.
             console.error('TekstTV AI-generatie:', message);
         }
+    };
+
+    const editorState = getCurrentPostEditorState();
+    if (!editorState) {
+        showError('De actuele titel en artikeltekst konden niet worden gelezen. Genereren is gestopt.');
         return;
     }
 
@@ -85,16 +89,6 @@ export function requestAiGeneration(
     }, 2500);
     statusEl?.classList.remove('is-error', 'is-warning');
     if (statusEl) statusEl.textContent = '';
-
-    const showError = (message: string): void => {
-        if (statusEl) {
-            statusEl.textContent = message;
-            statusEl.classList.add('is-error');
-        } else {
-            // Errors must never depend on the status element existing.
-            console.error('TekstTV AI-generatie:', message);
-        }
-    };
 
     wp.apiFetch<GenerateResponse>({
         url: config.generateUrl,

@@ -1,4 +1,17 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+
+/** Open the smoke-post editor and wait until the Gutenberg store serves the post. */
+async function openSmokePostEditor(page: Page): Promise<void> {
+    await page.goto('/wp-admin/edit.php');
+    await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
+    await expect(page.locator('#teksttv_meta')).toBeAttached();
+    await page.waitForFunction(() => {
+        const browser = window as unknown as {
+            wp?: { data?: { select(store: string): { getCurrentPostType?(): string } | null } };
+        };
+        return browser.wp?.data?.select('core/editor')?.getCurrentPostType?.() === 'post';
+    });
+}
 
 test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
@@ -21,28 +34,12 @@ test.describe('administrator admin screens', () => {
     });
 
     test('post editor hides AI controls when no provider connector is configured', async ({ page }) => {
-        await page.goto('/wp-admin/edit.php');
-        await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
-        await expect(page.locator('#teksttv_meta')).toBeAttached();
-        await page.waitForFunction(() => {
-            const browser = window as unknown as {
-                wp?: { data?: { select(store: string): { getCurrentPostType?(): string } | null } };
-            };
-            return browser.wp?.data?.select('core/editor')?.getCurrentPostType?.() === 'post';
-        });
+        await openSmokePostEditor(page);
         await expect(page.locator('.teksttv-generate-btn')).toHaveCount(0);
     });
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
-        await page.goto('/wp-admin/edit.php');
-        await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
-        await expect(page.locator('#teksttv_meta')).toBeAttached();
-        await page.waitForFunction(() => {
-            const browser = window as unknown as {
-                wp?: { data?: { select(store: string): { getCurrentPostType?(): string } | null } };
-            };
-            return browser.wp?.data?.select('core/editor')?.getCurrentPostType?.() === 'post';
-        });
+        await openSmokePostEditor(page);
 
         page.on('dialog', (dialog) => dialog.accept());
         const generateUrl = await page.evaluate(() => {
