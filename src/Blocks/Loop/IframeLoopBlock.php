@@ -58,7 +58,7 @@ final class IframeLoopBlock
     {
         $saved = [
             'name' => sanitize_text_field((string) ($raw['name'] ?? '')),
-            'url' => esc_url_raw(trim((string) ($raw['url'] ?? ''))),
+            'url' => self::sanitizeUrl($raw['url'] ?? ''),
         ];
 
         $dur = $raw['duration'] ?? '';
@@ -75,7 +75,7 @@ final class IframeLoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
-        $url = trim((string) ($block['url'] ?? ''));
+        $url = self::sanitizeUrl($block['url'] ?? '');
         if ($url === '') {
             return [];
         }
@@ -86,5 +86,21 @@ final class IframeLoopBlock
             'duration' => Helpers::duration_ms($block['duration'] ?? null, 'teksttv_duration_iframe'),
         ]
         ];
+    }
+
+    private static function sanitizeUrl(mixed $value): string
+    {
+        $url = esc_url_raw(trim((string) $value), ['http', 'https']);
+        if ($url === '') {
+            return '';
+        }
+
+        $parts = parse_url($url);
+        $scheme = is_array($parts) ? strtolower((string) ($parts['scheme'] ?? '')) : '';
+        if (!in_array($scheme, ['http', 'https'], true) || empty($parts['host'])) {
+            return '';
+        }
+
+        return $url;
     }
 }
