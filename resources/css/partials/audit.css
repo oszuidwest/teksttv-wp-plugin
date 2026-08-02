@@ -29,10 +29,6 @@
     margin-top: 4px;
 }
 
-.teksttv-audit-table {
-    width: 100%;
-}
-
 .teksttv-audit-badge {
     display: inline-block;
     padding: 2px 8px;
@@ -55,20 +51,4 @@
 .teksttv-audit-badge--none {
     background: #f0f0f1;
     color: #787c82;
-}
-
-.teksttv-audit-diff {
-    margin-bottom: 8px;
-}
-
-.teksttv-audit-diff th {
-    width: 50%;
-}
-
-.teksttv-audit-cell {
-    vertical-align: top;
-    font-size: 13px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-break: break-word;
 }

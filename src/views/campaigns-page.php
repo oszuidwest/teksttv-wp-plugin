@@ -20,15 +20,15 @@ settings_errors('teksttv_campaigns');
     <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
 
     <!-- Groups management -->
-    <div class="teksttv-panel teksttv-card teksttv-campaign-groups">
+    <div class="teksttv-card teksttv-campaign-groups">
         <h3><?php echo esc_html('Groepen'); ?></h3>
         <p class="description"><?php echo esc_html('Definieer groepen om campagnes te organiseren. In de loop kies je per campagne-blok welke groepen getoond worden.'); ?></p>
-        <div class="teksttv-table-scroll teksttv-table-scroll--groups">
-            <table class="widefat teksttv-channels-table" id="teksttv-groups" @click="groupsClick($event)">
+        <div class="teksttv-table-scroll">
+            <table class="widefat teksttv-management-table" id="teksttv-groups" @click="groupsClick($event)">
                 <thead>
                     <tr>
                         <th><?php echo esc_html('Naam'); ?></th>
-                        <th class="teksttv-channel-actions"></th>
+                        <th class="teksttv-table-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,7 +38,7 @@ settings_errors('teksttv_campaigns');
                             <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
                             <input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('Bijv. Campagne'); ?>" />
                         </td>
-                        <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+                        <td class="teksttv-table-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

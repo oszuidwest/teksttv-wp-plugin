@@ -55,7 +55,7 @@ final class CampaignLoopBlock
                 <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>
-        <div class="teksttv-field-grid teksttv-block-fields--transitions">
+        <div class="teksttv-field-grid teksttv-field-grid--transitions">
             <?php
             self::render_transition_picker('Intro afbeelding', $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
             self::render_transition_picker('Outro afbeelding', $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');

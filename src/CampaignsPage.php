@@ -54,7 +54,7 @@ class CampaignsPage
         $body_id = 'teksttv-campaigns-' . (string) $index . '-body';
 
         ?>
-        <div class="teksttv-panel teksttv-block" data-type="campaign_item">
+        <div class="teksttv-block" data-type="campaign_item">
             <?php AdminPage::render_block_header($body_id, $name ?: 'Campagne', 'megaphone', '#d63638', 'Campagne verwijderen'); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />

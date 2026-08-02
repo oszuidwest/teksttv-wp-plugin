@@ -1,5 +1,4 @@
 .teksttv-loop-header {
-    width: 100%;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
@@ -33,10 +32,6 @@
     width: 16px;
     height: 16px;
     color: #787c82;
-}
-
-.teksttv-blocks {
-    width: 100%;
 }
 
 .teksttv-campaign-groups {
@@ -141,39 +136,40 @@
     padding: 14px;
 }
 
-.teksttv-block-body .teksttv-field-grid {
+.teksttv-field-grid {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 12px 16px;
     align-items: flex-end;
 }
 
-.teksttv-block-body .teksttv-field {
+.teksttv-field {
     grid-column: span 3;
     min-width: 0;
 }
 
-.teksttv-block-body .teksttv-field--primary {
+.teksttv-field--primary {
     grid-column: span 6;
 }
 
-.teksttv-block-body .teksttv-field--text {
+.teksttv-field--text {
     grid-column: span 5;
 }
 
-.teksttv-block-body .teksttv-field--choice {
+.teksttv-field--choice {
     grid-column: span 4;
 }
 
-.teksttv-block-body .teksttv-field--compact {
+.teksttv-field--compact {
     grid-column: span 2;
 }
 
-.teksttv-block-body .teksttv-field--full {
+.teksttv-field--full {
     grid-column: 1 / -1;
 }
 
-.teksttv-block-body .teksttv-field > label {
+.teksttv-field > label,
+.teksttv-field-label {
     display: block;
     font-size: 12px;
     font-weight: 500;
@@ -181,20 +177,16 @@
     margin-bottom: 4px;
 }
 
-.teksttv-block-body .teksttv-field select,
-.teksttv-block-body .teksttv-field input:not([type="checkbox"]):not([type="hidden"]) {
+.teksttv-field :is(select, input:not([type="checkbox"]):not([type="hidden"])) {
     min-width: 100px;
 }
 
-.teksttv-block-body .teksttv-field input:is([type="text"], [type="url"], [type="date"]),
-.teksttv-block-body .teksttv-field select {
+.teksttv-field :is(select, input[type="text"], input[type="url"], input[type="date"]) {
     width: 100%;
-    max-width: 100%;
 }
 
 /* Tom Select overrides — match WP admin input styling */
 .teksttv-field .ts-wrapper {
-    min-width: 0;
     width: 100%;
     font-size: 13px;
 }
@@ -207,7 +199,6 @@
     background: #fff;
     box-shadow: 0 0 0 transparent;
     transition: border-color 0.1s;
-    box-sizing: border-box;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -259,13 +250,15 @@
     color: #1d2327;
 }
 
-.teksttv-block-fields--transitions {
+.teksttv-field-grid--duration,
+.teksttv-field-grid--scheduling,
+.teksttv-field-grid--transitions {
     border-top: 1px solid #f0f0f1;
     padding-top: 12px;
     margin-top: 4px;
 }
 
-.teksttv-block-fields--transitions .teksttv-block-image-preview img {
+.teksttv-field-grid--transitions .teksttv-block-image-preview img {
     width: 80px;
     height: 50px;
     object-fit: cover;
@@ -327,18 +320,6 @@
     gap: 4px;
 }
 
-.teksttv-block-fields--scheduling {
-    border-top: 1px solid #f0f0f1;
-    padding-top: 12px;
-    margin-top: 4px;
-}
-
-.teksttv-block-fields--duration {
-    border-top: 1px solid #f0f0f1;
-    padding-top: 12px;
-    margin-top: 4px;
-}
-
 .teksttv-unit {
     font-size: 12px;
     color: #787c82;
@@ -396,7 +377,6 @@
 }
 
 .teksttv-add-block-bar {
-    width: 100%;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -467,7 +447,7 @@
 }
 
 @media (max-width: 782px) {
-    .teksttv-block-body .teksttv-field {
+    .teksttv-field {
         grid-column: 1 / -1;
     }
 }

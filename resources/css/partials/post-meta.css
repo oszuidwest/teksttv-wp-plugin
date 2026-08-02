@@ -149,30 +149,6 @@
     }
 }
 
-.teksttv-content-wrap .teksttv-content-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 8px 0;
-    padding: 6px 8px;
-    background: #f6f7f7;
-    border: 1px solid #dcdcde;
-    border-bottom: 0;
-    border-radius: 4px 4px 0 0;
-}
-
-.teksttv-content-wrap .teksttv-content-toolbar .button {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.teksttv-content-wrap .teksttv-content-toolbar .dashicons {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-}
-
 .teksttv-content-wrap textarea {
     border-radius: 0 0 4px 4px;
     font-family: Consolas, Monaco, monospace;

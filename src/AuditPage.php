@@ -70,7 +70,7 @@ class AuditPage
             </div>
 
             <?php if (empty($posts)) : ?>
-                <div class="teksttv-panel teksttv-card">
+                <div class="teksttv-card">
                     <p><?php echo esc_html('Nog geen posts met AI-gegenereerde content.'); ?></p>
                 </div>
             <?php else : ?>
@@ -149,7 +149,7 @@ class AuditPage
 
         ?>
         <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
-            <div class="teksttv-panel teksttv-card">
+            <div class="teksttv-card">
                 <h3><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
                 <?php
                 $title_diff = self::render_diff($ai_title ?: '', $current_title ?: '', $split);
@@ -162,7 +162,7 @@ class AuditPage
                 ?>
             </div>
 
-            <div class="teksttv-panel teksttv-card">
+            <div class="teksttv-card">
                 <h3><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
                 <?php
                 $body_diff = self::render_diff(

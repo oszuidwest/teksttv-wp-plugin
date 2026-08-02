@@ -93,21 +93,6 @@
     z-index: 1;
 }
 
-.teksttv-preview-note {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-    font-size: 12px;
-    color: #787c82;
-}
-
-.teksttv-preview-note .dashicons {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-}
-
 .teksttv-preview-thumbs {
     display: flex;
     gap: 6px;

@@ -400,7 +400,7 @@ class AdminPage
         $body_id = str_replace('_', '-', $prefix) . '-' . (string) $index . '-body';
 
         ?>
-        <div class="teksttv-panel teksttv-block" data-type="<?php echo esc_attr($type); ?>">
+        <div class="teksttv-block" data-type="<?php echo esc_attr($type); ?>">
             <?php self::render_block_header($body_id, $reg['label'], $reg['icon'], $reg['color'], sprintf('Verwijder blok %s', $reg['label'])); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][type]" value="<?php echo esc_attr($type); ?>" />
@@ -453,7 +453,7 @@ class AdminPage
                 <?php echo esc_html('Planning inschakelen'); ?>
             </label>
         </div>
-        <div class="teksttv-field-grid teksttv-block-fields--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
+        <div class="teksttv-field-grid teksttv-field-grid--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
             <?php self::render_scheduling_inputs($index, $block, $prefix); ?>
         </div>
         <?php

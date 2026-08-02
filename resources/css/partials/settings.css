@@ -2,67 +2,48 @@
     margin-top: 20px;
 }
 
-.teksttv-tab-intro {
-    width: 100%;
-    margin-bottom: 20px;
-    color: #50575e;
-}
-
-.teksttv-channels-table {
-    width: 100%;
+.teksttv-management-table {
     border-collapse: collapse;
 }
 
 .teksttv-table-scroll {
-    width: 100%;
     overflow-x: auto;
 }
 
-.teksttv-table-scroll--channels .teksttv-channels-table {
+#teksttv-channels {
     min-width: 560px;
 }
 
-.teksttv-table-scroll--groups .teksttv-channels-table {
+#teksttv-groups {
     min-width: 360px;
 }
 
-.teksttv-channels-table th {
+.teksttv-management-table th {
     text-align: left;
     padding: 10px 12px;
     font-weight: 600;
 }
 
-.teksttv-channels-table td {
+.teksttv-management-table td {
     padding: 8px 12px;
     vertical-align: middle;
 }
 
-.teksttv-channels-table input[type="text"] {
+.teksttv-management-table input[type="text"] {
     width: 100%;
 }
 
-.teksttv-channels-table .teksttv-channel-actions {
+.teksttv-management-table .teksttv-table-actions {
     width: 80px;
     text-align: right;
 }
 
-.teksttv-channels-table .teksttv-remove-channel {
+.teksttv-management-table .teksttv-table-actions .button-link {
     color: #b32d2e;
 }
 
-.teksttv-channels-table .teksttv-remove-channel:hover {
+.teksttv-management-table .teksttv-table-actions .button-link:hover {
     color: #a00;
-}
-
-.teksttv-channels-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-}
-
-.teksttv-settings-form {
-    width: 100%;
 }
 
 .teksttv-settings-form .form-table th {

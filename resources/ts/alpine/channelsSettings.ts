@@ -21,7 +21,7 @@ export function createChannelsSettingsPage() {
                 '<tr class="teksttv-channel-row">' +
                 `<td><input type="text" name="teksttv_channels[${index}][slug]" value="" class="regular-text" pattern="[a-z0-9\\-]+" required placeholder="bijv. tv1" /></td>` +
                 `<td><input type="text" name="teksttv_channels[${index}][label]" value="" class="regular-text" required placeholder="bijv. TV 1" /></td>` +
-                '<td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-channel" aria-label="Kanaal verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
+                '<td class="teksttv-table-actions"><button type="button" class="button-link teksttv-remove-channel" aria-label="Kanaal verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
                 '</tr>';
             channelsTbody.insertAdjacentHTML('beforeend', row);
             channelsTbody
