@@ -34,7 +34,7 @@ async function openFixturePostEditor(page: Page): Promise<void> {
     // Fixtures persist welcomeGuide=false for the admin user, so no editor
     // onboarding modal can mount here; if one ever does, the interactions
     // below fail with Playwright's interception error naming the overlay.
-    const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
+    const metaBoxesButton = page.getByRole('button', { name: 'Meta Boxes', exact: true });
     await expect(metaBoxesButton).toBeVisible();
     if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
         await metaBoxesButton.press('Enter');
