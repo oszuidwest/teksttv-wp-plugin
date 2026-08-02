@@ -28,6 +28,24 @@ update_option('teksttv_features', [
     'ai_generate',
 ]);
 
+update_option('teksttv_ai_prompts', [
+    'system' => 'E2E systeeminstructie',
+    'prompt_title' => 'E2E kopprompt',
+    'prompt_body' => 'E2E tekstprompt',
+    'word_limit' => 80,
+    'word_limit_photo' => 50,
+    'title_char_limit' => 45,
+    'min_input_words' => 10,
+    'max_retries' => 2,
+    'rate_limit' => 10,
+    'region_taxonomy' => 'category',
+    'provider' => 'protected-provider',
+    'model' => 'protected-provider/protected-model',
+    'temperature' => 0.4,
+    'top_p' => 0.8,
+    'max_tokens' => 1024,
+]);
+
 update_option('teksttv_loop_tv1', [
     ['type' => 'articles', 'count' => 1, 'taxonomy_filters' => []],
 ]);
@@ -124,12 +142,31 @@ if (!get_user_by('login', 'teksttv_editor')) {
     (new WP_User($teksttv_uid))->set_role('teksttv_smoke_role');
 }
 
+// Content editors may change prompts, but must not gain general TekstTV
+// administration or the hidden provider/model controls.
+remove_role('teksttv_content_role');
+add_role('teksttv_content_role', 'TekstTV Content Role', [
+    'read' => true,
+    'manage_teksttv_content' => true,
+]);
+
+$teksttv_content_user = get_user_by('login', 'teksttv_content_editor');
+if (!$teksttv_content_user) {
+    $teksttv_content_uid = wp_create_user(
+        'teksttv_content_editor',
+        'password',
+        'teksttv_content_editor@example.test'
+    );
+    $teksttv_content_user = new WP_User($teksttv_content_uid);
+}
+$teksttv_content_user->set_role('teksttv_content_role');
+
 // Disable the block-editor welcome guide via the persisted preference core
 // preloads into the editor, so the onboarding modal never mounts and cannot
 // race the specs. The post editor reads core/edit-post; `_modified` must be
 // current or a stale localStorage copy wins the client-side persistence merge.
 $teksttv_prefs_key = $GLOBALS['wpdb']->get_blog_prefix() . 'persisted_preferences';
-foreach (['admin', 'teksttv_editor'] as $teksttv_login) {
+foreach (['admin', 'teksttv_editor', 'teksttv_content_editor'] as $teksttv_login) {
     $teksttv_user = get_user_by('login', $teksttv_login);
     if ($teksttv_user) {
         update_user_meta($teksttv_user->ID, $teksttv_prefs_key, [

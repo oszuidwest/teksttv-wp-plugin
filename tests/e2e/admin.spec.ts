@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { getBrowserErrors } from './helpers';
+
+test.afterEach(async ({ page }) => {
+    expect(await getBrowserErrors(page)).toEqual([]);
+});
 
 test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
