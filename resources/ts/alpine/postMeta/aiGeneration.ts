@@ -1,7 +1,7 @@
 import { dispatchInput } from '../../modules/dom';
 import type { TeksttvPostConfig } from '../../modules/types';
 import { stripTags } from '../../modules/utils';
-import { getTeksttvEditorHtml } from './editorContent';
+import { getCurrentPostEditorState, getTeksttvEditorHtml } from './editorContent';
 
 export function teksttvHasExistingGeneratedContent(): boolean {
     const title = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
@@ -54,6 +54,18 @@ export function requestAiGeneration(
     onApplied?: () => void,
 ): void {
     const statusEl = document.querySelector('#teksttv-generate-status');
+    const editorState = getCurrentPostEditorState();
+    if (!editorState) {
+        const message = 'De actuele titel en artikeltekst konden niet worden gelezen. Genereren is gestopt.';
+        if (statusEl) {
+            statusEl.textContent = message;
+            statusEl.classList.add('is-error');
+        } else {
+            console.error('TekstTV AI-generatie:', message);
+        }
+        return;
+    }
+
     const originalHtml = btn.innerHTML;
     const loadingMessages = [
         'Even nadenken...',
@@ -87,7 +99,13 @@ export function requestAiGeneration(
     wp.apiFetch<GenerateResponse>({
         url: config.generateUrl,
         method: 'POST',
-        data: { post_id: config.postId, field, has_photo: hasPhoto },
+        data: {
+            post_id: config.postId,
+            field,
+            has_photo: hasPhoto,
+            source_title: editorState.title,
+            source_content: editorState.content,
+        },
     })
         .then((data) => {
             if (field === 'both') {

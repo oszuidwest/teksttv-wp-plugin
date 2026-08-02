@@ -60,6 +60,16 @@ class RestApi
                     'default' => false,
                     'sanitize_callback' => 'rest_sanitize_boolean',
                 ],
+                'source_title' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'source_content' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'wp_kses_post',
+                ],
             ],
         ]);
 
@@ -142,6 +152,20 @@ class RestApi
             return new WP_Error('teksttv_forbidden', 'Onvoldoende rechten.', ['status' => 403]);
         }
 
+        $source_title = $request->get_param('source_title');
+        $source_content = $request->get_param('source_content');
+        if (!is_string($source_title) || !is_string($source_content)) {
+            return new WP_Error(
+                'teksttv_editor_state_unavailable',
+                'De actuele editorinhoud ontbreekt. Genereren is gestopt.',
+                ['status' => 400]
+            );
+        }
+
+        $source_post = clone $post;
+        $source_post->post_title = sanitize_text_field($source_title);
+        $source_post->post_content = wp_kses_post($source_content);
+
         $config = Helpers::get_ai_prompts();
 
         // Counted last so requests that can only 403/404 do not consume quota.
@@ -153,7 +177,12 @@ class RestApi
             );
         }
 
-        $result = AiGenerator::generate_for_post($post, $field, $config, (bool) $request->get_param('has_photo'));
+        $result = AiGenerator::generate_for_post(
+            $source_post,
+            $field,
+            $config,
+            (bool) $request->get_param('has_photo')
+        );
         if (is_wp_error($result)) {
             return $result;
         }

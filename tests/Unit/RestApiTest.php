@@ -12,8 +12,14 @@ class RestApiTest extends TestCase
      *
      * @param array<string, mixed> $params
      */
-    private static function requestMock(array $params): \Mockery\MockInterface
+    private static function requestMock(array $params, bool $with_editor_state = true): \Mockery\MockInterface
     {
+        if ($with_editor_state) {
+            $params += [
+                'source_title' => 'Titel',
+                'source_content' => '<p>' . implode(' ', array_fill(0, 60, 'woord')) . '</p>',
+            ];
+        }
         $request = \Mockery::mock('WP_REST_Request');
         $request->shouldReceive('get_param')->andReturnUsing(fn ($key) => $params[$key] ?? null);
         return $request;
@@ -64,6 +70,7 @@ class RestApiTest extends TestCase
         self::stubRateLimitOk();
         Functions\when('is_wp_error')->alias(fn ($thing) => $thing instanceof \WP_Error);
         Functions\when('wp_slash')->returnArg();
+        Functions\when('wp_kses_post')->returnArg();
     }
 
     /**
@@ -158,6 +165,47 @@ class RestApiTest extends TestCase
         $this->assertErrorStatus(429, $response);
     }
 
+    public function test_generate_content_rejects_missing_editor_state_before_counting_quota(): void
+    {
+        self::stubHappyPath();
+        Functions\expect('get_transient')->never();
+
+        $response = RestApi::generate_content(
+            self::requestMock(['post_id' => 42, 'field' => 'body'], false)
+        );
+
+        $this->assertErrorStatus(400, $response);
+        $this->assertSame('teksttv_editor_state_unavailable', $response->get_error_code());
+    }
+
+    public function test_generate_content_uses_sanitized_unsaved_editor_state(): void
+    {
+        self::stubHappyPath();
+        Functions\when('update_post_meta')->justReturn(true);
+
+        $builder = self::mockAiBuilder('Nieuwe kop');
+        $prompts = [];
+        Functions\when('wp_ai_client_prompt')->alias(function ($prompt) use ($builder, &$prompts) {
+            $prompts[] = $prompt;
+            return $builder;
+        });
+
+        $response = RestApi::generate_content(self::requestMock([
+            'post_id' => 42,
+            'field' => 'title',
+            'source_title' => ' <b>Nieuwe titel</b> ',
+            'source_content' => '<p>Actuele onopgeslagen tekst</p>',
+        ]));
+
+        $this->assertSame(200, $response->get_status());
+        $this->assertSame('Nieuwe kop', $response->get_data()['content']);
+        $this->assertTrue((bool) array_filter(
+            $prompts,
+            fn ($prompt) => str_contains($prompt, 'Titel: Nieuwe titel')
+                && str_contains($prompt, 'Actuele onopgeslagen tekst')
+        ));
+    }
+
     public function test_generate_content_passes_ai_generator_error_through(): void
     {
         self::stubHappyPath();
@@ -165,7 +213,12 @@ class RestApiTest extends TestCase
         // Empty post -> AiGenerator returns teksttv_no_content with status 422.
         Functions\when('get_post')->justReturn(self::makePost(['post_title' => '', 'post_content' => '']));
 
-        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
+        $response = RestApi::generate_content(self::requestMock([
+            'post_id' => 42,
+            'field' => 'title',
+            'source_title' => '',
+            'source_content' => '',
+        ]));
 
         $this->assertErrorStatus(422, $response);
         $this->assertSame('teksttv_no_content', $response->get_error_code());
