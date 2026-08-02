@@ -11,37 +11,39 @@ namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
-echo '<div class="wrap">';
+echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html('Campagnes') . '</h1>';
 settings_errors('teksttv_campaigns');
 
 ?>
-<form method="post" x-data="teksttvCampaignsPage">
+<form method="post" class="teksttv-admin-column" x-data="teksttvCampaignsPage">
     <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
 
     <!-- Groups management -->
-    <div class="teksttv-card" style="margin-bottom:24px;">
+    <div class="teksttv-panel teksttv-card teksttv-campaign-groups">
         <h3><?php echo esc_html('Groepen'); ?></h3>
         <p class="description"><?php echo esc_html('Definieer groepen om campagnes te organiseren. In de loop kies je per campagne-blok welke groepen getoond worden.'); ?></p>
-        <table class="widefat teksttv-channels-table" id="teksttv-groups" @click="groupsClick($event)">
-            <thead>
-                <tr>
-                    <th><?php echo esc_html('Naam'); ?></th>
-                    <th class="teksttv-channel-actions"></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($groups as $gi => $group) : ?>
-                <tr class="teksttv-group-row">
-                    <td>
-                        <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
-                        <input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('Bijv. Campagne'); ?>" />
-                    </td>
-                    <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="teksttv-table-scroll teksttv-table-scroll--groups">
+            <table class="widefat teksttv-channels-table" id="teksttv-groups" @click="groupsClick($event)">
+                <thead>
+                    <tr>
+                        <th><?php echo esc_html('Naam'); ?></th>
+                        <th class="teksttv-channel-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($groups as $gi => $group) : ?>
+                    <tr class="teksttv-group-row">
+                        <td>
+                            <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
+                            <input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('Bijv. Campagne'); ?>" />
+                        </td>
+                        <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         <p class="teksttv-card-actions">
             <button type="button" class="button" id="teksttv-add-group" @click.prevent="addGroupRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php echo esc_html('Groep toevoegen'); ?></button>
         </p>

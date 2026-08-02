@@ -36,8 +36,8 @@ final class CampaignLoopBlock
         $limit = $block['limit'] ?? '';
 
         ?>
-        <div class="teksttv-block-fields">
-            <div class="teksttv-block-field">
+        <div class="teksttv-field-grid">
+            <div class="teksttv-field teksttv-field--choice">
                 <label><?php echo esc_html('Groep(en)'); ?></label>
                 <?php if (!empty($available_groups)) : ?>
                 <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)...'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
@@ -49,13 +49,13 @@ final class CampaignLoopBlock
                 <p class="description"><?php echo wp_kses(sprintf('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
-            <div class="teksttv-block-field">
+            <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Max. slides'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max %s" />
                 <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>
-        <div class="teksttv-block-fields teksttv-block-fields--transitions">
+        <div class="teksttv-field-grid teksttv-block-fields--transitions">
             <?php
             self::render_transition_picker('Intro afbeelding', $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
             self::render_transition_picker('Outro afbeelding', $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');
@@ -72,7 +72,7 @@ final class CampaignLoopBlock
     private static function render_transition_picker(string $label, string $field_name, int $image_id, string $image_url): void
     {
         ?>
-        <div class="teksttv-block-field teksttv-image-picker">
+        <div class="teksttv-field teksttv-field--primary teksttv-image-picker">
             <label><?php echo esc_html($label); ?></label>
             <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr($image_id ? (string) $image_id : ''); ?>" class="teksttv-block-image-id" data-summary data-summary-label="<?php echo esc_attr($label); ?>" />
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">

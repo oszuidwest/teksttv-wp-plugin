@@ -15,12 +15,12 @@ namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
-echo '<div class="wrap">';
+echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html($page_title) . '</h1>';
 settings_errors('teksttv');
 
 ?>
-<div class="teksttv-tab-content" x-data="teksttvLoopPage">
+<div class="teksttv-tab-content teksttv-admin-column" x-data="teksttvLoopPage">
     <div class="teksttv-loop-header">
         <span class="teksttv-api-url">
             <span class="dashicons dashicons-rest-api"></span>

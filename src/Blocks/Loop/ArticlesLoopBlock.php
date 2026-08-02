@@ -39,19 +39,19 @@ final class ArticlesLoopBlock
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
 
         ?>
-        <div class="teksttv-block-fields">
-            <div class="teksttv-block-field">
+        <div class="teksttv-field-grid">
+            <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Aantal'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
-        <div class="teksttv-block-fields teksttv-block-fields--duration">
-            <div class="teksttv-block-field">
+        <div class="teksttv-field-grid teksttv-block-fields--duration">
+            <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Duur tekst'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_text]" value="<?php echo esc_attr((string) $dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" /> <span class="teksttv-unit">sec</span>
             </div>
-            <div class="teksttv-block-field">
+            <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Duur afbeelding'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_image]" value="<?php echo esc_attr((string) $dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
             </div>

@@ -11,21 +11,21 @@ namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
-echo '<div class="wrap">';
+echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html('Content & AI') . '</h1>';
 
 ?>
 <div class="teksttv-tab-content">
-    <form method="post" action="options.php" class="teksttv-settings-form">
+    <form method="post" action="options.php" class="teksttv-admin-column teksttv-settings-form">
         <?php settings_fields('teksttv_content'); ?>
 
-        <div class="teksttv-card">
+        <div class="teksttv-panel teksttv-card">
             <h3><?php echo esc_html('Systeem instructie'); ?></h3>
             <p class="description"><?php echo esc_html('De systeem instructie bepaalt de rol en stijl van de AI. Dit wordt bij elke generatie meegegeven.'); ?></p>
             <textarea name="teksttv_ai_prompts[system]" rows="4" class="large-text"><?php echo esc_textarea($prompts['system']); ?></textarea>
         </div>
 
-        <div class="teksttv-card">
+        <div class="teksttv-panel teksttv-card">
             <h3><?php echo esc_html('Prompt: Kop'); ?></h3>
             <p class="description">
                 <?php echo esc_html('Instructie voor het genereren van de titel. De artikeltitel en inhoud worden automatisch toegevoegd.'); ?>
@@ -47,7 +47,7 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
             </table>
         </div>
 
-        <div class="teksttv-card">
+        <div class="teksttv-panel teksttv-card">
             <h3><?php echo esc_html('Prompt: Tekst'); ?></h3>
             <p class="description">
                 <?php echo esc_html('Instructie voor het genereren van de body tekst. De artikeltitel en inhoud worden automatisch toegevoegd.'); ?>
@@ -76,7 +76,7 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
             </table>
         </div>
 
-        <div class="teksttv-card">
+        <div class="teksttv-panel teksttv-card">
             <h3><?php echo esc_html('Overig'); ?></h3>
             <table class="form-table teksttv-form-table">
                 <tr>
@@ -104,7 +104,7 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
         </div>
 
         <?php if (current_user_can('manage_teksttv')) : ?>
-        <div class="teksttv-card">
+        <div class="teksttv-panel teksttv-card">
             <h3><?php echo esc_html('Regio-prefix'); ?></h3>
             <p class="description"><?php echo wp_kses('Voeg automatisch een regio-prefix toe aan de gegenereerde tekst, bijv. <code>LEIDEN - Tekst hier</code>.', ['code' => []]); ?></p>
             <table class="form-table teksttv-form-table">
@@ -124,7 +124,7 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
             </table>
         </div>
 
-        <div class="teksttv-card">
+        <div class="teksttv-panel teksttv-card">
             <h3><?php echo esc_html('Technisch'); ?></h3>
             <?php if (!empty($ai_models)) : ?>
             <table class="form-table teksttv-form-table">

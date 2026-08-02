@@ -45,11 +45,11 @@ class AuditPage
         $total_pages = (int) ceil($total_posts / self::PER_PAGE);
         $stats = self::compute_stats(self::query_ai_post_statuses());
 
-        echo '<div class="wrap">';
+        echo '<div class="wrap teksttv-admin">';
         echo '<h1>' . esc_html('AI Audit') . '</h1>';
 
         ?>
-        <div class="teksttv-tab-content">
+        <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
             <div class="teksttv-audit-stats">
                 <div class="teksttv-audit-stat-card">
                     <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $total_posts); ?></span>
@@ -70,7 +70,7 @@ class AuditPage
             </div>
 
             <?php if (empty($posts)) : ?>
-                <div class="teksttv-card">
+                <div class="teksttv-panel teksttv-card">
                     <p><?php echo esc_html('Nog geen posts met AI-gegenereerde content.'); ?></p>
                 </div>
             <?php else : ?>
@@ -124,7 +124,7 @@ class AuditPage
     {
         $post = get_post($post_id);
         if (!$post) {
-            echo '<div class="wrap"><h1>' . esc_html('Post niet gevonden') . '</h1></div>';
+            echo '<div class="wrap teksttv-admin"><h1>' . esc_html('Post niet gevonden') . '</h1></div>';
             return;
         }
 
@@ -139,7 +139,7 @@ class AuditPage
         $current_title = get_post_meta($post_id, '_teksttv_title', true);
         $current_body = get_post_meta($post_id, '_teksttv_content', true);
 
-        echo '<div class="wrap">';
+        echo '<div class="wrap teksttv-admin">';
         echo '<h1>AI Audit: ' . esc_html($post->post_title) . '</h1>';
         echo '<p>';
         echo '<a href="' . esc_url(admin_url('admin.php?page=teksttv-audit')) . '">&larr; ' . esc_html('Terug naar overzicht') . '</a>';
@@ -148,8 +148,8 @@ class AuditPage
         echo '</p>';
 
         ?>
-        <div class="teksttv-tab-content">
-            <div class="teksttv-card">
+        <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
+            <div class="teksttv-panel teksttv-card">
                 <h3><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
                 <?php
                 $title_diff = self::render_diff($ai_title ?: '', $current_title ?: '', $split);
@@ -162,7 +162,7 @@ class AuditPage
                 ?>
             </div>
 
-            <div class="teksttv-card">
+            <div class="teksttv-panel teksttv-card">
                 <h3><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
                 <?php
                 $body_diff = self::render_diff(

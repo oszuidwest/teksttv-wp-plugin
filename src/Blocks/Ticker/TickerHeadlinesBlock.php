@@ -33,12 +33,12 @@ final class TickerHeadlinesBlock
         $item_prefix = $item['prefix'] ?? '';
 
         ?>
-        <div class="teksttv-block-fields">
-            <div class="teksttv-block-field">
+        <div class="teksttv-field-grid">
+            <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Aantal'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="20" class="small-text" data-summary="%sx" />
             </div>
-            <div class="teksttv-block-field">
+            <div class="teksttv-field teksttv-field--text">
                 <label><?php echo esc_html('Prefix'); ?></label>
                 <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][prefix]" value="<?php echo esc_attr((string) $item_prefix); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Nieuws:'); ?>" />
             </div>

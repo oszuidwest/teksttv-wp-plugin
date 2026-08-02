@@ -3,14 +3,27 @@
 }
 
 .teksttv-tab-intro {
-    max-width: 800px;
+    width: 100%;
     margin-bottom: 20px;
     color: #50575e;
 }
 
 .teksttv-channels-table {
-    max-width: 800px;
+    width: 100%;
     border-collapse: collapse;
+}
+
+.teksttv-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.teksttv-table-scroll--channels .teksttv-channels-table {
+    min-width: 560px;
+}
+
+.teksttv-table-scroll--groups .teksttv-channels-table {
+    min-width: 360px;
 }
 
 .teksttv-channels-table th {
@@ -46,11 +59,10 @@
     align-items: center;
     gap: 12px;
     margin-top: 12px;
-    max-width: 800px;
 }
 
 .teksttv-settings-form {
-    max-width: 800px;
+    width: 100%;
 }
 
 .teksttv-settings-form .form-table th {

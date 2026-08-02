@@ -1,5 +1,5 @@
 .teksttv-loop-header {
-    max-width: 800px;
+    width: 100%;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
@@ -36,13 +36,14 @@
 }
 
 .teksttv-blocks {
-    max-width: 800px;
+    width: 100%;
+}
+
+.teksttv-campaign-groups {
+    margin-bottom: 24px;
 }
 
 .teksttv-block {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
     margin-bottom: 12px;
     transition: box-shadow 0.15s ease;
 }
@@ -140,14 +141,39 @@
     padding: 14px;
 }
 
-.teksttv-block-body .teksttv-block-fields {
-    display: flex;
-    flex-wrap: wrap;
+.teksttv-block-body .teksttv-field-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 12px 16px;
     align-items: flex-end;
 }
 
-.teksttv-block-body .teksttv-block-field > label {
+.teksttv-block-body .teksttv-field {
+    grid-column: span 3;
+    min-width: 0;
+}
+
+.teksttv-block-body .teksttv-field--primary {
+    grid-column: span 6;
+}
+
+.teksttv-block-body .teksttv-field--text {
+    grid-column: span 5;
+}
+
+.teksttv-block-body .teksttv-field--choice {
+    grid-column: span 4;
+}
+
+.teksttv-block-body .teksttv-field--compact {
+    grid-column: span 2;
+}
+
+.teksttv-block-body .teksttv-field--full {
+    grid-column: 1 / -1;
+}
+
+.teksttv-block-body .teksttv-field > label {
     display: block;
     font-size: 12px;
     font-weight: 500;
@@ -155,28 +181,25 @@
     margin-bottom: 4px;
 }
 
-.teksttv-block-body .teksttv-block-field select,
-.teksttv-block-body .teksttv-block-field input:not([type="checkbox"]):not([type="hidden"]) {
+.teksttv-block-body .teksttv-field select,
+.teksttv-block-body .teksttv-field input:not([type="checkbox"]):not([type="hidden"]) {
     min-width: 100px;
 }
 
-.teksttv-block-body .teksttv-block-field-wide {
-    flex-basis: 100%;
-}
-
-.teksttv-block-body .teksttv-block-field-wide input[type="url"] {
+.teksttv-block-body .teksttv-field input:is([type="text"], [type="url"], [type="date"]),
+.teksttv-block-body .teksttv-field select {
     width: 100%;
-    max-width: 480px;
+    max-width: 100%;
 }
 
 /* Tom Select overrides — match WP admin input styling */
-.teksttv-block-field .ts-wrapper {
-    min-width: 200px;
-    width: 240px;
+.teksttv-field .ts-wrapper {
+    min-width: 0;
+    width: 100%;
     font-size: 13px;
 }
 
-.teksttv-block-field .ts-wrapper .ts-control {
+.teksttv-field .ts-wrapper .ts-control {
     border: 1px solid #8c8f94;
     border-radius: 4px;
     min-height: 30px;
@@ -190,13 +213,13 @@
     flex-wrap: wrap;
 }
 
-.teksttv-block-field .ts-wrapper.focus .ts-control {
+.teksttv-field .ts-wrapper.focus .ts-control {
     border-color: #2271b1;
     box-shadow: 0 0 0 1px #2271b1;
     outline: none;
 }
 
-.teksttv-block-field .ts-wrapper .ts-control .item {
+.teksttv-field .ts-wrapper .ts-control .item {
     padding: 2px 6px;
     margin: 2px;
     font-size: 12px;
@@ -206,32 +229,32 @@
     border: none;
 }
 
-.teksttv-block-field .ts-wrapper .ts-control .item .remove {
+.teksttv-field .ts-wrapper .ts-control .item .remove {
     color: rgba(255, 255, 255, 0.7);
     border-left-color: rgba(255, 255, 255, 0.3);
 }
 
-.teksttv-block-field .ts-wrapper .ts-control .item .remove:hover {
+.teksttv-field .ts-wrapper .ts-control .item .remove:hover {
     color: #fff;
 }
 
-.teksttv-block-field .ts-wrapper .ts-control input {
+.teksttv-field .ts-wrapper .ts-control input {
     font-size: 13px;
 }
 
-.teksttv-block-field .ts-wrapper .ts-dropdown {
+.teksttv-field .ts-wrapper .ts-dropdown {
     border: 1px solid #8c8f94;
     border-top: 0;
     border-radius: 0 0 4px 4px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-.teksttv-block-field .ts-wrapper .ts-dropdown .option {
+.teksttv-field .ts-wrapper .ts-dropdown .option {
     padding: 6px 10px;
     font-size: 13px;
 }
 
-.teksttv-block-field .ts-wrapper .ts-dropdown .active {
+.teksttv-field .ts-wrapper .ts-dropdown .active {
     background: #f0f6fc;
     color: #1d2327;
 }
@@ -373,7 +396,7 @@
 }
 
 .teksttv-add-block-bar {
-    max-width: 800px;
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -441,4 +464,10 @@
     margin-right: 2px;
     vertical-align: text-bottom;
     line-height: 1.4;
+}
+
+@media (max-width: 782px) {
+    .teksttv-block-body .teksttv-field {
+        grid-column: 1 / -1;
+    }
 }
