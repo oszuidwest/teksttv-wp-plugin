@@ -30,7 +30,25 @@
 }
 
 .teksttv-audit-table {
-    max-width: 900px;
+    width: 100%;
+}
+
+.teksttv-audit-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 8px;
+}
+
+.teksttv-audit-filters label {
+    display: grid;
+    gap: 4px;
+}
+
+.teksttv-audit-change {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 .teksttv-audit-badge {

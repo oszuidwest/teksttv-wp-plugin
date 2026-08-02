@@ -11,12 +11,12 @@ test.describe('AI audit statistics', () => {
         const output = runEvalFile('audit-stats.php');
         expect(output).toContain('audit-stats-ok count=52');
 
-        // 52 posts (one private, visible to the admin session), 1 of 52 bodies
-        // edited: round(1 / 52 * 100) = 2%.
+        // The 52 AI posts plus 12 active human-written fixture posts are all
+        // included. One of 64 bodies is edited: round(1 / 64 * 100) = 2%.
         const assertStats = async () => {
             const cards = page.locator('.teksttv-audit-stat-number');
             await expect(cards).toHaveCount(4);
-            await expect(cards.nth(0)).toHaveText('52');
+            await expect(cards.nth(0)).toHaveText('64');
             await expect(cards.nth(1)).toHaveText('0%');
             await expect(cards.nth(2)).toHaveText('2%');
             await expect(cards.nth(3)).toHaveText('2%');
@@ -28,6 +28,20 @@ test.describe('AI audit statistics', () => {
 
         await page.goto('/wp-admin/admin.php?page=teksttv-audit&paged=2');
         await assertStats();
-        await expect(page.locator('.teksttv-audit-table tbody tr')).toHaveCount(2);
+        await expect(page.locator('.teksttv-audit-table tbody tr')).toHaveCount(14);
+
+        await page.goto('/wp-admin/admin.php?page=teksttv-audit&generation_status=human');
+        await expect(page.locator('.teksttv-audit-table tbody tr')).toHaveCount(12);
+        await expect(page.locator('.teksttv-audit-table tbody tr').first()).toContainText('Geen AI');
+
+        await page.goto('/wp-admin/admin.php?page=teksttv-audit&generation_status=ai_edited&change_band=extensive');
+        await expect(page.locator('.teksttv-audit-table tbody tr')).toHaveCount(1);
+        await expect(page.locator('.teksttv-audit-table tbody tr').first()).toContainText('100%');
+        await expect(page.locator('.teksttv-audit-table tbody tr').first()).toContainText('admin');
+
+        await page.goto('/wp-admin/admin.php?page=teksttv-audit&month=2026-08&generation_status=ai_unmodified');
+        const nextPage = page.locator('.next.page-numbers');
+        await expect(nextPage).toHaveAttribute('href', /month=2026-08/);
+        await expect(nextPage).toHaveAttribute('href', /generation_status=ai_unmodified/);
     });
 });

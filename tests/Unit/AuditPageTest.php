@@ -34,6 +34,52 @@ class AuditPageTest extends TestCase
         $this->assertSame('modified', $result);
     }
 
+    public function test_compare_ignores_html_whitespace_and_body_region_prefixes(): void
+    {
+        $this->assertSame('unmodified', AuditPage::compare('<p>AI <strong>tekst</strong></p>', ' AI tekst '));
+        $this->assertSame(
+            'unmodified',
+            AuditPage::compare('<p>LEIDEN - Dezelfde tekst</p>', '<div>DEN HAAG - Dezelfde tekst</div>', true)
+        );
+    }
+
+    public function test_change_percentage_uses_documented_word_edit_distance(): void
+    {
+        $this->assertSame(0.0, AuditPage::change_percentage('<p>een twee drie vier</p>', 'een  twee drie vier'));
+        $this->assertSame(25.0, AuditPage::change_percentage('een twee drie vier', 'een twee ander vier'));
+        $this->assertSame(20.0, AuditPage::change_percentage('een twee drie vier', 'een twee drie vier vijf'));
+        $this->assertSame(0.0, AuditPage::change_percentage('LEIDEN - een twee', 'DEN HAAG - een twee', true));
+    }
+
+    public function test_generation_status_classifies_human_and_partial_ai_posts(): void
+    {
+        $this->assertSame('human', AuditPage::classify_generation_status('no_ai', 'no_ai'));
+        $this->assertSame('ai_unmodified', AuditPage::classify_generation_status('unmodified', 'no_ai'));
+        $this->assertSame('ai_edited', AuditPage::classify_generation_status('no_ai', 'modified'));
+    }
+
+    public function test_filters_accept_only_documented_values(): void
+    {
+        $this->assertSame([
+            'month' => '2026-08',
+            'generation_status' => 'ai_edited',
+            'change_band' => 'substantial',
+        ], AuditPage::sanitize_filters([
+            'month' => '2026-08',
+            'generation_status' => 'ai_edited',
+            'change_band' => 'substantial',
+        ]));
+        $this->assertSame([
+            'month' => '',
+            'generation_status' => '',
+            'change_band' => '',
+        ], AuditPage::sanitize_filters([
+            'month' => '2026-13',
+            'generation_status' => 'forged',
+            'change_band' => 'all-of-it',
+        ]));
+    }
+
     public function test_compare_returns_no_ai_when_both_empty(): void
     {
         $result = AuditPage::compare('', '');
