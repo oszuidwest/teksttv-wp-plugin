@@ -7,14 +7,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 source "$ROOT/bin/package-lib.sh"
 
 validate_plugin_version "$ROOT/teksttv.php" >/dev/null
-printf 'PASS: matching production versions\n'
+printf 'PASS: valid production version header\n'
 
 FIXTURE="$(mktemp "${TMPDIR:-/tmp}/teksttv-version-test.XXXXXX")"
 trap 'rm -f -- "$FIXTURE"' EXIT
 
-sed 's/^\( \* Version:\).*/\1 9.9.9/' "$ROOT/teksttv.php" > "$FIXTURE"
+sed 's/^\( \* Version:\).*/\1 invalid/' "$ROOT/teksttv.php" > "$FIXTURE"
 if (validate_plugin_version "$FIXTURE" >/dev/null 2>&1); then
-    echo "FAIL: mismatched production versions were accepted" >&2
+    echo "FAIL: invalid production version was accepted" >&2
     exit 1
 fi
-printf 'PASS: mismatched production versions are rejected\n'
+printf 'PASS: invalid production version is rejected\n'

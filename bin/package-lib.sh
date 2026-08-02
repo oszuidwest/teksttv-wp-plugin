@@ -6,7 +6,7 @@
 
 SLUG="teksttv"
 
-# Accepted release version shape; both version readers validate against it.
+# Accepted release version shape.
 VERSION_RE='^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$'
 
 # Tracked production sources copied into the package.
@@ -55,25 +55,6 @@ read_plugin_version() {
     echo "$version"
 }
 
-read_plugin_runtime_version() {
-    local main_file="$1" version
-    version="$(
-        sed -nE \
-            "s/^[[:space:]]*define\\([[:space:]]*['\"]TEKSTTV_VERSION['\"][[:space:]]*,[[:space:]]*['\"]([^'\"]+)['\"][[:space:]]*\\);[[:space:]]*$/\\1/p" \
-            "$main_file"
-    )"
-    if [[ ! "$version" =~ $VERSION_RE ]]; then
-        fail "Invalid or missing TEKSTTV_VERSION declaration in $main_file: '$version'."
-    fi
-    echo "$version"
-}
-
 validate_plugin_version() {
-    local main_file="$1" header_version runtime_version
-    header_version="$(read_plugin_version "$main_file")" || return
-    runtime_version="$(read_plugin_runtime_version "$main_file")" || return
-    if [[ "$header_version" != "$runtime_version" ]]; then
-        fail "Version header '$header_version' does not match TEKSTTV_VERSION '$runtime_version' in $main_file."
-    fi
-    echo "$header_version"
+    read_plugin_version "$1"
 }
