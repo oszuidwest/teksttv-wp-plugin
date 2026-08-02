@@ -283,6 +283,7 @@ class AdminPage
                 'region_taxonomy',
                 'provider',
                 'model',
+                'custom_model',
                 'temperature',
                 'top_p',
                 'max_tokens',
@@ -298,6 +299,7 @@ class AdminPage
             'region_taxonomy' => sanitize_key($merged['region_taxonomy'] ?? ''),
             'provider' => sanitize_key($merged['provider'] ?? ''),
             'model' => sanitize_text_field($merged['model'] ?? ''),
+            'custom_model' => sanitize_text_field($merged['custom_model'] ?? ''),
         ], Helpers::normalize_ai_prompt_limits($merged));
     }
 

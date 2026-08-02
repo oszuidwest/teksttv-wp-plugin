@@ -65,6 +65,8 @@ If you need a different distribution, use a capability plugin.
 - Campaigns: campaign blocks and groups used in the loop.
 - Content & AI / AI Audit, when AI generation is enabled: prompts and audit log. Uses WordPress AI when available (`wp_supports_ai()`).
 
+Discovered AI models are the recommended configuration path. Administrators can optionally select a provider and enter an advanced custom model ID (for example a fine-tuned model). Support is provider-specific: the selected provider must accept that ID, and provider model deprecations still apply.
+
 If no channels are stored, `tv1` is assumed.
 
 ## REST API

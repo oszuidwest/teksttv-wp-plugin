@@ -28,6 +28,10 @@ class AiGenerator
             return false;
         }
 
+        if ($config['custom_model'] !== '' && $config['provider'] === '') {
+            return false;
+        }
+
         try {
             $builder = self::configure_prompt_builder('Capability check', $config['system'], $config);
 
@@ -300,8 +304,11 @@ class AiGenerator
         }
 
         $model_setting = $config['model'];
+        $custom_model = $config['custom_model'];
         $provider_setting = $config['provider'];
-        if (!empty($model_setting) && str_contains($model_setting, '/')) {
+        if ($custom_model !== '' && $provider_setting !== '') {
+            $builder = $builder->using_model_preference([$provider_setting, $custom_model]);
+        } elseif (!empty($model_setting) && str_contains($model_setting, '/')) {
             [$provider_id, $model_id] = explode('/', $model_setting, 2);
             $builder = $builder->using_model_preference([$provider_id, $model_id]);
         } elseif (!empty($provider_setting)) {

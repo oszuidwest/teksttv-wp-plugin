@@ -516,6 +516,7 @@ class HelpersTest extends TestCase
                 'max_retries' => 5,
                 'temperature' => 0.7,
                 'model' => 'anthropic/claude-3',
+                'custom_model' => 'claude-custom-2026-08',
             ]);
 
         $result = Helpers::get_ai_prompts();
@@ -526,6 +527,7 @@ class HelpersTest extends TestCase
         $this->assertSame(5, $result['max_retries']);
         $this->assertSame(0.7, $result['temperature']);
         $this->assertSame('anthropic/claude-3', $result['model']);
+        $this->assertSame('claude-custom-2026-08', $result['custom_model']);
     }
 
     public function test_get_ai_prompts_clamps_legacy_generation_limits(): void

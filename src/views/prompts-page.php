@@ -2,7 +2,7 @@
 /**
  * Content & AI settings page template.
  *
- * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int} $prompts
+ * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, custom_model: string, temperature: string|float, top_p: string|float, max_tokens: int} $prompts
  * @var list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
  * @var array<string, array{label: string, models: array<string, string>}> $ai_models
  */
@@ -126,13 +126,15 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
 
         <div class="teksttv-card">
             <h3><?php echo esc_html('Technisch'); ?></h3>
-            <?php if (!empty($ai_models)) : ?>
             <table class="form-table teksttv-form-table">
                 <tr>
                     <th scope="row"><label for="teksttv_ai_provider"><?php echo esc_html('Provider'); ?></label></th>
                     <td>
                         <select id="teksttv_ai_provider" name="teksttv_ai_prompts[provider]">
                             <option value=""><?php echo esc_html('Automatisch'); ?></option>
+                            <?php if ($prompts['provider'] !== '' && !isset($ai_models[$prompts['provider']])) : ?>
+                                <option value="<?php echo esc_attr($prompts['provider']); ?>" selected><?php echo esc_html($prompts['provider'] . ' (opgeslagen)'); ?></option>
+                            <?php endif; ?>
                             <?php foreach ($ai_models as $provider_id => $provider_data) : ?>
                                 <option value="<?php echo esc_attr($provider_id); ?>" <?php selected($prompts['provider'], $provider_id); ?>><?php echo esc_html($provider_data['label']); ?></option>
                             <?php endforeach; ?>
@@ -157,8 +159,15 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
                         <p class="description"><?php echo esc_html('Forceer een specifiek model. Overschrijft de provider-keuze hierboven.'); ?></p>
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row"><label for="teksttv_ai_custom_model"><?php echo esc_html('Aangepast model-ID'); ?></label></th>
+                    <td>
+                        <input type="text" id="teksttv_ai_custom_model" name="teksttv_ai_prompts[custom_model]" value="<?php echo esc_attr($prompts['custom_model']); ?>" class="regular-text" autocomplete="off" />
+                        <p class="description"><strong><?php echo esc_html('Geavanceerd:'); ?></strong> <?php echo esc_html('provider-specifiek model-ID. Vereist een expliciete provider en overschrijft het aanbevolen model hierboven.'); ?></p>
+                    </td>
+                </tr>
             </table>
-            <?php else : ?>
+            <?php if (empty($ai_models)) : ?>
             <p class="description"><?php echo wp_kses(sprintf('Geen AI-providers beschikbaar. Configureer een provider via <a href="%s">WordPress Connectors</a>.', esc_url(admin_url('options-connectors.php'))), ['a' => ['href' => []]]); ?></p>
             <?php endif; ?>
             <h4><?php echo esc_html('Model parameters'); ?></h4>

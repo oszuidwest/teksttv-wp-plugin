@@ -34,6 +34,7 @@ class AiGeneratorTest extends TestCase
             'region_taxonomy' => '',
             'provider' => '',
             'model' => '',
+            'custom_model' => '',
             'temperature' => '',
             'top_p' => '',
             'max_tokens' => 2048,
@@ -77,6 +78,34 @@ class AiGeneratorTest extends TestCase
             'top_p' => 0.8,
             'max_tokens' => 4096,
             'model' => 'anthropic/claude-sonnet',
+        ])));
+    }
+
+    public function test_support_check_uses_custom_model_with_selected_provider(): void
+    {
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+
+        $builder = self::mockAiBuilder();
+        $builder->shouldReceive('using_model_preference')
+            ->with(['openai', 'ft:gpt-5:newsroom'])
+            ->once()
+            ->andReturnSelf();
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn($builder);
+
+        $this->assertTrue(AiGenerator::supports_text_generation(self::aiConfig([
+            'provider' => 'openai',
+            'model' => 'openai/gpt-5',
+            'custom_model' => 'ft:gpt-5:newsroom',
+        ])));
+    }
+
+    public function test_support_check_rejects_custom_model_without_provider(): void
+    {
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+        Functions\expect('wp_ai_client_prompt')->never();
+
+        $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig([
+            'custom_model' => 'provider-specific-model',
         ])));
     }
 

@@ -119,6 +119,26 @@ class RestApiTest extends TestCase
         $this->assertSame('teksttv_ai_unavailable', $response->get_error_code());
     }
 
+    public function test_generate_content_explains_custom_model_capability_failure(): void
+    {
+        self::stubOptions(['teksttv_ai_prompts' => [
+            'provider' => 'openai',
+            'custom_model' => 'ft:retired-model',
+        ]]);
+        Functions\when('wp_supports_ai')->justReturn(true);
+        $builder = self::mockUnsupportedAiBuilder();
+        $builder->shouldReceive('using_model_preference')
+            ->with(['openai', 'ft:retired-model'])
+            ->once()
+            ->andReturnSelf();
+        Functions\when('wp_ai_client_prompt')->justReturn($builder);
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'body']));
+
+        $this->assertErrorStatus(503, $response);
+        $this->assertStringContainsString('aangepaste AI-model', $response->get_error_message());
+    }
+
     public function test_generate_content_returns_403_without_edit_post_and_skips_rate_limit(): void
     {
         self::stubOptions();

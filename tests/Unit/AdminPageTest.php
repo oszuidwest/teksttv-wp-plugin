@@ -127,6 +127,7 @@ class AdminPageTest extends TestCase
         $stored = [
             'provider' => 'openai',
             'model' => 'openai/gpt-5',
+            'custom_model' => 'ft:gpt-5:newsroom',
             'region_taxonomy' => 'regio',
             'temperature' => 0.7,
             'top_p' => 0.9,
@@ -148,6 +149,7 @@ class AdminPageTest extends TestCase
         // ...omitted technical/region fields keep their stored values.
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
+        $this->assertSame('ft:gpt-5:newsroom', $result['custom_model']);
         $this->assertSame('regio', $result['region_taxonomy']);
         $this->assertSame(0.7, $result['temperature']);
         $this->assertSame(4096, $result['max_tokens']);
@@ -162,6 +164,7 @@ class AdminPageTest extends TestCase
             'region_taxonomy' => 'regio',
             'provider' => 'openai',
             'model' => 'openai/gpt-5',
+            'custom_model' => 'ft:gpt-5:newsroom',
             'temperature' => 0.7,
             'top_p' => 0.9,
             'max_tokens' => 4096,
@@ -174,6 +177,7 @@ class AdminPageTest extends TestCase
             'region_taxonomy' => 'verborgen-regio',
             'provider' => 'other-provider',
             'model' => 'other-provider/expensive-model',
+            'custom_model' => 'forged-model',
             'temperature' => 2,
             'top_p' => 0,
             'max_tokens' => 8192,
@@ -183,6 +187,7 @@ class AdminPageTest extends TestCase
         $this->assertSame('regio', $result['region_taxonomy']);
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
+        $this->assertSame('ft:gpt-5:newsroom', $result['custom_model']);
         $this->assertSame(0.7, $result['temperature']);
         $this->assertSame(0.9, $result['top_p']);
         $this->assertSame(4096, $result['max_tokens']);
@@ -198,6 +203,7 @@ class AdminPageTest extends TestCase
             'region_taxonomy' => 'regio',
             'provider' => 'openai',
             'model' => 'openai/gpt-5',
+            'custom_model' => 'ft:gpt-5:newsroom',
             'temperature' => 0.7,
             'top_p' => 0.9,
             'max_tokens' => 4096,
@@ -206,6 +212,7 @@ class AdminPageTest extends TestCase
         $this->assertSame('regio', $result['region_taxonomy']);
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
+        $this->assertSame('ft:gpt-5:newsroom', $result['custom_model']);
         $this->assertSame(0.7, $result['temperature']);
         $this->assertSame(0.9, $result['top_p']);
         $this->assertSame(4096, $result['max_tokens']);
