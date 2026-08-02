@@ -6,7 +6,6 @@ import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postM
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
-import { bindTeksttvEditorChanges } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
 import { updatePreviewThumbnails } from './postMeta/previewThumbnails';
@@ -64,13 +63,16 @@ export function createPostMetaPage() {
         }
 
         container?.classList.remove('is-empty');
+        const newSrc = previewSlideUrl(previewUrl, slides[currentSlideIndex]);
+        if (iframe.getAttribute('src') === newSrc) return;
+
         container?.classList.add('is-loading');
         if (iframeLoadHandler) {
             iframe.removeEventListener('load', iframeLoadHandler);
         }
         iframeLoadHandler = () => container?.classList.remove('is-loading');
         iframe.addEventListener('load', iframeLoadHandler, { once: true });
-        iframe.setAttribute('src', previewSlideUrl(previewUrl, slides[currentSlideIndex]));
+        iframe.setAttribute('src', newSrc);
     }, 400);
 
     const openExtraImages = createExtraImagesOpener(updatePreview);
@@ -115,7 +117,11 @@ export function createPostMetaPage() {
             updateTeksttvCharCount(config);
 
             if (typeof tinymce !== 'undefined') {
-                const bindEditor = (editor: WPTinyMCEEditor): void => bindTeksttvEditorChanges(editor, updatePreview);
+                const bindEditor = (editor: WPTinyMCEEditor): void => {
+                    // `updatePreview` debounces and also refreshes the word count.
+                    // `keyup` covers keystrokes TinyMCE handles without firing `input`.
+                    editor.on('input change keyup SetContent', updatePreview);
+                };
                 const existing = tinymce.get('teksttv_content');
                 if (existing) bindEditor(existing);
                 tinymce.on('AddEditor', (e) => {
