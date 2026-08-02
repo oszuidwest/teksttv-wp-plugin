@@ -2,7 +2,11 @@ import Sortable from 'sortablejs';
 import { hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
 import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
-import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
+import {
+    getAutomaticAiGeneration,
+    requestAiGeneration,
+    teksttvHasExistingGeneratedContent,
+} from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
@@ -140,19 +144,20 @@ export function createPostMetaPage() {
                         if (teksttvHasExistingGeneratedContent()) return;
 
                         window.setTimeout(() => {
-                            if (window.confirm('Wil je automatisch een kop en tekst genereren?')) {
-                                const bothBtn = document.querySelector<HTMLButtonElement>(
-                                    '.teksttv-generate-btn[data-field="both"]',
+                            const generateBtn = document.querySelector<HTMLButtonElement>(
+                                '.teksttv-ai-section .teksttv-generate-btn',
+                            );
+                            if (!generateBtn) return;
+
+                            const generation = getAutomaticAiGeneration(generateBtn.dataset.field);
+                            if (window.confirm(generation.confirmation)) {
+                                requestAiGeneration(
+                                    config,
+                                    generateBtn,
+                                    generation.field,
+                                    hasSidebarPhoto(config, customImageData),
+                                    updatePreview,
                                 );
-                                if (bothBtn) {
-                                    requestAiGeneration(
-                                        config,
-                                        bothBtn,
-                                        'both',
-                                        hasSidebarPhoto(config, customImageData),
-                                        updatePreview,
-                                    );
-                                }
                             }
                         }, 300);
                     });
