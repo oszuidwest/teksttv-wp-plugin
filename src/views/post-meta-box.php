@@ -27,9 +27,6 @@ defined('ABSPATH') || exit;
             <span class="dashicons dashicons-desktop"></span>
             <?php echo esc_html('Toon op Tekst TV'); ?>
         </label>
-        <span class="teksttv-toggle-status <?php echo $active === '1' ? 'is-active' : ''; ?>" id="teksttv-toggle-status">
-            <?php echo $active === '1' ? esc_html('Actief') : esc_html('Inactief'); ?>
-        </span>
     </div>
 
     <div class="teksttv-fields" id="teksttv-fields">
@@ -175,7 +172,7 @@ defined('ABSPATH') || exit;
 
                 <?php if (Helpers::has_feature('scheduling')) : ?>
                 <!-- Scheduling -->
-                <div class="teksttv-meta-section teksttv-collapsible" x-data="{ planOpen: false }">
+                <div class="teksttv-meta-section teksttv-collapsible" x-data="{ planOpen: false }" :class="{ 'is-open': planOpen }">
                     <button type="button" class="teksttv-collapsible-toggle" @click.prevent="planOpen = !planOpen" :aria-expanded="planOpen">
                         <span class="teksttv-section-label"><?php echo esc_html('Planning'); ?></span>
                         <span class="dashicons dashicons-arrow-down-alt2 teksttv-collapsible-icon"></span>

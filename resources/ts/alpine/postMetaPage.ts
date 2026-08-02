@@ -90,9 +90,8 @@ export function createPostMetaPage() {
         init(): void {
             const activeInput = document.querySelector<HTMLInputElement>('#teksttv-active');
             const fields = document.querySelector<HTMLElement>('#teksttv-fields');
-            const status = document.querySelector('#teksttv-toggle-status');
 
-            if (!(activeInput && fields && status)) return;
+            if (!(activeInput && fields)) return;
 
             if (activeInput.checked) {
                 show(fields);
@@ -165,17 +164,12 @@ export function createPostMetaPage() {
         onActiveChange(): void {
             const activeInput = document.querySelector<HTMLInputElement>('#teksttv-active');
             const fields = document.querySelector<HTMLElement>('#teksttv-fields');
-            const status = document.querySelector('#teksttv-toggle-status');
-            if (!(activeInput && fields && status)) return;
+            if (!(activeInput && fields)) return;
             const isChecked = activeInput.checked;
             if (isChecked) {
                 slideDown(fields, 200);
-                status.textContent = 'Actief';
-                status.classList.add('is-active');
             } else {
                 slideUp(fields, 200);
-                status.textContent = 'Inactief';
-                status.classList.remove('is-active');
             }
         },
 
