@@ -3,6 +3,8 @@ import type { TeksttvPostConfig } from '../../modules/types';
 import { stripTags } from '../../modules/utils';
 import { getTeksttvEditorHtml } from './editorContent';
 
+export const AI_SOURCE_BADGE_HTML = '<span class="dashicons dashicons-admin-generic"></span> AI-bron opgeslagen';
+
 export function teksttvHasExistingGeneratedContent(): boolean {
     const title = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
     const body = stripTags(getTeksttvEditorHtml()).trim();
@@ -106,7 +108,7 @@ export function requestAiGeneration(
                 const span = document.createElement('span');
                 span.className = 'teksttv-ai-badge';
                 span.id = 'teksttv-ai-badge';
-                span.innerHTML = '<span class="dashicons dashicons-admin-generic"></span> AI gegenereerd';
+                span.innerHTML = AI_SOURCE_BADGE_HTML;
                 statusEl.insertAdjacentElement('afterend', span);
                 badge = span;
             }
