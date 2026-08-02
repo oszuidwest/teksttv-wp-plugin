@@ -28,16 +28,9 @@ update_option('teksttv_features', [
     'ai_generate',
 ]);
 
+// Only the protected fields, seeded with sentinels distinguishable from the
+// plugin defaults; role.spec.ts asserts a content editor cannot overwrite them.
 update_option('teksttv_ai_prompts', [
-    'system' => 'E2E systeeminstructie',
-    'prompt_title' => 'E2E kopprompt',
-    'prompt_body' => 'E2E tekstprompt',
-    'word_limit' => 80,
-    'word_limit_photo' => 50,
-    'title_char_limit' => 45,
-    'min_input_words' => 10,
-    'max_retries' => 2,
-    'rate_limit' => 10,
     'region_taxonomy' => 'category',
     'provider' => 'protected-provider',
     'model' => 'protected-provider/protected-model',
@@ -70,9 +63,10 @@ $teksttv_attachments = get_posts([
     'meta_value' => '1',
 ]);
 
-if ($teksttv_attachments) {
-    $teksttv_attachment_id = (int) $teksttv_attachments[0]->ID;
-} else {
+$teksttv_attachment_id = $teksttv_attachments ? (int) $teksttv_attachments[0]->ID : 0;
+$teksttv_attachment_file = $teksttv_attachment_id ? get_attached_file($teksttv_attachment_id) : false;
+
+if (!$teksttv_attachment_file || !is_file($teksttv_attachment_file)) {
     $teksttv_png = base64_decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
         true
@@ -86,13 +80,18 @@ if ($teksttv_attachments) {
         throw new RuntimeException('Could not upload the E2E image fixture: ' . $teksttv_upload['error']);
     }
 
-    $teksttv_attachment_id = wp_insert_attachment([
-        'post_mime_type' => 'image/png',
-        'post_title' => 'TekstTV E2E Image',
-        'post_status' => 'inherit',
-    ], $teksttv_upload['file'], 0, true);
-    if (is_wp_error($teksttv_attachment_id) || $teksttv_attachment_id <= 0) {
-        throw new RuntimeException('Could not create the E2E image attachment.');
+    if ($teksttv_attachment_id) {
+        update_attached_file($teksttv_attachment_id, $teksttv_upload['file']);
+    } else {
+        $teksttv_attachment_id = wp_insert_attachment([
+            'post_mime_type' => 'image/png',
+            'post_title' => 'TekstTV E2E Image',
+            'post_status' => 'inherit',
+        ], $teksttv_upload['file'], 0, true);
+        if (is_wp_error($teksttv_attachment_id) || $teksttv_attachment_id <= 0) {
+            throw new RuntimeException('Could not create the E2E image attachment.');
+        }
+        update_post_meta($teksttv_attachment_id, '_teksttv_e2e_fixture', '1');
     }
 
     require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -100,7 +99,6 @@ if ($teksttv_attachments) {
         $teksttv_attachment_id,
         wp_generate_attachment_metadata($teksttv_attachment_id, $teksttv_upload['file'])
     );
-    update_post_meta($teksttv_attachment_id, '_teksttv_e2e_fixture', '1');
 }
 
 // Seeded after the attachment so campaign alpha can carry a real slide: the
@@ -152,11 +150,7 @@ add_role('teksttv_content_role', 'TekstTV Content Role', [
 
 $teksttv_content_user = get_user_by('login', 'teksttv_content_editor');
 if (!$teksttv_content_user) {
-    $teksttv_content_uid = wp_create_user(
-        'teksttv_content_editor',
-        'password',
-        'teksttv_content_editor@example.test'
-    );
+    $teksttv_content_uid = wp_create_user('teksttv_content_editor', 'password', 'teksttv_content_editor@example.test');
     $teksttv_content_user = new WP_User($teksttv_content_uid);
 }
 $teksttv_content_user->set_role('teksttv_content_role');
