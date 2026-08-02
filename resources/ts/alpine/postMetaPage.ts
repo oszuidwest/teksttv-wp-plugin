@@ -2,11 +2,7 @@ import Sortable from 'sortablejs';
 import { hide, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
 import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
-import {
-    getAutomaticAiGeneration,
-    requestAiGeneration,
-    teksttvHasExistingGeneratedContent,
-} from './postMeta/aiGeneration';
+import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
@@ -149,12 +145,16 @@ export function createPostMetaPage() {
                             );
                             if (!generateBtn) return;
 
-                            const generation = getAutomaticAiGeneration(generateBtn.dataset.field);
-                            if (window.confirm(generation.confirmation)) {
+                            const field = generateBtn.dataset.field === 'both' ? 'both' : 'body';
+                            const confirmation =
+                                field === 'both'
+                                    ? 'Wil je automatisch een kop en tekst genereren?'
+                                    : 'Wil je automatisch tekst genereren?';
+                            if (window.confirm(confirmation)) {
                                 requestAiGeneration(
                                     config,
                                     generateBtn,
-                                    generation.field,
+                                    field,
                                     hasSidebarPhoto(config, customImageData),
                                     updatePreview,
                                 );

@@ -31,15 +31,6 @@ export function applyTeksttvBody(content: string): void {
 
 export type AiField = 'title' | 'body' | 'both';
 
-export function getAutomaticAiGeneration(field: string | undefined): {
-    field: 'body' | 'both';
-    confirmation: string;
-} {
-    return field === 'both'
-        ? { field, confirmation: 'Wil je automatisch een kop en tekst genereren?' }
-        : { field: 'body', confirmation: 'Wil je automatisch tekst genereren?' };
-}
-
 interface GenerateResponse {
     title?: string;
     body?: string;

@@ -122,6 +122,17 @@ class RestApi
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
 
+        // The view only offers body-only generation then, but stale editor tabs
+        // can still send title/both; without this gate that would persist an
+        // orphaned _teksttv_ai_title that skews the AI-audit page.
+        if ($field !== 'body' && !Helpers::has_feature('custom_title')) {
+            return new WP_Error(
+                'teksttv_custom_title_disabled',
+                'Kop-generatie is uitgeschakeld.',
+                ['status' => 403]
+            );
+        }
+
         $post = get_post($post_id);
         if (!$post) {
             return new WP_Error('teksttv_post_not_found', 'Post niet gevonden.', ['status' => 404]);
