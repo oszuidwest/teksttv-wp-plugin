@@ -88,8 +88,8 @@ class AuditPage
                         <?php foreach ($posts as $post_data) : ?>
                         <tr>
                             <td><strong><?php echo esc_html($post_data['title']); ?></strong></td>
-                            <td><?php echo self::render_status_badge($post_data['title_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
-                            <td><?php echo self::render_status_badge($post_data['body_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+                            <td><?php echo self::render_status_badge($post_data['title_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></td>
+                            <td><?php echo self::render_status_badge($post_data['body_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></td>
                             <td><?php echo esc_html($post_data['date']); ?></td>
                             <td><a href="<?php echo esc_url(admin_url('admin.php?page=teksttv-audit&post_id=' . $post_data['id'])); ?>" class="button button-small"><?php echo esc_html('Bekijk'); ?></a></td>
                         </tr>
@@ -101,14 +101,14 @@ class AuditPage
                     <div class="tablenav-pages">
                         <span class="displaying-num"><?php echo esc_html(sprintf('%d items', $total_posts)); ?></span>
                         <?php
-                        echo paginate_links([
+                        echo wp_kses_post((string) paginate_links([
                             'base' => add_query_arg('paged', '%#%'),
                             'format' => '',
                             'current' => $paged,
                             'total' => $total_pages,
                             'prev_text' => '&laquo;',
                             'next_text' => '&raquo;',
-                        ]);
+                        ]));
                         ?>
                     </div>
                 </div>
@@ -150,7 +150,7 @@ class AuditPage
         ?>
         <div class="teksttv-tab-content">
             <div class="teksttv-card">
-                <h3><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></h3>
+                <h3><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
                 <?php
                 $title_diff = self::render_diff($ai_title ?: '', $current_title ?: '', $split);
                 if ($title_diff) {
@@ -163,7 +163,7 @@ class AuditPage
             </div>
 
             <div class="teksttv-card">
-                <h3><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></h3>
+                <h3><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
                 <?php
                 $body_diff = self::render_diff(
                     wp_strip_all_tags($ai_body ?: ''),

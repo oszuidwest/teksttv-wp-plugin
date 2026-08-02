@@ -31,11 +31,7 @@
         </properties>
     </rule>
 
-    <rule ref="WordPress.Security">
-        <!-- We escape manually in templates; the sniff can't track variables through method calls -->
-        <exclude name="WordPress.Security.EscapeOutput.OutputNotEscaped"/>
-        <exclude name="WordPress.Security.EscapeOutput.ExceptionNotEscaped"/>
-    </rule>
+    <rule ref="WordPress.Security"/>
     <rule ref="WordPress.DB"/>
     <rule ref="WordPress.PHP">
         <exclude name="WordPress.PHP.YodaConditions"/>

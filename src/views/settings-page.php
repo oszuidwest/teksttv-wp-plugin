@@ -35,8 +35,8 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
                 <tbody>
                     <?php foreach ($channels as $i => $ch) : ?>
                     <tr class="teksttv-channel-row">
-                        <td><input type="text" name="teksttv_channels[<?php echo $i; ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" /></td>
-                        <td><input type="text" name="teksttv_channels[<?php echo $i; ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" /></td>
+                        <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" /></td>
+                        <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" /></td>
                         <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
                     </tr>
                     <?php endforeach; ?>

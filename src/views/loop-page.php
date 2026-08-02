@@ -15,8 +15,6 @@ namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
-// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- all output is escaped inline
-
 echo '<div class="wrap">';
 echo '<h1>' . esc_html($page_title) . '</h1>';
 settings_errors('teksttv');
