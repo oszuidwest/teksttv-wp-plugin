@@ -6,6 +6,7 @@ import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postM
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
+import { bindTeksttvEditorChanges } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
 import { updatePreviewThumbnails } from './postMeta/previewThumbnails';
@@ -114,10 +115,7 @@ export function createPostMetaPage() {
             updateTeksttvCharCount(config);
 
             if (typeof tinymce !== 'undefined') {
-                const bindEditor = (editor: WPTinyMCEEditor): void => {
-                    // `updatePreview` debounces and also refreshes the word count.
-                    editor.on('input change SetContent', updatePreview);
-                };
+                const bindEditor = (editor: WPTinyMCEEditor): void => bindTeksttvEditorChanges(editor, updatePreview);
                 const existing = tinymce.get('teksttv_content');
                 if (existing) bindEditor(existing);
                 tinymce.on('AddEditor', (e) => {
