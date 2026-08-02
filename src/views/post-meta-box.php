@@ -19,6 +19,8 @@ namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
+$has_custom_title = Helpers::has_feature('custom_title');
+
 ?>
 <div class="teksttv-meta-box" x-data="teksttvPostMetaPage">
     <div class="teksttv-toggle-bar">
@@ -38,7 +40,7 @@ defined('ABSPATH') || exit;
             <div class="teksttv-editor-main">
                 <?php if ($ai_enabled) : ?>
                 <div class="teksttv-meta-section teksttv-ai-section">
-                    <button type="button" class="button button-small teksttv-generate-btn" data-field="both" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html('Genereer kop & tekst'); ?></button>
+                    <button type="button" class="button button-small teksttv-generate-btn" data-field="<?php echo esc_attr($has_custom_title ? 'both' : 'body'); ?>" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html($has_custom_title ? 'Genereer kop & tekst' : 'Genereer tekst'); ?></button>
                     <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
                     <?php if (get_post_meta($post->ID, '_teksttv_ai_title', true) || get_post_meta($post->ID, '_teksttv_ai_body', true)) : ?>
                     <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> <?php echo esc_html('AI gegenereerd'); ?></span>
@@ -46,7 +48,7 @@ defined('ABSPATH') || exit;
                 </div>
                 <?php endif; ?>
 
-                <?php if (Helpers::has_feature('custom_title')) : ?>
+                <?php if ($has_custom_title) : ?>
                 <!-- Title override -->
                 <div class="teksttv-meta-section">
                     <div class="teksttv-section-header">

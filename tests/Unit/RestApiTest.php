@@ -31,7 +31,7 @@ class RestApiTest extends TestCase
                 return $overrides[$key];
             }
             return match ($key) {
-                'teksttv_features' => ['ai_generate'],
+                'teksttv_features' => ['ai_generate', 'custom_title'],
                 'teksttv_ai_prompts' => ['min_input_words' => 0, 'max_retries' => 1],
                 default => $default,
             };
@@ -183,6 +183,35 @@ class RestApiTest extends TestCase
 
         $this->assertSame(200, $response->get_status());
         $this->assertSame(['content' => 'Korte kop'], $response->get_data());
+    }
+
+    public function test_generate_content_returns_403_for_title_fields_when_custom_title_disabled(): void
+    {
+        self::stubHappyPath(['teksttv_features' => ['ai_generate']]);
+        Functions\expect('update_post_meta')->never();
+
+        foreach (['title', 'both'] as $field) {
+            $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => $field]));
+
+            $this->assertErrorStatus(403, $response);
+            $this->assertSame('teksttv_custom_title_disabled', $response->get_error_code());
+        }
+    }
+
+    public function test_generate_content_body_only_does_not_generate_a_title(): void
+    {
+        self::stubHappyPath(['teksttv_features' => ['ai_generate']]);
+        $body_text = implode(' ', array_fill(0, 50, 'woord'));
+        $body = '<p>' . $body_text . '</p>';
+
+        Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
+        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_body', $body);
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder($body_text));
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'body']));
+
+        $this->assertSame(200, $response->get_status());
+        $this->assertSame(['content' => $body], $response->get_data());
     }
 
     public function test_generate_content_both_returns_title_and_body_shape(): void
