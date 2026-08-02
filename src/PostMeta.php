@@ -9,16 +9,18 @@ class PostMeta
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
         add_action('save_post', [self::class, 'save_meta'], 10, 2);
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
-        add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
     }
 
     /**
      * @param array<string, string> $plugins
+     * @param string $editor_id
      * @return array<string, string>
      */
-    public static function register_tinymce_plugin(array $plugins): array
+    public static function register_tinymce_plugin(array $plugins, string $editor_id): array
     {
-        $plugins['teksttv_separator'] = TEKSTTV_PLUGIN_URL . 'assets/tinymce-separator.js';
+        if ($editor_id === 'teksttv_content') {
+            $plugins['teksttv_separator'] = TEKSTTV_PLUGIN_URL . 'assets/tinymce-separator.js';
+        }
         return $plugins;
     }
 
@@ -44,9 +46,18 @@ class PostMeta
             return;
         }
 
+        if (!current_user_can('edit_teksttv')) {
+            return;
+        }
+
         $screen = get_current_screen();
         if (!$screen || $screen->post_type !== 'post') {
             return;
+        }
+
+        $page_separator = Helpers::has_feature('page_separator');
+        if ($page_separator) {
+            add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin'], 10, 2);
         }
 
         Helpers::enqueue_admin_script();
@@ -95,7 +106,7 @@ class PostMeta
             'titleCharLimit' => $prompts['title_char_limit'],
             'wordLimit' => $prompts['word_limit'],
             'wordLimitPhoto' => $prompts['word_limit_photo'],
-            'pageSeparator' => Helpers::has_feature('page_separator'),
+            'pageSeparator' => $page_separator,
         ];
         wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');
     }
