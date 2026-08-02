@@ -95,8 +95,13 @@ class AiGenerator
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
      * @return array{fields: array<string, string>, warning: string}|\WP_Error
      */
-    public static function generate_for_post(\WP_Post $post, string $field, array $config, bool $has_photo = false)
-    {
+    public static function generate_for_post(
+        \WP_Post $post,
+        string $field,
+        array $config,
+        bool $has_photo = false,
+        string $correlation_id = ''
+    ) {
         if (!in_array($field, ['title', 'body', 'both'], true)) {
             return new \WP_Error(
                 'teksttv_invalid_field',
@@ -131,7 +136,14 @@ class AiGenerator
         $fields = [];
         $warnings = [];
         foreach ($field === 'both' ? ['title', 'body'] : [$field] as $current_field) {
-            $result = self::generate_single_field($current_field, $post_title, $post_text, $config, $has_photo);
+            $result = self::generate_single_field(
+                $current_field,
+                $post_title,
+                $post_text,
+                $config,
+                $has_photo,
+                $correlation_id
+            );
             if (is_wp_error($result)) {
                 return new \WP_Error(
                     'teksttv_generation_failed',
@@ -167,24 +179,49 @@ class AiGenerator
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
      * @return array{content: string, warning?: string}|\WP_Error
      */
-    public static function generate_single_field(string $field, string $post_title, string $post_text, array $config, bool $has_photo = false)
-    {
+    public static function generate_single_field(
+        string $field,
+        string $post_title,
+        string $post_text,
+        array $config,
+        bool $has_photo = false,
+        string $correlation_id = ''
+    ) {
         [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $config, $has_photo);
 
         $last_content = '';
         $warning = '';
 
         for ($attempt = 1; $attempt <= $config['max_retries']; $attempt++) {
+            $started_at = microtime(true);
             $result = self::call_ai($user_prompt, $system, $config);
+            $diagnostic = array_merge(AiDiagnostics::selected_model($config), [
+                'field' => $field,
+                'word_limit' => self::effective_word_limit($config, $has_photo),
+                'title_char_limit' => $config['title_char_limit'],
+                'min_input_words' => $config['min_input_words'],
+                'max_retries' => $config['max_retries'],
+                'attempt' => $attempt,
+                'duration_ms' => (int) round((microtime(true) - $started_at) * 1000),
+                'prompt' => $user_prompt,
+            ]);
 
             if (is_wp_error($result)) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log(sprintf('TekstTV AI generation error (field: %s, attempt %d): %s', $field, $attempt, $result->get_error_message()));
+                if (AiDiagnostics::enabled($config)) {
+                    $error_data = $result->get_error_data();
+                    $diagnostic['response_status'] = is_array($error_data) ? ($error_data['status'] ?? 500) : 500;
+                    $diagnostic['validation'] = 'provider_error';
+                    AiDiagnostics::log($config, 'attempt_finished', $correlation_id, $diagnostic);
+                }
                 return $result;
             }
 
             $last_content = trim($result);
+            $diagnostic['response_status'] = 200;
+            $diagnostic['generated_output'] = $last_content;
             if ($last_content === '') {
+                $diagnostic['validation'] = 'empty_output';
+                AiDiagnostics::log($config, 'attempt_finished', $correlation_id, $diagnostic);
                 // An empty response (exhausted tokens, provider content filter)
                 // must never pass as success: the title length check would
                 // accept it and the editor would see nothing happen.
@@ -200,6 +237,8 @@ class AiGenerator
             // A warning here means "retry if attempts remain"; the last loop
             // pass leaves it set so the editor sees why the output is off.
             $warning = self::validate_ai_output($field, $last_content, $config, $has_photo);
+            $diagnostic['validation'] = $warning === '' ? 'valid' : 'outside_limits';
+            AiDiagnostics::log($config, 'attempt_finished', $correlation_id, $diagnostic);
 
             if ($warning === '') {
                 break;

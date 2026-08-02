@@ -2,7 +2,7 @@
 /**
  * Content & AI settings page template.
  *
- * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int} $prompts
+ * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, diagnostics: bool, diagnostics_content: bool, temperature: string|float, top_p: string|float, max_tokens: int} $prompts
  * @var list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
  * @var array<string, array{label: string, models: array<string, string>}> $ai_models
  */
@@ -185,6 +185,13 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
                     </td>
                 </tr>
             </table>
+            <h4><?php echo esc_html('Diagnostiek'); ?></h4>
+            <fieldset>
+                <label><input type="checkbox" name="teksttv_ai_prompts[diagnostics]" value="1" <?php checked($prompts['diagnostics']); ?> /> <?php echo esc_html('Gestructureerde AI-diagnostiek inschakelen'); ?></label>
+                <p class="description"><?php echo esc_html('Uitgeschakeld tenzij een beheerder dit aanvinkt. Verzoekinhoud en AI-output blijven standaard afgeschermd.'); ?></p>
+                <label><input type="checkbox" name="teksttv_ai_prompts[diagnostics_content]" value="1" <?php checked($prompts['diagnostics_content']); ?> /> <?php echo esc_html('Ook artikeltekst, prompts en AI-output loggen'); ?></label>
+                <p class="description teksttv-warning"><strong><?php echo esc_html('Waarschuwing:'); ?></strong> <?php echo esc_html('dit kan vertrouwelijke redactionele inhoud in serverlogs opslaan. Alleen tijdelijk inschakelen voor gericht onderzoek.'); ?></p>
+            </fieldset>
         </div>
         <?php endif; ?>
 

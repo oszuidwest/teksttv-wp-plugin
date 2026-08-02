@@ -32,6 +32,7 @@ export interface TeksttvPostConfig {
     customImage: ImageData | '';
     generateUrl: string;
     aiSupported: boolean;
+    aiDiagnostics: boolean;
     postId: number;
     isNewPost: boolean;
     titleCharLimit: number;

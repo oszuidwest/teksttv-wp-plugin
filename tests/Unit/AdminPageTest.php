@@ -219,6 +219,26 @@ class AdminPageTest extends TestCase
         $this->assertSame($stored, AdminPage::sanitize_ai_prompts('not an array'));
     }
 
+    public function test_sanitize_ai_prompts_requires_separate_content_diagnostics_opt_in(): void
+    {
+        Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);
+        Functions\expect('current_user_can')->with('manage_teksttv')->twice()->andReturn(true);
+        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->twice()->andReturn([]);
+
+        $enabled = AdminPage::sanitize_ai_prompts([
+            'diagnostics' => '1',
+            'diagnostics_content' => '1',
+        ]);
+        $disabled = AdminPage::sanitize_ai_prompts([
+            'diagnostics_content' => '1',
+        ]);
+
+        $this->assertTrue($enabled['diagnostics']);
+        $this->assertTrue($enabled['diagnostics_content']);
+        $this->assertFalse($disabled['diagnostics']);
+        $this->assertFalse($disabled['diagnostics_content']);
+    }
+
     public function test_sanitize_channels_deduplicates_slug_keeping_first(): void
     {
         Functions\when('add_settings_error')->justReturn(null);

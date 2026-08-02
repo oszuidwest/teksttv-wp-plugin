@@ -278,7 +278,8 @@ class AdminPage
             return $current;
         }
 
-        if (!current_user_can('manage_teksttv')) {
+        $can_manage = current_user_can('manage_teksttv');
+        if (!$can_manage) {
             $input = array_diff_key($input, array_flip([
                 'region_taxonomy',
                 'provider',
@@ -286,7 +287,12 @@ class AdminPage
                 'temperature',
                 'top_p',
                 'max_tokens',
+                'diagnostics',
+                'diagnostics_content',
             ]));
+        } else {
+            $input['diagnostics'] = !empty($input['diagnostics']);
+            $input['diagnostics_content'] = $input['diagnostics'] && !empty($input['diagnostics_content']);
         }
 
         $merged = array_merge($current, $input);
@@ -298,6 +304,8 @@ class AdminPage
             'region_taxonomy' => sanitize_key($merged['region_taxonomy'] ?? ''),
             'provider' => sanitize_key($merged['provider'] ?? ''),
             'model' => sanitize_text_field($merged['model'] ?? ''),
+            'diagnostics' => !empty($merged['diagnostics']),
+            'diagnostics_content' => !empty($merged['diagnostics_content']),
         ], Helpers::normalize_ai_prompt_limits($merged));
     }
 

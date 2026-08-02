@@ -500,6 +500,8 @@ class HelpersTest extends TestCase
         $this->assertSame(3, $result['max_retries']);
         $this->assertSame(10, $result['rate_limit']);
         $this->assertSame(2048, $result['max_tokens']);
+        $this->assertFalse($result['diagnostics']);
+        $this->assertFalse($result['diagnostics_content']);
         $this->assertNotEmpty($result['system']);
         $this->assertNotEmpty($result['prompt_title']);
         $this->assertNotEmpty($result['prompt_body']);

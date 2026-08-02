@@ -185,6 +185,32 @@ class RestApiTest extends TestCase
         $this->assertSame(['content' => 'Korte kop'], $response->get_data());
     }
 
+    public function test_diagnostic_failure_exposes_and_logs_the_same_correlation_id(): void
+    {
+        self::stubHappyPath(['teksttv_ai_prompts' => [
+            'min_input_words' => 0,
+            'max_retries' => 1,
+            'diagnostics' => true,
+        ]]);
+        $logs = [];
+        Functions\when('error_log')->alias(function ($line) use (&$logs) {
+            $logs[] = $line;
+            return true;
+        });
+        Functions\when('wp_ai_client_prompt')->justReturn(
+            self::mockAiBuilder(new \WP_Error('provider_failed', 'Providerfout'))
+        );
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
+
+        $this->assertErrorStatus(500, $response);
+        $this->assertMatchesRegularExpression('/Referentie: ([a-f0-9-]+)\./', $response->get_error_message());
+        preg_match('/Referentie: ([a-f0-9-]+)\./', $response->get_error_message(), $matches);
+        $this->assertNotEmpty($matches[1] ?? '');
+        $this->assertTrue((bool) array_filter($logs, fn ($line) => str_contains($line, $matches[1])));
+        $this->assertStringNotContainsString('Providerfout', implode("\n", $logs));
+    }
+
     public function test_generate_content_returns_403_for_title_fields_when_custom_title_disabled(): void
     {
         self::stubHappyPath(['teksttv_features' => ['ai_generate']]);

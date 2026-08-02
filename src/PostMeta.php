@@ -102,6 +102,7 @@ class PostMeta
             'customImage' => $custom_image ?: '',
             'generateUrl' => rest_url('teksttv/v1/generate'),
             'aiSupported' => $ai_supported,
+            'aiDiagnostics' => $prompts['diagnostics'],
             'postId' => $post_id ?: 0,
             'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
             'titleCharLimit' => $prompts['title_char_limit'],

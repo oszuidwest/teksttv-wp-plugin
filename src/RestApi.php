@@ -103,19 +103,26 @@ class RestApi
      */
     public static function generate_content(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
+        $config = Helpers::get_ai_prompts();
+        $correlation_id = AiDiagnostics::correlation_id();
+
         if (!Helpers::has_feature('ai_generate')) {
-            return new WP_Error(
+            return self::generation_error(
                 'teksttv_ai_disabled',
                 'AI-generatie is uitgeschakeld.',
-                ['status' => 403]
+                403,
+                $config,
+                $correlation_id
             );
         }
 
         if (!Helpers::ai_supported()) {
-            return new WP_Error(
+            return self::generation_error(
                 'teksttv_ai_unavailable',
                 'AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.',
-                ['status' => 503]
+                503,
+                $config,
+                $correlation_id
             );
         }
 
@@ -126,36 +133,80 @@ class RestApi
         // can still send title/both; without this gate that would persist an
         // orphaned _teksttv_ai_title that skews the AI-audit page.
         if ($field !== 'body' && !Helpers::has_feature('custom_title')) {
-            return new WP_Error(
+            return self::generation_error(
                 'teksttv_custom_title_disabled',
                 'Kop-generatie is uitgeschakeld.',
-                ['status' => 403]
+                403,
+                $config,
+                $correlation_id,
+                ['field' => $field]
             );
         }
 
         $post = get_post($post_id);
         if (!$post) {
-            return new WP_Error('teksttv_post_not_found', 'Post niet gevonden.', ['status' => 404]);
-        }
-
-        if (!current_user_can('edit_post', $post_id)) {
-            return new WP_Error('teksttv_forbidden', 'Onvoldoende rechten.', ['status' => 403]);
-        }
-
-        $config = Helpers::get_ai_prompts();
-
-        // Counted last so requests that can only 403/404 do not consume quota.
-        if (!AiGenerator::within_rate_limit(get_current_user_id(), $config['rate_limit'])) {
-            return new WP_Error(
-                'teksttv_rate_limited',
-                'Te veel verzoeken. Probeer het over een minuut opnieuw.',
-                ['status' => 429]
+            return self::generation_error(
+                'teksttv_post_not_found',
+                'Post niet gevonden.',
+                404,
+                $config,
+                $correlation_id,
+                ['field' => $field]
             );
         }
 
-        $result = AiGenerator::generate_for_post($post, $field, $config, (bool) $request->get_param('has_photo'));
+        if (!current_user_can('edit_post', $post_id)) {
+            return self::generation_error(
+                'teksttv_forbidden',
+                'Onvoldoende rechten.',
+                403,
+                $config,
+                $correlation_id,
+                ['field' => $field]
+            );
+        }
+
+        AiDiagnostics::log($config, 'request_started', $correlation_id, array_merge(
+            AiDiagnostics::selected_model($config),
+            [
+                'field' => $field,
+                'word_limit' => $config['word_limit'],
+                'title_char_limit' => $config['title_char_limit'],
+                'min_input_words' => $config['min_input_words'],
+                'max_retries' => $config['max_retries'],
+                'article_text' => $post->post_content,
+            ]
+        ));
+
+        // Counted last so requests that can only 403/404 do not consume quota.
+        if (!AiGenerator::within_rate_limit(get_current_user_id(), $config['rate_limit'])) {
+            return self::generation_error(
+                'teksttv_rate_limited',
+                'Te veel verzoeken. Probeer het over een minuut opnieuw.',
+                429,
+                $config,
+                $correlation_id,
+                ['field' => $field]
+            );
+        }
+
+        $result = AiGenerator::generate_for_post(
+            $post,
+            $field,
+            $config,
+            (bool) $request->get_param('has_photo'),
+            $correlation_id
+        );
         if (is_wp_error($result)) {
-            return $result;
+            $error_data = $result->get_error_data();
+            return self::generation_error(
+                $result->get_error_code(),
+                $result->get_error_message(),
+                is_array($error_data) ? (int) ($error_data['status'] ?? 500) : 500,
+                $config,
+                $correlation_id,
+                ['field' => $field]
+            );
         }
 
         // Single-field requests return {content}; 'both' returns {title, body}.
@@ -166,7 +217,37 @@ class RestApi
             $response['warning'] = $result['warning'];
         }
 
+        AiDiagnostics::log($config, 'request_finished', $correlation_id, [
+            'field' => $field,
+            'response_status' => 200,
+            'validation' => $result['warning'] === '' ? 'valid' : 'warning',
+        ]);
+
         return new WP_REST_Response($response, 200);
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @param array<string, mixed> $context
+     */
+    private static function generation_error(
+        string $code,
+        string $message,
+        int $status,
+        array $config,
+        string $correlation_id,
+        array $context = []
+    ): WP_Error {
+        AiDiagnostics::log($config, 'request_failed', $correlation_id, array_merge($context, [
+            'response_status' => $status,
+            'validation' => $code,
+        ]));
+
+        return new WP_Error(
+            $code,
+            AiDiagnostics::reference_message($config, $message, $correlation_id),
+            ['status' => $status]
+        );
     }
 
     public static function get_slides(WP_REST_Request $request): WP_REST_Response

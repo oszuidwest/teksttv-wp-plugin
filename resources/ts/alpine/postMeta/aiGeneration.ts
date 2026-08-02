@@ -78,8 +78,8 @@ export function requestAiGeneration(
         if (statusEl) {
             statusEl.textContent = message;
             statusEl.classList.add('is-error');
-        } else {
-            // Errors must never depend on the status element existing.
+        }
+        if (config.aiDiagnostics) {
             console.error('TekstTV AI-generatie:', message);
         }
     };
