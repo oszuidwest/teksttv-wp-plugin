@@ -1,15 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { addLoopBlock } from './helpers';
 
-type EditorWindow = Window & {
-    wp?: {
-        data?: {
-            dispatch?: (store: unknown) => { set: (scope: string, name: string, value: boolean) => void };
-        };
-        preferences?: { store?: unknown };
-    };
-};
-
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
     await expect(modal).toBeVisible();
@@ -39,22 +30,14 @@ async function openFixturePostEditor(page: Page): Promise<void> {
     await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
 
     await expect(page.locator('#teksttv_meta')).toBeAttached();
-    await page.waitForFunction(() => {
-        const { wp } = window as EditorWindow;
-        return typeof wp?.data?.dispatch === 'function' && wp?.preferences?.store !== undefined;
-    });
-    await page.evaluate(() => {
-        const { wp } = window as EditorWindow;
-        if (!wp?.data?.dispatch || !wp.preferences) return;
-        wp.data.dispatch(wp.preferences.store).set('core/edit-post', 'welcomeGuide', false);
-    });
 
-    const metaBoxesButton = page.getByText('Meta Boxes', { exact: true });
-    await expect(page.locator('.edit-post-welcome-guide')).toBeHidden();
+    // Fixtures persist welcomeGuide=false for the admin user, so no editor
+    // onboarding modal can mount here; if one ever does, the interactions
+    // below fail with Playwright's interception error naming the overlay.
+    const metaBoxesButton = page.getByRole('button', { name: 'Meta Boxes', exact: true });
     await expect(metaBoxesButton).toBeVisible();
     if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
-        await metaBoxesButton.focus();
-        await page.keyboard.press('Enter');
+        await metaBoxesButton.press('Enter');
     }
     await expect.poll(() => metaBoxesButton.getAttribute('aria-expanded')).toBe('true');
 }
