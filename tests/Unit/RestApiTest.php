@@ -200,7 +200,7 @@ class RestApiTest extends TestCase
 
     public function test_generate_content_body_only_does_not_generate_a_title(): void
     {
-        self::stubHappyPath();
+        self::stubHappyPath(['teksttv_features' => ['ai_generate']]);
         $body_text = implode(' ', array_fill(0, 50, 'woord'));
         $body = '<p>' . $body_text . '</p>';
 
