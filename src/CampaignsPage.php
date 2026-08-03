@@ -76,7 +76,7 @@ class CampaignsPage
                         </select>
                     </div>
                     <div class="teksttv-field teksttv-field--compact">
-                        <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur per slide'); ?></label>
+                        <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur per slide'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
                         <div class="teksttv-input-with-unit">
                             <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
                             <span class="teksttv-unit">sec</span>

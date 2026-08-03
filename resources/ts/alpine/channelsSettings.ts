@@ -26,7 +26,7 @@ export function createChannelsSettingsPage() {
         const label = button?.querySelector<HTMLElement>('.teksttv-copy-endpoint-label');
         if (!button || !label) return;
 
-        if (!slug) {
+        if (!apiBase || !slug) {
             button.dataset.endpoint = '';
             button.disabled = true;
             label.textContent = 'Link kopiëren';

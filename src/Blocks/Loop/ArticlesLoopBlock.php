@@ -51,14 +51,14 @@ final class ArticlesLoopBlock
         </div>
         <div class="teksttv-field-grid teksttv-field-grid--duration">
             <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($duration_text_id); ?>" data-teksttv-label="duration-text"><?php echo esc_html('Duur tekst'); ?></label>
+                <label for="<?php echo esc_attr($duration_text_id); ?>" data-teksttv-label="duration-text"><?php echo esc_html('Duur tekst'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
                 <div class="teksttv-input-with-unit">
                     <input type="number" id="<?php echo esc_attr($duration_text_id); ?>" data-teksttv-field="duration-text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_text]" value="<?php echo esc_attr((string) $dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" />
                     <span class="teksttv-unit">sec</span>
                 </div>
             </div>
             <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($duration_image_id); ?>" data-teksttv-label="duration-image"><?php echo esc_html('Duur afbeelding'); ?></label>
+                <label for="<?php echo esc_attr($duration_image_id); ?>" data-teksttv-label="duration-image"><?php echo esc_html('Duur afbeelding'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
                 <div class="teksttv-input-with-unit">
                     <input type="number" id="<?php echo esc_attr($duration_image_id); ?>" data-teksttv-field="duration-image" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_image]" value="<?php echo esc_attr((string) $dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" />
                     <span class="teksttv-unit">sec</span>

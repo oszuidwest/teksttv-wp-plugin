@@ -102,8 +102,11 @@ test.describe('administrator admin screens', () => {
             durationRow.locator('input').evaluate((element) => element.getBoundingClientRect().toJSON()),
             durationRow.locator('.teksttv-unit').evaluate((element) => element.getBoundingClientRect().toJSON()),
         ]);
-        expect(durationUnitBox.top).toBeGreaterThan(durationInputBox.top);
-        expect(durationUnitBox.bottom).toBeLessThan(durationInputBox.bottom);
+        const durationCenterOffset = Math.abs(
+            (durationUnitBox.top + durationUnitBox.bottom) / 2 - (durationInputBox.top + durationInputBox.bottom) / 2,
+        );
+        expect(durationCenterOffset).toBeLessThanOrEqual(1);
+        await expect(durationRow.locator('input')).toHaveAccessibleName('Duur per slide (seconden)');
 
         await page.setViewportSize({ width: 760, height: 900 });
         const mobileFields = await fields.evaluateAll((elements) =>

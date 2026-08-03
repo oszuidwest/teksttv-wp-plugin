@@ -46,7 +46,7 @@ final class IframeLoopBlock
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
             <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur'); ?></label>
+                <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
                 <div class="teksttv-input-with-unit">
                     <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
                     <span class="teksttv-unit">sec</span>
