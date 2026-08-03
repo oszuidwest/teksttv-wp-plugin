@@ -38,6 +38,20 @@ export async function login(page: Page, username: string, password: string): Pro
     await expect(page.locator('#wpadminbar')).toBeVisible();
 }
 
+/** Open the seeded post and expose its classic meta boxes. */
+export async function openFixturePostEditor(page: Page): Promise<void> {
+    await page.goto('/wp-admin/edit.php');
+    await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
+    await expect(page.locator('#teksttv_meta')).toBeAttached();
+
+    // Fixtures disable welcomeGuide, so no onboarding modal can intercept this control.
+    const metaBoxesButton = page.getByRole('button', { name: 'Meta Boxes', exact: true });
+    await expect(metaBoxesButton).toBeVisible();
+    if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') await metaBoxesButton.press('Enter');
+    await expect(metaBoxesButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#teksttv_meta')).toBeVisible();
+}
+
 const ADD_BLOCK_UI = {
     loop: {
         list: '#teksttv-blocks',
