@@ -75,16 +75,13 @@ test.describe('administrator admin screens', () => {
         await openFixturePostEditor(page);
         await expect(page.locator('.teksttv-generate-btn')).toHaveCount(0);
 
-        const widths = await page.locator('.teksttv-editor-layout').evaluate((layout) => {
-            const main = layout.querySelector('.teksttv-editor-main');
-            if (!main) throw new Error('Editor main column is missing.');
-            return {
-                layout: layout.getBoundingClientRect().width,
-                main: main.getBoundingClientRect().width,
-            };
-        });
+        const layout = page.locator('.teksttv-editor-layout');
+        const [layoutWidth, mainWidth] = await Promise.all([
+            layout.evaluate((element) => element.getBoundingClientRect().width),
+            layout.locator('.teksttv-editor-main').evaluate((element) => element.getBoundingClientRect().width),
+        ]);
 
-        expect(Math.abs(widths.layout - widths.main)).toBeLessThan(1);
+        expect(Math.abs(layoutWidth - mainWidth)).toBeLessThan(1);
     });
 
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
