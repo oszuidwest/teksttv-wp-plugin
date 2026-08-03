@@ -38,7 +38,7 @@ settings_errors('teksttv_campaigns');
                             <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
                             <input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('Bijv. Campagne'); ?>" />
                         </td>
-                        <td class="teksttv-table-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+                        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -50,7 +50,7 @@ settings_errors('teksttv_campaigns');
     </div>
 
     <h2><?php echo esc_html('Campagnes'); ?></h2>
-    <div id="teksttv-campaigns" class="teksttv-blocks" data-empty-focus="#teksttv-add-campaign" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
+    <div id="teksttv-campaigns" data-empty-focus="#teksttv-add-campaign" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
         <?php
         if (!empty($campaigns)) {
             foreach ($campaigns as $i => $campaign) {

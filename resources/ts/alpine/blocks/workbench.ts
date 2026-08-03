@@ -201,7 +201,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 `<input type="hidden" name="teksttv_campaign_groups[${key}][id]" value="" />` +
                 `<input type="text" name="teksttv_campaign_groups[${key}][label]" value="" class="regular-text" required placeholder="Bijv. Campagne" />` +
                 '</td>' +
-                '<td class="teksttv-table-actions"><button type="button" class="button-link teksttv-remove-group" aria-label="Groep verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
+                '<td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="Groep verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
                 '</tr>';
             groupsTbody.insertAdjacentHTML('beforeend', row);
             groupsTbody

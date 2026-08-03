@@ -208,7 +208,9 @@ test.describe('admin interaction contracts', () => {
         await page.goto('/wp-admin/admin.php?page=teksttv-settings');
 
         const rows = page.locator('#teksttv-channels tbody > .teksttv-channel-row');
+        await expect(rows.first().locator('.teksttv-remove-channel')).toHaveClass(/button-link-delete/);
         await page.locator('#teksttv-add-channel').click();
+        await expect(rows.last().locator('.teksttv-remove-channel')).toHaveClass(/button-link-delete/);
         await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-two');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Two');
@@ -380,8 +382,10 @@ test.describe('admin interaction contracts', () => {
             await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
 
             const groups = page.locator('#teksttv-groups tbody > .teksttv-group-row');
+            await expect(groups.first().locator('.teksttv-remove-group')).toHaveClass(/button-link-delete/);
             await page.locator('#teksttv-add-group').click();
             const addedGroup = groups.last();
+            await expect(addedGroup.locator('.teksttv-remove-group')).toHaveClass(/button-link-delete/);
             await expect(addedGroup.locator('input[name$="[label]"]')).toBeFocused();
             await addedGroup.locator('input[name$="[label]"]').fill('E2E Added Group');
             await expect(addedGroup.locator('input[name]').first()).toHaveAttribute(
