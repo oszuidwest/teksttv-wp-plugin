@@ -261,18 +261,24 @@ class RestApiTest extends TestCase
     }
 
     /**
-     * REST owns one thing here: reading has_photo off the request and handing
-     * it to the generator. Both directions are asserted - one call would leave
-     * a hardcoded `true` at the call site undetected.
+     * REST must use the same has_photo value for generation and its
+     * request-started diagnostic. Both directions are asserted.
      */
-    public function test_generate_content_forwards_has_photo_to_the_generator(): void
+    public function test_generate_content_uses_has_photo_for_generation_and_diagnostics(): void
     {
         self::stubHappyPath(['teksttv_ai_prompts' => [
             'min_input_words' => 0,
             'max_retries' => 1,
             'word_limit' => 100,
             'word_limit_photo' => 25,
+            'diagnostics' => true,
         ]]);
+        $logs = [];
+        Functions\when('error_log')->alias(function ($line) use (&$logs) {
+            $logs[] = $line;
+            return true;
+        });
+        Functions\when('wp_json_encode')->alias('json_encode');
         Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
         Functions\when('update_post_meta')->justReturn(true);
 
@@ -283,12 +289,24 @@ class RestApiTest extends TestCase
         $with_photo = RestApi::generate_content(
             self::requestMock(['post_id' => 42, 'field' => 'body', 'has_photo' => true])
         );
+        $with_photo_logs = $logs;
+        $logs = [];
         $without_photo = RestApi::generate_content(
             self::requestMock(['post_id' => 42, 'field' => 'body', 'has_photo' => false])
         );
 
         $this->assertArrayHasKey('warning', $with_photo->get_data(), 'has_photo did not reach the generator.');
         $this->assertArrayNotHasKey('warning', $without_photo->get_data());
+        $this->assertTrue((bool) array_filter(
+            $with_photo_logs,
+            fn ($line) => str_contains($line, '"event":"request_started"')
+                && str_contains($line, '"word_limit":25')
+        ));
+        $this->assertTrue((bool) array_filter(
+            $logs,
+            fn ($line) => str_contains($line, '"event":"request_started"')
+                && str_contains($line, '"word_limit":100')
+        ));
     }
 
 }

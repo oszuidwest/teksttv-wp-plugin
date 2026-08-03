@@ -166,11 +166,12 @@ class RestApi
             );
         }
 
+        $has_photo = (bool) $request->get_param('has_photo');
         AiDiagnostics::log($config, 'request_started', $correlation_id, array_merge(
             AiDiagnostics::model_preference($config),
             [
                 'field' => $field,
-                'word_limit' => $config['word_limit'],
+                'word_limit' => $has_photo ? $config['word_limit_photo'] : $config['word_limit'],
                 'title_char_limit' => $config['title_char_limit'],
                 'min_input_words' => $config['min_input_words'],
                 'max_retries' => $config['max_retries'],
@@ -194,7 +195,7 @@ class RestApi
             $post,
             $field,
             $config,
-            (bool) $request->get_param('has_photo'),
+            $has_photo,
             $correlation_id
         );
         if (is_wp_error($result)) {

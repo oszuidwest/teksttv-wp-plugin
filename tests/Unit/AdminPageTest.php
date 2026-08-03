@@ -165,6 +165,8 @@ class AdminPageTest extends TestCase
             'temperature' => 0.7,
             'top_p' => 0.9,
             'max_tokens' => 4096,
+            'diagnostics' => true,
+            'diagnostics_content' => true,
             'system' => 'Oude system prompt',
         ];
         Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
@@ -177,6 +179,8 @@ class AdminPageTest extends TestCase
             'temperature' => 2,
             'top_p' => 0,
             'max_tokens' => 8192,
+            'diagnostics' => '0',
+            'diagnostics_content' => '0',
         ]);
 
         $this->assertSame('Nieuwe system prompt', $result['system']);
@@ -186,6 +190,8 @@ class AdminPageTest extends TestCase
         $this->assertSame(0.7, $result['temperature']);
         $this->assertSame(0.9, $result['top_p']);
         $this->assertSame(4096, $result['max_tokens']);
+        $this->assertTrue($result['diagnostics']);
+        $this->assertTrue($result['diagnostics_content']);
     }
 
     public function test_sanitize_ai_prompts_accepts_privileged_fields_with_manage_capability(): void

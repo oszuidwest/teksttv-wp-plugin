@@ -88,7 +88,7 @@ class AiDiagnostics
     private static function redact_credentials(string $value): string
     {
         $value = (string) preg_replace(
-            '/\b(authorization|proxy-authorization|cookie|set-cookie|x-wp-nonce)\b\s*:\s*[^\r\n]*/i',
+            '/\b(authorization|proxy-authorization|cookie|set-cookie|x-wp-nonce)\b\s*[:=]\s*[^\r\n]*/i',
             '$1=[credential-redacted]',
             $value
         );
