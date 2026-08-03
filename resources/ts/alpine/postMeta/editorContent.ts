@@ -4,8 +4,7 @@ function getEditorHtml(id: string): string | null {
     if (editor && !editor.isHidden()) {
         return editor.getContent();
     }
-    const ta = document.querySelector<HTMLTextAreaElement>(`#${id}`);
-    return ta ? ta.value : null;
+    return document.querySelector<HTMLTextAreaElement>(`#${id}`)?.value ?? null;
 }
 
 /** Tekst-TV editor textarea of TinyMCE-instantie. */
@@ -13,13 +12,8 @@ export function getTeksttvEditorHtml(): string {
     return getEditorHtml('teksttv_content') ?? '';
 }
 
-export interface CurrentPostEditorState {
-    title: string;
-    content: string;
-}
-
 /** Read unsaved source content from Gutenberg or the Classic Editor. */
-export function getCurrentPostEditorState(): CurrentPostEditorState | null {
+export function getCurrentPostEditorState() {
     const editorStore = wp.data?.select('core/editor');
     if (editorStore) {
         const title = editorStore.getEditedPostAttribute('title');

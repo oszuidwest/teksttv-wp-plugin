@@ -57,7 +57,7 @@ test.describe('administrator admin screens', () => {
         const requestPromise = page.waitForRequest((request) => request.url().startsWith(generateUrl), {
             timeout: 5000,
         });
-        const invocation = await page.evaluate(() => {
+        const disabled = await page.evaluate(() => {
             const browser = window as unknown as {
                 wp: { data: { dispatch(store: string): { editPost(values: Record<string, string>): void } } };
                 teksttvPost: { aiSupported: boolean; isNewPost: boolean };
@@ -79,9 +79,9 @@ test.describe('administrator admin screens', () => {
             const component = metaBox?._x_dataStack?.[0];
             if (!component) throw new Error('TekstTV Alpine component is unavailable.');
             component.onGenerateClick({ currentTarget: button });
-            return { disabled: button.disabled, html: button.innerHTML };
+            return button.disabled;
         });
-        expect(invocation.disabled).toBe(true);
+        expect(disabled).toBe(true);
 
         const request = await requestPromise;
         expect(request.postDataJSON()).toMatchObject({

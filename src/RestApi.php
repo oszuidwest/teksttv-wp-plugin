@@ -63,12 +63,10 @@ class RestApi
                 'source_title' => [
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field',
                 ],
                 'source_content' => [
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'wp_kses_post',
                 ],
             ],
         ]);

@@ -12,14 +12,12 @@ class RestApiTest extends TestCase
      *
      * @param array<string, mixed> $params
      */
-    private static function requestMock(array $params, bool $with_editor_state = true): \Mockery\MockInterface
+    private static function requestMock(array $params): \Mockery\MockInterface
     {
-        if ($with_editor_state) {
-            $params += [
-                'source_title' => 'Titel',
-                'source_content' => '<p>' . implode(' ', array_fill(0, 60, 'woord')) . '</p>',
-            ];
-        }
+        $params += [
+            'source_title' => 'Titel',
+            'source_content' => '<p>Inhoud</p>',
+        ];
         $request = \Mockery::mock('WP_REST_Request');
         $request->shouldReceive('get_param')->andReturnUsing(fn ($key) => $params[$key] ?? null);
         return $request;
@@ -171,7 +169,12 @@ class RestApiTest extends TestCase
         Functions\expect('get_transient')->never();
 
         $response = RestApi::generate_content(
-            self::requestMock(['post_id' => 42, 'field' => 'body'], false)
+            self::requestMock([
+                'post_id' => 42,
+                'field' => 'body',
+                'source_title' => null,
+                'source_content' => null,
+            ])
         );
 
         $this->assertErrorStatus(400, $response);
