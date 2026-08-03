@@ -23,7 +23,7 @@ final class TaxonomyFilters
         foreach ($taxonomies as $tax) :
             $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));
             ?>
-        <div class="teksttv-block-field">
+        <div class="teksttv-field teksttv-field--choice">
             <label><?php echo esc_html($tax['label']); ?></label>
             <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($tax['name']); ?>][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Filter...'); ?>" data-summary data-summary-empty="<?php echo esc_attr('alle'); ?>" multiple>
                 <?php foreach ($tax['terms'] as $term_id => $term_name) : ?>

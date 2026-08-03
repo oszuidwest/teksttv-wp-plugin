@@ -31,18 +31,18 @@ final class IframeLoopBlock
         $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe']);
 
         ?>
-        <div class="teksttv-block-fields">
-            <div class="teksttv-block-field teksttv-block-field-wide">
+        <div class="teksttv-field-grid">
+            <div class="teksttv-field teksttv-field--full">
                 <label><?php echo esc_html('Naam'); ?></label>
                 <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" data-summary />
                 <p class="description"><?php echo esc_html('Alleen ter herkenning in dit beheerscherm. Wordt niet uitgezonden.'); ?></p>
             </div>
-            <div class="teksttv-block-field teksttv-block-field-wide">
+            <div class="teksttv-field teksttv-field--full">
                 <label><?php echo esc_html('URL'); ?></label>
                 <input type="url" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" />
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
-            <div class="teksttv-block-field">
+            <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Duur'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
             </div>

@@ -12,36 +12,38 @@ namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
-echo '<div class="wrap">';
+echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
 ?>
 <div class="teksttv-tab-content" x-data="teksttvSettingsPage">
-    <form method="post" action="options.php" class="teksttv-settings-form">
+    <form method="post" action="options.php" class="teksttv-admin-column teksttv-settings-form">
         <?php settings_fields('teksttv_settings'); ?>
 
         <!-- Channels -->
         <div class="teksttv-card">
             <h3><?php echo esc_html('Kanalen'); ?></h3>
             <p class="description"><?php echo esc_html('Beheer de kanalen waarvoor Tekst TV slides worden gegenereerd. Elk kanaal krijgt een eigen loop en API endpoint.'); ?></p>
-            <table class="widefat teksttv-channels-table" id="teksttv-channels" @click="channelsClick($event)">
-                <thead>
-                    <tr>
-                        <th><?php echo esc_html('Slug'); ?></th>
-                        <th><?php echo esc_html('Naam'); ?></th>
-                        <th class="teksttv-channel-actions"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($channels as $i => $ch) : ?>
-                    <tr class="teksttv-channel-row">
-                        <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" /></td>
-                        <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" /></td>
-                        <td class="teksttv-channel-actions"><button type="button" class="button-link teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+            <div class="teksttv-table-scroll">
+                <table class="widefat teksttv-management-table" id="teksttv-channels" @click="channelsClick($event)">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html('Slug'); ?></th>
+                            <th><?php echo esc_html('Naam'); ?></th>
+                            <th class="teksttv-table-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($channels as $i => $ch) : ?>
+                        <tr class="teksttv-channel-row">
+                            <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" /></td>
+                            <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" /></td>
+                            <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
             <p class="teksttv-card-actions">
                 <button type="button" class="button" id="teksttv-add-channel" @click.prevent="addChannelRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php echo esc_html('Kanaal toevoegen'); ?></button>
             </p>

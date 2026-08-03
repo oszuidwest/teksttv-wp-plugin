@@ -335,7 +335,7 @@ class AdminPage
     {
         $channel_slug = self::get_current_channel();
         if (empty($channel_slug)) {
-            echo '<div class="wrap"><h1>' . esc_html('Tekst TV') . '</h1>';
+            echo '<div class="wrap teksttv-admin"><h1>' . esc_html('Tekst TV') . '</h1>';
             echo '<p>' . wp_kses(sprintf('Ga naar <a href="%s">Instellingen</a> om eerst een kanaal toe te voegen.', esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]) . '</p>';
             echo '</div>';
             return;
@@ -453,7 +453,7 @@ class AdminPage
                 <?php echo esc_html('Planning inschakelen'); ?>
             </label>
         </div>
-        <div class="teksttv-block-fields teksttv-block-fields--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
+        <div class="teksttv-field-grid teksttv-field-grid--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
             <?php self::render_scheduling_inputs($index, $block, $prefix); ?>
         </div>
         <?php
@@ -472,15 +472,15 @@ class AdminPage
         $date_end = $block['date_end'] ?? '';
 
         ?>
-        <div class="teksttv-block-field">
+        <div class="teksttv-field">
             <label><?php echo esc_html('Vanaf'); ?></label>
             <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
         </div>
-        <div class="teksttv-block-field">
+        <div class="teksttv-field">
             <label><?php echo esc_html('Tot en met'); ?></label>
             <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
         </div>
-        <div class="teksttv-block-field">
+        <div class="teksttv-field teksttv-field--primary">
             <label><?php echo esc_html('Dagen'); ?></label>
             <?php self::render_days_row($prefix . '[' . $index . '][days][]', Helpers::normalize_days($block['days'] ?? null)); ?>
         </div>

@@ -11,12 +11,12 @@ namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
-echo '<div class="wrap">';
+echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html('Content & AI') . '</h1>';
 
 ?>
 <div class="teksttv-tab-content">
-    <form method="post" action="options.php" class="teksttv-settings-form">
+    <form method="post" action="options.php" class="teksttv-admin-column teksttv-settings-form">
         <?php settings_fields('teksttv_content'); ?>
 
         <div class="teksttv-card">
