@@ -92,6 +92,11 @@ export interface WPMediaOptions {
 interface WPGlobal {
     media(options: WPMediaOptions): WPMediaFrame;
     apiFetch<T>(options: { url: string; method?: 'GET' | 'POST'; data?: Record<string, unknown> }): Promise<T>;
+    data?: {
+        select(store: 'core/editor'): {
+            getEditedPostAttribute(attribute: 'title' | 'content'): unknown;
+        } | null;
+    };
 }
 
 /** Underscore.js subset used by wp.media */
