@@ -8,6 +8,7 @@ class PostMetaViewTest extends TestCase
 {
     /**
      * @param list<string> $features
+     * @param array<string, string> $post_meta
      */
     private static function renderView(array $features, array $post_meta = []): string
     {
@@ -65,13 +66,12 @@ class PostMetaViewTest extends TestCase
         $this->assertStringNotContainsString('Genereer kop &amp; tekst', $view);
     }
 
-    public function test_ai_source_badge_does_not_claim_current_content_is_ai_generated(): void
+    public function test_saved_ai_meta_does_not_render_a_badge(): void
     {
         foreach (['_teksttv_ai_title', '_teksttv_ai_body'] as $meta_key) {
             $view = self::renderView(['ai_generate', 'custom_title'], [$meta_key => 'AI baseline']);
 
-            $this->assertStringContainsString('AI-bron opgeslagen', $view);
-            $this->assertStringNotContainsString('AI gegenereerd', $view);
+            $this->assertStringNotContainsString('teksttv-ai-badge', $view);
         }
     }
 }

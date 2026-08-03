@@ -39,9 +39,6 @@ $has_custom_title = Helpers::has_feature('custom_title');
                 <div class="teksttv-meta-section teksttv-ai-section">
                     <button type="button" class="button button-small teksttv-generate-btn" data-field="<?php echo esc_attr($has_custom_title ? 'both' : 'body'); ?>" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html($has_custom_title ? 'Genereer kop & tekst' : 'Genereer tekst'); ?></button>
                     <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
-                    <?php if (get_post_meta($post->ID, '_teksttv_ai_title', true) || get_post_meta($post->ID, '_teksttv_ai_body', true)) : ?>
-                    <span class="teksttv-ai-badge" id="teksttv-ai-badge"><span class="dashicons dashicons-admin-generic"></span> <?php echo esc_html('AI-bron opgeslagen'); ?></span>
-                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
 
