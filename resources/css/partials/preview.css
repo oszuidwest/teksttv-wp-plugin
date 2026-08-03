@@ -303,6 +303,7 @@
 @media (max-width: 1200px) {
     .teksttv-editor-layout {
         flex-direction: column;
+        align-items: stretch;
     }
     .teksttv-editor-preview {
         width: 100%;

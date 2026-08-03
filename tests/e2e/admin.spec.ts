@@ -70,9 +70,18 @@ test.describe('administrator admin screens', () => {
         expect(mobileFields.every(({ width }) => Math.abs(width - mobileFields[0].width) < 1)).toBe(true);
     });
 
-    test('post editor hides AI controls when no provider connector is configured', async ({ page }) => {
+    test('post editor hides unconfigured AI controls and fills the available tablet width', async ({ page }) => {
+        await page.setViewportSize({ width: 1024, height: 900 });
         await openFixturePostEditor(page);
         await expect(page.locator('.teksttv-generate-btn')).toHaveCount(0);
+
+        const layout = page.locator('.teksttv-editor-layout');
+        const [layoutWidth, mainWidth] = await Promise.all([
+            layout.evaluate((element) => element.getBoundingClientRect().width),
+            layout.locator('.teksttv-editor-main').evaluate((element) => element.getBoundingClientRect().width),
+        ]);
+
+        expect(Math.abs(layoutWidth - mainWidth)).toBeLessThan(1);
     });
 
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
