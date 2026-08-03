@@ -32,14 +32,10 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#teksttv-blocks')).toBeVisible();
     });
 
-    test('post editor hides AI controls when no provider connector is configured', async ({ page }) => {
-        await openFixturePostEditor(page);
-        await expect(page.locator('.teksttv-generate-btn')).toHaveCount(0);
-    });
-
-    test('post editor fills the available width at the tablet breakpoint', async ({ page }) => {
+    test('post editor hides unconfigured AI controls and fills the available tablet width', async ({ page }) => {
         await page.setViewportSize({ width: 1024, height: 900 });
         await openFixturePostEditor(page);
+        await expect(page.locator('.teksttv-generate-btn')).toHaveCount(0);
 
         const widths = await page.locator('.teksttv-editor-layout').evaluate((layout) => {
             const main = layout.querySelector('.teksttv-editor-main');
