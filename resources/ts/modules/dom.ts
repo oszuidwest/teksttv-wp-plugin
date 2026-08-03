@@ -2,6 +2,12 @@
 
 const slideTimers = new WeakMap<HTMLElement, number>();
 
+function motionDuration(durationMs: number): number {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 0
+        : durationMs;
+}
+
 /** Cancel a pending slide completion and remove its temporary inline styles. */
 export function cancelSlideAnimation(el: HTMLElement): void {
     const timer = slideTimers.get(el);
@@ -39,6 +45,8 @@ export function isHidden(el: HTMLElement): boolean {
 export function slideDown(el: HTMLElement, durationMs = 150): void {
     cancelSlideAnimation(el);
     show(el);
+    durationMs = motionDuration(durationMs);
+    if (durationMs === 0) return;
     el.style.overflow = 'hidden';
     const target = el.scrollHeight;
     el.style.height = '0';
@@ -55,6 +63,12 @@ export function slideDown(el: HTMLElement, durationMs = 150): void {
 
 export function slideUp(el: HTMLElement, durationMs = 150, onComplete?: () => void): void {
     cancelSlideAnimation(el);
+    durationMs = motionDuration(durationMs);
+    if (durationMs === 0) {
+        hide(el);
+        onComplete?.();
+        return;
+    }
     el.style.overflow = 'hidden';
     el.style.transition = '';
     el.style.height = `${el.offsetHeight}px`;
@@ -79,6 +93,12 @@ export function slideToggle(el: HTMLElement, durationMs = 150): void {
 }
 
 export function fadeOutRemove(el: HTMLElement, durationMs: number, onRemoved?: () => void): void {
+    durationMs = motionDuration(durationMs);
+    if (durationMs === 0) {
+        el.remove();
+        onRemoved?.();
+        return;
+    }
     el.style.transition = `opacity ${durationMs}ms ease`;
     el.style.opacity = '0';
     window.setTimeout(() => {

@@ -94,7 +94,7 @@ export function imageItemHtml(att: WPMediaAttachment, inputName: string): string
     const thumbUrl = att.sizes?.thumbnail?.url ?? att.url;
     return (
         `<div class="teksttv-image-item" data-id="${escAttr(att.id)}">` +
-        `<img src="${escAttr(thumbUrl)}" alt="" />` +
+        `<img src="${escAttr(thumbUrl)}" alt="" width="90" height="90" loading="lazy" />` +
         `<input type="hidden" name="${escAttr(inputName)}" value="${escAttr(att.id)}" />` +
         '<button type="button" class="button-link teksttv-remove-image" aria-label="Afbeelding verwijderen"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>' +
         '</div>'

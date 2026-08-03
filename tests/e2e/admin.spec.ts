@@ -32,17 +32,41 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#teksttv-blocks')).toBeVisible();
     });
 
+    test('workbench screens share section, heading and action sizing', async ({ page }) => {
+        await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kanaal: TV 1');
+        const loopSections = page.locator('.teksttv-workbench-section');
+        await expect(loopSections).toHaveCount(2);
+        await expect(loopSections.locator(':scope > h2')).toHaveText(['Loop', 'Tickerberichten']);
+
+        const loopActionWidths = await page
+            .locator('#teksttv-add-block-toggle, #teksttv-add-ticker-toggle')
+            .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
+        expect(Math.max(...loopActionWidths) - Math.min(...loopActionWidths)).toBeLessThan(1);
+
+        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        const campaignSections = page.locator('.teksttv-workbench-section');
+        await expect(campaignSections).toHaveCount(2);
+        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Groepen', 'Campagnes']);
+        const campaignActionWidths = await page
+            .locator('#teksttv-add-group, #teksttv-add-campaign')
+            .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
+        expect(Math.max(...campaignActionWidths) - Math.min(...campaignActionWidths)).toBeLessThan(1);
+    });
+
     test('campaign layout uses one width contract and responsive field grid', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
 
         const groupPanel = page.locator('.teksttv-campaign-groups');
+        const campaignPanel = page.locator('.teksttv-campaign-workbench');
         const campaignList = page.locator('#teksttv-campaigns');
         await expect(groupPanel).toBeVisible();
+        await expect(campaignPanel).toBeVisible();
         await expect(campaignList).toBeVisible();
 
         const desktopWidths = await Promise.all([
             groupPanel.evaluate((element) => element.getBoundingClientRect().width),
-            campaignList.evaluate((element) => element.getBoundingClientRect().width),
+            campaignPanel.evaluate((element) => element.getBoundingClientRect().width),
         ]);
         expect(desktopWidths[0]).toBeLessThanOrEqual(800);
         expect(Math.abs(desktopWidths[0] - desktopWidths[1])).toBeLessThan(1);

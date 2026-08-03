@@ -6,7 +6,7 @@ function getSchedulingSuffix(block: HTMLElement): string {
     const ds = dates[0]?.value ?? '';
     const de = dates.at(-1)?.value ?? '';
     if (ds || de) {
-        return ` · ${ds || '...'} – ${de || '...'}`;
+        return ` · ${ds || '…'} – ${de || '…'}`;
     }
     return '';
 }

@@ -11,7 +11,7 @@
 }
 
 #teksttv-channels {
-    min-width: 560px;
+    min-width: 620px;
 }
 
 #teksttv-groups {
@@ -33,6 +33,44 @@
     width: 100%;
 }
 
+.teksttv-mobile-field-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.teksttv-channel-endpoint {
+    width: 150px;
+    white-space: nowrap;
+}
+
+.teksttv-copy-endpoint {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+}
+
+.teksttv-copy-endpoint .dashicons {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+}
+
+.teksttv-management-table .button-link-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
+}
+
 .teksttv-management-table .teksttv-table-actions {
     width: 80px;
     text-align: right;
@@ -40,4 +78,76 @@
 
 .teksttv-settings-form .form-table th {
     width: 180px;
+}
+
+@media (max-width: 782px) {
+    #teksttv-channels,
+    #teksttv-groups {
+        min-width: 0;
+    }
+
+    #teksttv-channels thead,
+    #teksttv-groups thead {
+        display: none;
+    }
+
+    #teksttv-channels,
+    #teksttv-channels tbody,
+    #teksttv-groups,
+    #teksttv-groups tbody {
+        display: block;
+    }
+
+    #teksttv-channels tr,
+    #teksttv-groups tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px 8px;
+        padding: 12px;
+        border-bottom: 1px solid #c3c4c7;
+    }
+
+    #teksttv-channels tr:last-child,
+    #teksttv-groups tr:last-child {
+        border-bottom: 0;
+    }
+
+    #teksttv-channels td,
+    #teksttv-groups td {
+        display: block;
+        padding: 0;
+    }
+
+    #teksttv-channels td:nth-child(1),
+    #teksttv-channels td:nth-child(2),
+    #teksttv-groups td:first-child {
+        grid-column: 1 / -1;
+    }
+
+    #teksttv-channels .teksttv-channel-endpoint {
+        width: auto;
+    }
+
+    #teksttv-channels .teksttv-table-actions,
+    #teksttv-groups .teksttv-table-actions {
+        width: auto;
+    }
+
+    #teksttv-groups .teksttv-table-actions {
+        grid-column: 2;
+    }
+
+    .teksttv-mobile-field-label {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 0 0 4px;
+        clip: auto;
+        clip-path: none;
+        overflow: visible;
+        white-space: normal;
+        color: #50575e;
+        font-size: 12px;
+        font-weight: 600;
+    }
 }

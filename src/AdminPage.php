@@ -138,8 +138,8 @@ class AdminPage
         if (Helpers::has_feature('ai_generate')) {
             add_submenu_page(
                 'teksttv',
-                'Content & AI',
-                'Content & AI',
+                'Inhoud & AI',
+                'Inhoud & AI',
                 'manage_teksttv_content',
                 'teksttv-content',
                 [self::class, 'render_prompts_page']
@@ -351,8 +351,7 @@ class AdminPage
         $channel_label = array_column($channels, 'label', 'slug')[$channel_slug] ?? '';
 
         $blocks = Helpers::get_loop_config($channel_slug);
-        $api_url = rest_url('teksttv/v1/slides?channel=' . $channel_slug);
-        $page_title = count($channels) > 1 ? sprintf('Loop: %s', $channel_label) : 'Loop';
+        $page_title = sprintf('Kanaal: %s', $channel_label ?: $channel_slug);
         $ticker_items = Helpers::get_ticker_config($channel_slug);
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
@@ -365,6 +364,7 @@ class AdminPage
     public static function render_settings_page(): void
     {
         $channels = Helpers::get_channels();
+        $api_base_url = rest_url('teksttv/v1/slides');
         $features = Helpers::get_features();
         $all_taxonomies = Helpers::get_post_taxonomies();
         $enabled_taxonomies = get_option('teksttv_enabled_taxonomies', ['category']);
@@ -428,6 +428,8 @@ class AdminPage
                 <span class="teksttv-block-summary"></span>
                 <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
             </button>
+            <button type="button" class="button-link teksttv-block-order-control teksttv-move-block-up" aria-label="<?php echo esc_attr(sprintf('%s omhoog verplaatsen', $title)); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
+            <button type="button" class="button-link teksttv-block-order-control teksttv-move-block-down" aria-label="<?php echo esc_attr(sprintf('%s omlaag verplaatsen', $title)); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
             <button type="button" class="button-link teksttv-remove-block" aria-label="<?php echo esc_attr($remove_label); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
         </div>
         <?php
@@ -470,18 +472,20 @@ class AdminPage
     {
         $date_start = $block['date_start'] ?? '';
         $date_end = $block['date_end'] ?? '';
+        $date_start_id = Helpers::field_id($prefix, $index, 'date-start');
+        $date_end_id = Helpers::field_id($prefix, $index, 'date-end');
 
         ?>
         <div class="teksttv-field">
-            <label><?php echo esc_html('Vanaf'); ?></label>
-            <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
+            <label for="<?php echo esc_attr($date_start_id); ?>" data-teksttv-label="date-start"><?php echo esc_html('Vanaf'); ?></label>
+            <input type="date" id="<?php echo esc_attr($date_start_id); ?>" data-teksttv-field="date-start" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
         </div>
         <div class="teksttv-field">
-            <label><?php echo esc_html('Tot en met'); ?></label>
-            <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
+            <label for="<?php echo esc_attr($date_end_id); ?>" data-teksttv-label="date-end"><?php echo esc_html('Tot en met'); ?></label>
+            <input type="date" id="<?php echo esc_attr($date_end_id); ?>" data-teksttv-field="date-end" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
         </div>
         <div class="teksttv-field teksttv-field--primary">
-            <label><?php echo esc_html('Dagen'); ?></label>
+            <span class="teksttv-field-label"><?php echo esc_html('Dagen'); ?></span>
             <?php self::render_days_row($prefix . '[' . $index . '][days][]', Helpers::normalize_days($block['days'] ?? null)); ?>
         </div>
         <?php

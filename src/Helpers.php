@@ -16,6 +16,15 @@ class Helpers
     /** Memoized provider capability probe; it runs model discovery, so at most once per request. */
     private static ?bool $ai_supported_cache = null;
 
+    /** Build a stable, reindexable id for a repeated admin form field. */
+    public static function field_id(string $prefix, int|string $index, string $field): string
+    {
+        $base = str_replace('_', '-', $prefix);
+        $safe_field = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $field) ?? $field;
+
+        return $base . '-' . (string) $index . '-' . trim($safe_field, '-');
+    }
+
     /**
      * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
      *

@@ -305,7 +305,10 @@
     background: #f0f0f1;
     border: 1px solid #c3c4c7;
     cursor: pointer;
-    transition: all 0.1s;
+    transition:
+        color 0.1s,
+        background-color 0.1s,
+        border-color 0.1s;
     user-select: none;
 }
 
@@ -381,24 +384,30 @@
 
 .teksttv-remove-image {
     position: absolute;
-    top: -6px;
-    right: -6px;
+    top: -8px;
+    right: -8px;
     background: #fff !important;
     border-radius: 50% !important;
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
     display: flex !important;
     align-items: center;
     justify-content: center;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
     color: #b32d2e !important;
     text-decoration: none !important;
-    opacity: 0;
+    opacity: 0.8;
     transition: opacity 0.1s;
 }
 
-.teksttv-image-item:hover .teksttv-remove-image {
+.teksttv-image-item:hover .teksttv-remove-image,
+.teksttv-remove-image:focus-visible {
     opacity: 1;
+}
+
+.teksttv-remove-image:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
 }
 
 .teksttv-remove-image .dashicons {

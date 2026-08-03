@@ -29,23 +29,26 @@ final class IframeLoopBlock
         $url = $block['url'] ?? '';
         $duration = $block['duration'] ?? '';
         $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe']);
+        $name_id = Helpers::field_id($prefix, $index, 'name');
+        $url_id = Helpers::field_id($prefix, $index, 'url');
+        $duration_id = Helpers::field_id($prefix, $index, 'duration');
 
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
-                <label><?php echo esc_html('Naam'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" data-summary />
+                <label for="<?php echo esc_attr($name_id); ?>" data-teksttv-label="name"><?php echo esc_html('Naam'); ?></label>
+                <input type="text" id="<?php echo esc_attr($name_id); ?>" data-teksttv-field="name" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" autocomplete="off" data-summary />
                 <p class="description"><?php echo esc_html('Alleen ter herkenning in dit beheerscherm. Wordt niet uitgezonden.'); ?></p>
             </div>
             <div class="teksttv-field teksttv-field--full">
-                <label><?php echo esc_html('URL'); ?></label>
-                <input type="url" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" />
+                <label for="<?php echo esc_attr($url_id); ?>" data-teksttv-label="url"><?php echo esc_html('URL'); ?></label>
+                <input type="url" id="<?php echo esc_attr($url_id); ?>" data-teksttv-field="url" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
             <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur'); ?></label>
+                <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur'); ?></label>
                 <div class="teksttv-input-with-unit">
-                    <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
+                    <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
                     <span class="teksttv-unit">sec</span>
                 </div>
             </div>

@@ -26,7 +26,7 @@ $has_custom_title = Helpers::has_feature('custom_title');
     <div class="teksttv-toggle-bar">
         <label>
             <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" @change="onActiveChange()" />
-            <span class="dashicons dashicons-desktop"></span>
+            <span class="dashicons dashicons-desktop" aria-hidden="true"></span>
             <?php echo esc_html('Toon op Tekst TV'); ?>
         </label>
     </div>
@@ -37,8 +37,8 @@ $has_custom_title = Helpers::has_feature('custom_title');
             <div class="teksttv-editor-main">
                 <?php if ($ai_enabled) : ?>
                 <div class="teksttv-meta-section teksttv-ai-section">
-                    <button type="button" class="button button-small teksttv-generate-btn" data-field="<?php echo esc_attr($has_custom_title ? 'both' : 'body'); ?>" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html($has_custom_title ? 'Genereer kop & tekst' : 'Genereer tekst'); ?></button>
-                    <span class="teksttv-generate-status" id="teksttv-generate-status"></span>
+                    <button type="button" class="button button-small teksttv-generate-btn" data-field="<?php echo esc_attr($has_custom_title ? 'both' : 'body'); ?>" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html($has_custom_title ? 'Genereer kop & tekst' : 'Genereer tekst'); ?></button>
+                    <span class="teksttv-generate-status" id="teksttv-generate-status" role="status" aria-live="polite"></span>
                 </div>
                 <?php endif; ?>
 
@@ -48,7 +48,7 @@ $has_custom_title = Helpers::has_feature('custom_title');
                     <div class="teksttv-section-header">
                         <label for="teksttv-title" class="teksttv-section-label"><?php echo esc_html('Kop'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html('Genereer'); ?></button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="title" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Genereer'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
@@ -63,9 +63,9 @@ $has_custom_title = Helpers::has_feature('custom_title');
                 <!-- Content -->
                 <div class="teksttv-meta-section teksttv-content-wrap">
                     <div class="teksttv-section-header">
-                        <label class="teksttv-section-label"><?php echo esc_html('Tekst voor Tekst TV'); ?></label>
+                        <label for="teksttv_content" class="teksttv-section-label"><?php echo esc_html('Tekst voor Tekst TV'); ?></label>
                         <?php if ($ai_enabled) : ?>
-                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon"></span> <?php echo esc_html('Genereer'); ?></button>
+                        <button type="button" class="button button-small teksttv-generate-btn" data-field="body" @click.prevent="onGenerateClick($event)"><span class="dashicons dashicons-admin-generic teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Genereer'); ?></button>
                         <?php endif; ?>
                     </div>
                     <?php
@@ -126,23 +126,23 @@ $has_custom_title = Helpers::has_feature('custom_title');
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'default' ? 'is-active' : ''; ?>" data-state="default" id="teksttv-sidebar-card-default" @click.prevent="activateSidebarCardDefault()">
                             <span class="teksttv-image-card-label"><?php echo esc_html('Standaard'); ?></span>
                             <?php if ($fallback_url) : ?>
-                                <img src="<?php echo esc_url($fallback_url); ?>" alt="" class="teksttv-image-card-thumb" />
+                                <img src="<?php echo esc_url($fallback_url); ?>" alt="" class="teksttv-image-card-thumb" width="100" height="68" />
                             <?php else : ?>
-                                <span class="teksttv-image-card-icon"><span class="dashicons dashicons-format-image"></span></span>
+                                <span class="teksttv-image-card-icon"><span class="dashicons dashicons-format-image" aria-hidden="true"></span></span>
                             <?php endif; ?>
                         </button>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'custom' ? 'is-active' : ''; ?>" data-state="custom" id="teksttv-sidebar-card-custom" @click.prevent="openSidebarCustom()">
                             <span class="teksttv-image-card-label"><?php echo esc_html('Eigen'); ?></span>
                             <?php if ($custom_url) : ?>
-                                <img src="<?php echo esc_url($custom_url); ?>" alt="" class="teksttv-image-card-thumb" id="teksttv-sidebar-image-img" />
+                                <img src="<?php echo esc_url($custom_url); ?>" alt="" class="teksttv-image-card-thumb" id="teksttv-sidebar-image-img" width="100" height="68" />
                             <?php else : ?>
-                                <span class="teksttv-image-card-icon" id="teksttv-sidebar-image-placeholder"><span class="dashicons dashicons-upload"></span></span>
-                                <img src="" alt="" class="teksttv-image-card-thumb is-hidden" id="teksttv-sidebar-image-img" />
+                                <span class="teksttv-image-card-icon" id="teksttv-sidebar-image-placeholder"><span class="dashicons dashicons-upload" aria-hidden="true"></span></span>
+                                <img src="" alt="" class="teksttv-image-card-thumb is-hidden" id="teksttv-sidebar-image-img" width="100" height="68" />
                             <?php endif; ?>
                         </button>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'none' ? 'is-active' : ''; ?>" data-state="none" id="teksttv-sidebar-card-none" @click.prevent="activateSidebarCardNone()">
                             <span class="teksttv-image-card-label"><?php echo esc_html('Geen'); ?></span>
-                            <span class="teksttv-image-card-icon"><span class="dashicons dashicons-hidden"></span></span>
+                            <span class="teksttv-image-card-icon"><span class="dashicons dashicons-hidden" aria-hidden="true"></span></span>
                         </button>
                     </div>
                 </div>
@@ -158,25 +158,25 @@ $has_custom_title = Helpers::has_feature('custom_title');
                             <?php $thumb = wp_get_attachment_image_url($attachment_id, 'thumbnail'); ?>
                             <?php if ($thumb) : ?>
                             <div class="teksttv-image-item" data-id="<?php echo esc_attr($attachment_id); ?>">
-                                <img src="<?php echo esc_url($thumb); ?>" alt="" />
+                                <img src="<?php echo esc_url($thumb); ?>" alt="" width="90" height="90" loading="lazy" />
                                 <input type="hidden" name="teksttv_images[]" value="<?php echo esc_attr($attachment_id); ?>" />
                                 <button type="button" class="button-link teksttv-remove-image" aria-label="<?php echo esc_attr('Afbeelding verwijderen'); ?>"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>
                             </div>
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="button" id="teksttv-add-images" @click="openExtraImages($event)"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php echo esc_html('Afbeeldingen toevoegen'); ?></button>
+                    <button type="button" class="button" id="teksttv-add-images" @click="openExtraImages($event)"><span class="dashicons dashicons-format-gallery teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Afbeeldingen toevoegen'); ?></button>
                 </div>
                 <?php endif; ?>
 
                 <?php if (Helpers::has_feature('scheduling')) : ?>
                 <!-- Scheduling -->
                 <div class="teksttv-meta-section teksttv-collapsible" x-data="{ planOpen: false }" :class="{ 'is-open': planOpen }">
-                    <button type="button" class="teksttv-collapsible-toggle" @click.prevent="planOpen = !planOpen" :aria-expanded="planOpen">
+                    <button type="button" class="teksttv-collapsible-toggle" aria-controls="teksttv-collapsible-planning" @click.prevent="planOpen = !planOpen" :aria-expanded="planOpen.toString()">
                         <span class="teksttv-section-label"><?php echo esc_html('Planning'); ?></span>
-                        <span class="dashicons dashicons-arrow-down-alt2 teksttv-collapsible-icon"></span>
+                        <span class="dashicons dashicons-arrow-down-alt2 teksttv-collapsible-icon" aria-hidden="true"></span>
                     </button>
-                    <div class="teksttv-collapsible-body" x-show="planOpen" x-cloak>
+                    <div class="teksttv-collapsible-body" id="teksttv-collapsible-planning" x-show="planOpen" x-cloak>
                     <div class="teksttv-scheduling">
                         <div class="teksttv-scheduling-group">
                             <h4><?php echo esc_html('Periode'); ?></h4>
@@ -189,7 +189,7 @@ $has_custom_title = Helpers::has_feature('custom_title');
                                     <label for="teksttv-date-end"><?php echo esc_html('Tot en met'); ?></label>
                                     <input type="date" name="teksttv_date_end" value="<?php echo esc_attr($date_end); ?>" id="teksttv-date-end" @change="onDateEndChange()" />
                                     <button type="button" class="teksttv-date-reset is-hidden" id="teksttv-date-end-reset" title="<?php echo esc_attr('Zet naar standaard einddatum'); ?>" @click.prevent="resetDateEnd($event)">
-                                        <span class="dashicons dashicons-image-rotate"></span> <?php echo esc_html('Standaard'); ?>
+                                        <span class="dashicons dashicons-image-rotate" aria-hidden="true"></span> <?php echo esc_html('Standaard'); ?>
                                     </button>
                                 </div>
                             </div>
@@ -225,7 +225,7 @@ $has_custom_title = Helpers::has_feature('custom_title');
                     </div>
                 <?php else : ?>
                     <div class="teksttv-no-preview">
-                        <?php echo wp_kses(sprintf('Stel een preview URL in bij <a href="%s">Tekst TV &rarr; Instellingen</a> om live preview te activeren.', esc_url(admin_url('admin.php?page=teksttv&tab=settings'))), ['a' => ['href' => []]]); ?>
+                        <?php echo wp_kses(sprintf('Stel een preview-URL in bij <a href="%s">Tekst TV &rarr; Instellingen</a> om de live preview te activeren.', esc_url(admin_url('admin.php?page=teksttv-settings'))), ['a' => ['href' => []]]); ?>
                     </div>
                 <?php endif; ?>
             </div>

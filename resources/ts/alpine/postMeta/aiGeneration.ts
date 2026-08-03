@@ -72,15 +72,16 @@ export function requestAiGeneration(
 
     const originalHtml = btn.innerHTML;
     const loadingMessages = [
-        'Even nadenken...',
-        'Artikel aan het lezen...',
-        'De essentie aan het vinden...',
-        'Aan het samenvatten...',
-        'Tekst TV klaar maken...',
-        'Tekst aan het polijsten...',
+        'Even nadenken…',
+        'Artikel aan het lezen…',
+        'De essentie aan het vinden…',
+        'Aan het samenvatten…',
+        'Tekst TV klaarmaken…',
+        'Tekst aan het polijsten…',
     ];
     let msgIndex = 0;
-    const spinnerHtml = '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon"></span> ';
+    const spinnerHtml =
+        '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon" aria-hidden="true"></span> ';
     btn.disabled = true;
     btn.innerHTML = spinnerHtml + loadingMessages[0];
     const msgInterval = window.setInterval(() => {

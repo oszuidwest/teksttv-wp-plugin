@@ -62,7 +62,7 @@
 }
 
 .teksttv-preview-container.is-loading::before {
-    content: "Preview wordt geladen...";
+    content: "Preview wordt geladen…";
     position: absolute;
     top: 50%;
     left: 50%;

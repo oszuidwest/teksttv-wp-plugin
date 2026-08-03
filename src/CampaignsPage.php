@@ -52,6 +52,9 @@ class CampaignsPage
         $slides = $campaign['slides'] ?? [];
         $default_duration = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
         $body_id = 'teksttv-campaigns-' . (string) $index . '-body';
+        $name_id = Helpers::field_id('teksttv_campaigns', $index, 'name');
+        $group_id = Helpers::field_id('teksttv_campaigns', $index, 'group');
+        $duration_id = Helpers::field_id('teksttv_campaigns', $index, 'duration');
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
@@ -60,12 +63,12 @@ class CampaignsPage
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />
                 <div class="teksttv-field-grid">
                     <div class="teksttv-field teksttv-field--primary">
-                        <label><?php echo esc_html('Naam'); ?></label>
-                        <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr('Bijv. Sponsor X'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Naamloze campagne'); ?>" />
+                        <label for="<?php echo esc_attr($name_id); ?>" data-teksttv-label="name"><?php echo esc_html('Naam'); ?></label>
+                        <input type="text" id="<?php echo esc_attr($name_id); ?>" data-teksttv-field="name" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Sponsor X'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Naamloze campagne'); ?>" />
                     </div>
                     <div class="teksttv-field teksttv-field--choice">
-                        <label><?php echo esc_html('Groep'); ?></label>
-                        <select name="teksttv_campaigns[<?php echo esc_attr($index); ?>][group]" class="teksttv-campaign-group-select">
+                        <label for="<?php echo esc_attr($group_id); ?>" data-teksttv-label="group"><?php echo esc_html('Groep'); ?></label>
+                        <select id="<?php echo esc_attr($group_id); ?>" data-teksttv-field="group" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][group]" class="teksttv-campaign-group-select">
                             <option value=""><?php echo esc_html('— Geen groep —'); ?></option>
                             <?php foreach ($groups as $group_option) : ?>
                             <option value="<?php echo esc_attr($group_option['id']); ?>" <?php selected($group, $group_option['id']); ?>><?php echo esc_html($group_option['label']); ?></option>
@@ -73,9 +76,9 @@ class CampaignsPage
                         </select>
                     </div>
                     <div class="teksttv-field teksttv-field--compact">
-                        <label><?php echo esc_html('Duur per slide'); ?></label>
+                        <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur per slide'); ?></label>
                         <div class="teksttv-input-with-unit">
-                            <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
+                            <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
                             <span class="teksttv-unit">sec</span>
                         </div>
                     </div>
@@ -96,20 +99,20 @@ class CampaignsPage
                     </div>
                 </div>
                 <div class="teksttv-campaign-slides-section">
-                    <label class="teksttv-section-label"><?php echo esc_html('Slides'); ?></label>
+                    <span class="teksttv-section-label"><?php echo esc_html('Slides'); ?></span>
                     <div class="teksttv-campaign-slides teksttv-images-list" data-name="teksttv_campaigns[<?php echo esc_attr($index); ?>][slides][]">
                         <?php foreach ($slides as $attachment_id) :
                             $thumb = wp_get_attachment_image_url((int) $attachment_id, 'thumbnail');
                             if ($thumb) : ?>
                             <div class="teksttv-image-item" data-id="<?php echo esc_attr($attachment_id); ?>">
-                                <img src="<?php echo esc_url($thumb); ?>" alt="" />
+                                <img src="<?php echo esc_url($thumb); ?>" alt="" width="90" height="90" loading="lazy" />
                                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][slides][]" value="<?php echo esc_attr($attachment_id); ?>" />
                                 <button type="button" class="button-link teksttv-remove-image" aria-label="<?php echo esc_attr('Afbeelding verwijderen'); ?>"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>
                             </div>
                             <?php endif;
                         endforeach; ?>
                     </div>
-                    <button type="button" class="button teksttv-campaign-add-slides"><span class="dashicons dashicons-format-gallery teksttv-button-icon"></span> <?php echo esc_html('Slides toevoegen'); ?></button>
+                    <button type="button" class="button teksttv-campaign-add-slides"><span class="dashicons dashicons-format-gallery teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Slides toevoegen'); ?></button>
                 </div>
             </div>
         </div>

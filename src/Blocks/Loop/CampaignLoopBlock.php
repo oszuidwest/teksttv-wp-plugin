@@ -34,31 +34,34 @@ final class CampaignLoopBlock
         $intro_url = $intro_id ? wp_get_attachment_image_url((int) $intro_id, 'thumbnail') : '';
         $outro_url = $outro_id ? wp_get_attachment_image_url((int) $outro_id, 'thumbnail') : '';
         $limit = $block['limit'] ?? '';
+        $groups_id = Helpers::field_id($prefix, $index, 'groups');
+        $limit_id = Helpers::field_id($prefix, $index, 'limit');
 
         ?>
-        <div class="teksttv-field-grid">
-            <div class="teksttv-field teksttv-field--choice">
-                <label><?php echo esc_html('Groep(en)'); ?></label>
+        <div class="teksttv-field-grid teksttv-field-grid--campaign-main">
+            <div class="teksttv-field teksttv-field--campaign-half">
                 <?php if (!empty($available_groups)) : ?>
-                <select name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)...'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
+                <label for="<?php echo esc_attr($groups_id); ?>" data-teksttv-label="groups"><?php echo esc_html('Groep(en)'); ?></label>
+                <select id="<?php echo esc_attr($groups_id); ?>" data-teksttv-field="groups" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
                     <?php foreach ($available_groups as $group_option) : ?>
                     <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
+                <span class="teksttv-field-label"><?php echo esc_html('Groep(en)'); ?></span>
                 <p class="description"><?php echo wp_kses(sprintf('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
-            <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Max. slides'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max %s" />
+            <div class="teksttv-field teksttv-field--campaign-half">
+                <label for="<?php echo esc_attr($limit_id); ?>" data-teksttv-label="limit"><?php echo esc_html('Maximaal aantal slides'); ?></label>
+                <input type="number" id="<?php echo esc_attr($limit_id); ?>" data-teksttv-field="limit" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max. %s" />
                 <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>
         <div class="teksttv-field-grid teksttv-field-grid--transitions">
             <?php
-            self::render_transition_picker('Intro afbeelding', $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
-            self::render_transition_picker('Outro afbeelding', $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');
+            self::render_transition_picker('Introafbeelding', $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
+            self::render_transition_picker('Outroafbeelding', $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');
             ?>
         </div>
         <?php
@@ -73,13 +76,13 @@ final class CampaignLoopBlock
     {
         ?>
         <div class="teksttv-field teksttv-field--primary teksttv-image-picker">
-            <label><?php echo esc_html($label); ?></label>
+            <span class="teksttv-field-label"><?php echo esc_html($label); ?></span>
             <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr($image_id ? (string) $image_id : ''); ?>" class="teksttv-block-image-id" data-summary data-summary-label="<?php echo esc_attr($label); ?>" />
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
-                <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" />
+                <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" width="80" height="50" loading="lazy" />
             </div>
-            <button type="button" class="button button-small teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php echo esc_html('Kiezen'); ?></button>
-            <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php echo esc_html('Verwijderen'); ?></button>
+            <button type="button" class="button button-small teksttv-block-image-select" aria-label="<?php echo esc_attr($label . ' kiezen'); ?>"><span class="dashicons dashicons-upload teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Kiezen'); ?></button>
+            <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>" aria-label="<?php echo esc_attr($label . ' verwijderen'); ?>"><?php echo esc_html('Verwijderen'); ?></button>
         </div>
         <?php
     }

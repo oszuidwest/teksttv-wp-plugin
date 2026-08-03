@@ -3,6 +3,7 @@
  * Settings page template.
  *
  * @var list<array{slug: string, label: string}> $channels
+ * @var string $api_base_url
  * @var list<string> $features
  * @var list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
  * @var list<string> $enabled_taxonomies
@@ -13,7 +14,7 @@ namespace TekstTV;
 defined('ABSPATH') || exit;
 
 echo '<div class="wrap teksttv-admin">';
-echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
+echo '<h1>' . esc_html('Tekst TV-instellingen') . '</h1>';
 
 ?>
 <div class="teksttv-tab-content" x-data="teksttvSettingsPage">
@@ -22,37 +23,43 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
         <!-- Channels -->
         <div class="teksttv-card">
-            <h3><?php echo esc_html('Kanalen'); ?></h3>
-            <p class="description"><?php echo esc_html('Beheer de kanalen waarvoor Tekst TV slides worden gegenereerd. Elk kanaal krijgt een eigen loop en API endpoint.'); ?></p>
+            <h2><?php echo esc_html('Kanalen'); ?></h2>
+            <p class="description"><?php echo esc_html('Beheer de kanalen waarvoor Tekst TV-slides worden gegenereerd. Elk kanaal krijgt een eigen loop en API-endpoint.'); ?></p>
             <div class="teksttv-table-scroll">
-                <table class="widefat teksttv-management-table" id="teksttv-channels" @click="channelsClick($event)">
+                <table class="widefat teksttv-management-table" id="teksttv-channels" data-api-base="<?php echo esc_url($api_base_url); ?>" @click="channelsClick($event)" @input="channelsInput($event)">
                     <thead>
                         <tr>
                             <th><?php echo esc_html('Slug'); ?></th>
                             <th><?php echo esc_html('Naam'); ?></th>
+                            <th><?php echo esc_html('API'); ?></th>
                             <th class="teksttv-table-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($channels as $i => $ch) : ?>
+                        <?php foreach ($channels as $i => $ch) :
+                            $api_url = add_query_arg('channel', $ch['slug'], $api_base_url);
+                            $slug_id = 'teksttv-channel-' . (string) $i . '-slug';
+                            $label_id = 'teksttv-channel-' . (string) $i . '-label';
+                            ?>
                         <tr class="teksttv-channel-row">
-                            <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" /></td>
-                            <td><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" /></td>
+                            <td><label class="teksttv-mobile-field-label" for="<?php echo esc_attr($slug_id); ?>"><?php echo esc_html('Slug'); ?></label><input type="text" id="<?php echo esc_attr($slug_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" autocomplete="off" spellcheck="false" /></td>
+                            <td><label class="teksttv-mobile-field-label" for="<?php echo esc_attr($label_id); ?>"><?php echo esc_html('Naam'); ?></label><input type="text" id="<?php echo esc_attr($label_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" autocomplete="off" /></td>
+                            <td class="teksttv-channel-endpoint"><button type="button" class="button teksttv-copy-endpoint" data-endpoint="<?php echo esc_url($api_url); ?>"><span class="dashicons dashicons-clipboard" aria-hidden="true"></span><span class="teksttv-copy-endpoint-label" aria-live="polite"><?php echo esc_html('Link kopiëren'); ?></span></button></td>
                             <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
-            <p class="teksttv-card-actions">
-                <button type="button" class="button" id="teksttv-add-channel" @click.prevent="addChannelRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon"></span> <?php echo esc_html('Kanaal toevoegen'); ?></button>
-            </p>
+            <div class="teksttv-add-block-bar teksttv-section-actions">
+                <button type="button" class="button teksttv-add-action" id="teksttv-add-channel" @click.prevent="addChannelRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Kanaal toevoegen'); ?></button>
+            </div>
         </div>
 
         <!-- Features -->
         <div class="teksttv-card">
-            <h3><?php echo esc_html('Post editor features'); ?></h3>
-            <p class="description"><?php echo esc_html('Bepaal welke opties beschikbaar zijn bij het bewerken van een post.'); ?></p>
+            <h2><?php echo esc_html('Berichteditor'); ?></h2>
+            <p class="description"><?php echo esc_html('Bepaal welke opties beschikbaar zijn bij het bewerken van een bericht.'); ?></p>
             <fieldset class="teksttv-checkbox-list">
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="custom_title" <?php checked(in_array('custom_title', $features, true)); ?> />
@@ -75,7 +82,7 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
                     <?php echo esc_html('Paginascheiding (meerdere slides)'); ?>
                 </label>
             </fieldset>
-            <h4><?php echo esc_html('Tekst opmaak'); ?></h4>
+            <h3><?php echo esc_html('Tekstopmaak'); ?></h3>
             <fieldset class="teksttv-checkbox-list teksttv-checkbox-list--inline">
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="bold" <?php checked(in_array('bold', $features, true)); ?> />
@@ -94,7 +101,7 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
                     <?php echo esc_html('Lijsten'); ?>
                 </label>
             </fieldset>
-            <h4><?php echo esc_html('AI'); ?></h4>
+            <h3><?php echo esc_html('AI'); ?></h3>
             <fieldset class="teksttv-checkbox-list">
                 <label class="teksttv-checkbox-list-item">
                     <input type="checkbox" name="teksttv_features[]" value="ai_generate" <?php checked(in_array('ai_generate', $features, true)); ?> />
@@ -105,8 +112,8 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
         <!-- Slide duur -->
         <div class="teksttv-card">
-            <h3><?php echo esc_html('Slide duur'); ?></h3>
-            <p class="description"><?php echo esc_html('Standaard weergaveduur per slide type. Kan per post worden overschreven.'); ?></p>
+            <h2><?php echo esc_html('Slideduur'); ?></h2>
+            <p class="description"><?php echo esc_html('Standaard weergaveduur per type slide. Kan per bericht worden overschreven.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
                     <th scope="row"><label for="teksttv_duration_text"><?php echo esc_html('Tekstslide'); ?></label></th>
@@ -131,8 +138,8 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
         <!-- Taxonomies -->
         <div class="teksttv-card">
-            <h3><?php echo esc_html('Taxonomy filters'); ?></h3>
-            <p class="description"><?php echo esc_html('Kies welke taxonomies beschikbaar zijn als filter in de loop-blokken.'); ?></p>
+            <h2><?php echo esc_html('Taxonomiefilters'); ?></h2>
+            <p class="description"><?php echo esc_html('Kies welke taxonomieën beschikbaar zijn als filter in de loopblokken.'); ?></p>
             <fieldset class="teksttv-checkbox-list">
                 <?php foreach ($all_taxonomies as $tax) : ?>
                 <label class="teksttv-checkbox-list-item">
@@ -145,8 +152,8 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
         <!-- Standaardwaarden -->
         <div class="teksttv-card">
-            <h3><?php echo esc_html('Standaardwaarden'); ?></h3>
-            <p class="description"><?php echo esc_html('Standaard instellingen voor nieuwe Tekst TV items op posts.'); ?></p>
+            <h2><?php echo esc_html('Standaardwaarden'); ?></h2>
+            <p class="description"><?php echo esc_html('Standaardinstellingen voor nieuwe Tekst TV-items bij berichten.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
                     <th scope="row"><label for="teksttv_default_end_days"><?php echo esc_html('Standaard einddatum'); ?></label></th>
@@ -169,13 +176,13 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
         <!-- Weather -->
         <div class="teksttv-card">
-            <h3><?php echo esc_html('Weer'); ?></h3>
-            <p class="description"><?php echo esc_html('OpenWeather API configuratie voor weer-slides.'); ?></p>
+            <h2><?php echo esc_html('Weer'); ?></h2>
+            <p class="description"><?php echo esc_html('OpenWeather-API-configuratie voor weerslides.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
-                    <th scope="row"><label for="teksttv_openweather_api_key"><?php echo esc_html('API key'); ?></label></th>
+                    <th scope="row"><label for="teksttv_openweather_api_key"><?php echo esc_html('API-sleutel'); ?></label></th>
                     <td>
-                        <input type="text" id="teksttv_openweather_api_key" name="teksttv_openweather_api_key" value="<?php echo esc_attr(get_option('teksttv_openweather_api_key', '')); ?>" class="regular-text" />
+                        <input type="text" id="teksttv_openweather_api_key" name="teksttv_openweather_api_key" value="<?php echo esc_attr(get_option('teksttv_openweather_api_key', '')); ?>" class="regular-text" autocomplete="off" spellcheck="false" />
                         <p class="description"><?php echo wp_kses('OneCall API 3.0 key van <a href="https://openweathermap.org/api" target="_blank" rel="noopener">openweathermap.org</a>.', ['a' => ['href' => [], 'target' => [], 'rel' => []]]); ?></p>
                     </td>
                 </tr>
@@ -184,20 +191,20 @@ echo '<h1>' . esc_html('Tekst TV Instellingen') . '</h1>';
 
         <!-- Preview -->
         <div class="teksttv-card">
-            <h3><?php echo esc_html('Preview'); ?></h3>
+            <h2><?php echo esc_html('Preview'); ?></h2>
             <p class="description"><?php echo esc_html('Configureer de live preview die getoond wordt bij het bewerken van posts.'); ?></p>
             <table class="form-table teksttv-form-table">
                 <tr>
-                    <th scope="row"><label for="teksttv_preview_url"><?php echo esc_html('Preview URL'); ?></label></th>
+                    <th scope="row"><label for="teksttv_preview_url"><?php echo esc_html('Preview-URL'); ?></label></th>
                     <td>
-                        <input type="url" id="teksttv_preview_url" name="teksttv_preview_url" value="<?php echo esc_attr(Helpers::get_preview_url()); ?>" class="large-text" placeholder="https://teksttv.example.com/zuidwest-1/preview" />
-                        <p class="description"><?php echo esc_html('De volledige URL naar de TekstTV frontend preview pagina.'); ?></p>
+                        <input type="url" id="teksttv_preview_url" name="teksttv_preview_url" value="<?php echo esc_attr(Helpers::get_preview_url()); ?>" class="large-text" placeholder="https://teksttv.example.com/zuidwest-1/preview" spellcheck="false" />
+                        <p class="description"><?php echo esc_html('De volledige URL naar de previewpagina van de Tekst TV-frontend.'); ?></p>
                     </td>
                 </tr>
             </table>
         </div>
 
-        <?php submit_button('Instellingen opslaan'); ?>
+        <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
     </form>
 </div>
 <?php

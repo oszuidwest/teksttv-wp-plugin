@@ -119,6 +119,26 @@ test.describe('admin interaction contracts', () => {
         expect(new Set(controlledIds).size).toBe(controlledIds.length);
     });
 
+    test('shows the shared empty state again after removing the last workbench item', async ({ page }) => {
+        await page.goto(LOOP_URL);
+
+        for (const rootId of ['#teksttv-blocks', '#teksttv-ticker']) {
+            const root = page.locator(rootId);
+            const removeButtons = root.locator('.teksttv-remove-block');
+            while ((await removeButtons.count()) > 0) {
+                const previousCount = await removeButtons.count();
+                await removeButtons.first().dispatchEvent('click');
+                await expect(removeButtons).toHaveCount(previousCount - 1);
+            }
+            await expect(root.locator(':scope > .teksttv-empty-state')).toBeVisible();
+        }
+
+        await addLoopBlock(page, 'articles');
+        await expect(page.locator('#teksttv-blocks > .teksttv-empty-state')).toHaveCount(0);
+        await addTickerBlock(page, 'ticker_text');
+        await expect(page.locator('#teksttv-ticker > .teksttv-empty-state')).toHaveCount(0);
+    });
+
     test('removes a middle loop block and reindexes every remaining field', async ({ page }) => {
         await page.goto(LOOP_URL);
         await addLoopBlock(page, 'image');
@@ -154,6 +174,29 @@ test.describe('admin interaction contracts', () => {
 
         await expect(blocks.nth(0)).toHaveAttribute('data-type', 'iframe');
         await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
+    });
+
+    test('reorders blocks by keyboard and keeps field labels connected', async ({ page }) => {
+        await page.goto(LOOP_URL);
+        await addLoopBlock(page, 'iframe');
+
+        const blocks = page.locator('#teksttv-blocks > .teksttv-block');
+        const iframe = page.locator('#teksttv-blocks > .teksttv-block[data-type="iframe"]').last();
+        await iframe.locator('.teksttv-move-block-up').focus();
+        await page.keyboard.press('Enter');
+
+        await expect(blocks.first()).toHaveAttribute('data-type', 'iframe');
+        await expect(blocks.first().locator('.teksttv-move-block-up')).toBeDisabled();
+        await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
+
+        const brokenLabels = await page.locator('#teksttv-blocks label[for]').evaluateAll(
+            (labels) =>
+                labels.filter((label) => {
+                    const id = label.getAttribute('for');
+                    return !id || !document.getElementById(id);
+                }).length,
+        );
+        expect(brokenLabels).toBe(0);
     });
 
     test('shows and clears scheduling fields through the scheduling toggle', async ({ page }) => {
@@ -209,11 +252,20 @@ test.describe('admin interaction contracts', () => {
 
         const rows = page.locator('#teksttv-channels tbody > .teksttv-channel-row');
         await expect(rows.first().locator('.teksttv-remove-channel')).toHaveClass(/button-link-delete/);
+        await expect(rows.first().locator('.teksttv-copy-endpoint')).toHaveAttribute(
+            'data-endpoint',
+            /\/wp-json\/teksttv\/v1\/slides\?channel=tv1$/,
+        );
+        await rows.first().locator('.teksttv-copy-endpoint').click();
+        await expect(rows.first().locator('.teksttv-copy-endpoint-label')).toHaveText('Gekopieerd!');
         await page.locator('#teksttv-add-channel').click();
         await expect(rows.last().locator('.teksttv-remove-channel')).toHaveClass(/button-link-delete/);
         await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-two');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Two');
+        const copyEndpoint = rows.last().locator('.teksttv-copy-endpoint');
+        await expect(copyEndpoint).toBeEnabled();
+        await expect(copyEndpoint).toHaveAttribute('data-endpoint', /\/wp-json\/teksttv\/v1\/slides\?channel=e2e-two$/);
         await page.locator('#teksttv-add-channel').click();
         await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-three');
@@ -234,6 +286,41 @@ test.describe('admin interaction contracts', () => {
             ':scope > .teksttv-channel-row',
             'teksttv_channels',
         );
+    });
+
+    test('keeps management actions reachable without horizontal overflow on mobile', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+
+        await page.goto('/wp-admin/admin.php?page=teksttv-settings');
+        await expect(page.locator('#teksttv-channels .teksttv-copy-endpoint').first()).toBeVisible();
+        await expect(page.locator('#teksttv-channels .teksttv-remove-channel').first()).toBeVisible();
+        const settingsOverflow = await page
+            .locator('.teksttv-settings-form')
+            .evaluate((form) => form.scrollWidth - form.clientWidth);
+        expect(settingsOverflow).toBeLessThanOrEqual(1);
+
+        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await expect(page.locator('#submit')).toBeVisible();
+        const campaignsOverflow = await page
+            .locator('form.teksttv-admin-column')
+            .evaluate((form) => form.scrollWidth - form.clientWidth);
+        expect(campaignsOverflow).toBeLessThanOrEqual(1);
+    });
+
+    test('warns before leaving a form with unsaved changes', async ({ page }) => {
+        const settingsUrl = '/wp-admin/admin.php?page=teksttv-settings';
+        await page.goto(settingsUrl);
+        const duration = page.locator('input[name="teksttv_duration_text"]');
+        await duration.click();
+        await duration.fill('41');
+
+        const dialogPromise = page.waitForEvent('dialog');
+        const navigationPromise = page.goto(LOOP_URL).catch(() => null);
+        const dialog = await dialogPromise;
+        expect(dialog.type()).toBe('beforeunload');
+        await dialog.dismiss();
+        await navigationPromise;
+        await expect(page).toHaveURL(new RegExp(`${settingsUrl.replace(/[?]/g, '\\?')}$`));
     });
 
     // Only these tests submit forms and persist real option changes; the tests

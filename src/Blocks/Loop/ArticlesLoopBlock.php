@@ -37,27 +37,30 @@ final class ArticlesLoopBlock
         $dur_image = $block['duration_image'] ?? '';
         $default_text = (int) get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text']);
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
+        $count_id = Helpers::field_id($prefix, $index, 'count');
+        $duration_text_id = Helpers::field_id($prefix, $index, 'duration-text');
+        $duration_image_id = Helpers::field_id($prefix, $index, 'duration-image');
 
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Aantal'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
+                <label for="<?php echo esc_attr($count_id); ?>" data-teksttv-label="count"><?php echo esc_html('Aantal'); ?></label>
+                <input type="number" id="<?php echo esc_attr($count_id); ?>" data-teksttv-field="count" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
         <div class="teksttv-field-grid teksttv-field-grid--duration">
             <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur tekst'); ?></label>
+                <label for="<?php echo esc_attr($duration_text_id); ?>" data-teksttv-label="duration-text"><?php echo esc_html('Duur tekst'); ?></label>
                 <div class="teksttv-input-with-unit">
-                    <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_text]" value="<?php echo esc_attr((string) $dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" />
+                    <input type="number" id="<?php echo esc_attr($duration_text_id); ?>" data-teksttv-field="duration-text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_text]" value="<?php echo esc_attr((string) $dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" />
                     <span class="teksttv-unit">sec</span>
                 </div>
             </div>
             <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur afbeelding'); ?></label>
+                <label for="<?php echo esc_attr($duration_image_id); ?>" data-teksttv-label="duration-image"><?php echo esc_html('Duur afbeelding'); ?></label>
                 <div class="teksttv-input-with-unit">
-                    <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_image]" value="<?php echo esc_attr((string) $dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" />
+                    <input type="number" id="<?php echo esc_attr($duration_image_id); ?>" data-teksttv-field="duration-image" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_image]" value="<?php echo esc_attr((string) $dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" />
                     <span class="teksttv-unit">sec</span>
                 </div>
             </div>

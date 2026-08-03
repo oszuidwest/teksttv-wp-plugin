@@ -1,9 +1,17 @@
 import Sortable from 'sortablejs';
+import { markFormDirty } from '../../modules/dirtyForms';
 import { reindexNames, siblingFocusTarget } from '../../modules/dom';
 import { initTomSelectIn } from '../../modules/tomSelect';
 import { debounce } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
-import { handleBlocksClick, removeClosestBlock, setBlockOpen, toggleBlockOpen } from './handleBlocksClick';
+import {
+    handleBlocksClick,
+    moveClosestBlock,
+    removeClosestBlock,
+    setBlockOpen,
+    toggleBlockOpen,
+    updateBlockOrderControls,
+} from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -14,6 +22,43 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let tickerEl: HTMLElement | null = null;
     let groupsTbody: HTMLTableSectionElement | null = null;
     let newGroupSeq = 0;
+
+    function ensureEmptyState(root: HTMLElement): void {
+        const emptyState = root.querySelector<HTMLElement>(':scope > .teksttv-empty-state');
+        if (root.querySelector(':scope > .teksttv-block')) {
+            emptyState?.remove();
+            return;
+        }
+        if (emptyState || !root.dataset.emptyText) return;
+
+        const state = document.createElement('div');
+        state.className = 'teksttv-empty-state';
+        const icon = document.createElement('span');
+        icon.className = `dashicons dashicons-${root.dataset.emptyIcon || 'info-outline'}`;
+        icon.setAttribute('aria-hidden', 'true');
+        const text = document.createElement('p');
+        text.textContent = root.dataset.emptyText;
+        state.append(icon, text);
+        root.append(state);
+    }
+
+    function ensureGroupEmptyState(): void {
+        if (!groupsTbody) return;
+        const emptyRow = groupsTbody.querySelector('.teksttv-table-empty');
+        if (groupsTbody.querySelector('.teksttv-group-row')) {
+            emptyRow?.remove();
+            return;
+        }
+        if (emptyRow) return;
+
+        const row = document.createElement('tr');
+        row.className = 'teksttv-table-empty';
+        const cell = document.createElement('td');
+        cell.colSpan = 2;
+        cell.textContent = 'Nog geen groepen. Voeg een groep toe om campagnes te ordenen.';
+        row.append(cell);
+        groupsTbody.append(row);
+    }
 
     function reindexDisclosureIds(root: HTMLElement): void {
         // The id scheme must match the server-rendered ids (AdminPage /
@@ -29,16 +74,50 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         });
     }
 
+    function reindexFieldIds(root: HTMLElement): void {
+        root.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block, index) => {
+            block.querySelectorAll<HTMLElement>('[data-teksttv-field]').forEach((control) => {
+                const key = control.dataset.teksttvField;
+                if (!key) return;
+                const id = `${root.id}-${index}-${key}`;
+                control.id = id;
+
+                // Tom Select moves label focus to its generated text input.
+                // Keep that id in step when a block is reordered or removed.
+                const tomSelect = (
+                    control as HTMLElement & {
+                        tomselect?: { control_input?: HTMLInputElement };
+                    }
+                ).tomselect;
+                if (tomSelect?.control_input) tomSelect.control_input.id = `${id}-ts-control`;
+            });
+            block.querySelectorAll<HTMLLabelElement>('[data-teksttv-label]').forEach((label) => {
+                const key = label.dataset.teksttvLabel;
+                if (!key) return;
+                const control = block.querySelector<HTMLElement & { tomselect?: { control_input?: HTMLInputElement } }>(
+                    `[data-teksttv-field="${key}"]`,
+                );
+                label.htmlFor = control?.tomselect?.control_input?.id ?? `${root.id}-${index}-${key}`;
+            });
+        });
+    }
+
     function reindexBlocks(): void {
         if (!blocksEl) return;
         reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/);
         reindexDisclosureIds(blocksEl);
+        reindexFieldIds(blocksEl);
+        updateBlockOrderControls(blocksEl);
+        ensureEmptyState(blocksEl);
     }
 
     function reindexTicker(): void {
         if (!tickerEl) return;
         reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/);
         reindexDisclosureIds(tickerEl);
+        reindexFieldIds(tickerEl);
+        updateBlockOrderControls(tickerEl);
+        ensureEmptyState(tickerEl);
     }
 
     function refreshSummaries(): void {
@@ -62,10 +141,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         if (!(newBlock instanceof HTMLElement)) return;
         root.append(newBlock);
         reindex();
-        if (root === blocksEl) {
-            // Only the blocks list renders an empty-state; a ticker insert must not remove it.
-            document.querySelector('#teksttv-empty-state')?.remove();
-        }
         setBlockOpen(newBlock, true, false);
         // A no-op for templates without .teksttv-tomselect fields — the
         // class on the rendered fields is the declaration.
@@ -75,6 +150,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             : newBlock.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
         focusTarget?.focus();
         refreshSummaries();
+        markFormDirty(root);
     }
 
     const clickCtx: BlocksWorkbenchContext = {
@@ -107,7 +183,10 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             new Sortable(blocksEl, {
                 ...BLOCK_SORTABLE_OPTS,
                 onEnd: (evt) => {
-                    if (evt.oldIndex !== evt.newIndex) reindexBlocks();
+                    if (evt.oldIndex !== evt.newIndex) {
+                        reindexBlocks();
+                        markFormDirty(blocksEl as HTMLElement);
+                    }
                 },
             });
 
@@ -116,15 +195,23 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 new Sortable(tickerEl, {
                     ...BLOCK_SORTABLE_OPTS,
                     onEnd: (evt) => {
-                        if (evt.oldIndex !== evt.newIndex) reindexTicker();
+                        if (evt.oldIndex !== evt.newIndex) {
+                            reindexTicker();
+                            markFormDirty(tickerEl as HTMLElement);
+                        }
                     },
                 });
             }
 
             refreshSummaries();
+            updateBlockOrderControls(blocksEl);
+            ensureEmptyState(blocksEl);
+            if (tickerEl) updateBlockOrderControls(tickerEl);
+            if (tickerEl) ensureEmptyState(tickerEl);
 
             if (opts.groups) {
                 groupsTbody = document.querySelector('#teksttv-groups')?.querySelector('tbody') ?? null;
+                ensureGroupEmptyState();
             }
         },
 
@@ -170,6 +257,24 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         tickerClick(e: MouseEvent): void {
             if (!(e.target instanceof Element) || !tickerEl) return;
 
+            const moveUp = e.target.closest('.teksttv-move-block-up');
+            if (moveUp && tickerEl.contains(moveUp)) {
+                moveClosestBlock(moveUp, -1, () => {
+                    reindexTicker();
+                    refreshSummaries();
+                });
+                return;
+            }
+
+            const moveDown = e.target.closest('.teksttv-move-block-down');
+            if (moveDown && tickerEl.contains(moveDown)) {
+                moveClosestBlock(moveDown, 1, () => {
+                    reindexTicker();
+                    refreshSummaries();
+                });
+                return;
+            }
+
             const rem = e.target.closest('.teksttv-remove-block');
             if (rem && tickerEl.contains(rem)) {
                 e.stopPropagation();
@@ -192,6 +297,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addGroupRow(): void {
             if (!groupsTbody) return;
+            groupsTbody.querySelector('.teksttv-table-empty')?.remove();
             // New rows have an empty id; the server derives a stable id from the
             // label on save. The index only needs to be unique within the form.
             const key = `new-${newGroupSeq++}`;
@@ -199,11 +305,13 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 '<tr class="teksttv-group-row">' +
                 '<td>' +
                 `<input type="hidden" name="teksttv_campaign_groups[${key}][id]" value="" />` +
-                `<input type="text" name="teksttv_campaign_groups[${key}][label]" value="" class="regular-text" required placeholder="Bijv. Campagne" />` +
+                `<label class="teksttv-mobile-field-label" for="teksttv-group-${key}-label">Naam</label>` +
+                `<input type="text" id="teksttv-group-${key}-label" name="teksttv_campaign_groups[${key}][label]" value="" class="regular-text" required placeholder="bijv. Campagne" autocomplete="off" />` +
                 '</td>' +
                 '<td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="Groep verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
                 '</tr>';
             groupsTbody.insertAdjacentHTML('beforeend', row);
+            markFormDirty(groupsTbody);
             groupsTbody
                 .querySelector<HTMLInputElement>(':scope > .teksttv-group-row:last-of-type input[name$="[label]"]')
                 ?.focus();
@@ -221,6 +329,8 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 document.querySelector<HTMLElement>('#teksttv-add-group'),
             );
             row.remove();
+            ensureGroupEmptyState();
+            markFormDirty(groupsTbody);
             focusTarget?.focus();
         },
     };

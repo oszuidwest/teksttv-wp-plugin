@@ -139,21 +139,24 @@ final class WeatherLoopBlock
         $location = $block['location'] ?? '';
         $title = $block['title'] ?? '';
         $duration = $block['duration'] ?? '';
+        $location_id = Helpers::field_id($prefix, $index, 'location');
+        $title_id = Helpers::field_id($prefix, $index, 'title');
+        $duration_id = Helpers::field_id($prefix, $index, 'duration');
 
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--text">
-                <label><?php echo esc_html('Locatie'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda,NL'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
+                <label for="<?php echo esc_attr($location_id); ?>" data-teksttv-label="location"><?php echo esc_html('Locatie'); ?></label>
+                <input type="text" id="<?php echo esc_attr($location_id); ?>" data-teksttv-field="location" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda, NL'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
             </div>
             <div class="teksttv-field teksttv-field--text">
-                <label><?php echo esc_html('Titel'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" />
+                <label for="<?php echo esc_attr($title_id); ?>" data-teksttv-label="title"><?php echo esc_html('Titel'); ?></label>
+                <input type="text" id="<?php echo esc_attr($title_id); ?>" data-teksttv-field="title" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" autocomplete="off" />
             </div>
             <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur'); ?></label>
+                <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur'); ?></label>
                 <div class="teksttv-input-with-unit">
-                    <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" />
+                    <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" />
                     <span class="teksttv-unit">sec</span>
                 </div>
             </div>
