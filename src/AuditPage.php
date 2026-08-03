@@ -13,7 +13,8 @@ class AuditPage
 
     public static function register_menu(): void
     {
-        if (!Helpers::ai_supported()) {
+        // Avoid potentially remote provider discovery for users who cannot access this page.
+        if (!current_user_can('manage_teksttv') || !Helpers::ai_supported()) {
             return;
         }
 

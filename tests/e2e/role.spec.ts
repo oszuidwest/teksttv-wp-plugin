@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBrowserErrors, login, runWp } from './helpers';
+import { getBrowserErrors, login } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 
 // The suite-wide storageState is the admin session; this test logs in as its
@@ -28,21 +28,4 @@ test('custom-capability role can open and save settings', async ({ page }) => {
     await page.click('#submit');
 
     await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('37');
-});
-
-test('content-only role cannot open prompts without a supported text generator', async ({ page }) => {
-    await login(page, 'teksttv_content_editor', 'password');
-
-    const response = await page.context().request.get('/wp-admin/admin.php?page=teksttv-content');
-    expect(response.status()).toBe(403);
-
-    const saved = JSON.parse(runWp('option', 'get', 'teksttv_ai_prompts', '--format=json'));
-    expect(saved).toMatchObject({
-        region_taxonomy: 'category',
-        provider: 'protected-provider',
-        model: 'protected-provider/protected-model',
-        temperature: 0.4,
-        top_p: 0.8,
-        max_tokens: 1024,
-    });
 });

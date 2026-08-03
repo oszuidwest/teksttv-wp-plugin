@@ -134,8 +134,8 @@ class AdminPage
             [self::class, 'render_settings_page']
         );
 
-        // AI prompts submenu (separate capability)
-        if (Helpers::ai_supported()) {
+        // Avoid potentially remote provider discovery for users who cannot access this page.
+        if (current_user_can('manage_teksttv_content') && Helpers::ai_supported()) {
             add_submenu_page(
                 'teksttv',
                 'Content & AI',

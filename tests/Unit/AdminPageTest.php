@@ -26,6 +26,15 @@ class AdminPageTest extends TestCase
         $this->assertContains('teksttv-content', $submenu_slugs());
     }
 
+    public function test_register_menu_skips_content_page_and_ai_discovery_without_capability(): void
+    {
+        $submenu_slugs = $this->stubMenuRegistration(true, false);
+
+        AdminPage::register_menu();
+
+        $this->assertNotContains('teksttv-content', $submenu_slugs());
+    }
+
     public function test_preview_url_shares_site_origin_true_for_exact_origin(): void
     {
         $this->stubWpParseUrl();
@@ -478,7 +487,7 @@ class AdminPageTest extends TestCase
     /**
      * @return callable(): list<string>
      */
-    private function stubMenuRegistration(bool $ai_supported): callable
+    private function stubMenuRegistration(bool $ai_supported, bool $can_manage_content = true): callable
     {
         $submenu_slugs = [];
         Functions\when('get_option')->alias(static function (string $key, mixed $default = false): mixed {
@@ -488,6 +497,11 @@ class AdminPageTest extends TestCase
                 default => $default,
             };
         });
+        if ($can_manage_content) {
+            Functions\when('current_user_can')->justReturn(true);
+        } else {
+            Functions\expect('current_user_can')->with('manage_teksttv_content')->once()->andReturn(false);
+        }
         Functions\when('add_menu_page')->justReturn(null);
         Functions\when('add_submenu_page')->alias(
             static function (
@@ -501,10 +515,15 @@ class AdminPageTest extends TestCase
             }
         );
         Functions\when('remove_submenu_page')->justReturn(null);
-        Functions\when('wp_supports_ai')->justReturn(true);
-        Functions\when('wp_ai_client_prompt')->justReturn(
-            $ai_supported ? self::mockAiBuilder() : self::mockUnsupportedAiBuilder()
-        );
+        if ($can_manage_content) {
+            Functions\when('wp_supports_ai')->justReturn(true);
+            Functions\when('wp_ai_client_prompt')->justReturn(
+                $ai_supported ? self::mockAiBuilder() : self::mockUnsupportedAiBuilder()
+            );
+        } else {
+            Functions\expect('wp_supports_ai')->never();
+            Functions\expect('wp_ai_client_prompt')->never();
+        }
 
         return static function () use (&$submenu_slugs): array {
             return $submenu_slugs;

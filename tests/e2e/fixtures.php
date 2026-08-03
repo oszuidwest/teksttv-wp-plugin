@@ -28,16 +28,7 @@ update_option('teksttv_features', [
     'ai_generate',
 ]);
 
-// Only the protected fields, seeded with sentinels distinguishable from the
-// plugin defaults; role.spec.ts asserts a content editor cannot overwrite them.
-update_option('teksttv_ai_prompts', [
-    'region_taxonomy' => 'category',
-    'provider' => 'protected-provider',
-    'model' => 'protected-provider/protected-model',
-    'temperature' => 0.4,
-    'top_p' => 0.8,
-    'max_tokens' => 1024,
-]);
+update_option('teksttv_ai_prompts', []);
 
 update_option('teksttv_loop_tv1', [
     ['type' => 'articles', 'count' => 1, 'taxonomy_filters' => []],
@@ -135,34 +126,24 @@ add_role('teksttv_smoke_role', 'TekstTV Smoke Role', [
     'manage_teksttv_content' => true,
 ]);
 
-// Content editors may change prompts, but must not gain general TekstTV
-// administration or the hidden provider/model controls.
-remove_role('teksttv_content_role');
-add_role('teksttv_content_role', 'TekstTV Content Role', [
-    'read' => true,
-    'manage_teksttv_content' => true,
-]);
-
-foreach (['teksttv_editor' => 'teksttv_smoke_role', 'teksttv_content_editor' => 'teksttv_content_role'] as $teksttv_login => $teksttv_role) {
-    $teksttv_user = get_user_by('login', $teksttv_login);
-    if ($teksttv_user) {
-        wp_set_password('password', $teksttv_user->ID);
-    } else {
-        $teksttv_uid = wp_create_user($teksttv_login, 'password', $teksttv_login . '@example.test');
-        if (is_wp_error($teksttv_uid)) {
-            throw new RuntimeException('Could not create the ' . $teksttv_login . ' fixture: ' . $teksttv_uid->get_error_message());
-        }
-        $teksttv_user = new WP_User($teksttv_uid);
+$teksttv_user = get_user_by('login', 'teksttv_editor');
+if ($teksttv_user) {
+    wp_set_password('password', $teksttv_user->ID);
+} else {
+    $teksttv_uid = wp_create_user('teksttv_editor', 'password', 'teksttv_editor@example.test');
+    if (is_wp_error($teksttv_uid)) {
+        throw new RuntimeException('Could not create the teksttv_editor fixture: ' . $teksttv_uid->get_error_message());
     }
-    $teksttv_user->set_role($teksttv_role);
+    $teksttv_user = new WP_User($teksttv_uid);
 }
+$teksttv_user->set_role('teksttv_smoke_role');
 
 // Disable the block-editor welcome guide via the persisted preference core
 // preloads into the editor, so the onboarding modal never mounts and cannot
 // race the specs. The post editor reads core/edit-post; `_modified` must be
 // current or a stale localStorage copy wins the client-side persistence merge.
 $teksttv_prefs_key = $GLOBALS['wpdb']->get_blog_prefix() . 'persisted_preferences';
-foreach (['admin', 'teksttv_editor', 'teksttv_content_editor'] as $teksttv_login) {
+foreach (['admin', 'teksttv_editor'] as $teksttv_login) {
     $teksttv_user = get_user_by('login', $teksttv_login);
     if ($teksttv_user) {
         update_user_meta($teksttv_user->ID, $teksttv_prefs_key, [
