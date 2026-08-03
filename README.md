@@ -63,7 +63,7 @@ If you need a different distribution, use a capability plugin.
 - Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, campaign and weather. The ticker is configured separately.
 - Settings: channel slugs (`tv1`, `tv2`, …), display duration for text and images, OpenWeather API key, feature toggles (TinyMCE, AI, scheduling), preview URL.
 - Campaigns: campaign blocks and groups used in the loop.
-- Content & AI / AI Audit, when AI generation is enabled: prompts and audit log. Uses WordPress AI when available (`wp_supports_ai()`).
+- Content & AI / AI Audit, when AI generation is enabled and a configured provider supports TekstTV's text-generation requirements: prompts and audit log.
 
 If no channels are stored, `tv1` is assumed.
 

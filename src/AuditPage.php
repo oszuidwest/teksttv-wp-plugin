@@ -13,7 +13,7 @@ class AuditPage
 
     public static function register_menu(): void
     {
-        if (!Helpers::has_feature('ai_generate')) {
+        if (!Helpers::ai_supported()) {
             return;
         }
 

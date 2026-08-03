@@ -135,7 +135,7 @@ class AdminPage
         );
 
         // AI prompts submenu (separate capability)
-        if (Helpers::has_feature('ai_generate')) {
+        if (Helpers::ai_supported()) {
             add_submenu_page(
                 'teksttv',
                 'Content & AI',
