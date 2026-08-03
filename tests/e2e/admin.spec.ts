@@ -59,6 +59,28 @@ test.describe('administrator admin screens', () => {
         expect(desktopFields[0]).toBeGreaterThan(desktopFields[1]);
         expect(desktopFields[1]).toBeGreaterThan(desktopFields[2]);
 
+        const firstRowLabels = fields.locator(':scope > label');
+        const labelTops = await firstRowLabels.evaluateAll((elements) =>
+            elements.map((element) => element.getBoundingClientRect().top),
+        );
+        expect(Math.max(...labelTops) - Math.min(...labelTops)).toBeLessThan(1);
+
+        const nameInput = fields.first().locator('input');
+        const startDateLabel = firstCampaign.locator('input[name$="[date_start]"]').locator('..').locator('label');
+        const [nameInputBottom, startDateLabelTop] = await Promise.all([
+            nameInput.evaluate((element) => element.getBoundingClientRect().bottom),
+            startDateLabel.evaluate((element) => element.getBoundingClientRect().top),
+        ]);
+        expect(startDateLabelTop - nameInputBottom).toBeGreaterThanOrEqual(11);
+
+        const durationRow = fields.last().locator('.teksttv-input-with-unit');
+        const [durationInputBox, durationUnitBox] = await Promise.all([
+            durationRow.locator('input').evaluate((element) => element.getBoundingClientRect().toJSON()),
+            durationRow.locator('.teksttv-unit').evaluate((element) => element.getBoundingClientRect().toJSON()),
+        ]);
+        expect(durationUnitBox.top).toBeGreaterThan(durationInputBox.top);
+        expect(durationUnitBox.bottom).toBeLessThan(durationInputBox.bottom);
+
         await page.setViewportSize({ width: 760, height: 900 });
         const mobileFields = await fields.evaluateAll((elements) =>
             elements.map((element) => {

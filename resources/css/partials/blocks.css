@@ -143,6 +143,10 @@
     align-items: flex-end;
 }
 
+.teksttv-block-body > .teksttv-field-grid + .teksttv-field-grid {
+    margin-top: 12px;
+}
+
 .teksttv-field {
     grid-column: span 3;
     min-width: 0;
@@ -183,6 +187,20 @@
 
 .teksttv-field :is(select, input[type="text"], input[type="url"], input[type="date"]) {
     width: 100%;
+}
+
+.teksttv-input-with-unit {
+    display: grid;
+    grid-template-columns: minmax(0, 100px) auto;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    max-width: 128px;
+}
+
+.teksttv-field .teksttv-input-with-unit input {
+    width: 100%;
+    min-width: 0;
 }
 
 /* Tom Select overrides — match WP admin input styling */
@@ -323,6 +341,7 @@
 .teksttv-unit {
     font-size: 12px;
     color: #787c82;
+    white-space: nowrap;
 }
 
 .teksttv-date-reset {

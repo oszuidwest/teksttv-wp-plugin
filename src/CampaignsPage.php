@@ -74,7 +74,10 @@ class CampaignsPage
                     </div>
                     <div class="teksttv-field teksttv-field--compact">
                         <label><?php echo esc_html('Duur per slide'); ?></label>
-                        <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
+                        <div class="teksttv-input-with-unit">
+                            <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
+                            <span class="teksttv-unit">sec</span>
+                        </div>
                     </div>
                 </div>
                 <div class="teksttv-field-grid">

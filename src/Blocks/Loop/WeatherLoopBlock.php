@@ -152,7 +152,10 @@ final class WeatherLoopBlock
             </div>
             <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Duur'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" /> <span class="teksttv-unit">sec</span>
+                <div class="teksttv-input-with-unit">
+                    <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" />
+                    <span class="teksttv-unit">sec</span>
+                </div>
             </div>
         </div>
         <?php
