@@ -22,7 +22,7 @@ describe('createPostMetaPage', () => {
         wordCount.innerHTML = '';
 
         const elements: Record<string, unknown> = {
-            '#teksttv-active': { checked: true, addEventListener() {} },
+            '#teksttv-active': { checked: true },
             '#teksttv-fields': { style: { removeProperty() {} } },
             '#teksttv-toggle-status': {},
             '#teksttv-wordcount': wordCount,
@@ -33,11 +33,10 @@ describe('createPostMetaPage', () => {
             addEventListener() {},
         } as unknown as Document;
 
-        const timers: Array<() => void> = [];
         globalThis.window = {
             setTimeout(fn: () => void) {
-                timers.push(fn);
-                return timers.length;
+                fn();
+                return 0;
             },
         } as unknown as Window & typeof globalThis;
 
@@ -60,8 +59,10 @@ describe('createPostMetaPage', () => {
 
         expect(boundEvents.split(' ')).toContain('keyup');
 
+        // init's own kick-off already ran `updatePreview`; reset so the
+        // assertion proves the editor callback refreshed the count.
+        wordCount.innerHTML = '';
         onEditorChange?.();
-        for (const timer of timers.splice(0)) timer();
 
         expect(wordCount.innerHTML).toContain('2 woorden');
     });

@@ -63,6 +63,7 @@ export function createPostMetaPage() {
         }
 
         container?.classList.remove('is-empty');
+        // Skip the reload when the slide is unchanged — `keyup` also fires for non-mutating keys.
         const newSrc = previewSlideUrl(previewUrl, slides[currentSlideIndex]);
         if (iframe.getAttribute('src') === newSrc) return;
 
