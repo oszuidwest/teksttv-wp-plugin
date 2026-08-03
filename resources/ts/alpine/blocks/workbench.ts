@@ -1,15 +1,13 @@
 import Sortable from 'sortablejs';
 import { markFormDirty } from '../../modules/dirtyForms';
-import { reindexNames, siblingFocusTarget } from '../../modules/dom';
+import { cloneTemplate, reindexNames, reindexRowLabelIds, siblingFocusTarget } from '../../modules/dom';
 import { initTomSelectIn } from '../../modules/tomSelect';
 import { debounce } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
 import {
+    handleBlockControlsClick,
     handleBlocksClick,
-    moveClosestBlock,
-    removeClosestBlock,
     setBlockOpen,
-    toggleBlockOpen,
     updateBlockOrderControls,
 } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
@@ -21,44 +19,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let blocksEl: HTMLElement | null = null;
     let tickerEl: HTMLElement | null = null;
     let groupsTbody: HTMLTableSectionElement | null = null;
-    let newGroupSeq = 0;
-
-    function ensureEmptyState(root: HTMLElement): void {
-        const emptyState = root.querySelector<HTMLElement>(':scope > .teksttv-empty-state');
-        if (root.querySelector(':scope > .teksttv-block')) {
-            emptyState?.remove();
-            return;
-        }
-        if (emptyState || !root.dataset.emptyText) return;
-
-        const state = document.createElement('div');
-        state.className = 'teksttv-empty-state';
-        const icon = document.createElement('span');
-        icon.className = `dashicons dashicons-${root.dataset.emptyIcon || 'info-outline'}`;
-        icon.setAttribute('aria-hidden', 'true');
-        const text = document.createElement('p');
-        text.textContent = root.dataset.emptyText;
-        state.append(icon, text);
-        root.append(state);
-    }
-
-    function ensureGroupEmptyState(): void {
-        if (!groupsTbody) return;
-        const emptyRow = groupsTbody.querySelector('.teksttv-table-empty');
-        if (groupsTbody.querySelector('.teksttv-group-row')) {
-            emptyRow?.remove();
-            return;
-        }
-        if (emptyRow) return;
-
-        const row = document.createElement('tr');
-        row.className = 'teksttv-table-empty';
-        const cell = document.createElement('td');
-        cell.colSpan = 2;
-        cell.textContent = 'Nog geen groepen. Voeg een groep toe om campagnes te ordenen.';
-        row.append(cell);
-        groupsTbody.append(row);
-    }
 
     function reindexDisclosureIds(root: HTMLElement): void {
         // The id scheme must match the server-rendered ids (AdminPage /
@@ -76,6 +36,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
     function reindexFieldIds(root: HTMLElement): void {
         root.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block, index) => {
+            // Single pass over the controls records each field's final label
+            // target, so the label loop needs no per-label re-query.
+            const labelTargets = new Map<string, string>();
             block.querySelectorAll<HTMLElement>('[data-teksttv-field]').forEach((control) => {
                 const key = control.dataset.teksttvField;
                 if (!key) return;
@@ -89,15 +52,17 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                         tomselect?: { control_input?: HTMLInputElement };
                     }
                 ).tomselect;
-                if (tomSelect?.control_input) tomSelect.control_input.id = `${id}-ts-control`;
+                if (tomSelect?.control_input) {
+                    tomSelect.control_input.id = `${id}-ts-control`;
+                    labelTargets.set(key, tomSelect.control_input.id);
+                } else {
+                    labelTargets.set(key, id);
+                }
             });
             block.querySelectorAll<HTMLLabelElement>('[data-teksttv-label]').forEach((label) => {
                 const key = label.dataset.teksttvLabel;
                 if (!key) return;
-                const control = block.querySelector<HTMLElement & { tomselect?: { control_input?: HTMLInputElement } }>(
-                    `[data-teksttv-field="${key}"]`,
-                );
-                label.htmlFor = control?.tomselect?.control_input?.id ?? `${root.id}-${index}-${key}`;
+                label.htmlFor = labelTargets.get(key) ?? `${root.id}-${index}-${key}`;
             });
         });
     }
@@ -108,7 +73,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         reindexDisclosureIds(blocksEl);
         reindexFieldIds(blocksEl);
         updateBlockOrderControls(blocksEl);
-        ensureEmptyState(blocksEl);
     }
 
     function reindexTicker(): void {
@@ -117,7 +81,12 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         reindexDisclosureIds(tickerEl);
         reindexFieldIds(tickerEl);
         updateBlockOrderControls(tickerEl);
-        ensureEmptyState(tickerEl);
+    }
+
+    function reindexGroups(): void {
+        if (!groupsTbody) return;
+        reindexNames(groupsTbody, '.teksttv-group-row', /(teksttv_campaign_groups)\[\d+\]/);
+        reindexRowLabelIds(groupsTbody, '.teksttv-group-row', 'teksttv-group', ['label']);
     }
 
     function refreshSummaries(): void {
@@ -135,10 +104,8 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     ): void {
         const reindex = root === tickerEl ? reindexTicker : root === blocksEl ? reindexBlocks : null;
         if (!reindex) return;
-        const template = document.getElementById(templateId);
-        if (!(template instanceof HTMLTemplateElement)) return;
-        const newBlock = template.content.firstElementChild?.cloneNode(true);
-        if (!(newBlock instanceof HTMLElement)) return;
+        const newBlock = cloneTemplate(templateId);
+        if (!newBlock) return;
         root.append(newBlock);
         reindex();
         setBlockOpen(newBlock, true, false);
@@ -205,13 +172,10 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
             refreshSummaries();
             updateBlockOrderControls(blocksEl);
-            ensureEmptyState(blocksEl);
             if (tickerEl) updateBlockOrderControls(tickerEl);
-            if (tickerEl) ensureEmptyState(tickerEl);
 
             if (opts.groups) {
                 groupsTbody = document.querySelector('#teksttv-groups')?.querySelector('tbody') ?? null;
-                ensureGroupEmptyState();
             }
         },
 
@@ -255,40 +219,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         },
 
         tickerClick(e: MouseEvent): void {
-            if (!(e.target instanceof Element) || !tickerEl) return;
-
-            const moveUp = e.target.closest('.teksttv-move-block-up');
-            if (moveUp && tickerEl.contains(moveUp)) {
-                moveClosestBlock(moveUp, -1, () => {
-                    reindexTicker();
-                    refreshSummaries();
-                });
-                return;
-            }
-
-            const moveDown = e.target.closest('.teksttv-move-block-down');
-            if (moveDown && tickerEl.contains(moveDown)) {
-                moveClosestBlock(moveDown, 1, () => {
-                    reindexTicker();
-                    refreshSummaries();
-                });
-                return;
-            }
-
-            const rem = e.target.closest('.teksttv-remove-block');
-            if (rem && tickerEl.contains(rem)) {
-                e.stopPropagation();
-                removeClosestBlock(rem, () => {
-                    reindexTicker();
-                    refreshSummaries();
-                });
-                return;
-            }
-
-            const toggle = e.target.closest('.teksttv-block-toggle-control');
-            if (toggle && tickerEl.contains(toggle)) {
-                toggleBlockOpen(toggle);
-            }
+            if (tickerEl) handleBlockControlsClick(e, tickerEl, reindexTicker);
         },
 
         tickerFieldChange(e: Event): void {
@@ -297,24 +228,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addGroupRow(): void {
             if (!groupsTbody) return;
-            groupsTbody.querySelector('.teksttv-table-empty')?.remove();
-            // New rows have an empty id; the server derives a stable id from the
-            // label on save. The index only needs to be unique within the form.
-            const key = `new-${newGroupSeq++}`;
-            const row =
-                '<tr class="teksttv-group-row">' +
-                '<td>' +
-                `<input type="hidden" name="teksttv_campaign_groups[${key}][id]" value="" />` +
-                `<label class="teksttv-mobile-field-label" for="teksttv-group-${key}-label">Naam</label>` +
-                `<input type="text" id="teksttv-group-${key}-label" name="teksttv_campaign_groups[${key}][label]" value="" class="regular-text" required placeholder="bijv. Campagne" autocomplete="off" />` +
-                '</td>' +
-                '<td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="Groep verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
-                '</tr>';
-            groupsTbody.insertAdjacentHTML('beforeend', row);
+            // New rows have an empty id; the server derives a stable id from
+            // the label on save. Reindexing keeps the form keys unique.
+            const row = cloneTemplate('tmpl-teksttv-group-row');
+            if (!row) return;
+            groupsTbody.append(row);
+            reindexGroups();
             markFormDirty(groupsTbody);
-            groupsTbody
-                .querySelector<HTMLInputElement>(':scope > .teksttv-group-row:last-of-type input[name$="[label]"]')
-                ?.focus();
+            row.querySelector<HTMLInputElement>('input[name$="[label]"]')?.focus();
         },
 
         groupsClick(e: MouseEvent): void {
@@ -329,7 +250,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 document.querySelector<HTMLElement>('#teksttv-add-group'),
             );
             row.remove();
-            ensureGroupEmptyState();
+            reindexGroups();
             markFormDirty(groupsTbody);
             focusTarget?.focus();
         },

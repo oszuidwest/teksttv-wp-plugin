@@ -49,28 +49,26 @@ class AuditPage
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>' . esc_html('AI-audit') . '</h1>';
 
+        $format_pct = static fn(int|float $pct): string => $total_posts > 0 ? (string) $pct . '%' : '—';
+        $stat_cards = [
+            'Berichten met AI' => (string) $total_posts,
+            'Koppen bewerkt' => $format_pct($stats['title_modified_pct']),
+            'Teksten bewerkt' => $format_pct($stats['body_modified_pct']),
+            'Totaal bewerkt' => $format_pct($stats['any_modified_pct']),
+        ];
+
         ?>
         <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
             <dl class="teksttv-audit-stats">
+                <?php foreach ($stat_cards as $stat_label => $stat_value) : ?>
                 <div class="teksttv-audit-stat-card">
-                    <dt class="teksttv-audit-stat-label"><?php echo esc_html('Berichten met AI'); ?></dt>
-                    <dd class="teksttv-audit-stat-number"><?php echo esc_html((string) $total_posts); ?></dd>
+                    <dt class="teksttv-audit-stat-label"><?php echo esc_html($stat_label); ?></dt>
+                    <dd class="teksttv-audit-stat-number"><?php echo esc_html($stat_value); ?></dd>
                 </div>
-                <div class="teksttv-audit-stat-card">
-                    <dt class="teksttv-audit-stat-label"><?php echo esc_html('Koppen bewerkt'); ?></dt>
-                    <dd class="teksttv-audit-stat-number"><?php echo esc_html($total_posts > 0 ? (string) $stats['title_modified_pct'] . '%' : '—'); ?></dd>
-                </div>
-                <div class="teksttv-audit-stat-card">
-                    <dt class="teksttv-audit-stat-label"><?php echo esc_html('Teksten bewerkt'); ?></dt>
-                    <dd class="teksttv-audit-stat-number"><?php echo esc_html($total_posts > 0 ? (string) $stats['body_modified_pct'] . '%' : '—'); ?></dd>
-                </div>
-                <div class="teksttv-audit-stat-card">
-                    <dt class="teksttv-audit-stat-label"><?php echo esc_html('Totaal bewerkt'); ?></dt>
-                    <dd class="teksttv-audit-stat-number"><?php echo esc_html($total_posts > 0 ? (string) $stats['any_modified_pct'] . '%' : '—'); ?></dd>
-                </div>
+                <?php endforeach; ?>
             </dl>
 
-            <section class="teksttv-card teksttv-audit-results">
+            <section class="teksttv-card teksttv-workbench-section teksttv-audit-results">
                 <h2><?php echo esc_html('Berichten'); ?></h2>
             <?php if (empty($posts)) : ?>
                 <div class="teksttv-empty-state">

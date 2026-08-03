@@ -16,13 +16,14 @@ class Helpers
     /** Memoized provider capability probe; it runs model discovery, so at most once per request. */
     private static ?bool $ai_supported_cache = null;
 
-    /** Build a stable, reindexable id for a repeated admin form field. */
+    /**
+     * Build a stable, reindexable id for a repeated admin form field. The
+     * prefix mirrors the list root's DOM id, and the scheme must match the
+     * JS reindexer (`${root.id}-${index}-${key}` in workbench.ts).
+     */
     public static function field_id(string $prefix, int|string $index, string $field): string
     {
-        $base = str_replace('_', '-', $prefix);
-        $safe_field = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $field) ?? $field;
-
-        return $base . '-' . (string) $index . '-' . trim($safe_field, '-');
+        return str_replace('_', '-', $prefix) . '-' . (string) $index . '-' . $field;
     }
 
     /**

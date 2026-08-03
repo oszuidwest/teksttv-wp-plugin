@@ -28,21 +28,15 @@ settings_errors('teksttv');
 
         <section class="teksttv-card teksttv-workbench-section">
             <h2><?php echo esc_html('Loop'); ?></h2>
-            <div id="teksttv-blocks" data-empty-focus="#teksttv-add-block-toggle" data-empty-icon="playlist-video" data-empty-text="<?php echo esc_attr('Nog geen blokken. Voeg een blok toe om te beginnen.'); ?>" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
-                <?php
-                if (!empty($blocks)) {
-                    foreach ($blocks as $i => $block) {
-                        AdminPage::render_block_generic($i, $block);
-                    }
-                } else {
-                    ?>
-                    <div class="teksttv-empty-state">
-                        <span class="dashicons dashicons-playlist-video" aria-hidden="true"></span>
-                        <p><?php echo esc_html('Nog geen blokken. Voeg een blok toe om te beginnen.'); ?></p>
-                    </div>
-                    <?php
-                }
-                ?>
+            <div id="teksttv-blocks" data-empty-focus="#teksttv-add-block-toggle" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
+                <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
+                <div class="teksttv-empty-state">
+                    <span class="dashicons dashicons-playlist-video" aria-hidden="true"></span>
+                    <p><?php echo esc_html('Nog geen blokken. Voeg een blok toe om te beginnen.'); ?></p>
+                </div>
+                <?php foreach ($blocks as $i => $block) {
+                    AdminPage::render_block_generic($i, $block);
+                } ?>
             </div>
 
             <div class="teksttv-add-block-bar teksttv-section-actions">
@@ -63,17 +57,14 @@ settings_errors('teksttv');
 
         <section class="teksttv-card teksttv-workbench-section">
             <h2><?php echo esc_html('Tickerberichten'); ?></h2>
-            <div id="teksttv-ticker" data-empty-focus="#teksttv-add-ticker-toggle, #teksttv-add-ticker-single" data-empty-icon="editor-alignleft" data-empty-text="<?php echo esc_attr('Nog geen tickerberichten. Voeg een tickerbericht toe om te beginnen.'); ?>" @click="tickerClick($event)" @change="tickerFieldChange($event)" @input="tickerFieldChange($event)">
-                <?php if (!empty($ticker_items)) :
-                    foreach ($ticker_items as $ti => $ticker_item) :
-                        AdminPage::render_block_generic($ti, $ticker_item, 'teksttv_ticker');
-                    endforeach;
-                else : ?>
-                    <div class="teksttv-empty-state">
-                        <span class="dashicons dashicons-editor-alignleft" aria-hidden="true"></span>
-                        <p><?php echo esc_html('Nog geen tickerberichten. Voeg een tickerbericht toe om te beginnen.'); ?></p>
-                    </div>
-                <?php endif; ?>
+            <div id="teksttv-ticker" data-empty-focus="#teksttv-add-ticker-toggle, #teksttv-add-ticker-single" @click="tickerClick($event)" @change="tickerFieldChange($event)" @input="tickerFieldChange($event)">
+                <div class="teksttv-empty-state">
+                    <span class="dashicons dashicons-editor-alignleft" aria-hidden="true"></span>
+                    <p><?php echo esc_html('Nog geen tickerberichten. Voeg een tickerbericht toe om te beginnen.'); ?></p>
+                </div>
+                <?php foreach ($ticker_items as $ti => $ticker_item) :
+                    AdminPage::render_block_generic($ti, $ticker_item, 'teksttv_ticker');
+                endforeach; ?>
             </div>
             <div class="teksttv-add-block-bar teksttv-section-actions">
                 <?php if (count($ticker_types) > 1) : ?>

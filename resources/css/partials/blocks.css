@@ -36,7 +36,8 @@
 
 .teksttv-block-toggle-control:focus-visible,
 .teksttv-block-order-control:focus-visible,
-.teksttv-remove-block:focus-visible {
+.teksttv-remove-block:focus-visible,
+.teksttv-remove-image:focus-visible {
     outline: 2px solid #2271b1;
     outline-offset: 2px;
 }
@@ -88,7 +89,8 @@
     color: #787c82;
 }
 
-.teksttv-block-order-control {
+.teksttv-block-order-control,
+.teksttv-remove-block {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -109,14 +111,6 @@
 }
 
 .teksttv-remove-block {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 32px;
-    min-height: 32px;
-    color: #787c82 !important;
-    text-decoration: none !important;
-    padding: 2px;
     border-radius: 2px;
     transition: color 0.1s;
 }
@@ -492,12 +486,8 @@
         align-items: stretch;
     }
 
-    .teksttv-section-actions > .teksttv-dropdown-button,
-    .teksttv-section-actions > .teksttv-add-action {
-        width: 100%;
-    }
-
     .teksttv-section-actions .teksttv-add-action,
+    .teksttv-section-actions .teksttv-dropdown-button,
     .teksttv-section-actions .teksttv-dropdown-button > .button {
         width: 100%;
     }

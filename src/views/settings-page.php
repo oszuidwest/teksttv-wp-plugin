@@ -16,6 +16,26 @@ defined('ABSPATH') || exit;
 echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html('Tekst TV-instellingen') . '</h1>';
 
+/**
+ * One renderer for both the saved rows and the add-row template, so the row
+ * markup exists in exactly one place.
+ *
+ * @var callable(int|string, array{slug: string, label: string}): void $render_channel_row
+ */
+$render_channel_row = static function (int|string $i, array $ch) use ($api_base_url): void {
+    $slug_id = 'teksttv-channel-' . (string) $i . '-slug';
+    $label_id = 'teksttv-channel-' . (string) $i . '-label';
+    $api_url = $ch['slug'] !== '' ? add_query_arg('channel', $ch['slug'], $api_base_url) : '';
+    ?>
+    <tr class="teksttv-channel-row">
+        <td><label class="screen-reader-text teksttv-mobile-field-label" for="<?php echo esc_attr($slug_id); ?>"><?php echo esc_html('Slug'); ?></label><input type="text" id="<?php echo esc_attr($slug_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" autocomplete="off" spellcheck="false" /></td>
+        <td><label class="screen-reader-text teksttv-mobile-field-label" for="<?php echo esc_attr($label_id); ?>"><?php echo esc_html('Naam'); ?></label><input type="text" id="<?php echo esc_attr($label_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" autocomplete="off" /></td>
+        <td class="teksttv-channel-endpoint"><button type="button" class="button teksttv-copy-endpoint" data-endpoint="<?php echo esc_url($api_url); ?>" <?php disabled($api_url === ''); ?>><span class="dashicons dashicons-clipboard" aria-hidden="true"></span><span class="teksttv-copy-endpoint-label" aria-live="polite"><?php echo esc_html('Link kopiëren'); ?></span></button></td>
+        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+    </tr>
+    <?php
+};
+
 ?>
 <div class="teksttv-tab-content" x-data="teksttvSettingsPage">
     <form method="post" action="options.php" class="teksttv-admin-column teksttv-settings-form">
@@ -37,17 +57,8 @@ echo '<h1>' . esc_html('Tekst TV-instellingen') . '</h1>';
                     </thead>
                     <tbody>
                         <?php foreach ($channels as $i => $ch) :
-                            $api_url = add_query_arg('channel', $ch['slug'], $api_base_url);
-                            $slug_id = 'teksttv-channel-' . (string) $i . '-slug';
-                            $label_id = 'teksttv-channel-' . (string) $i . '-label';
-                            ?>
-                        <tr class="teksttv-channel-row">
-                            <td><label class="teksttv-mobile-field-label" for="<?php echo esc_attr($slug_id); ?>"><?php echo esc_html('Slug'); ?></label><input type="text" id="<?php echo esc_attr($slug_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" autocomplete="off" spellcheck="false" /></td>
-                            <td><label class="teksttv-mobile-field-label" for="<?php echo esc_attr($label_id); ?>"><?php echo esc_html('Naam'); ?></label><input type="text" id="<?php echo esc_attr($label_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" autocomplete="off" /></td>
-                            <td class="teksttv-channel-endpoint"><button type="button" class="button teksttv-copy-endpoint" data-endpoint="<?php echo esc_url($api_url); ?>"><span class="dashicons dashicons-clipboard" aria-hidden="true"></span><span class="teksttv-copy-endpoint-label" aria-live="polite"><?php echo esc_html('Link kopiëren'); ?></span></button></td>
-                            <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
-                        </tr>
-                        <?php endforeach; ?>
+                            $render_channel_row($i, $ch);
+                        endforeach; ?>
                     </tbody>
                 </table>
             </div>
@@ -206,6 +217,10 @@ echo '<h1>' . esc_html('Tekst TV-instellingen') . '</h1>';
 
         <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
     </form>
+
+    <template id="tmpl-teksttv-channel-row">
+        <?php $render_channel_row(0, ['slug' => '', 'label' => '']); ?>
+    </template>
 </div>
 <?php
 

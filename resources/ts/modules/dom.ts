@@ -130,6 +130,36 @@ export function dispatchInput(el: Element): void {
  * its field name there and later-added hidden inputs derive from it).
  * `pattern` must capture the name prefix in group 1; each match becomes `$1[<item index>]`.
  */
+/** Clone the first element of a `<template>` by id; null when absent. */
+export function cloneTemplate(templateId: string): HTMLElement | null {
+    const template = document.getElementById(templateId);
+    if (!(template instanceof HTMLTemplateElement)) return null;
+    const node = template.content.firstElementChild?.cloneNode(true);
+    return node instanceof HTMLElement ? node : null;
+}
+
+/**
+ * Renumber the `id`/`for` pairs of a management table's per-row field labels
+ * after a row is added or removed, keeping label association index-stable.
+ */
+export function reindexRowLabelIds(
+    tbody: HTMLElement,
+    rowSelector: string,
+    idPrefix: string,
+    fields: readonly string[],
+): void {
+    tbody.querySelectorAll<HTMLTableRowElement>(rowSelector).forEach((row, index) => {
+        fields.forEach((field) => {
+            const input = row.querySelector<HTMLInputElement>(`input[name$="[${field}]"]`);
+            const label = input?.previousElementSibling;
+            if (!input || !(label instanceof HTMLLabelElement)) return;
+            const id = `${idPrefix}-${index}-${field}`;
+            input.id = id;
+            label.htmlFor = id;
+        });
+    });
+}
+
 export function reindexNames(container: HTMLElement, itemSelector: string, pattern: RegExp): void {
     container.querySelectorAll(itemSelector).forEach((item, i) => {
         item.querySelectorAll('input, select, textarea').forEach((input) => {

@@ -4,6 +4,7 @@ namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Blocks\Common\RecentPostsQuery;
 use TekstTV\Blocks\Common\TaxonomyFilters;
 use TekstTV\Helpers;
@@ -33,13 +34,9 @@ final class ArticlesLoopBlock
     public static function render_fields(int|string $index, array $block, string $prefix): void
     {
         $count = $block['count'] ?? 3;
-        $dur_text = $block['duration_text'] ?? '';
-        $dur_image = $block['duration_image'] ?? '';
         $default_text = (int) get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text']);
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
         $count_id = Helpers::field_id($prefix, $index, 'count');
-        $duration_text_id = Helpers::field_id($prefix, $index, 'duration-text');
-        $duration_image_id = Helpers::field_id($prefix, $index, 'duration-image');
 
         ?>
         <div class="teksttv-field-grid">
@@ -50,20 +47,10 @@ final class ArticlesLoopBlock
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
         <div class="teksttv-field-grid teksttv-field-grid--duration">
-            <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($duration_text_id); ?>" data-teksttv-label="duration-text"><?php echo esc_html('Duur tekst'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
-                <div class="teksttv-input-with-unit">
-                    <input type="number" id="<?php echo esc_attr($duration_text_id); ?>" data-teksttv-field="duration-text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_text]" value="<?php echo esc_attr((string) $dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" />
-                    <span class="teksttv-unit">sec</span>
-                </div>
-            </div>
-            <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($duration_image_id); ?>" data-teksttv-label="duration-image"><?php echo esc_html('Duur afbeelding'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
-                <div class="teksttv-input-with-unit">
-                    <input type="number" id="<?php echo esc_attr($duration_image_id); ?>" data-teksttv-field="duration-image" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_image]" value="<?php echo esc_attr((string) $dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" />
-                    <span class="teksttv-unit">sec</span>
-                </div>
-            </div>
+            <?php
+            DurationField::render($prefix, $index, 'duration_text', 'Duur tekst', (string) ($block['duration_text'] ?? ''), $default_text);
+            DurationField::render($prefix, $index, 'duration_image', 'Duur afbeelding', (string) ($block['duration_image'] ?? ''), $default_image);
+            ?>
         </div>
         <?php
     }

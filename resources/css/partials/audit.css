@@ -33,14 +33,6 @@
     margin-top: 4px;
 }
 
-.teksttv-audit-results h2 {
-    margin-bottom: 12px;
-}
-
-.teksttv-audit-results .teksttv-empty-state {
-    min-height: 150px;
-}
-
 @media (max-width: 782px) {
     .teksttv-audit-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -82,9 +82,37 @@ export function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: (
     else root.insertBefore(sibling, block);
     onMoved();
     markFormDirty(block);
-    block
-        .querySelector<HTMLButtonElement>(direction < 0 ? '.teksttv-move-block-up' : '.teksttv-move-block-down')
-        ?.focus();
+    if (trigger instanceof HTMLElement) trigger.focus();
+}
+
+/**
+ * Shared block-header controls: keyboard reorder, remove, accordion toggle.
+ * Returns true when the click was one of them. Summaries are derived from a
+ * block's own fields, so reordering or removing never changes them.
+ */
+export function handleBlockControlsClick(e: MouseEvent, root: HTMLElement, reindex: () => void): boolean {
+    if (!(e.target instanceof Element)) return false;
+
+    const move = e.target.closest('.teksttv-block-order-control');
+    if (move && root.contains(move)) {
+        moveClosestBlock(move, move.matches('.teksttv-move-block-up') ? -1 : 1, reindex);
+        return true;
+    }
+
+    const rem = e.target.closest('.teksttv-remove-block');
+    if (rem && root.contains(rem)) {
+        e.stopPropagation();
+        removeClosestBlock(rem, reindex);
+        return true;
+    }
+
+    const toggle = e.target.closest('.teksttv-block-toggle-control');
+    if (toggle && root.contains(toggle)) {
+        toggleBlockOpen(toggle);
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -95,39 +123,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     if (!(e.target instanceof Element) || !ctx.blocksEl) return;
     const blocksRoot = ctx.blocksEl;
 
-    const moveUp = e.target.closest('.teksttv-move-block-up');
-    if (moveUp && blocksRoot.contains(moveUp)) {
-        moveClosestBlock(moveUp, -1, () => {
-            ctx.reindexBlocks();
-            ctx.refreshSummaries();
-        });
-        return;
-    }
-
-    const moveDown = e.target.closest('.teksttv-move-block-down');
-    if (moveDown && blocksRoot.contains(moveDown)) {
-        moveClosestBlock(moveDown, 1, () => {
-            ctx.reindexBlocks();
-            ctx.refreshSummaries();
-        });
-        return;
-    }
-
-    const rem = e.target.closest('.teksttv-remove-block');
-    if (rem && blocksRoot.contains(rem)) {
-        e.stopPropagation();
-        removeClosestBlock(rem, () => {
-            ctx.reindexBlocks();
-            ctx.refreshSummaries();
-        });
-        return;
-    }
-
-    const toggle = e.target.closest('.teksttv-block-toggle-control');
-    if (toggle && blocksRoot.contains(toggle)) {
-        toggleBlockOpen(toggle);
-        return;
-    }
+    if (handleBlockControlsClick(e, blocksRoot, ctx.reindexBlocks)) return;
 
     const slidesBtn = e.target.closest('.teksttv-campaign-add-slides');
     if (slidesBtn && blocksRoot.contains(slidesBtn)) {

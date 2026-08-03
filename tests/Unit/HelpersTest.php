@@ -7,9 +7,9 @@ use TekstTV\Helpers;
 
 class HelpersTest extends TestCase
 {
-    public function test_field_id_normalizes_repeated_form_prefix_and_field(): void
+    public function test_field_id_normalizes_repeated_form_prefix(): void
     {
-        $this->assertSame('teksttv-blocks-3-duration-text', Helpers::field_id('teksttv_blocks', 3, 'duration text'));
+        $this->assertSame('teksttv-blocks-3-duration-text', Helpers::field_id('teksttv_blocks', 3, 'duration-text'));
     }
 
     // =========================================================================

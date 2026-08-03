@@ -3,6 +3,7 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
 
 final class ImageLoopBlock
@@ -26,10 +27,8 @@ final class ImageLoopBlock
     public static function render_fields(int|string $index, array $block, string $prefix): void
     {
         $image_id = $block['image_id'] ?? 0;
-        $duration = $block['duration'] ?? '';
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
         $image_url = $image_id ? wp_get_attachment_image_url((int) $image_id, 'medium') : '';
-        $duration_id = Helpers::field_id($prefix, $index, 'duration');
 
         ?>
         <div class="teksttv-block-image-row teksttv-image-picker">
@@ -43,13 +42,7 @@ final class ImageLoopBlock
                     <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php echo esc_html('Verwijderen'); ?></button>
                 </p>
                 <div class="teksttv-field-grid">
-                    <div class="teksttv-field teksttv-field--compact">
-                        <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
-                        <div class="teksttv-input-with-unit">
-                            <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" />
-                            <span class="teksttv-unit">sec</span>
-                        </div>
-                    </div>
+                    <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), $default_image); ?>
                 </div>
             </div>
         </div>

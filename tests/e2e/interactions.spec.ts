@@ -134,9 +134,9 @@ test.describe('admin interaction contracts', () => {
         }
 
         await addLoopBlock(page, 'articles');
-        await expect(page.locator('#teksttv-blocks > .teksttv-empty-state')).toHaveCount(0);
+        await expect(page.locator('#teksttv-blocks > .teksttv-empty-state')).toBeHidden();
         await addTickerBlock(page, 'ticker_text');
-        await expect(page.locator('#teksttv-ticker > .teksttv-empty-state')).toHaveCount(0);
+        await expect(page.locator('#teksttv-ticker > .teksttv-empty-state')).toBeHidden();
     });
 
     test('removes a middle loop block and reindexes every remaining field', async ({ page }) => {
@@ -475,10 +475,8 @@ test.describe('admin interaction contracts', () => {
             await expect(addedGroup.locator('.teksttv-remove-group')).toHaveClass(/button-link-delete/);
             await expect(addedGroup.locator('input[name$="[label]"]')).toBeFocused();
             await addedGroup.locator('input[name$="[label]"]').fill('E2E Added Group');
-            await expect(addedGroup.locator('input[name]').first()).toHaveAttribute(
-                'name',
-                /^teksttv_campaign_groups\[new-\d+\]\[id\]$/,
-            );
+            // New rows clone the template with an empty id; the server mints one on save.
+            await expect(addedGroup.locator('input[name$="[id]"]')).toHaveValue('');
             await groups.nth(1).locator('.teksttv-remove-group').click();
             await expect(groups).toHaveCount(2);
 
@@ -488,8 +486,8 @@ test.describe('admin interaction contracts', () => {
             expect(groupNames).toEqual([
                 'teksttv_campaign_groups[0][id]',
                 'teksttv_campaign_groups[0][label]',
-                'teksttv_campaign_groups[new-0][id]',
-                'teksttv_campaign_groups[new-0][label]',
+                'teksttv_campaign_groups[1][id]',
+                'teksttv_campaign_groups[1][label]',
             ]);
 
             const campaigns = page.locator('#teksttv-campaigns > .teksttv-block');

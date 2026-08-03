@@ -3,6 +3,7 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
 
 final class IframeLoopBlock
@@ -27,11 +28,9 @@ final class IframeLoopBlock
     {
         $name = $block['name'] ?? '';
         $url = $block['url'] ?? '';
-        $duration = $block['duration'] ?? '';
         $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe']);
         $name_id = Helpers::field_id($prefix, $index, 'name');
         $url_id = Helpers::field_id($prefix, $index, 'url');
-        $duration_id = Helpers::field_id($prefix, $index, 'duration');
 
         ?>
         <div class="teksttv-field-grid">
@@ -45,13 +44,7 @@ final class IframeLoopBlock
                 <input type="url" id="<?php echo esc_attr($url_id); ?>" data-teksttv-field="url" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
-            <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
-                <div class="teksttv-input-with-unit">
-                    <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
-                    <span class="teksttv-unit">sec</span>
-                </div>
-            </div>
+            <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), $default_duration); ?>
         </div>
         <?php
     }

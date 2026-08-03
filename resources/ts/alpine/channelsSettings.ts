@@ -1,5 +1,5 @@
 import { markFormDirty } from '../modules/dirtyForms';
-import { reindexNames, siblingFocusTarget } from '../modules/dom';
+import { cloneTemplate, reindexNames, reindexRowLabelIds, siblingFocusTarget } from '../modules/dom';
 
 /** Settings tab: repeatable channel rows. */
 export function createChannelsSettingsPage() {
@@ -9,16 +9,7 @@ export function createChannelsSettingsPage() {
     function reindexChannels(): void {
         if (!channelsTbody) return;
         reindexNames(channelsTbody, 'tr', /(teksttv_channels)\[\d+\]/);
-        channelsTbody.querySelectorAll<HTMLTableRowElement>('.teksttv-channel-row').forEach((row, index) => {
-            (['slug', 'label'] as const).forEach((field) => {
-                const input = row.querySelector<HTMLInputElement>(`input[name$="[${field}]"]`);
-                const label = input?.previousElementSibling;
-                if (!input || !(label instanceof HTMLLabelElement)) return;
-                const id = `teksttv-channel-${index}-${field}`;
-                input.id = id;
-                label.htmlFor = id;
-            });
-        });
+        reindexRowLabelIds(channelsTbody, '.teksttv-channel-row', 'teksttv-channel', ['slug', 'label']);
     }
 
     function updateEndpoint(row: HTMLTableRowElement, slug: string): void {
@@ -26,17 +17,18 @@ export function createChannelsSettingsPage() {
         const label = button?.querySelector<HTMLElement>('.teksttv-copy-endpoint-label');
         if (!button || !label) return;
 
-        if (!apiBase || !slug) {
-            button.dataset.endpoint = '';
-            button.disabled = true;
-            label.textContent = 'Link kopiëren';
-            return;
+        let endpoint = '';
+        if (apiBase && slug) {
+            const url = new URL(apiBase, window.location.href);
+            url.searchParams.set('channel', slug);
+            endpoint = url.toString();
         }
+        // Skip the no-op keystrokes: the label is an aria-live region, so an
+        // unconditional write would re-announce it on every input event.
+        if (button.dataset.endpoint === endpoint) return;
 
-        const endpoint = new URL(apiBase, window.location.href);
-        endpoint.searchParams.set('channel', slug);
-        button.dataset.endpoint = endpoint.toString();
-        button.disabled = false;
+        button.dataset.endpoint = endpoint;
+        button.disabled = !endpoint;
         label.textContent = 'Link kopiëren';
     }
 
@@ -86,19 +78,12 @@ export function createChannelsSettingsPage() {
 
         addChannelRow(): void {
             if (!channelsTbody) return;
-            const index = channelsTbody.querySelectorAll('tr').length;
-            const row =
-                '<tr class="teksttv-channel-row">' +
-                `<td><label class="teksttv-mobile-field-label" for="teksttv-channel-${index}-slug">Slug</label><input type="text" id="teksttv-channel-${index}-slug" name="teksttv_channels[${index}][slug]" value="" class="regular-text" pattern="[a-z0-9\\-]+" required placeholder="bijv. tv1" autocomplete="off" spellcheck="false" /></td>` +
-                `<td><label class="teksttv-mobile-field-label" for="teksttv-channel-${index}-label">Naam</label><input type="text" id="teksttv-channel-${index}-label" name="teksttv_channels[${index}][label]" value="" class="regular-text" required placeholder="bijv. TV 1" autocomplete="off" /></td>` +
-                '<td class="teksttv-channel-endpoint"><button type="button" class="button teksttv-copy-endpoint" data-endpoint="" disabled><span class="dashicons dashicons-clipboard" aria-hidden="true"></span><span class="teksttv-copy-endpoint-label" aria-live="polite">Link kopiëren</span></button></td>' +
-                '<td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel" aria-label="Kanaal verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
-                '</tr>';
-            channelsTbody.insertAdjacentHTML('beforeend', row);
+            const row = cloneTemplate('tmpl-teksttv-channel-row');
+            if (!row) return;
+            channelsTbody.append(row);
+            reindexChannels();
             markFormDirty(channelsTbody);
-            channelsTbody
-                .querySelector<HTMLInputElement>(':scope > .teksttv-channel-row:last-of-type input[name$="[slug]"]')
-                ?.focus();
+            row.querySelector<HTMLInputElement>('input[name$="[slug]"]')?.focus();
         },
 
         channelsInput(e: Event): void {

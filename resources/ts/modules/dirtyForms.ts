@@ -6,9 +6,9 @@ export function markFormDirty(source: Element): void {
 }
 
 /** Warn before leaving a Tekst TV admin form with unsaved changes. */
-export function initDirtyFormGuards(root: ParentNode = document): void {
+export function initDirtyFormGuards(): void {
     const dirtyForms = new Set<HTMLFormElement>();
-    const forms = root.querySelectorAll<HTMLFormElement>('.teksttv-admin form');
+    const forms = document.querySelectorAll<HTMLFormElement>('.teksttv-admin form');
 
     forms.forEach((form) => {
         const markDirty = (): void => {

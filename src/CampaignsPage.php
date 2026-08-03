@@ -2,6 +2,8 @@
 
 namespace TekstTV;
 
+use TekstTV\Blocks\Common\DurationField;
+
 class CampaignsPage
 {
     public static function init(): void
@@ -48,13 +50,11 @@ class CampaignsPage
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
         $group = (string) ($campaign['group'] ?? '');
-        $duration = $campaign['duration'] ?? '';
         $slides = $campaign['slides'] ?? [];
         $default_duration = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
         $body_id = 'teksttv-campaigns-' . (string) $index . '-body';
         $name_id = Helpers::field_id('teksttv_campaigns', $index, 'name');
         $group_id = Helpers::field_id('teksttv_campaigns', $index, 'group');
-        $duration_id = Helpers::field_id('teksttv_campaigns', $index, 'duration');
 
         ?>
         <div class="teksttv-block" data-type="campaign_item">
@@ -75,13 +75,7 @@ class CampaignsPage
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="teksttv-field teksttv-field--compact">
-                        <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur per slide'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
-                        <div class="teksttv-input-with-unit">
-                            <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" />
-                            <span class="teksttv-unit">sec</span>
-                        </div>
-                    </div>
+                    <?php DurationField::render('teksttv_campaigns', $index, 'duration', 'Duur per slide', (string) ($campaign['duration'] ?? ''), $default_duration); ?>
                 </div>
                 <div class="teksttv-field-grid">
                     <?php AdminPage::render_scheduling_inputs($index, $campaign, 'teksttv_campaigns'); ?>

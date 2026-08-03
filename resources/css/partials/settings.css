@@ -33,18 +33,8 @@
     width: 100%;
 }
 
-.teksttv-mobile-field-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-}
+/* The per-cell field labels reuse WP core's .screen-reader-text and are only
+   un-hidden on mobile, where the table headers are gone (see below). */
 
 .teksttv-channel-endpoint {
     width: 150px;
@@ -81,25 +71,20 @@
 }
 
 @media (max-width: 782px) {
-    #teksttv-channels,
-    #teksttv-groups {
+    .teksttv-management-table {
         min-width: 0;
     }
 
-    #teksttv-channels thead,
-    #teksttv-groups thead {
+    .teksttv-management-table thead {
         display: none;
     }
 
-    #teksttv-channels,
-    #teksttv-channels tbody,
-    #teksttv-groups,
-    #teksttv-groups tbody {
+    .teksttv-management-table,
+    .teksttv-management-table tbody {
         display: block;
     }
 
-    #teksttv-channels tr,
-    #teksttv-groups tr {
+    .teksttv-management-table tr {
         display: grid;
         grid-template-columns: 1fr auto;
         gap: 10px 8px;
@@ -107,13 +92,11 @@
         border-bottom: 1px solid #c3c4c7;
     }
 
-    #teksttv-channels tr:last-child,
-    #teksttv-groups tr:last-child {
+    .teksttv-management-table tr:last-child {
         border-bottom: 0;
     }
 
-    #teksttv-channels td,
-    #teksttv-groups td {
+    .teksttv-management-table td {
         display: block;
         padding: 0;
     }
@@ -128,8 +111,7 @@
         width: auto;
     }
 
-    #teksttv-channels .teksttv-table-actions,
-    #teksttv-groups .teksttv-table-actions {
+    .teksttv-management-table .teksttv-table-actions {
         width: auto;
     }
 
@@ -137,7 +119,8 @@
         grid-column: 2;
     }
 
-    .teksttv-mobile-field-label {
+    /* Un-hide the core screen-reader-text labels now the headers are gone. */
+    .teksttv-management-table .teksttv-mobile-field-label {
         position: static;
         width: auto;
         height: auto;

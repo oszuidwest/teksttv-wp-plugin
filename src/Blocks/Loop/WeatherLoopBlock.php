@@ -3,6 +3,7 @@
 namespace TekstTV\Blocks\Loop;
 
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
 use TekstTV\OpenWeatherProvider;
 use TekstTV\WeatherProvider;
@@ -138,10 +139,8 @@ final class WeatherLoopBlock
     {
         $location = $block['location'] ?? '';
         $title = $block['title'] ?? '';
-        $duration = $block['duration'] ?? '';
         $location_id = Helpers::field_id($prefix, $index, 'location');
         $title_id = Helpers::field_id($prefix, $index, 'title');
-        $duration_id = Helpers::field_id($prefix, $index, 'duration');
 
         ?>
         <div class="teksttv-field-grid">
@@ -153,13 +152,7 @@ final class WeatherLoopBlock
                 <label for="<?php echo esc_attr($title_id); ?>" data-teksttv-label="title"><?php echo esc_html('Titel'); ?></label>
                 <input type="text" id="<?php echo esc_attr($title_id); ?>" data-teksttv-field="title" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" autocomplete="off" />
             </div>
-            <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($duration_id); ?>" data-teksttv-label="duration"><?php echo esc_html('Duur'); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
-                <div class="teksttv-input-with-unit">
-                    <input type="number" id="<?php echo esc_attr($duration_id); ?>" data-teksttv-field="duration" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" />
-                    <span class="teksttv-unit">sec</span>
-                </div>
-            </div>
+            <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), self::DEFAULT_DURATION_SECONDS); ?>
         </div>
         <?php
     }

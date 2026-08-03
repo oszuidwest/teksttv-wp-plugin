@@ -153,10 +153,20 @@
     line-height: 1.5;
 }
 
+/* Empty states are always server-rendered; they only show when their list has
+   no items left, so add/remove needs no JS bookkeeping. */
+:is(#teksttv-blocks, #teksttv-ticker, #teksttv-campaigns):has(> .teksttv-block) > .teksttv-empty-state {
+    display: none;
+}
+
 .teksttv-table-empty td {
     padding: 20px 12px;
     color: #787c82;
     text-align: center;
+}
+
+tbody:has(> .teksttv-group-row) > .teksttv-table-empty {
+    display: none;
 }
 
 @media (max-width: 782px) {

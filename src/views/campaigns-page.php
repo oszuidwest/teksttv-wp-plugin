@@ -15,6 +15,27 @@ echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html('Campagnes') . '</h1>';
 settings_errors('teksttv_campaigns');
 
+/**
+ * One renderer for both the saved rows and the add-row template, so the row
+ * markup exists in exactly one place. New rows render an empty id; the server
+ * derives a stable id from the label on save.
+ *
+ * @var callable(int|string, array{id: string, label: string}): void $render_group_row
+ */
+$render_group_row = static function (int|string $gi, array $group): void {
+    $group_label_id = 'teksttv-group-' . (string) $gi . '-label';
+    ?>
+    <tr class="teksttv-group-row">
+        <td>
+            <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
+            <label class="screen-reader-text teksttv-mobile-field-label" for="<?php echo esc_attr($group_label_id); ?>"><?php echo esc_html('Naam'); ?></label>
+            <input type="text" id="<?php echo esc_attr($group_label_id); ?>" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. Campagne'); ?>" autocomplete="off" />
+        </td>
+        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+    </tr>
+    <?php
+};
+
 ?>
 <form method="post" class="teksttv-admin-column" x-data="teksttvCampaignsPage">
     <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
@@ -32,23 +53,12 @@ settings_errors('teksttv_campaigns');
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($groups as $gi => $group) :
-                        $group_label_id = 'teksttv-group-' . (string) $gi . '-label';
-                        ?>
-                    <tr class="teksttv-group-row">
-                        <td>
-                            <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
-                            <label class="teksttv-mobile-field-label" for="<?php echo esc_attr($group_label_id); ?>"><?php echo esc_html('Naam'); ?></label>
-                            <input type="text" id="<?php echo esc_attr($group_label_id); ?>" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. Campagne'); ?>" autocomplete="off" />
-                        </td>
-                        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
-                    </tr>
-                    <?php endforeach; ?>
-                    <?php if (empty($groups)) : ?>
                     <tr class="teksttv-table-empty">
                         <td colspan="2"><?php echo esc_html('Nog geen groepen. Voeg een groep toe om campagnes te ordenen.'); ?></td>
                     </tr>
-                    <?php endif; ?>
+                    <?php foreach ($groups as $gi => $group) :
+                        $render_group_row($gi, $group);
+                    endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -59,21 +69,15 @@ settings_errors('teksttv_campaigns');
 
     <section class="teksttv-card teksttv-workbench-section teksttv-campaign-workbench">
         <h2><?php echo esc_html('Campagnes'); ?></h2>
-        <div id="teksttv-campaigns" data-empty-focus="#teksttv-add-campaign" data-empty-icon="megaphone" data-empty-text="<?php echo esc_attr('Nog geen campagnes. Voeg een campagne toe om te beginnen.'); ?>" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
-            <?php
-            if (!empty($campaigns)) {
-                foreach ($campaigns as $i => $campaign) {
-                    CampaignsPage::render_campaign($i, $campaign, $channels, $groups);
-                }
-            } else {
-                ?>
-                <div class="teksttv-empty-state">
-                    <span class="dashicons dashicons-megaphone" aria-hidden="true"></span>
-                    <p><?php echo esc_html('Nog geen campagnes. Voeg een campagne toe om te beginnen.'); ?></p>
-                </div>
-                <?php
-            }
-            ?>
+        <div id="teksttv-campaigns" data-empty-focus="#teksttv-add-campaign" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
+            <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
+            <div class="teksttv-empty-state">
+                <span class="dashicons dashicons-megaphone" aria-hidden="true"></span>
+                <p><?php echo esc_html('Nog geen campagnes. Voeg een campagne toe om te beginnen.'); ?></p>
+            </div>
+            <?php foreach ($campaigns as $i => $campaign) {
+                CampaignsPage::render_campaign($i, $campaign, $channels, $groups);
+            } ?>
         </div>
 
         <div class="teksttv-add-block-bar teksttv-section-actions">
@@ -89,6 +93,10 @@ settings_errors('teksttv_campaigns');
 
 <template id="tmpl-teksttv-campaign">
     <?php CampaignsPage::render_campaign(0, [], $channels, $groups); ?>
+</template>
+
+<template id="tmpl-teksttv-group-row">
+    <?php $render_group_row(0, ['id' => '', 'label' => '']); ?>
 </template>
 
 </div>
