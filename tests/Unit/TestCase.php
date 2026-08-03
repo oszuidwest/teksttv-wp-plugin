@@ -65,13 +65,31 @@ abstract class TestCase extends PHPUnitTestCase
      */
     protected static function mockAiBuilder(string|\WP_Error ...$responses): \Mockery\MockInterface
     {
+        $results = array_map(static function (string|\WP_Error $response): object {
+            if ($response instanceof \WP_Error) {
+                return $response;
+            }
+
+            $provider = \Mockery::mock();
+            $provider->shouldReceive('getId')->andReturn('resolved-provider');
+            $model = \Mockery::mock();
+            $model->shouldReceive('getId')->andReturn('resolved-model');
+            $result = \Mockery::mock();
+            $result->shouldReceive('toText')->andReturn($response);
+            $result->shouldReceive('getProviderMetadata')->andReturn($provider);
+            $result->shouldReceive('getModelMetadata')->andReturn($model);
+            return $result;
+        }, $responses);
+
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
         $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('using_model_preference')->zeroOrMoreTimes()->andReturnSelf();
+        $builder->shouldReceive('using_provider')->zeroOrMoreTimes()->andReturnSelf();
         $builder->shouldReceive('is_supported_for_text_generation')->zeroOrMoreTimes()->andReturn(true);
-        $builder->shouldReceive('generate_text')
+        $builder->shouldReceive('generate_text_result')
             ->times(count($responses))
-            ->andReturn(...$responses);
+            ->andReturn(...$results);
 
         return $builder;
     }

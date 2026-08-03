@@ -26,6 +26,7 @@ class RestApiTest extends TestCase
      */
     private static function stubOptions(array $overrides = []): void
     {
+        Functions\when('wp_generate_uuid4')->alias(fn () => bin2hex(random_bytes(16)));
         Functions\when('get_option')->alias(function ($key, $default = false) use ($overrides) {
             if (array_key_exists($key, $overrides)) {
                 return $overrides[$key];
@@ -89,6 +90,7 @@ class RestApiTest extends TestCase
     {
         // ai_generate is absent from the enabled features list.
         Functions\when('get_option')->justReturn(['custom_title', 'scheduling']);
+        Functions\when('wp_generate_uuid4')->justReturn('test-uuid');
 
         $request = \Mockery::mock('WP_REST_Request');
 
@@ -197,6 +199,7 @@ class RestApiTest extends TestCase
             $logs[] = $line;
             return true;
         });
+        Functions\when('wp_json_encode')->alias('json_encode');
         Functions\when('wp_ai_client_prompt')->justReturn(
             self::mockAiBuilder(new \WP_Error('provider_failed', 'Providerfout'))
         );
@@ -204,9 +207,7 @@ class RestApiTest extends TestCase
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
         $this->assertErrorStatus(500, $response);
-        $this->assertMatchesRegularExpression('/Referentie: ([a-f0-9-]+)\./', $response->get_error_message());
-        preg_match('/Referentie: ([a-f0-9-]+)\./', $response->get_error_message(), $matches);
-        $this->assertNotEmpty($matches[1] ?? '');
+        $this->assertSame(1, preg_match('/Referentie: ([a-f0-9-]+)\./', $response->get_error_message(), $matches));
         $this->assertTrue((bool) array_filter($logs, fn ($line) => str_contains($line, $matches[1])));
         $this->assertStringNotContainsString('Providerfout', implode("\n", $logs));
     }

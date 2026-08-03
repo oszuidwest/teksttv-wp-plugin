@@ -195,18 +195,26 @@ class AiGenerator
         for ($attempt = 1; $attempt <= $config['max_retries']; $attempt++) {
             $started_at = microtime(true);
             $result = self::call_ai($user_prompt, $system, $config);
-            $diagnostic = array_merge(AiDiagnostics::selected_model($config), [
-                'field' => $field,
-                'word_limit' => self::effective_word_limit($config, $has_photo),
-                'title_char_limit' => $config['title_char_limit'],
-                'min_input_words' => $config['min_input_words'],
-                'max_retries' => $config['max_retries'],
-                'attempt' => $attempt,
-                'duration_ms' => (int) round((microtime(true) - $started_at) * 1000),
-                'prompt' => $user_prompt,
-            ]);
+            $result_is_error = is_wp_error($result);
+            $selected_model = AiDiagnostics::model_preference($config);
+            if (!$result_is_error) {
+                $selected_model = ['provider' => $result['provider'], 'model' => $result['model']];
+            }
+            $diagnostic = array_merge(
+                $selected_model,
+                [
+                    'field' => $field,
+                    'word_limit' => self::effective_word_limit($config, $has_photo),
+                    'title_char_limit' => $config['title_char_limit'],
+                    'min_input_words' => $config['min_input_words'],
+                    'max_retries' => $config['max_retries'],
+                    'attempt' => $attempt,
+                    'duration_ms' => (int) round((microtime(true) - $started_at) * 1000),
+                    'prompt' => $user_prompt,
+                ]
+            );
 
-            if (is_wp_error($result)) {
+            if ($result_is_error) {
                 if (AiDiagnostics::enabled($config)) {
                     $error_data = $result->get_error_data();
                     $diagnostic['response_status'] = is_array($error_data) ? ($error_data['status'] ?? 500) : 500;
@@ -216,7 +224,7 @@ class AiGenerator
                 return $result;
             }
 
-            $last_content = trim($result);
+            $last_content = trim($result['content']);
             $diagnostic['response_status'] = 200;
             $diagnostic['generated_output'] = $last_content;
             if ($last_content === '') {
@@ -311,11 +319,20 @@ class AiGenerator
      * Call the WP AI Client with configured model/provider settings.
      *
      * @param AiConfig $config
-     * @return string|\WP_Error
+     * @return array{content: string, provider: string, model: string}|\WP_Error
      */
     private static function call_ai(string $user_prompt, string $system, array $config)
     {
-        return self::configure_prompt_builder($user_prompt, $system, $config)->generate_text();
+        $result = self::configure_prompt_builder($user_prompt, $system, $config)->generate_text_result();
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return [
+            'content' => $result->toText(),
+            'provider' => $result->getProviderMetadata()->getId(),
+            'model' => $result->getModelMetadata()->getId(),
+        ];
     }
 
     /**

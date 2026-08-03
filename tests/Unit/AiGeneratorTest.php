@@ -37,6 +37,8 @@ class AiGeneratorTest extends TestCase
             'temperature' => '',
             'top_p' => '',
             'max_tokens' => 2048,
+            'diagnostics' => false,
+            'diagnostics_content' => false,
         ];
     }
 
@@ -428,6 +430,32 @@ class AiGeneratorTest extends TestCase
         $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiConfig());
 
         $this->assertSame('Korte kop', $result['content']);
+    }
+
+    public function test_diagnostics_logs_the_model_resolved_by_wordpress(): void
+    {
+        $line = '';
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder('Korte kop'));
+        Functions\when('wp_json_encode')->alias('json_encode');
+        Functions\expect('error_log')->once()->with(\Mockery::capture($line));
+
+        $result = AiGenerator::generate_single_field(
+            'title',
+            'Titel',
+            'Tekst',
+            self::aiConfig([
+                'provider' => 'requested-provider',
+                'model' => 'requested-provider/requested-model',
+                'diagnostics' => true,
+            ]),
+            false,
+            'test-correlation'
+        );
+
+        $this->assertSame('Korte kop', $result['content']);
+        $this->assertStringContainsString('"provider":"resolved-provider"', $line);
+        $this->assertStringContainsString('"model":"resolved-model"', $line);
+        $this->assertStringNotContainsString('requested-model', $line);
     }
 
     public function test_generate_single_field_returns_wp_error_on_failure(): void

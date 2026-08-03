@@ -27,11 +27,6 @@ class AiDiagnostics
         return !empty($config['diagnostics']);
     }
 
-    public static function correlation_id(): string
-    {
-        return bin2hex(random_bytes(16));
-    }
-
     /**
      * @param array<string, mixed> $config
      * @param array<string, mixed> $context
@@ -49,18 +44,22 @@ class AiDiagnostics
         ];
         foreach (self::OPERATIONAL_KEYS as $key) {
             if (isset($context[$key]) && is_scalar($context[$key])) {
-                $record[$key] = $context[$key];
+                $value = $context[$key];
+                $record[$key] = is_string($value) ? self::redact_credentials($value) : $value;
             }
         }
         foreach (self::CONTENT_KEYS as $key) {
             if (!array_key_exists($key, $context)) {
                 continue;
             }
-            $record[$key] = !empty($config['diagnostics_content']) && is_scalar($context[$key]) ? self::safe_content((string) $context[$key]) : '[redacted]';
+            $record[$key] = '[redacted]';
+            if (!empty($config['diagnostics_content']) && is_scalar($context[$key])) {
+                $record[$key] = mb_substr(self::redact_credentials((string) $context[$key]), 0, 2000);
+            }
         }
 
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- explicit opt-in diagnostic sink.
-        error_log('TekstTV AI diagnostic ' . json_encode($record, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        error_log('TekstTV AI diagnostic ' . wp_json_encode($record, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
     /** @param array<string, mixed> $config */
@@ -73,7 +72,7 @@ class AiDiagnostics
      * @param array<string, mixed> $config
      * @return array{provider: string, model: string}
      */
-    public static function selected_model(array $config): array
+    public static function model_preference(array $config): array
     {
         if (!empty($config['model']) && str_contains((string) $config['model'], '/')) {
             [$provider, $model] = explode('/', (string) $config['model'], 2);
@@ -86,15 +85,25 @@ class AiDiagnostics
         ];
     }
 
-    private static function safe_content(string $value): string
+    private static function redact_credentials(string $value): string
     {
-        $value = (string) preg_replace('/\bsk-[A-Za-z0-9_-]{8,}\b/', '[credential-redacted]', $value);
         $value = (string) preg_replace(
-            '/\b(api[_-]?key|authorization|cookie|nonce|password|secret)\b\s*[:=]\s*(?:Bearer\s+)?\S+/i',
+            '/\b(authorization|proxy-authorization|cookie|set-cookie|x-wp-nonce)\b\s*:\s*[^\r\n]*/i',
             '$1=[credential-redacted]',
             $value
         );
+        $value = (string) preg_replace(
+            '/\b(api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|nonce|password|passphrase|private[_-]?key|secret|token)\b\s*[:=]\s*(?:Bearer\s+)?(?:"[^"]*"|\'[^\']*\'|\S+)/i',
+            '$1=[credential-redacted]',
+            $value
+        );
+        $value = (string) preg_replace('/\bBearer\s+\S+/i', 'Bearer [credential-redacted]', $value);
+        $value = (string) preg_replace(
+            '/\b(?:sk-[A-Za-z0-9_-]{8,}|AIza[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b/',
+            '[credential-redacted]',
+            $value
+        );
 
-        return mb_substr($value, 0, 2000);
+        return $value;
     }
 }

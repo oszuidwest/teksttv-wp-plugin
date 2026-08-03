@@ -185,8 +185,8 @@ echo '<h1>' . esc_html('Content & AI') . '</h1>';
                     </td>
                 </tr>
             </table>
-            <h4><?php echo esc_html('Diagnostiek'); ?></h4>
             <fieldset>
+                <legend><strong><?php echo esc_html('Diagnostiek'); ?></strong></legend>
                 <label><input type="checkbox" name="teksttv_ai_prompts[diagnostics]" value="1" <?php checked($prompts['diagnostics']); ?> /> <?php echo esc_html('Gestructureerde AI-diagnostiek inschakelen'); ?></label>
                 <p class="description"><?php echo esc_html('Uitgeschakeld tenzij een beheerder dit aanvinkt. Verzoekinhoud en AI-output blijven standaard afgeschermd.'); ?></p>
                 <label><input type="checkbox" name="teksttv_ai_prompts[diagnostics_content]" value="1" <?php checked($prompts['diagnostics_content']); ?> /> <?php echo esc_html('Ook artikeltekst, prompts en AI-output loggen'); ?></label>

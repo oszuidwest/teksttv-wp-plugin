@@ -278,8 +278,7 @@ class AdminPage
             return $current;
         }
 
-        $can_manage = current_user_can('manage_teksttv');
-        if (!$can_manage) {
+        if (!current_user_can('manage_teksttv')) {
             $input = array_diff_key($input, array_flip([
                 'region_taxonomy',
                 'provider',

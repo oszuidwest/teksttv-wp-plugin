@@ -104,7 +104,7 @@ class RestApi
     public static function generate_content(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $config = Helpers::get_ai_prompts();
-        $correlation_id = AiDiagnostics::correlation_id();
+        $correlation_id = wp_generate_uuid4();
 
         if (!Helpers::has_feature('ai_generate')) {
             return self::generation_error(
@@ -167,7 +167,7 @@ class RestApi
         }
 
         AiDiagnostics::log($config, 'request_started', $correlation_id, array_merge(
-            AiDiagnostics::selected_model($config),
+            AiDiagnostics::model_preference($config),
             [
                 'field' => $field,
                 'word_limit' => $config['word_limit'],
