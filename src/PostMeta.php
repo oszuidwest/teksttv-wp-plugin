@@ -9,7 +9,6 @@ class PostMeta
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
         add_action('save_post', [self::class, 'save_meta'], 10, 2);
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
-        add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
     }
 
     /**
@@ -44,9 +43,22 @@ class PostMeta
             return;
         }
 
+        if (!current_user_can('edit_teksttv')) {
+            return;
+        }
+
         $screen = get_current_screen();
         if (!$screen || $screen->post_type !== 'post') {
             return;
+        }
+
+        $page_separator = Helpers::has_feature('page_separator');
+        if ($page_separator) {
+            // mce_external_plugins is page-level: core applies it once, for the
+            // first TinyMCE editor initialized, and merges the result into every
+            // editor on the page. Per-editor scoping happens via the toolbar in
+            // render_meta_box, so don't gate on the filter's $editor_id here.
+            add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
         }
 
         Helpers::enqueue_admin_script();
@@ -95,7 +107,7 @@ class PostMeta
             'titleCharLimit' => $prompts['title_char_limit'],
             'wordLimit' => $prompts['word_limit'],
             'wordLimitPhoto' => $prompts['word_limit_photo'],
-            'pageSeparator' => Helpers::has_feature('page_separator'),
+            'pageSeparator' => $page_separator,
         ];
         wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');
     }

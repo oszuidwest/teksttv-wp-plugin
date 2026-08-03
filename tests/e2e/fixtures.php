@@ -28,6 +28,17 @@ update_option('teksttv_features', [
     'ai_generate',
 ]);
 
+// Only the protected fields, seeded with sentinels distinguishable from the
+// plugin defaults; role.spec.ts asserts a content editor cannot overwrite them.
+update_option('teksttv_ai_prompts', [
+    'region_taxonomy' => 'category',
+    'provider' => 'protected-provider',
+    'model' => 'protected-provider/protected-model',
+    'temperature' => 0.4,
+    'top_p' => 0.8,
+    'max_tokens' => 1024,
+]);
+
 update_option('teksttv_loop_tv1', [
     ['type' => 'articles', 'count' => 1, 'taxonomy_filters' => []],
 ]);
@@ -52,9 +63,10 @@ $teksttv_attachments = get_posts([
     'meta_value' => '1',
 ]);
 
-if ($teksttv_attachments) {
-    $teksttv_attachment_id = (int) $teksttv_attachments[0]->ID;
-} else {
+$teksttv_attachment_id = $teksttv_attachments ? (int) $teksttv_attachments[0]->ID : 0;
+$teksttv_attachment_file = $teksttv_attachment_id ? get_attached_file($teksttv_attachment_id) : false;
+
+if (!$teksttv_attachment_file || !is_file($teksttv_attachment_file)) {
     $teksttv_png = base64_decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
         true
@@ -68,13 +80,18 @@ if ($teksttv_attachments) {
         throw new RuntimeException('Could not upload the E2E image fixture: ' . $teksttv_upload['error']);
     }
 
-    $teksttv_attachment_id = wp_insert_attachment([
-        'post_mime_type' => 'image/png',
-        'post_title' => 'TekstTV E2E Image',
-        'post_status' => 'inherit',
-    ], $teksttv_upload['file'], 0, true);
-    if (is_wp_error($teksttv_attachment_id) || $teksttv_attachment_id <= 0) {
-        throw new RuntimeException('Could not create the E2E image attachment.');
+    if ($teksttv_attachment_id) {
+        update_attached_file($teksttv_attachment_id, $teksttv_upload['file']);
+    } else {
+        $teksttv_attachment_id = wp_insert_attachment([
+            'post_mime_type' => 'image/png',
+            'post_title' => 'TekstTV E2E Image',
+            'post_status' => 'inherit',
+        ], $teksttv_upload['file'], 0, true);
+        if (is_wp_error($teksttv_attachment_id) || $teksttv_attachment_id <= 0) {
+            throw new RuntimeException('Could not create the E2E image attachment.');
+        }
+        update_post_meta($teksttv_attachment_id, '_teksttv_e2e_fixture', '1');
     }
 
     require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -82,7 +99,6 @@ if ($teksttv_attachments) {
         $teksttv_attachment_id,
         wp_generate_attachment_metadata($teksttv_attachment_id, $teksttv_upload['file'])
     );
-    update_post_meta($teksttv_attachment_id, '_teksttv_e2e_fixture', '1');
 }
 
 // Seeded after the attachment so campaign alpha can carry a real slide: the
@@ -119,9 +135,26 @@ add_role('teksttv_smoke_role', 'TekstTV Smoke Role', [
     'manage_teksttv_content' => true,
 ]);
 
-if (!get_user_by('login', 'teksttv_editor')) {
-    $teksttv_uid = wp_create_user('teksttv_editor', 'password', 'teksttv_editor@example.test');
-    (new WP_User($teksttv_uid))->set_role('teksttv_smoke_role');
+// Content editors may change prompts, but must not gain general TekstTV
+// administration or the hidden provider/model controls.
+remove_role('teksttv_content_role');
+add_role('teksttv_content_role', 'TekstTV Content Role', [
+    'read' => true,
+    'manage_teksttv_content' => true,
+]);
+
+foreach (['teksttv_editor' => 'teksttv_smoke_role', 'teksttv_content_editor' => 'teksttv_content_role'] as $teksttv_login => $teksttv_role) {
+    $teksttv_user = get_user_by('login', $teksttv_login);
+    if ($teksttv_user) {
+        wp_set_password('password', $teksttv_user->ID);
+    } else {
+        $teksttv_uid = wp_create_user($teksttv_login, 'password', $teksttv_login . '@example.test');
+        if (is_wp_error($teksttv_uid)) {
+            throw new RuntimeException('Could not create the ' . $teksttv_login . ' fixture: ' . $teksttv_uid->get_error_message());
+        }
+        $teksttv_user = new WP_User($teksttv_uid);
+    }
+    $teksttv_user->set_role($teksttv_role);
 }
 
 // Disable the block-editor welcome guide via the persisted preference core
@@ -129,7 +162,7 @@ if (!get_user_by('login', 'teksttv_editor')) {
 // race the specs. The post editor reads core/edit-post; `_modified` must be
 // current or a stale localStorage copy wins the client-side persistence merge.
 $teksttv_prefs_key = $GLOBALS['wpdb']->get_blog_prefix() . 'persisted_preferences';
-foreach (['admin', 'teksttv_editor'] as $teksttv_login) {
+foreach (['admin', 'teksttv_editor', 'teksttv_content_editor'] as $teksttv_login) {
     $teksttv_user = get_user_by('login', $teksttv_login);
     if ($teksttv_user) {
         update_user_meta($teksttv_user->ID, $teksttv_prefs_key, [

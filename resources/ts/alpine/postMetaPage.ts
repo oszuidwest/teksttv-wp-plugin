@@ -89,9 +89,8 @@ export function createPostMetaPage() {
         init(): void {
             const activeInput = document.querySelector<HTMLInputElement>('#teksttv-active');
             const fields = document.querySelector<HTMLElement>('#teksttv-fields');
-            const status = document.querySelector('#teksttv-toggle-status');
 
-            if (!(activeInput && fields && status)) return;
+            if (!(activeInput && fields)) return;
 
             if (activeInput.checked) {
                 show(fields);
@@ -140,19 +139,24 @@ export function createPostMetaPage() {
                         if (teksttvHasExistingGeneratedContent()) return;
 
                         window.setTimeout(() => {
-                            if (window.confirm('Wil je automatisch een kop en tekst genereren?')) {
-                                const bothBtn = document.querySelector<HTMLButtonElement>(
-                                    '.teksttv-generate-btn[data-field="both"]',
+                            const generateBtn = document.querySelector<HTMLButtonElement>(
+                                '.teksttv-ai-section .teksttv-generate-btn',
+                            );
+                            if (!generateBtn) return;
+
+                            const field = generateBtn.dataset.field === 'both' ? 'both' : 'body';
+                            const confirmation =
+                                field === 'both'
+                                    ? 'Wil je automatisch een kop en tekst genereren?'
+                                    : 'Wil je automatisch tekst genereren?';
+                            if (window.confirm(confirmation)) {
+                                requestAiGeneration(
+                                    config,
+                                    generateBtn,
+                                    field,
+                                    hasSidebarPhoto(config, customImageData),
+                                    updatePreview,
                                 );
-                                if (bothBtn) {
-                                    requestAiGeneration(
-                                        config,
-                                        bothBtn,
-                                        'both',
-                                        hasSidebarPhoto(config, customImageData),
-                                        updatePreview,
-                                    );
-                                }
                             }
                         }, 300);
                     });
@@ -165,17 +169,12 @@ export function createPostMetaPage() {
         onActiveChange(): void {
             const activeInput = document.querySelector<HTMLInputElement>('#teksttv-active');
             const fields = document.querySelector<HTMLElement>('#teksttv-fields');
-            const status = document.querySelector('#teksttv-toggle-status');
-            if (!(activeInput && fields && status)) return;
+            if (!(activeInput && fields)) return;
             const isChecked = activeInput.checked;
             if (isChecked) {
                 slideDown(fields, 200);
-                status.textContent = 'Actief';
-                status.classList.add('is-active');
             } else {
                 slideUp(fields, 200);
-                status.textContent = 'Inactief';
-                status.classList.remove('is-active');
             }
         },
 
