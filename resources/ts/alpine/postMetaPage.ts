@@ -18,7 +18,6 @@ export function createPostMetaPage() {
     let currentSlideIndex = 0;
     let slides: Slide[] = [];
     let customImageData: ImageData | null = config?.customImage ? (config.customImage as ImageData) : null;
-    let iframeLoadHandler: (() => void) | undefined;
 
     const previewUrl = config?.previewUrl ?? '';
 
@@ -63,13 +62,13 @@ export function createPostMetaPage() {
         }
 
         container?.classList.remove('is-empty');
+        // Skip the reload when the slide is unchanged — `keyup` also fires for non-mutating keys.
+        const newSrc = previewSlideUrl(previewUrl, slides[currentSlideIndex]);
+        if (iframe.getAttribute('src') === newSrc) return;
+
         container?.classList.add('is-loading');
-        if (iframeLoadHandler) {
-            iframe.removeEventListener('load', iframeLoadHandler);
-        }
-        iframeLoadHandler = () => container?.classList.remove('is-loading');
-        iframe.addEventListener('load', iframeLoadHandler, { once: true });
-        iframe.setAttribute('src', previewSlideUrl(previewUrl, slides[currentSlideIndex]));
+        iframe.onload = () => container?.classList.remove('is-loading');
+        iframe.setAttribute('src', newSrc);
     }, 400);
 
     const openExtraImages = createExtraImagesOpener(updatePreview);
@@ -90,9 +89,8 @@ export function createPostMetaPage() {
         init(): void {
             const activeInput = document.querySelector<HTMLInputElement>('#teksttv-active');
             const fields = document.querySelector<HTMLElement>('#teksttv-fields');
-            const status = document.querySelector('#teksttv-toggle-status');
 
-            if (!(activeInput && fields && status)) return;
+            if (!(activeInput && fields)) return;
 
             if (activeInput.checked) {
                 show(fields);
@@ -116,7 +114,8 @@ export function createPostMetaPage() {
             if (typeof tinymce !== 'undefined') {
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
                     // `updatePreview` debounces and also refreshes the word count.
-                    editor.on('input change SetContent', updatePreview);
+                    // `keyup` covers keystrokes TinyMCE handles without firing `input`.
+                    editor.on('input change keyup SetContent', updatePreview);
                 };
                 const existing = tinymce.get('teksttv_content');
                 if (existing) bindEditor(existing);
@@ -140,19 +139,24 @@ export function createPostMetaPage() {
                         if (teksttvHasExistingGeneratedContent()) return;
 
                         window.setTimeout(() => {
-                            if (window.confirm('Wil je automatisch een kop en tekst genereren?')) {
-                                const bothBtn = document.querySelector<HTMLButtonElement>(
-                                    '.teksttv-generate-btn[data-field="both"]',
+                            const generateBtn = document.querySelector<HTMLButtonElement>(
+                                '.teksttv-ai-section .teksttv-generate-btn',
+                            );
+                            if (!generateBtn) return;
+
+                            const field = generateBtn.dataset.field === 'both' ? 'both' : 'body';
+                            const confirmation =
+                                field === 'both'
+                                    ? 'Wil je automatisch een kop en tekst genereren?'
+                                    : 'Wil je automatisch tekst genereren?';
+                            if (window.confirm(confirmation)) {
+                                requestAiGeneration(
+                                    config,
+                                    generateBtn,
+                                    field,
+                                    hasSidebarPhoto(config, customImageData),
+                                    updatePreview,
                                 );
-                                if (bothBtn) {
-                                    requestAiGeneration(
-                                        config,
-                                        bothBtn,
-                                        'both',
-                                        hasSidebarPhoto(config, customImageData),
-                                        updatePreview,
-                                    );
-                                }
                             }
                         }, 300);
                     });
@@ -165,17 +169,12 @@ export function createPostMetaPage() {
         onActiveChange(): void {
             const activeInput = document.querySelector<HTMLInputElement>('#teksttv-active');
             const fields = document.querySelector<HTMLElement>('#teksttv-fields');
-            const status = document.querySelector('#teksttv-toggle-status');
-            if (!(activeInput && fields && status)) return;
+            if (!(activeInput && fields)) return;
             const isChecked = activeInput.checked;
             if (isChecked) {
                 slideDown(fields, 200);
-                status.textContent = 'Actief';
-                status.classList.add('is-active');
             } else {
                 slideUp(fields, 200);
-                status.textContent = 'Inactief';
-                status.classList.remove('is-active');
             }
         },
 

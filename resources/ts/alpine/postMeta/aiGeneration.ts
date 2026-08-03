@@ -1,7 +1,7 @@
 import { dispatchInput } from '../../modules/dom';
 import type { TeksttvPostConfig } from '../../modules/types';
 import { stripTags } from '../../modules/utils';
-import { getTeksttvEditorHtml } from './editorContent';
+import { getCurrentPostEditorState, getTeksttvEditorHtml } from './editorContent';
 
 export function teksttvHasExistingGeneratedContent(): boolean {
     const title = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
@@ -54,6 +54,22 @@ export function requestAiGeneration(
     onApplied?: () => void,
 ): void {
     const statusEl = document.querySelector('#teksttv-generate-status');
+    const showError = (message: string): void => {
+        if (statusEl) {
+            statusEl.textContent = message;
+            statusEl.classList.add('is-error');
+        } else {
+            // Errors must never depend on the status element existing.
+            console.error('TekstTV AI-generatie:', message);
+        }
+    };
+
+    const editorState = getCurrentPostEditorState();
+    if (!editorState) {
+        showError('De actuele titel en artikeltekst konden niet worden gelezen. Genereren is gestopt.');
+        return;
+    }
+
     const originalHtml = btn.innerHTML;
     const loadingMessages = [
         'Even nadenken...',
@@ -74,20 +90,16 @@ export function requestAiGeneration(
     statusEl?.classList.remove('is-error', 'is-warning');
     if (statusEl) statusEl.textContent = '';
 
-    const showError = (message: string): void => {
-        if (statusEl) {
-            statusEl.textContent = message;
-            statusEl.classList.add('is-error');
-        } else {
-            // Errors must never depend on the status element existing.
-            console.error('TekstTV AI-generatie:', message);
-        }
-    };
-
     wp.apiFetch<GenerateResponse>({
         url: config.generateUrl,
         method: 'POST',
-        data: { post_id: config.postId, field, has_photo: hasPhoto },
+        data: {
+            post_id: config.postId,
+            field,
+            has_photo: hasPhoto,
+            source_title: editorState.title,
+            source_content: editorState.content,
+        },
     })
         .then((data) => {
             if (field === 'both') {
@@ -100,16 +112,6 @@ export function requestAiGeneration(
             }
 
             onApplied?.();
-
-            let badge = document.querySelector('#teksttv-ai-badge');
-            if (!badge && statusEl) {
-                const span = document.createElement('span');
-                span.className = 'teksttv-ai-badge';
-                span.id = 'teksttv-ai-badge';
-                span.innerHTML = '<span class="dashicons dashicons-admin-generic"></span> AI gegenereerd';
-                statusEl.insertAdjacentElement('afterend', span);
-                badge = span;
-            }
 
             if (data.warning && statusEl) {
                 statusEl.textContent = data.warning;

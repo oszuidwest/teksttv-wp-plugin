@@ -1,6 +1,5 @@
-import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
-import { runEvalFile } from './helpers';
+import { runEvalFile, runWp } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 
 test.describe('slides REST endpoint', () => {
@@ -41,18 +40,9 @@ test.describe('slides REST endpoint', () => {
         });
 
         test('serves a representative HTTPS iframe accepted by the frontend schema', async ({ request }) => {
-            execFileSync(
-                'bun',
-                [
-                    'x',
-                    'wp-env',
-                    'run',
-                    'cli',
-                    'wp',
-                    'eval',
-                    "update_option('teksttv_loop_tv1', [['type' => 'iframe', 'url' => 'https://example.test/dashboard', 'duration' => 31]]);",
-                ],
-                { encoding: 'utf8', timeout: 120_000 },
+            runWp(
+                'eval',
+                "update_option('teksttv_loop_tv1', [['type' => 'iframe', 'url' => 'https://example.test/dashboard', 'duration' => 31]]);",
             );
 
             const response = await request.get('/wp-json/teksttv/v1/slides?channel=tv1');

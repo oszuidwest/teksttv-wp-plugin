@@ -168,7 +168,7 @@
     grid-column: 1 / -1;
 }
 
-.teksttv-field > label,
+.teksttv-field > label:not(.teksttv-inline-checkbox),
 .teksttv-field-label {
     display: block;
     font-size: 12px;

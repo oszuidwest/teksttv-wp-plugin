@@ -62,6 +62,7 @@ jobs:
 
       - name: Assert the built artifact activated with vendor and assets
         run: |
+          test "$(bunx wp-env run cli wp core version)" = "7.0"
           bunx wp-env run cli wp plugin is-active teksttv
           bunx wp-env run cli bash -c "test -f wp-content/plugins/teksttv/vendor/autoload.php && test -f wp-content/plugins/teksttv/assets/admin.js"
 

@@ -6,10 +6,26 @@ export const ADMIN_STORAGE_STATE = '.playwright/auth/admin.json';
 
 /** Run a PHP file from tests/e2e/ inside wp-env via `wp eval-file` and return its output. */
 export function runEvalFile(file: string): string {
-    return execFileSync('bun', ['x', 'wp-env', 'run', 'cli', 'wp', 'eval-file', `wp-content/e2e/${file}`], {
+    return runWp('eval-file', `wp-content/e2e/${file}`);
+}
+
+/** Run a WP-CLI command inside wp-env and return stdout. */
+export function runWp(...args: string[]): string {
+    return execFileSync('bun', ['x', 'wp-env', 'run', 'cli', 'wp', ...args], {
         encoding: 'utf8',
         timeout: 120_000,
     });
+}
+
+/** Return uncaught page exceptions and severe browser-console messages. */
+export async function getBrowserErrors(page: Page): Promise<string[]> {
+    const [pageErrors, consoleMessages] = await Promise.all([page.pageErrors(), page.consoleMessages()]);
+    return [
+        ...pageErrors.map((error) => `pageerror: ${error.stack ?? error.message}`),
+        ...consoleMessages
+            .filter((message) => message.type() === 'error' || message.type() === 'assert')
+            .map((message) => `console.${message.type()}: ${message.text()}`),
+    ];
 }
 
 /** Log in through wp-login.php and wait for the admin dashboard. */
@@ -20,6 +36,20 @@ export async function login(page: Page, username: string, password: string): Pro
     await page.locator('#wp-submit').click();
     await expect(page).toHaveURL((url) => url.pathname === '/wp-admin' || url.pathname.startsWith('/wp-admin/'));
     await expect(page.locator('#wpadminbar')).toBeVisible();
+}
+
+/** Open the seeded post and expose its classic meta boxes. */
+export async function openFixturePostEditor(page: Page): Promise<void> {
+    await page.goto('/wp-admin/edit.php');
+    await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
+    await expect(page.locator('#teksttv_meta')).toBeAttached();
+
+    // Fixtures disable welcomeGuide, so no onboarding modal can intercept this control.
+    const metaBoxesButton = page.getByRole('button', { name: 'Meta Boxes', exact: true });
+    await expect(metaBoxesButton).toBeVisible();
+    if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') await metaBoxesButton.press('Enter');
+    await expect(metaBoxesButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#teksttv_meta')).toBeVisible();
 }
 
 const ADD_BLOCK_UI = {

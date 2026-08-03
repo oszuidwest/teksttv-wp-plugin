@@ -5,7 +5,6 @@
 .teksttv-toggle-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
     padding: 12px 16px;
 }
 
@@ -24,20 +23,6 @@
     font-size: 18px;
     width: 18px;
     height: 18px;
-}
-
-.teksttv-toggle-bar .teksttv-toggle-status {
-    font-weight: 400;
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: #f0f0f1;
-    color: #787c82;
-}
-
-.teksttv-toggle-bar .teksttv-toggle-status.is-active {
-    background: #00a32a;
-    color: #fff;
 }
 
 .teksttv-fields {
@@ -98,24 +83,6 @@
 
 .teksttv-generate-status.is-warning {
     color: #dba617;
-}
-
-.teksttv-ai-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 11px;
-    color: #2271b1;
-    background: #f0f6fc;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: auto;
-}
-
-.teksttv-ai-badge .dashicons {
-    font-size: 12px;
-    width: 12px;
-    height: 12px;
 }
 
 .teksttv-title-footer {

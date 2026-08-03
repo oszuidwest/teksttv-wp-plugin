@@ -60,6 +60,14 @@ class RestApi
                     'default' => false,
                     'sanitize_callback' => 'rest_sanitize_boolean',
                 ],
+                'source_title' => [
+                    'required' => true,
+                    'type' => 'string',
+                ],
+                'source_content' => [
+                    'required' => true,
+                    'type' => 'string',
+                ],
             ],
         ]);
 
@@ -122,6 +130,17 @@ class RestApi
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
 
+        // The view only offers body-only generation then, but stale editor tabs
+        // can still send title/both; without this gate that would persist an
+        // orphaned _teksttv_ai_title that skews the AI-audit page.
+        if ($field !== 'body' && !Helpers::has_feature('custom_title')) {
+            return new WP_Error(
+                'teksttv_custom_title_disabled',
+                'Kop-generatie is uitgeschakeld.',
+                ['status' => 403]
+            );
+        }
+
         $post = get_post($post_id);
         if (!$post) {
             return new WP_Error('teksttv_post_not_found', 'Post niet gevonden.', ['status' => 404]);
@@ -130,6 +149,20 @@ class RestApi
         if (!current_user_can('edit_post', $post_id)) {
             return new WP_Error('teksttv_forbidden', 'Onvoldoende rechten.', ['status' => 403]);
         }
+
+        $source_title = $request->get_param('source_title');
+        $source_content = $request->get_param('source_content');
+        if (!is_string($source_title) || !is_string($source_content)) {
+            return new WP_Error(
+                'teksttv_editor_state_unavailable',
+                'De actuele editorinhoud ontbreekt. Genereren is gestopt.',
+                ['status' => 400]
+            );
+        }
+
+        $source_post = clone $post;
+        $source_post->post_title = sanitize_text_field($source_title);
+        $source_post->post_content = wp_kses_post($source_content);
 
         $config = Helpers::get_ai_prompts();
 
@@ -142,7 +175,12 @@ class RestApi
             );
         }
 
-        $result = AiGenerator::generate_for_post($post, $field, $config, (bool) $request->get_param('has_photo'));
+        $result = AiGenerator::generate_for_post(
+            $source_post,
+            $field,
+            $config,
+            (bool) $request->get_param('has_photo')
+        );
         if (is_wp_error($result)) {
             return $result;
         }

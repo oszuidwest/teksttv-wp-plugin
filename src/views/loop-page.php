@@ -100,9 +100,6 @@ settings_errors('teksttv');
 
         <div class="teksttv-add-block-bar">
             <span class="teksttv-bar-spacer"></span>
-            <button type="button" class="button-link teksttv-action-expand-blocks" @click.prevent="expandAllBlocks()"><?php echo esc_html('Alles openklappen'); ?></button>
-            <button type="button" class="button-link teksttv-action-collapse-blocks" @click.prevent="collapseAllBlocks()"><?php echo esc_html('Alles dichtklappen'); ?></button>
-            <span class="teksttv-bar-spacer"></span>
             <?php submit_button('Loop opslaan', 'primary', 'submit', false); ?>
         </div>
     </form>
