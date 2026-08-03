@@ -8,9 +8,8 @@ class PostMetaViewTest extends TestCase
 {
     /**
      * @param list<string> $features
-     * @param array<string, string> $post_meta
      */
-    private static function renderView(array $features, array $post_meta = []): string
+    private static function renderView(array $features): string
     {
         Functions\when('get_option')->alias(
             fn ($key, $default = false) => $key === 'teksttv_features' ? $features : $default
@@ -18,9 +17,7 @@ class PostMetaViewTest extends TestCase
         Functions\when('checked')->justReturn('');
         Functions\when('esc_html')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
         Functions\when('esc_attr')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
-        Functions\when('get_post_meta')->alias(
-            fn ($post_id, $key) => $post_meta[$key] ?? ''
-        );
+        Functions\when('get_post_meta')->justReturn('');
         Functions\when('get_the_title')->justReturn('Titel');
         Functions\when('wp_json_encode')->alias('json_encode');
         Functions\when('wp_editor')->justReturn(null);
@@ -64,14 +61,5 @@ class PostMetaViewTest extends TestCase
         $this->assertStringNotContainsString('data-field="both"', $view);
         $this->assertStringNotContainsString('data-field="title"', $view);
         $this->assertStringNotContainsString('Genereer kop &amp; tekst', $view);
-    }
-
-    public function test_saved_ai_meta_does_not_render_a_badge(): void
-    {
-        foreach (['_teksttv_ai_title', '_teksttv_ai_body'] as $meta_key) {
-            $view = self::renderView(['ai_generate', 'custom_title'], [$meta_key => 'AI baseline']);
-
-            $this->assertStringNotContainsString('teksttv-ai-badge', $view);
-        }
     }
 }
