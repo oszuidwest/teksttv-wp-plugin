@@ -162,7 +162,7 @@ test.describe('admin interaction contracts', () => {
         const block = page.locator('#teksttv-blocks > .teksttv-block').first();
         await block.locator('.teksttv-block-toggle-control').click();
         const toggle = block.locator('.teksttv-scheduling-checkbox');
-        const scheduling = block.locator('.teksttv-block-fields--scheduling');
+        const scheduling = block.locator('.teksttv-field-grid--scheduling');
         const startDate = scheduling.locator('input[type="date"]').first();
 
         await expect(toggle).not.toBeChecked();
@@ -208,7 +208,9 @@ test.describe('admin interaction contracts', () => {
         await page.goto('/wp-admin/admin.php?page=teksttv-settings');
 
         const rows = page.locator('#teksttv-channels tbody > .teksttv-channel-row');
+        await expect(rows.first().locator('.teksttv-remove-channel')).toHaveClass(/button-link-delete/);
         await page.locator('#teksttv-add-channel').click();
+        await expect(rows.last().locator('.teksttv-remove-channel')).toHaveClass(/button-link-delete/);
         await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-two');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Two');
@@ -249,7 +251,7 @@ test.describe('admin interaction contracts', () => {
             await block.locator('.teksttv-block-toggle-control').click();
             await block.locator('.teksttv-scheduling-checkbox').check();
 
-            let dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
+            let dayToggles = block.locator('.teksttv-field-grid--scheduling .teksttv-day-toggle');
             let days = dayToggles.locator('input[type="checkbox"]');
             await expect(days).toHaveCount(7);
             for (const toggle of await dayToggles.all()) {
@@ -260,7 +262,7 @@ test.describe('admin interaction contracts', () => {
 
             block = page.locator('#teksttv-blocks > .teksttv-block').first();
             await expect(block.locator('.teksttv-scheduling-checkbox')).toBeChecked();
-            dayToggles = block.locator('.teksttv-block-fields--scheduling .teksttv-day-toggle');
+            dayToggles = block.locator('.teksttv-field-grid--scheduling .teksttv-day-toggle');
             days = dayToggles.locator('input[type="checkbox"]');
             await expect(days).toHaveCount(7);
             for (const day of await days.all()) {
@@ -380,8 +382,10 @@ test.describe('admin interaction contracts', () => {
             await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
 
             const groups = page.locator('#teksttv-groups tbody > .teksttv-group-row');
+            await expect(groups.first().locator('.teksttv-remove-group')).toHaveClass(/button-link-delete/);
             await page.locator('#teksttv-add-group').click();
             const addedGroup = groups.last();
+            await expect(addedGroup.locator('.teksttv-remove-group')).toHaveClass(/button-link-delete/);
             await expect(addedGroup.locator('input[name$="[label]"]')).toBeFocused();
             await addedGroup.locator('input[name$="[label]"]').fill('E2E Added Group');
             await expect(addedGroup.locator('input[name]').first()).toHaveAttribute(

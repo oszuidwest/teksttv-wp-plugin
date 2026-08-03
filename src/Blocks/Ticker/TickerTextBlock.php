@@ -27,8 +27,8 @@ final class TickerTextBlock
         $message = $item['message'] ?? '';
 
         ?>
-        <div class="teksttv-block-fields">
-            <div class="teksttv-block-field" style="flex:1;">
+        <div class="teksttv-field-grid">
+            <div class="teksttv-field teksttv-field--full">
                 <label><?php echo esc_html('Bericht'); ?></label>
                 <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][message]" value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr('Ticker tekst...'); ?>" data-summary />
             </div>

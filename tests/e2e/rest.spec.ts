@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
 import { runEvalFile, runWp } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';

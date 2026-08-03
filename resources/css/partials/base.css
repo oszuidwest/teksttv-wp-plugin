@@ -1,3 +1,18 @@
+.teksttv-admin,
+.teksttv-admin *,
+.teksttv-admin *::before,
+.teksttv-admin *::after {
+    box-sizing: border-box;
+}
+
+.teksttv-admin-column {
+    max-width: 800px;
+}
+
+.teksttv-admin-column--wide {
+    max-width: 900px;
+}
+
 .is-hidden {
     display: none !important;
 }
@@ -6,13 +21,16 @@
     display: none !important;
 }
 
-.teksttv-card {
+.teksttv-card,
+.teksttv-block {
     background: #fff;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
+}
+
+.teksttv-card {
     padding: 16px 20px;
     margin-bottom: 16px;
-    max-width: 800px;
 }
 
 .teksttv-card h3 {
@@ -60,14 +78,6 @@
     margin-bottom: 0;
 }
 
-.teksttv-field-label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: #50575e;
-    margin-bottom: 4px;
-}
-
 .teksttv-inline-checkbox {
     display: inline-flex;
     align-items: center;
@@ -93,7 +103,6 @@
     border: 2px dashed #c3c4c7;
     border-radius: 4px;
     margin-bottom: 16px;
-    max-width: 800px;
 }
 
 .teksttv-empty-state .dashicons {

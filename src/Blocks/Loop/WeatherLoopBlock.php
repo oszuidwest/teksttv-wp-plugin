@@ -141,16 +141,16 @@ final class WeatherLoopBlock
         $duration = $block['duration'] ?? '';
 
         ?>
-        <div class="teksttv-block-fields">
-            <div class="teksttv-block-field">
+        <div class="teksttv-field-grid">
+            <div class="teksttv-field teksttv-field--text">
                 <label><?php echo esc_html('Locatie'); ?></label>
                 <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda,NL'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
             </div>
-            <div class="teksttv-block-field">
+            <div class="teksttv-field teksttv-field--text">
                 <label><?php echo esc_html('Titel'); ?></label>
                 <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" />
             </div>
-            <div class="teksttv-block-field">
+            <div class="teksttv-field teksttv-field--compact">
                 <label><?php echo esc_html('Duur'); ?></label>
                 <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" /> <span class="teksttv-unit">sec</span>
             </div>

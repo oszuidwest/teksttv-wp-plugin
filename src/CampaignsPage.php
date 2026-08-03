@@ -58,12 +58,12 @@ class CampaignsPage
             <?php AdminPage::render_block_header($body_id, $name ?: 'Campagne', 'megaphone', '#d63638', 'Campagne verwijderen'); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />
-                <div class="teksttv-block-fields">
-                    <div class="teksttv-block-field">
+                <div class="teksttv-field-grid">
+                    <div class="teksttv-field teksttv-field--primary">
                         <label><?php echo esc_html('Naam'); ?></label>
                         <input type="text" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][name]" value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr('Bijv. Sponsor X'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Naamloze campagne'); ?>" />
                     </div>
-                    <div class="teksttv-block-field">
+                    <div class="teksttv-field teksttv-field--choice">
                         <label><?php echo esc_html('Groep'); ?></label>
                         <select name="teksttv_campaigns[<?php echo esc_attr($index); ?>][group]" class="teksttv-campaign-group-select">
                             <option value=""><?php echo esc_html('— Geen groep —'); ?></option>
@@ -72,16 +72,16 @@ class CampaignsPage
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="teksttv-block-field">
+                    <div class="teksttv-field teksttv-field--compact">
                         <label><?php echo esc_html('Duur per slide'); ?></label>
                         <input type="number" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][duration]" value="<?php echo esc_attr($duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
                     </div>
                 </div>
-                <div class="teksttv-block-fields">
+                <div class="teksttv-field-grid">
                     <?php AdminPage::render_scheduling_inputs($index, $campaign, 'teksttv_campaigns'); ?>
                 </div>
-                <div class="teksttv-block-fields">
-                    <div class="teksttv-block-field">
+                <div class="teksttv-field-grid">
+                    <div class="teksttv-field teksttv-field--full">
                         <span class="teksttv-field-label"><?php echo esc_html('Kanalen'); ?></span>
                         <?php foreach ($channels as $ch) : ?>
                         <label class="teksttv-inline-checkbox">

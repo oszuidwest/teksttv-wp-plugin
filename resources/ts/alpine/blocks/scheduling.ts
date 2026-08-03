@@ -5,7 +5,7 @@ export function applySchedulingToggle(el: HTMLInputElement): void {
     const toggle = el.closest('.teksttv-block-scheduling-toggle');
     const sibling = toggle?.nextElementSibling;
     const scheduling =
-        sibling instanceof HTMLElement && sibling.matches('.teksttv-block-fields--scheduling') ? sibling : null;
+        sibling instanceof HTMLElement && sibling.matches('.teksttv-field-grid--scheduling') ? sibling : null;
     if (!scheduling) return;
     if (el.checked) {
         slideDown(scheduling, 150);
