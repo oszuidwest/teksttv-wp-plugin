@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { addLoopBlock } from './helpers';
+import { addLoopBlock, openFixturePostEditor } from './helpers';
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
@@ -23,23 +23,6 @@ async function selectFixtureImage(page: Page): Promise<string> {
     await selectButton.click();
     await expect(modal).toBeHidden();
     return attachmentId;
-}
-
-async function openFixturePostEditor(page: Page): Promise<void> {
-    await page.goto('/wp-admin/edit.php');
-    await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
-
-    await expect(page.locator('#teksttv_meta')).toBeAttached();
-
-    // Fixtures persist welcomeGuide=false for the admin user, so no editor
-    // onboarding modal can mount here; if one ever does, the interactions
-    // below fail with Playwright's interception error naming the overlay.
-    const metaBoxesButton = page.getByRole('button', { name: 'Meta Boxes', exact: true });
-    await expect(metaBoxesButton).toBeVisible();
-    if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') {
-        await metaBoxesButton.press('Enter');
-    }
-    await expect.poll(() => metaBoxesButton.getAttribute('aria-expanded')).toBe('true');
 }
 
 // No reseed hooks here: none of these tests submit a form or save the post,
