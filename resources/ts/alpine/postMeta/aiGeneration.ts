@@ -101,16 +101,6 @@ export function requestAiGeneration(
 
             onApplied?.();
 
-            let badge = document.querySelector('#teksttv-ai-badge');
-            if (!badge && statusEl) {
-                const span = document.createElement('span');
-                span.className = 'teksttv-ai-badge';
-                span.id = 'teksttv-ai-badge';
-                span.innerHTML = '<span class="dashicons dashicons-admin-generic"></span> AI gegenereerd';
-                statusEl.insertAdjacentElement('afterend', span);
-                badge = span;
-            }
-
             if (data.warning && statusEl) {
                 statusEl.textContent = data.warning;
                 statusEl.classList.add('is-warning');

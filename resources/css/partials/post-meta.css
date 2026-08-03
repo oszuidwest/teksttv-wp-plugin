@@ -85,24 +85,6 @@
     color: #dba617;
 }
 
-.teksttv-ai-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 11px;
-    color: #2271b1;
-    background: #f0f6fc;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: auto;
-}
-
-.teksttv-ai-badge .dashicons {
-    font-size: 12px;
-    width: 12px;
-    height: 12px;
-}
-
 .teksttv-title-footer {
     display: flex;
     align-items: baseline;
