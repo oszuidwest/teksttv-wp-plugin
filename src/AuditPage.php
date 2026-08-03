@@ -7,10 +7,16 @@ class AuditPage
     private const PER_PAGE = 50;
 
     private const CHANGE_BANDS = [
-        'unchanged' => [0, 0],
-        'minor' => [1, 25],
-        'substantial' => [26, 50],
-        'extensive' => [51, 100],
+        'unchanged' => [0.0, 0.0],
+        'minor' => [0.1, 25.0],
+        'substantial' => [25.1, 50.0],
+        'extensive' => [50.1, 100.0],
+    ];
+
+    private const GENERATION_STATUSES = [
+        'human' => 'Menselijk geschreven',
+        'ai_unmodified' => 'AI ongewijzigd',
+        'ai_edited' => 'AI bewerkt',
     ];
 
     public static function init(): void
@@ -48,11 +54,12 @@ class AuditPage
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filters, no action taken
         $filters = self::sanitize_filters(wp_unslash($_GET));
 
-        $query_result = self::query_audit_posts($paged, $filters);
-        $posts = $query_result['posts'];
-        $total_posts = $query_result['total'];
+        $audit_rows = self::query_audit_rows($filters);
+        $total_posts = count($audit_rows);
         $total_pages = (int) ceil($total_posts / self::PER_PAGE);
-        $stats = self::compute_stats(self::query_audit_post_statuses($filters));
+        $stats = self::compute_stats(array_values($audit_rows));
+        $page_ids = array_keys(array_slice($audit_rows, ($paged - 1) * self::PER_PAGE, self::PER_PAGE, true));
+        $posts = self::build_post_rows($page_ids);
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html('AI Audit') . '</h1>';
@@ -65,18 +72,18 @@ class AuditPage
                 <label><?php echo esc_html('Herkomst'); ?>
                     <select name="generation_status">
                         <option value=""><?php echo esc_html('Alle'); ?></option>
-                        <option value="human" <?php selected($filters['generation_status'], 'human'); ?>><?php echo esc_html('Menselijk geschreven'); ?></option>
-                        <option value="ai_unmodified" <?php selected($filters['generation_status'], 'ai_unmodified'); ?>><?php echo esc_html('AI ongewijzigd'); ?></option>
-                        <option value="ai_edited" <?php selected($filters['generation_status'], 'ai_edited'); ?>><?php echo esc_html('AI bewerkt'); ?></option>
+                        <?php foreach (self::GENERATION_STATUSES as $status_value => $status_label) : ?>
+                            <option value="<?php echo esc_attr($status_value); ?>" <?php selected($filters['generation_status'], $status_value); ?>><?php echo esc_html($status_label); ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </label>
                 <label><?php echo esc_html('Wijziging'); ?>
                     <select name="change_band">
                         <option value=""><?php echo esc_html('Alle'); ?></option>
                         <option value="unchanged" <?php selected($filters['change_band'], 'unchanged'); ?>><?php echo esc_html('0%'); ?></option>
-                        <option value="minor" <?php selected($filters['change_band'], 'minor'); ?>><?php echo esc_html('1–25%'); ?></option>
-                        <option value="substantial" <?php selected($filters['change_band'], 'substantial'); ?>><?php echo esc_html('26–50%'); ?></option>
-                        <option value="extensive" <?php selected($filters['change_band'], 'extensive'); ?>><?php echo esc_html('51–100%'); ?></option>
+                        <option value="minor" <?php selected($filters['change_band'], 'minor'); ?>><?php echo esc_html('0,1–25%'); ?></option>
+                        <option value="substantial" <?php selected($filters['change_band'], 'substantial'); ?>><?php echo esc_html('25,1–50%'); ?></option>
+                        <option value="extensive" <?php selected($filters['change_band'], 'extensive'); ?>><?php echo esc_html('50,1–100%'); ?></option>
                     </select>
                 </label>
                 <?php submit_button('Filteren', 'secondary', 'filter_action', false); ?>
@@ -239,67 +246,59 @@ class AuditPage
     }
 
     /**
-     * Keep the object query paginated. Status/change filters need a lightweight
-     * ID pass because their values are derived from two metadata fields.
+     * One ID pass selects the audit population and supplies the statistics and
+     * page IDs. Change percentages are expensive, so the full set only gets
+     * them when a change-band filter needs them; build_post_rows() calculates
+     * full display data for the visible page.
      *
      * @param array{month: string, generation_status: string, change_band: string} $filters
-     * @return array{posts: list<array<string, mixed>>, total: int}
+     * @return array<int, array{title_status: string, body_status: string, title_change: float|null, body_change: float|null, generation_status: string, max_change: float|null}>
      */
-    private static function query_audit_posts(int $paged, array $filters): array
+    private static function query_audit_rows(array $filters): array
     {
-        $query_args = self::audit_post_query_args($filters);
-        if ($filters['generation_status'] === '' && $filters['change_band'] === '') {
-            $query = new \WP_Query(array_merge($query_args, [
-                'posts_per_page' => self::PER_PAGE,
-                'paged' => $paged,
-                'orderby' => 'modified',
-                'order' => 'DESC',
-            ]));
-
-            return ['posts' => self::build_post_rows($query->posts), 'total' => $query->found_posts];
-        }
-
-        $id_query = new \WP_Query(array_merge($query_args, [
+        $query = new \WP_Query(array_merge(self::audit_post_query_args($filters), [
             'fields' => 'ids',
             'posts_per_page' => -1,
             'no_found_rows' => true,
+            'cache_results' => false,
             'orderby' => 'modified',
             'order' => 'DESC',
         ]));
-        $candidate_ids = array_map('intval', $id_query->posts);
-        update_meta_cache('post', $candidate_ids);
-        $matching_ids = array_values(array_filter(
-            $candidate_ids,
-            fn (int $post_id): bool => self::matches_filters(self::get_post_audit_data($post_id), $filters)
-        ));
-        $page_ids = array_slice($matching_ids, ($paged - 1) * self::PER_PAGE, self::PER_PAGE);
+        update_meta_cache('post', $query->posts);
+
+        $with_change = $filters['change_band'] !== '';
+        $rows = [];
+        foreach ($query->posts as $post_id) {
+            $audit = self::get_post_audit_data($post_id, $with_change);
+            if (self::matches_filters($audit, $filters)) {
+                $rows[$post_id] = $audit;
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param list<int> $page_ids
+     * @return list<array<string, mixed>>
+     */
+    private static function build_post_rows(array $page_ids): array
+    {
         if ($page_ids === []) {
-            return ['posts' => [], 'total' => count($matching_ids)];
+            return [];
         }
 
         $query = new \WP_Query([
             'post_type' => 'post',
             'post_status' => 'any',
             'post__in' => $page_ids,
-            'posts_per_page' => self::PER_PAGE,
+            'posts_per_page' => count($page_ids),
             'orderby' => 'post__in',
             'no_found_rows' => true,
         ]);
 
-        return ['posts' => self::build_post_rows($query->posts), 'total' => count($matching_ids)];
-    }
-
-    /**
-     * @param list<\WP_Post> $posts
-     * @return list<array<string, mixed>>
-     */
-    private static function build_post_rows(array $posts): array
-    {
-        $post_ids = array_map(fn (\WP_Post $post): int => $post->ID, $posts);
-        update_meta_cache('post', $post_ids);
-
         $user_ids = [];
-        foreach ($posts as $post) {
+        foreach ($query->posts as $post) {
             $user_ids[] = (int) $post->post_author;
             $user_ids[] = (int) get_post_meta($post->ID, '_edit_last', true);
         }
@@ -309,7 +308,7 @@ class AuditPage
         }
 
         $results = [];
-        foreach ($posts as $post) {
+        foreach ($query->posts as $post) {
             $audit = self::get_post_audit_data($post->ID);
             $author = get_userdata((int) $post->post_author);
             $last_editor = get_userdata((int) get_post_meta($post->ID, '_edit_last', true));
@@ -320,39 +319,6 @@ class AuditPage
                 'last_editor' => $last_editor ? $last_editor->display_name : '—',
                 'date' => get_the_modified_date('j M Y H:i', $post),
             ]);
-        }
-
-        return $results;
-    }
-
-    /**
-     * Fetch audit statuses for every matching post without loading post
-     * objects or writing the ID result to the query cache.
-     *
-     * @param array{month: string, generation_status: string, change_band: string} $filters
-     * @return list<array{title_status: string, body_status: string}>
-     */
-    private static function query_audit_post_statuses(array $filters): array
-    {
-        $query = new \WP_Query(array_merge(self::audit_post_query_args($filters), [
-            'fields' => 'ids',
-            'posts_per_page' => -1,
-            'no_found_rows' => true,
-            'cache_results' => false,
-            'orderby' => 'none',
-        ]));
-        $post_ids = array_map('intval', $query->posts);
-        update_meta_cache('post', $post_ids);
-
-        $results = [];
-        foreach ($post_ids as $post_id) {
-            $audit = self::get_post_audit_data($post_id);
-            if (self::matches_filters($audit, $filters)) {
-                $results[] = [
-                    'title_status' => $audit['title_status'],
-                    'body_status' => $audit['body_status'],
-                ];
-            }
         }
 
         return $results;
@@ -391,18 +357,21 @@ class AuditPage
     }
 
     /** @return array{title_status: string, body_status: string, title_change: float|null, body_change: float|null, generation_status: string, max_change: float|null} */
-    private static function get_post_audit_data(int $post_id): array
+    private static function get_post_audit_data(int $post_id, bool $with_change = true): array
     {
-        $ai_title = (string) get_post_meta($post_id, '_teksttv_ai_title', true);
-        $current_title = (string) get_post_meta($post_id, '_teksttv_title', true);
-        $ai_body = (string) get_post_meta($post_id, '_teksttv_ai_body', true);
-        $current_body = (string) get_post_meta($post_id, '_teksttv_content', true);
-        $title_status = self::compare($ai_title, $current_title);
-        $body_status = self::compare($ai_body, $current_body, true);
-        $title_change = $ai_title === '' ? null : self::change_percentage($ai_title, $current_title);
-        $body_change = $ai_body === '' ? null : self::change_percentage($ai_body, $current_body, true);
+        [$title_status, $title_change] = self::audit_field(
+            (string) get_post_meta($post_id, '_teksttv_ai_title', true),
+            (string) get_post_meta($post_id, '_teksttv_title', true),
+            false,
+            $with_change
+        );
+        [$body_status, $body_change] = self::audit_field(
+            (string) get_post_meta($post_id, '_teksttv_ai_body', true),
+            (string) get_post_meta($post_id, '_teksttv_content', true),
+            true,
+            $with_change
+        );
         $changes = array_filter([$title_change, $body_change], fn ($value): bool => $value !== null);
-        $has_ai = $changes !== [];
 
         return [
             'title_status' => $title_status,
@@ -410,8 +379,27 @@ class AuditPage
             'title_change' => $title_change,
             'body_change' => $body_change,
             'generation_status' => self::classify_generation_status($title_status, $body_status),
-            'max_change' => $has_ai ? max($changes) : null,
+            'max_change' => $changes === [] ? null : max($changes),
         ];
+    }
+
+    /**
+     * Status and (optionally) change percentage for one field, normalizing
+     * each version exactly once.
+     *
+     * @return array{0: string, 1: float|null}
+     */
+    private static function audit_field(string $ai_version, string $current_version, bool $strip_region_prefix, bool $with_change): array
+    {
+        if ($ai_version === '') {
+            return ['no_ai', null];
+        }
+
+        $ai_normalized = self::normalize_for_comparison($ai_version, $strip_region_prefix);
+        $current_normalized = self::normalize_for_comparison($current_version, $strip_region_prefix);
+        $status = $ai_normalized === $current_normalized ? 'unmodified' : 'modified';
+
+        return [$status, $with_change ? self::normalized_change_percentage($ai_normalized, $current_normalized) : null];
     }
 
     /**
@@ -443,13 +431,10 @@ class AuditPage
         $month = isset($input['month']) && is_string($input['month']) ? $input['month'] : '';
         $generation_status = isset($input['generation_status']) && is_string($input['generation_status']) ? sanitize_key($input['generation_status']) : '';
         $change_band = isset($input['change_band']) && is_string($input['change_band']) ? sanitize_key($input['change_band']) : '';
-        if (!in_array($generation_status, ['human', 'ai_unmodified', 'ai_edited'], true)) {
-            $generation_status = '';
-        }
 
         return [
             'month' => preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) ? $month : '',
-            'generation_status' => $generation_status,
+            'generation_status' => isset(self::GENERATION_STATUSES[$generation_status]) ? $generation_status : '',
             'change_band' => isset(self::CHANGE_BANDS[$change_band]) ? $change_band : '',
         ];
     }
@@ -504,13 +489,7 @@ class AuditPage
      */
     public static function compare(string $ai_version, string $current_version, bool $strip_region_prefix = false): string
     {
-        if (empty($ai_version)) {
-            return 'no_ai';
-        }
-
-        $same = self::normalize_for_comparison($ai_version, $strip_region_prefix) === self::normalize_for_comparison($current_version, $strip_region_prefix);
-
-        return $same ? 'unmodified' : 'modified';
+        return self::audit_field($ai_version, $current_version, $strip_region_prefix, false)[0];
     }
 
     /** Percentage of word insertions, deletions, and substitutions. */
@@ -519,8 +498,16 @@ class AuditPage
         string $current_version,
         bool $strip_region_prefix = false
     ): float {
-        $left = self::comparison_words($ai_version, $strip_region_prefix);
-        $right = self::comparison_words($current_version, $strip_region_prefix);
+        return self::normalized_change_percentage(
+            self::normalize_for_comparison($ai_version, $strip_region_prefix),
+            self::normalize_for_comparison($current_version, $strip_region_prefix)
+        );
+    }
+
+    private static function normalized_change_percentage(string $left_normalized, string $right_normalized): float
+    {
+        $left = $left_normalized === '' ? [] : explode(' ', $left_normalized);
+        $right = $right_normalized === '' ? [] : explode(' ', $right_normalized);
         $maximum = max(count($left), count($right));
         if ($maximum === 0) {
             return 0.0;
@@ -540,14 +527,6 @@ class AuditPage
         }
 
         return round(($previous[count($right)] / $maximum) * 100, 1);
-    }
-
-    /** @return list<string> */
-    private static function comparison_words(string $value, bool $strip_region_prefix): array
-    {
-        $normalized = self::normalize_for_comparison($value, $strip_region_prefix);
-
-        return $normalized === '' ? [] : (preg_split('/\s+/u', $normalized) ?: []);
     }
 
     private static function normalize_for_comparison(string $value, bool $strip_region_prefix): string

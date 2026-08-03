@@ -34,9 +34,16 @@ class AuditPageTest extends TestCase
         $this->assertSame('modified', $result);
     }
 
+    public function test_compare_treats_zero_as_an_ai_baseline(): void
+    {
+        $this->assertSame('unmodified', AuditPage::compare('0', '0'));
+        $this->assertSame('modified', AuditPage::compare('0', '1'));
+    }
+
     public function test_compare_ignores_html_whitespace_and_body_region_prefixes(): void
     {
         $this->assertSame('unmodified', AuditPage::compare('<p>AI <strong>tekst</strong></p>', ' AI tekst '));
+        $this->assertSame('unmodified', AuditPage::compare("Rock 'n roll", 'Rock &apos;n roll'));
         $this->assertSame(
             'unmodified',
             AuditPage::compare('<p>LEIDEN - Dezelfde tekst</p>', '<div>DEN HAAG - Dezelfde tekst</div>', true)
@@ -78,6 +85,35 @@ class AuditPageTest extends TestCase
             'generation_status' => 'forged',
             'change_band' => 'all-of-it',
         ]));
+    }
+
+    public function test_change_bands_cover_every_tenth_of_a_percent(): void
+    {
+        $audit = [
+            'generation_status' => 'ai_edited',
+            'max_change' => 0.0,
+        ];
+        $filters = [
+            'month' => '',
+            'generation_status' => '',
+            'change_band' => 'unchanged',
+        ];
+
+        $this->assertTrue(self::callPrivate(AuditPage::class, 'matches_filters', [$audit, $filters]));
+
+        $boundaries = [
+            [0.1, 'minor'],
+            [25.0, 'minor'],
+            [25.1, 'substantial'],
+            [50.0, 'substantial'],
+            [50.1, 'extensive'],
+            [100.0, 'extensive'],
+        ];
+        foreach ($boundaries as [$change, $band]) {
+            $audit['max_change'] = $change;
+            $filters['change_band'] = $band;
+            $this->assertTrue(self::callPrivate(AuditPage::class, 'matches_filters', [$audit, $filters]));
+        }
     }
 
     public function test_compare_returns_no_ai_when_both_empty(): void
