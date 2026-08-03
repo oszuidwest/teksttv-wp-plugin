@@ -1,4 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { getBrowserErrors } from './helpers';
+import { reseedFixtures } from './reseed-fixtures';
+
+test.afterEach(async ({ page }) => {
+    expect(await getBrowserErrors(page)).toEqual([]);
+});
 
 test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
@@ -7,12 +13,18 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#submit')).toBeVisible();
     });
 
-    test('administrator can save settings', async ({ page }) => {
-        await page.goto('/wp-admin/admin.php?page=teksttv-settings');
-        await page.fill('input[name="teksttv_duration_text"]', '42');
-        await page.click('#submit');
-        // The Settings API reloads the page; the saved value must persist.
-        await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
+    test.describe('settings mutation', () => {
+        test.afterEach(() => {
+            reseedFixtures();
+        });
+
+        test('administrator can save settings', async ({ page }) => {
+            await page.goto('/wp-admin/admin.php?page=teksttv-settings');
+            await page.fill('input[name="teksttv_duration_text"]', '42');
+            await page.click('#submit');
+            // The Settings API reloads the page; the saved value must persist.
+            await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
+        });
     });
 
     test('loop page renders the blocks workbench', async ({ page }) => {
