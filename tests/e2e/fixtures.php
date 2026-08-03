@@ -135,18 +135,6 @@ add_role('teksttv_smoke_role', 'TekstTV Smoke Role', [
     'manage_teksttv_content' => true,
 ]);
 
-$teksttv_editor = get_user_by('login', 'teksttv_editor');
-if ($teksttv_editor) {
-    wp_set_password('password', $teksttv_editor->ID);
-} else {
-    $teksttv_uid = wp_create_user('teksttv_editor', 'password', 'teksttv_editor@example.test');
-    if (is_wp_error($teksttv_uid)) {
-        throw new RuntimeException('Could not create the TekstTV editor fixture: ' . $teksttv_uid->get_error_message());
-    }
-    $teksttv_editor = new WP_User($teksttv_uid);
-}
-$teksttv_editor->set_role('teksttv_smoke_role');
-
 // Content editors may change prompts, but must not gain general TekstTV
 // administration or the hidden provider/model controls.
 remove_role('teksttv_content_role');
@@ -155,19 +143,19 @@ add_role('teksttv_content_role', 'TekstTV Content Role', [
     'manage_teksttv_content' => true,
 ]);
 
-$teksttv_content_user = get_user_by('login', 'teksttv_content_editor');
-if ($teksttv_content_user) {
-    wp_set_password('password', $teksttv_content_user->ID);
-} else {
-    $teksttv_content_uid = wp_create_user('teksttv_content_editor', 'password', 'teksttv_content_editor@example.test');
-    if (is_wp_error($teksttv_content_uid)) {
-        throw new RuntimeException(
-            'Could not create the TekstTV content editor fixture: ' . $teksttv_content_uid->get_error_message()
-        );
+foreach (['teksttv_editor' => 'teksttv_smoke_role', 'teksttv_content_editor' => 'teksttv_content_role'] as $teksttv_login => $teksttv_role) {
+    $teksttv_user = get_user_by('login', $teksttv_login);
+    if ($teksttv_user) {
+        wp_set_password('password', $teksttv_user->ID);
+    } else {
+        $teksttv_uid = wp_create_user($teksttv_login, 'password', $teksttv_login . '@example.test');
+        if (is_wp_error($teksttv_uid)) {
+            throw new RuntimeException('Could not create the ' . $teksttv_login . ' fixture: ' . $teksttv_uid->get_error_message());
+        }
+        $teksttv_user = new WP_User($teksttv_uid);
     }
-    $teksttv_content_user = new WP_User($teksttv_content_uid);
+    $teksttv_user->set_role($teksttv_role);
 }
-$teksttv_content_user->set_role('teksttv_content_role');
 
 // Disable the block-editor welcome guide via the persisted preference core
 // preloads into the editor, so the onboarding modal never mounts and cannot
