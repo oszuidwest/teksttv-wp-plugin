@@ -320,7 +320,7 @@ test.describe('admin interaction contracts', () => {
         expect(dialog.type()).toBe('beforeunload');
         await dialog.dismiss();
         await navigationPromise;
-        await expect(page).toHaveURL(new RegExp(`${settingsUrl.replace(/[?]/g, '\\?')}$`));
+        await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === settingsUrl);
     });
 
     // Only these tests submit forms and persist real option changes; the tests
