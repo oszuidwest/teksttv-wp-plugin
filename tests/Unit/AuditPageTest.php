@@ -2,10 +2,44 @@
 
 namespace TekstTV\Tests\Unit;
 
+use Brain\Monkey\Functions;
 use TekstTV\AuditPage;
 
 class AuditPageTest extends TestCase
 {
+    public function test_register_menu_skips_audit_without_supported_text_generator(): void
+    {
+        $this->stubAiSupport(false);
+        Functions\expect('add_submenu_page')->never();
+
+        AuditPage::register_menu();
+    }
+
+    public function test_register_menu_adds_audit_with_supported_text_generator(): void
+    {
+        $this->stubAiSupport(true);
+        Functions\expect('add_submenu_page')
+            ->once()
+            ->with(
+                'teksttv',
+                'AI Audit',
+                'AI Audit',
+                'manage_teksttv',
+                'teksttv-audit',
+                [AuditPage::class, 'render_page']
+            );
+
+        AuditPage::register_menu();
+    }
+
+    public function test_register_menu_skips_audit_and_ai_discovery_without_capability(): void
+    {
+        $this->stubAiSupport(true, false);
+        Functions\expect('add_submenu_page')->never();
+
+        AuditPage::register_menu();
+    }
+
     // =========================================================================
     // compare()
     // =========================================================================
@@ -105,5 +139,26 @@ class AuditPageTest extends TestCase
         $this->assertSame(0.0, $result['title_modified_pct']);
         $this->assertSame(2.0, $result['body_modified_pct']);
         $this->assertSame(2.0, $result['any_modified_pct']);
+    }
+
+    private function stubAiSupport(bool $supported, bool $can_manage_teksttv = true): void
+    {
+        if ($can_manage_teksttv) {
+            Functions\when('current_user_can')->justReturn(true);
+        } else {
+            Functions\expect('current_user_can')->with('manage_teksttv')->once()->andReturn(false);
+        }
+        Functions\when('get_option')->alias(static function (string $key, mixed $default = false): mixed {
+            return $key === 'teksttv_features' ? ['ai_generate'] : $default;
+        });
+        if ($can_manage_teksttv) {
+            Functions\when('wp_supports_ai')->justReturn(true);
+            Functions\when('wp_ai_client_prompt')->justReturn(
+                $supported ? self::mockAiBuilder() : self::mockUnsupportedAiBuilder()
+            );
+        } else {
+            Functions\expect('wp_supports_ai')->never();
+            Functions\expect('wp_ai_client_prompt')->never();
+        }
     }
 }
