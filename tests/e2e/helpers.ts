@@ -49,6 +49,7 @@ export async function openFixturePostEditor(page: Page): Promise<void> {
     await expect(metaBoxesButton).toBeVisible();
     if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') await metaBoxesButton.press('Enter');
     await expect(metaBoxesButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#teksttv_meta')).toBeVisible();
 }
 
 const ADD_BLOCK_UI = {
