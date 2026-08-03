@@ -18,7 +18,6 @@ export function createPostMetaPage() {
     let currentSlideIndex = 0;
     let slides: Slide[] = [];
     let customImageData: ImageData | null = config?.customImage ? (config.customImage as ImageData) : null;
-    let iframeLoadHandler: (() => void) | undefined;
 
     const previewUrl = config?.previewUrl ?? '';
 
@@ -68,11 +67,7 @@ export function createPostMetaPage() {
         if (iframe.getAttribute('src') === newSrc) return;
 
         container?.classList.add('is-loading');
-        if (iframeLoadHandler) {
-            iframe.removeEventListener('load', iframeLoadHandler);
-        }
-        iframeLoadHandler = () => container?.classList.remove('is-loading');
-        iframe.addEventListener('load', iframeLoadHandler, { once: true });
+        iframe.onload = () => container?.classList.remove('is-loading');
         iframe.setAttribute('src', newSrc);
     }, 400);
 

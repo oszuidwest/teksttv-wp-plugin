@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openFixturePostEditor } from './helpers';
 
 test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
@@ -21,9 +22,20 @@ test.describe('administrator admin screens', () => {
     });
 
     test('post editor hides AI controls when no provider connector is configured', async ({ page }) => {
-        await page.goto('/wp-admin/edit.php');
-        await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
-        await expect(page.locator('#teksttv_meta')).toBeAttached();
+        await openFixturePostEditor(page);
         await expect(page.locator('.teksttv-generate-btn')).toHaveCount(0);
+    });
+
+    test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
+        await openFixturePostEditor(page);
+        const editor = page.frameLocator('#teksttv_content_ifr').locator('body');
+        await editor.evaluate((body) => {
+            // Avoid input/change/SetContent so this specifically covers the keyup fallback.
+            body.innerHTML = '<p>Twee woorden</p>';
+            const tinyMceEditor = window.parent.tinymce?.get('teksttv_content');
+            if (!tinyMceEditor) throw new Error('TinyMCE editor teksttv_content not found.');
+            tinyMceEditor.fire('keyup');
+        });
+        await expect(page.locator('#teksttv-wordcount')).toHaveText(/^2(?: \/ \d+)? woorden$/);
     });
 });
