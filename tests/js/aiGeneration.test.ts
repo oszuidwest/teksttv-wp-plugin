@@ -39,6 +39,26 @@ test('falls back to the visible Classic Editor TinyMCE instance', () => {
     });
 });
 
+test('falls back to the Classic Editor when Gutenberg state is incomplete', () => {
+    setGlobal('wp', {
+        data: {
+            select: () => ({
+                getEditedPostAttribute: (attribute: string) => (attribute === 'title' ? 'Gutenberg titel' : undefined),
+            }),
+        },
+    });
+    setGlobal('document', {
+        querySelector: (selector: string) =>
+            selector === '#title' ? { value: 'Classic titel' } : { value: 'Classic inhoud' },
+    });
+    setGlobal('tinymce', { get: () => null });
+
+    expect(getCurrentPostEditorState()).toEqual({
+        title: 'Classic titel',
+        content: 'Classic inhoud',
+    });
+});
+
 test('blocks generation when no authoritative editor is available', () => {
     setGlobal('wp', { data: { select: () => null } });
     setGlobal('document', { querySelector: () => null });
