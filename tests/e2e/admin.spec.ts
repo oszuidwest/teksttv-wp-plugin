@@ -52,6 +52,18 @@ test.describe('administrator admin screens', () => {
             await page.locator('.teksttv-plain-separator').click();
             await expect(editor).toHaveValue('Eerste slide\n---');
         });
+
+        test('post editor contains the empty preview at narrow widths', async ({ page }) => {
+            runWp('option', 'delete', 'teksttv_preview_url');
+            await page.setViewportSize({ width: 390, height: 844 });
+            await openFixturePostEditor(page);
+
+            const emptyPreview = page.locator('.teksttv-no-preview');
+            await expect(emptyPreview).toBeVisible();
+            const overflow = await emptyPreview.evaluate((element) => element.scrollHeight - element.clientHeight);
+
+            expect(overflow).toBeLessThanOrEqual(1);
+        });
     });
 
     test('loop page renders the blocks workbench', async ({ page }) => {
@@ -178,7 +190,7 @@ test.describe('administrator admin screens', () => {
         ]);
 
         expect(Math.abs(mainBox.width - previewBox.width)).toBeLessThan(1);
-        expect(previewBox.left - mainBox.right).toBeLessThanOrEqual(1);
+        expect(Math.abs(previewBox.left - mainBox.right)).toBeLessThanOrEqual(1);
         await expect(main).toHaveCSS('border-right-style', 'solid');
         await expect(page.getByRole('heading', { name: 'Schrijven', exact: true })).toBeVisible();
     });

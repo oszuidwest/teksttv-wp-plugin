@@ -304,7 +304,6 @@
 .teksttv-no-preview {
     display: flex;
     width: 100%;
-    min-height: 0;
     aspect-ratio: 16 / 9;
     padding: var(--teksttv-space-xl);
     border: 1px dashed var(--teksttv-color-border);

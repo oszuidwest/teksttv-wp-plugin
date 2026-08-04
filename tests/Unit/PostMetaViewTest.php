@@ -6,6 +6,9 @@ use Brain\Monkey\Functions;
 
 class PostMetaViewTest extends TestCase
 {
+    /** @var list<string> */
+    private const RICH_TEXT_FEATURES = ['bold', 'italic', 'underline', 'lists'];
+
     /**
      * @param list<string> $features
      */
@@ -20,7 +23,11 @@ class PostMetaViewTest extends TestCase
         Functions\when('esc_textarea')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
         Functions\when('get_post_meta')->justReturn('');
         Functions\when('wp_json_encode')->alias('json_encode');
-        Functions\when('wp_editor')->justReturn(null);
+        Functions\when('wp_editor')->alias(static function (string $content, string $editor_id): void {
+            echo '<div id="wp-' . htmlspecialchars($editor_id, ENT_QUOTES, 'UTF-8') . '-wrap">'
+                . htmlspecialchars($content, ENT_QUOTES, 'UTF-8')
+                . '</div>';
+        });
 
         $post = self::makePost();
         $active = '';
@@ -33,8 +40,8 @@ class PostMetaViewTest extends TestCase
         $ai_enabled = true;
         $toolbar_items = [];
         $valid_elements = ['br', 'p'];
-        $use_tinymce = false;
-        $plain_content = 'Bestaande tekst';
+        $use_tinymce = array_intersect(self::RICH_TEXT_FEATURES, $features) !== [];
+        $plain_content = $use_tinymce ? '' : 'Bestaande tekst';
 
         ob_start();
         include dirname(__DIR__, 2) . '/src/views/post-meta-box.php';
@@ -72,6 +79,14 @@ class PostMetaViewTest extends TestCase
         $this->assertStringContainsString('class="large-text teksttv-plain-editor"', $view);
         $this->assertStringContainsString('>Bestaande tekst</textarea>', $view);
         $this->assertStringNotContainsString('wp-teksttv_content-wrap', $view);
+    }
+
+    public function test_tinymce_replaces_plain_editor_when_rich_text_is_enabled(): void
+    {
+        $view = self::renderView(['bold']);
+
+        $this->assertStringContainsString('id="wp-teksttv_content-wrap"', $view);
+        $this->assertStringNotContainsString('teksttv-plain-editor', $view);
     }
 
     public function test_title_instruction_is_a_placeholder_instead_of_help_text(): void
