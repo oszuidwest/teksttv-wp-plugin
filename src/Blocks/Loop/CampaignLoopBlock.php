@@ -10,6 +10,7 @@ final class CampaignLoopBlock
 {
     private const TRANSITION_DURATION = 5000;
 
+    /** Register the campaign block and its admin/runtime callbacks. */
     public static function register(): void
     {
         BlockRegistry::register('campaign', [
@@ -24,6 +25,8 @@ final class CampaignLoopBlock
     }
 
     /**
+     * Render the campaign group and transition fields for one loop block.
+     *
      * @param array<string, mixed> $block
      */
     public static function render_fields(int|string $index, array $block, string $prefix): void
@@ -86,6 +89,8 @@ final class CampaignLoopBlock
     }
 
     /**
+     * Sanitize campaign loop settings for storage.
+     *
      * @param array<string, mixed> $raw
      * @return array<string, mixed>
      */
@@ -106,6 +111,8 @@ final class CampaignLoopBlock
     }
 
     /**
+     * Build every slide from all active campaigns in their saved order.
+     *
      * @param array<string, mixed> $block
      * @return list<array<string, mixed>>
      */
@@ -157,6 +164,8 @@ final class CampaignLoopBlock
     }
 
     /**
+     * Build an optional intro or outro slide for the campaign sequence.
+     *
      * @return array<string, mixed>|null
      */
     private static function transition_slide(int $attachment_id): ?array

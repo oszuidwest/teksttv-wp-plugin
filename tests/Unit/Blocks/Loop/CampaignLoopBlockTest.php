@@ -70,20 +70,30 @@ class CampaignLoopBlockTest extends TestCase
                     'duration' => 5,
                     'slides' => [100, 101],
                 ],
+                [
+                    'channels' => ['tv1'],
+                    'group' => 'sponsors',
+                    'duration' => 9,
+                    'slides' => [200, 201],
+                ],
             ]);
         Functions\expect('wp_get_attachment_url')
             ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
 
-        // 'limit' is a legacy key from the removed slide-limit feature; both
-        // slides coming back proves build() ignores it.
+        // 'limit' is a legacy key from the removed slide-limit feature. Both
+        // complete campaigns coming back in their saved order proves it is inert.
         $block = ['groups' => ['sponsors'], 'limit' => 1];
         $result = CampaignLoopBlock::build($block, 'tv1');
 
-        $this->assertCount(2, $result);
-        $this->assertSame('commercial', $result[0]['type']);
-        $this->assertSame(5000, $result[0]['duration']);
-        $this->assertSame('https://example.com/img-100.jpg', $result[0]['url']);
-        $this->assertSame('https://example.com/img-101.jpg', $result[1]['url']);
+        $this->assertCount(4, $result);
+        $this->assertSame(['commercial', 'commercial', 'commercial', 'commercial'], array_column($result, 'type'));
+        $this->assertSame([5000, 5000, 9000, 9000], array_column($result, 'duration'));
+        $this->assertSame([
+            'https://example.com/img-100.jpg',
+            'https://example.com/img-101.jpg',
+            'https://example.com/img-200.jpg',
+            'https://example.com/img-201.jpg',
+        ], array_column($result, 'url'));
     }
 
     public function test_build_filters_by_channel(): void
