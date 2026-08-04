@@ -29,14 +29,9 @@ class AiGeneratorTest extends TestCase
             'word_limit_photo' => 100,
             'title_char_limit' => 40,
             'min_input_words' => 0,
-            'max_retries' => 1,
-            'rate_limit' => 10,
             'region_taxonomy' => '',
             'provider' => '',
             'model' => '',
-            'temperature' => '',
-            'top_p' => '',
-            'max_tokens' => 2048,
         ];
     }
 
@@ -56,15 +51,13 @@ class AiGeneratorTest extends TestCase
         $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig()));
     }
 
-    public function test_support_check_uses_the_configured_generation_requirements(): void
+    public function test_support_check_uses_model_preference_and_bounded_output(): void
     {
         Functions\expect('wp_supports_ai')->once()->andReturn(true);
 
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->with('Test')->once()->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->with(4096)->once()->andReturnSelf();
-        $builder->shouldReceive('using_temperature')->with(0.7)->once()->andReturnSelf();
-        $builder->shouldReceive('using_top_p')->with(0.8)->once()->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->with(2048)->once()->andReturnSelf();
         $builder->shouldReceive('using_model_preference')
             ->with(['anthropic', 'claude-sonnet'])
             ->once()
@@ -73,9 +66,6 @@ class AiGeneratorTest extends TestCase
         Functions\expect('wp_ai_client_prompt')->once()->andReturn($builder);
 
         $this->assertTrue(AiGenerator::supports_text_generation(self::aiConfig([
-            'temperature' => 0.7,
-            'top_p' => 0.8,
-            'max_tokens' => 4096,
             'model' => 'anthropic/claude-sonnet',
         ])));
     }
@@ -392,19 +382,6 @@ class AiGeneratorTest extends TestCase
         $this->assertSame('teksttv_empty_output', $result->get_error_code());
     }
 
-    public function test_generate_single_field_retries_after_empty_output(): void
-    {
-        $builder = self::mockAiBuilder('', 'Korte kop');
-
-        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
-        Functions\expect('is_wp_error')->andReturn(false);
-
-        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiConfig(['max_retries' => 2]));
-
-        $this->assertSame('Korte kop', $result['content']);
-        $this->assertArrayNotHasKey('warning', $result);
-    }
-
     public function test_generate_single_field_returns_body_with_wpautop(): void
     {
         $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
@@ -446,11 +423,10 @@ class AiGeneratorTest extends TestCase
         $this->assertSame($wp_error, $result);
     }
 
-    public function test_generate_single_field_retries_on_length_violation(): void
+    public function test_generate_single_field_returns_length_warning_without_retrying(): void
     {
-        // First attempt: too many words, second attempt: still too many.
         $response = implode(' ', array_fill(0, 50, 'woord'));
-        $builder = self::mockAiBuilder($response, $response);
+        $builder = self::mockAiBuilder($response);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -460,7 +436,7 @@ class AiGeneratorTest extends TestCase
             'body',
             'Titel',
             'Tekst',
-            self::aiConfig(['word_limit' => 10, 'word_limit_photo' => 10, 'max_retries' => 2])
+            self::aiConfig(['word_limit' => 10, 'word_limit_photo' => 10])
         );
 
         $this->assertArrayHasKey('warning', $result);

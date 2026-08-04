@@ -167,7 +167,7 @@ class RestApi
         $config = Helpers::get_ai_prompts();
 
         // Counted last so requests that can only 403/404 do not consume quota.
-        if (!AiGenerator::within_rate_limit(get_current_user_id(), $config['rate_limit'])) {
+        if (!AiGenerator::within_rate_limit(get_current_user_id())) {
             return new WP_Error(
                 'teksttv_rate_limited',
                 'Te veel verzoeken. Probeer het over een minuut opnieuw.',
