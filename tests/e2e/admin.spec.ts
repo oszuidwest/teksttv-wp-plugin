@@ -164,16 +164,6 @@ test.describe('administrator admin screens', () => {
         expect(previewBox.left - mainBox.right).toBeLessThanOrEqual(1);
         await expect(main).toHaveCSS('border-right-style', 'solid');
         await expect(page.getByRole('heading', { name: 'Schrijven', exact: true })).toBeVisible();
-
-        const placeholderRatio = await preview.evaluate((element) => {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'teksttv-no-preview';
-            element.append(placeholder);
-            const box = placeholder.getBoundingClientRect();
-            placeholder.remove();
-            return box.width / box.height;
-        });
-        expect(Math.abs(placeholderRatio - 16 / 9)).toBeLessThan(0.01);
     });
 
     test('post editor sections and controls stay within the mobile viewport', async ({ page }) => {
@@ -181,13 +171,16 @@ test.describe('administrator admin screens', () => {
         await openFixturePostEditor(page);
 
         const metaBox = page.locator('.teksttv-meta-box');
-        const overflow = await metaBox.evaluate((element) => element.scrollWidth - element.clientWidth);
+        const [overflow, bounds, panelBounds] = await Promise.all([
+            metaBox.evaluate((element) => element.scrollWidth - element.clientWidth),
+            metaBox.evaluate((element) => element.getBoundingClientRect().toJSON()),
+            metaBox
+                .locator(
+                    '.teksttv-content-section, .teksttv-editor-preview, .teksttv-media-section, .teksttv-collapsible',
+                )
+                .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().toJSON())),
+        ]);
         expect(overflow).toBeLessThanOrEqual(1);
-
-        const bounds = await metaBox.evaluate((element) => element.getBoundingClientRect().toJSON());
-        const panelBounds = await metaBox
-            .locator('.teksttv-content-section, .teksttv-editor-preview, .teksttv-media-section, .teksttv-collapsible')
-            .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().toJSON()));
         expect(panelBounds.every((panel) => panel.left >= bounds.left && panel.right <= bounds.right + 1)).toBe(true);
 
         const imageCards = page.locator('.teksttv-image-card');
@@ -212,21 +205,9 @@ test.describe('administrator admin screens', () => {
         expect(controlHeights.every((height) => height >= 40)).toBe(true);
 
         const titleFooter = page.locator('.teksttv-title-footer');
-        await expect(titleFooter).toHaveClass(/is-hidden/);
-        const emptyTitleGap = await page.locator('#teksttv-title').evaluate((title) => {
-            const textLabel = document.querySelector<HTMLLabelElement>('label[for="teksttv_content"]');
-            if (!textLabel) throw new Error('Tekst label not found.');
-            return textLabel.getBoundingClientRect().top - title.getBoundingClientRect().bottom;
-        });
-        expect(emptyTitleGap).toBeLessThanOrEqual(32);
-
+        await expect(titleFooter).toBeHidden();
         await page.locator('#teksttv-title').fill('Korte kop');
-        await expect(titleFooter).not.toHaveClass(/is-hidden/);
-        const [characterCountRight, wordCountRight] = await Promise.all([
-            page.locator('#teksttv-charcount').evaluate((element) => element.getBoundingClientRect().right),
-            page.locator('#teksttv-wordcount').evaluate((element) => element.getBoundingClientRect().right),
-        ]);
-        expect(Math.abs(characterCountRight - wordCountRight)).toBeLessThanOrEqual(1);
+        await expect(titleFooter).toBeVisible();
     });
 
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {

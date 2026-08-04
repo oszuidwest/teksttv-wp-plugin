@@ -34,8 +34,7 @@ export function buildSlidesFromDom(
         (document.querySelector<HTMLInputElement>('input[name="post_title"]')?.value ?? '') ||
         ''
     ).trim();
-    const fallbackTitle = document.querySelector<HTMLInputElement>('#teksttv-title')?.dataset.fallbackTitle ?? '';
-    const title = customTitle || postTitle || fallbackTitle;
+    const title = customTitle || postTitle || config?.fallbackTitle || '';
     const result: Slide[] = [];
 
     const expandedPages = splitPages(content, config?.pageSeparator ?? true);

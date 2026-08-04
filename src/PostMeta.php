@@ -107,6 +107,7 @@ class PostMeta
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
             'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
+            'fallbackTitle' => $post_id ? get_the_title($post_id) : '',
             'titleCharLimit' => $prompts['title_char_limit'],
             'wordLimit' => $prompts['word_limit'],
             'wordLimitPhoto' => $prompts['word_limit_photo'],

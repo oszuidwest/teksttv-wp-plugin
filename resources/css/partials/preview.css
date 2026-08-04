@@ -1,10 +1,17 @@
-.teksttv-editor-preview {
-    position: sticky;
-    top: 40px;
+.teksttv-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--teksttv-space-md);
+    margin-bottom: var(--teksttv-space-lg);
 }
 
-.teksttv-preview-header {
-    align-items: center;
+.teksttv-preview-header h3 {
+    margin: 0;
+    color: var(--teksttv-color-content);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .teksttv-preview-nav {
@@ -116,7 +123,7 @@
 }
 
 .teksttv-preview-thumb:focus-visible {
-    outline: 2px solid var(--wpds-color-stroke-focus, var(--teksttv-color-accent));
+    outline: 2px solid var(--teksttv-color-focus);
     outline-offset: -4px;
 }
 
@@ -189,6 +196,12 @@
 @media (hover: none), (max-width: 782px) {
     .teksttv-preview-enlarge-btn {
         opacity: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .teksttv-preview-header {
+        margin-bottom: var(--teksttv-space-md);
     }
 }
 

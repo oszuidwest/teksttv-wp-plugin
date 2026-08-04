@@ -276,9 +276,9 @@ export function createPostMetaPage() {
 
             const start = textarea.selectionStart;
             const end = textarea.selectionEnd;
-            const before = textarea.value.slice(0, start);
-            const after = textarea.value.slice(end);
-            const separator = `${before && !before.endsWith('\n') ? '\n' : ''}---${after && !after.startsWith('\n') ? '\n' : ''}`;
+            const needsLeadingBreak = start > 0 && textarea.value[start - 1] !== '\n';
+            const needsTrailingBreak = end < textarea.value.length && textarea.value[end] !== '\n';
+            const separator = `${needsLeadingBreak ? '\n' : ''}---${needsTrailingBreak ? '\n' : ''}`;
             textarea.setRangeText(separator, start, end, 'end');
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
             textarea.focus();

@@ -6,7 +6,6 @@ export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): v
     const cc = document.querySelector('#teksttv-charcount');
     if (!(cc instanceof HTMLElement)) return;
 
-    const footer = cc.closest('.teksttv-title-footer');
     const limit = config?.titleCharLimit ?? 0;
     const title = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
     const len = title.length;
@@ -18,8 +17,6 @@ export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): v
     } else {
         cc.textContent = '';
     }
-
-    footer?.classList.toggle('is-hidden', !hasCount);
 }
 
 export function updateTeksttvWordCount(

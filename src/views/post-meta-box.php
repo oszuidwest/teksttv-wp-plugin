@@ -13,7 +13,6 @@
  * @var bool $ai_enabled
  * @var list<string> $toolbar_items
  * @var list<string> $valid_elements
- * @var bool $has_page_separator
  * @var bool $use_tinymce
  * @var string $plain_content
  */
@@ -26,16 +25,15 @@ $has_custom_title = Helpers::has_feature('custom_title');
 $has_sidebar_image = Helpers::has_feature('sidebar_image');
 $has_extra_images = Helpers::has_feature('extra_images');
 $has_scheduling = Helpers::has_feature('scheduling');
+$has_page_separator = Helpers::has_feature('page_separator');
 
 ?>
 <div class="teksttv-meta-box" x-data="teksttvPostMetaPage">
     <div class="teksttv-toggle-bar">
         <label class="teksttv-toggle-control">
-            <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" @change="onActiveChange()" />
+            <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" class="teksttv-visually-hidden" @change="onActiveChange()" />
             <span class="teksttv-toggle-switch" aria-hidden="true"></span>
-            <span class="teksttv-toggle-copy">
-                <span class="teksttv-toggle-title"><?php echo esc_html('Toon op Tekst TV'); ?></span>
-            </span>
+            <span class="teksttv-toggle-title"><?php echo esc_html('Toon op Tekst TV'); ?></span>
         </label>
     </div>
 
@@ -62,8 +60,8 @@ $has_scheduling = Helpers::has_feature('scheduling');
                             <?php endif; ?>
                         </div>
                         <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
-                        <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr('Laat leeg om de titel van het artikel te gebruiken.'); ?>" data-fallback-title="<?php echo esc_attr(get_the_title($post)); ?>" aria-describedby="teksttv-charcount" @input="onTitleInputMeta()" />
-                        <div class="teksttv-title-footer is-hidden">
+                        <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr('Laat leeg om de titel van het artikel te gebruiken.'); ?>" aria-describedby="teksttv-charcount" @input="onTitleInputMeta()" />
+                        <div class="teksttv-title-footer">
                             <span class="teksttv-charcount" id="teksttv-charcount"></span>
                         </div>
                     </div>
@@ -147,15 +145,11 @@ $has_scheduling = Helpers::has_feature('scheduling');
 
         <?php if ($has_sidebar_image || $has_extra_images) : ?>
         <section class="teksttv-media-section" aria-labelledby="teksttv-media-title">
-            <div class="teksttv-panel-header">
-                <h3 id="teksttv-media-title"><?php echo esc_html('Afbeeldingen'); ?></h3>
-            </div>
+            <h3 id="teksttv-media-title"><?php echo esc_html('Afbeeldingen'); ?></h3>
             <div class="teksttv-settings-grid">
             <?php if ($has_sidebar_image) : ?>
             <div class="teksttv-media-group teksttv-sidebar-image-section" aria-labelledby="teksttv-sidebar-image-title">
-                <div class="teksttv-panel-header">
-                    <h4 id="teksttv-sidebar-image-title"><?php echo esc_html('Sidebarafbeelding'); ?></h4>
-                </div>
+                <h4 id="teksttv-sidebar-image-title"><?php echo esc_html('Sidebarafbeelding'); ?></h4>
                     <?php
                     $sidebar_image_id = get_post_meta($post->ID, '_teksttv_sidebar_image', true);
                     $is_none = $sidebar_image_id === '0';
@@ -193,9 +187,7 @@ $has_scheduling = Helpers::has_feature('scheduling');
 
             <?php if ($has_extra_images) : ?>
             <div class="teksttv-media-group teksttv-images-section" aria-labelledby="teksttv-extra-images-title">
-                <div class="teksttv-panel-header">
-                    <h4 id="teksttv-extra-images-title"><?php echo esc_html('Extra afbeeldingen'); ?></h4>
-                </div>
+                <h4 id="teksttv-extra-images-title"><?php echo esc_html('Extra afbeeldingen'); ?></h4>
                 <div id="teksttv-images-list" class="teksttv-images-list" @click="onExtraImagesClick($event)">
                         <?php foreach ($images as $attachment_id) : ?>
                             <?php $thumb = wp_get_attachment_image_url($attachment_id, 'thumbnail'); ?>
@@ -218,9 +210,7 @@ $has_scheduling = Helpers::has_feature('scheduling');
         <?php if ($has_scheduling) : ?>
         <section class="teksttv-collapsible" x-data="{ planOpen: false }" :class="{ 'is-open': planOpen }">
                     <button type="button" class="teksttv-collapsible-toggle" aria-controls="teksttv-collapsible-planning" @click.prevent="planOpen = !planOpen" :aria-expanded="planOpen.toString()">
-                        <span class="teksttv-collapsible-copy">
-                            <span class="teksttv-collapsible-title"><?php echo esc_html('Planning'); ?></span>
-                        </span>
+                        <span class="teksttv-collapsible-title"><?php echo esc_html('Planning'); ?></span>
                         <span class="dashicons dashicons-arrow-down-alt2 teksttv-collapsible-icon" aria-hidden="true"></span>
                     </button>
                     <div class="teksttv-collapsible-body" id="teksttv-collapsible-planning" x-show="planOpen" x-cloak>

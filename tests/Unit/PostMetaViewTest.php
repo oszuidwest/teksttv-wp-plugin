@@ -19,7 +19,6 @@ class PostMetaViewTest extends TestCase
         Functions\when('esc_attr')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
         Functions\when('esc_textarea')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
         Functions\when('get_post_meta')->justReturn('');
-        Functions\when('get_the_title')->justReturn('Titel');
         Functions\when('wp_json_encode')->alias('json_encode');
         Functions\when('wp_editor')->justReturn(null);
 
@@ -34,7 +33,6 @@ class PostMetaViewTest extends TestCase
         $ai_enabled = true;
         $toolbar_items = [];
         $valid_elements = ['br', 'p'];
-        $has_page_separator = false;
         $use_tinymce = false;
         $plain_content = 'Bestaande tekst';
 
@@ -84,7 +82,5 @@ class PostMetaViewTest extends TestCase
             'placeholder="Laat leeg om de titel van het artikel te gebruiken."',
             $view
         );
-        $this->assertStringNotContainsString('id="teksttv-title-help"', $view);
-        $this->assertStringContainsString('data-fallback-title="Titel"', $view);
     }
 }
