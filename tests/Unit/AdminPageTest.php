@@ -176,8 +176,9 @@ class AdminPageTest extends TestCase
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
         $this->assertSame('regio', $result['region_taxonomy']);
-        $this->assertSame(0.7, $result['temperature']);
-        $this->assertSame(4096, $result['max_tokens']);
+        $this->assertArrayNotHasKey('temperature', $result);
+        $this->assertArrayNotHasKey('top_p', $result);
+        $this->assertArrayNotHasKey('max_tokens', $result);
     }
 
     public function test_sanitize_ai_prompts_rejects_privileged_fields_without_manage_capability(): void
@@ -210,9 +211,9 @@ class AdminPageTest extends TestCase
         $this->assertSame('regio', $result['region_taxonomy']);
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
-        $this->assertSame(0.7, $result['temperature']);
-        $this->assertSame(0.9, $result['top_p']);
-        $this->assertSame(4096, $result['max_tokens']);
+        $this->assertArrayNotHasKey('temperature', $result);
+        $this->assertArrayNotHasKey('top_p', $result);
+        $this->assertArrayNotHasKey('max_tokens', $result);
     }
 
     public function test_sanitize_ai_prompts_accepts_privileged_fields_with_manage_capability(): void
@@ -233,9 +234,9 @@ class AdminPageTest extends TestCase
         $this->assertSame('regio', $result['region_taxonomy']);
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
-        $this->assertSame(0.7, $result['temperature']);
-        $this->assertSame(0.9, $result['top_p']);
-        $this->assertSame(4096, $result['max_tokens']);
+        $this->assertArrayNotHasKey('temperature', $result);
+        $this->assertArrayNotHasKey('top_p', $result);
+        $this->assertArrayNotHasKey('max_tokens', $result);
     }
 
     public function test_sanitize_ai_prompts_non_array_input_keeps_current(): void

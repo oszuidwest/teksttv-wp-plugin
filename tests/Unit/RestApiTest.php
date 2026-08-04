@@ -36,7 +36,7 @@ class RestApiTest extends TestCase
             }
             return match ($key) {
                 'teksttv_features' => ['ai_generate', 'custom_title'],
-                'teksttv_ai_prompts' => ['min_input_words' => 0, 'max_retries' => 1],
+                'teksttv_ai_prompts' => ['min_input_words' => 0],
                 default => $default,
             };
         });
@@ -156,7 +156,7 @@ class RestApiTest extends TestCase
     public function test_generate_content_returns_429_when_rate_limited(): void
     {
         self::stubHappyPath();
-        Functions\when('get_transient')->justReturn(10); // default rate_limit is 10.
+        Functions\when('get_transient')->justReturn(10);
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
@@ -298,7 +298,6 @@ class RestApiTest extends TestCase
     {
         self::stubHappyPath(['teksttv_ai_prompts' => [
             'min_input_words' => 0,
-            'max_retries' => 1,
             'word_limit' => 100,
             'word_limit_photo' => 25,
         ]]);

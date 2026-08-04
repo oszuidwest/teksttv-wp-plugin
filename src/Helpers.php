@@ -6,7 +6,7 @@ use DateTime;
 use DateTimeInterface;
 
 /**
- * @phpstan-type AiConfig array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int}
+ * @phpstan-type AiConfig array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, region_taxonomy: string, provider: string, model: string}
  */
 class Helpers
 {
@@ -324,12 +324,10 @@ class Helpers
      * get_ai_prompts() resolves it to the effective word limit at read time.
      *
      * @param array<string, mixed> $settings
-     * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, temperature: string|float, top_p: string|float, max_tokens: int}
+     * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int}
      */
     public static function normalize_ai_prompt_limits(array $settings): array
     {
-        $temperature = $settings['temperature'] ?? '';
-        $top_p = $settings['top_p'] ?? '';
         $photo_word_limit = self::clamp_int($settings['word_limit_photo'] ?? 0, 0, 500);
         if ($photo_word_limit > 0) {
             $photo_word_limit = max(10, $photo_word_limit);
@@ -340,11 +338,6 @@ class Helpers
             'word_limit_photo' => $photo_word_limit,
             'title_char_limit' => self::clamp_int($settings['title_char_limit'] ?? 40, 10, 100),
             'min_input_words' => self::clamp_int($settings['min_input_words'] ?? 50, 0, 500),
-            'max_retries' => self::clamp_int($settings['max_retries'] ?? 3, 1, 5),
-            'rate_limit' => self::clamp_int($settings['rate_limit'] ?? 10, 1, 60),
-            'temperature' => $temperature !== '' ? max(0, min(2, (float) $temperature)) : '',
-            'top_p' => $top_p !== '' ? max(0, min(1, (float) $top_p)) : '',
-            'max_tokens' => self::clamp_int($settings['max_tokens'] ?? 2048, 64, 8192),
         ];
     }
 

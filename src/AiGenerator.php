@@ -11,6 +11,9 @@ namespace TekstTV;
  */
 class AiGenerator
 {
+    private const REQUESTS_PER_MINUTE = 10;
+    private const MAX_TOKENS = 2048;
+
     /**
      * Whether the current WordPress AI configuration can satisfy the same
      * requirements used for TekstTV generation requests.
@@ -50,7 +53,7 @@ class AiGenerator
      *
      * @return bool True when the request is allowed and has been counted.
      */
-    public static function within_rate_limit(int $user_id, int $rate_limit): bool
+    public static function within_rate_limit(int $user_id, int $rate_limit = self::REQUESTS_PER_MINUTE): bool
     {
         // Fixed calendar-minute buckets: rewrites can touch an entry's TTL but
         // never the active window, because the next minute uses a new key.
@@ -171,46 +174,28 @@ class AiGenerator
     {
         [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $config, $has_photo);
 
-        $last_content = '';
-        $warning = '';
-
-        for ($attempt = 1; $attempt <= $config['max_retries']; $attempt++) {
-            $result = self::call_ai($user_prompt, $system, $config);
-
-            if (is_wp_error($result)) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log(sprintf('TekstTV AI generation error (field: %s, attempt %d): %s', $field, $attempt, $result->get_error_message()));
-                return $result;
-            }
-
-            $last_content = trim($result);
-            if ($last_content === '') {
-                // An empty response (exhausted tokens, provider content filter)
-                // must never pass as success: the title length check would
-                // accept it and the editor would see nothing happen.
-                if ($attempt === $config['max_retries']) {
-                    return new \WP_Error(
-                        'teksttv_empty_output',
-                        'AI gaf een leeg antwoord terug. Probeer het opnieuw.'
-                    );
-                }
-                continue;
-            }
-
-            // A warning here means "retry if attempts remain"; the last loop
-            // pass leaves it set so the editor sees why the output is off.
-            $warning = self::validate_ai_output($field, $last_content, $config, $has_photo);
-
-            if ($warning === '') {
-                break;
-            }
+        $result = self::call_ai($user_prompt, $system, $config);
+        if (is_wp_error($result)) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log(sprintf('TekstTV AI generation error (field: %s): %s', $field, $result->get_error_message()));
+            return $result;
         }
+
+        $content = trim($result);
+        if ($content === '') {
+            return new \WP_Error(
+                'teksttv_empty_output',
+                'AI gaf een leeg antwoord terug. Probeer het opnieuw.'
+            );
+        }
+
+        $warning = self::validate_ai_output($field, $content, $config, $has_photo);
 
         if ($field === 'body') {
-            $last_content = wpautop($last_content);
+            $content = wpautop($content);
         }
 
-        $response = ['content' => $last_content];
+        $response = ['content' => $content];
         if (!empty($warning)) {
             $response['warning'] = $warning;
         }
@@ -290,14 +275,7 @@ class AiGenerator
     {
         $builder = wp_ai_client_prompt($user_prompt)
             ->using_system_instruction($system)
-            ->using_max_tokens($config['max_tokens']);
-
-        if ($config['temperature'] !== '') {
-            $builder = $builder->using_temperature((float) $config['temperature']);
-        }
-        if ($config['top_p'] !== '') {
-            $builder = $builder->using_top_p((float) $config['top_p']);
-        }
+            ->using_max_tokens(self::MAX_TOKENS);
 
         $model_setting = $config['model'];
         $provider_setting = $config['provider'];

@@ -283,9 +283,6 @@ class AdminPage
                 'region_taxonomy',
                 'provider',
                 'model',
-                'temperature',
-                'top_p',
-                'max_tokens',
             ]));
         }
 
