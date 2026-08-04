@@ -98,13 +98,11 @@ final class CampaignLoopBlock
             $groups = array_filter($groups, fn ($g) => $g !== '');
         }
 
-        $saved = [
+        return [
             'groups' => array_values($groups),
             'intro_image_id' => absint($raw['intro_image_id'] ?? 0),
             'outro_image_id' => absint($raw['outro_image_id'] ?? 0),
         ];
-
-        return $saved;
     }
 
     /**
@@ -113,6 +111,8 @@ final class CampaignLoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
+        // Blocks saved before the slide-limit feature was removed may still
+        // carry a 'limit' key in stored options; it is intentionally inert.
         $groups = (array) ($block['groups'] ?? []);
         if (empty($groups)) {
             return [];

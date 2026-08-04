@@ -51,13 +51,9 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_build_returns_empty_when_no_groups(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
         $block = ['groups' => []];
         $this->assertSame([], CampaignLoopBlock::build($block, 'tv1'));
     }
-
 
     public function test_build_with_campaigns(): void
     {
@@ -78,7 +74,9 @@ class CampaignLoopBlockTest extends TestCase
         Functions\expect('wp_get_attachment_url')
             ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
 
-        $block = ['groups' => ['sponsors']];
+        // 'limit' is a legacy key from the removed slide-limit feature; both
+        // slides coming back proves build() ignores it.
+        $block = ['groups' => ['sponsors'], 'limit' => 1];
         $result = CampaignLoopBlock::build($block, 'tv1');
 
         $this->assertCount(2, $result);
@@ -90,8 +88,6 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_build_filters_by_channel(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
             ->with('teksttv_campaigns', [])
             ->andReturn([
@@ -108,44 +104,8 @@ class CampaignLoopBlockTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    public function test_build_ignores_legacy_limit_and_returns_all_slides_in_order(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-        Functions\expect('get_option')
-            ->with('teksttv_campaigns', [])
-            ->andReturn([
-                [
-                    'channels' => ['tv1'],
-                    'group' => 'sponsors',
-                    'slides' => [1, 2, 3, 4, 5],
-                ],
-            ]);
-        Functions\expect('get_option')
-            ->with('teksttv_duration_image', 7)
-            ->andReturn(7);
-        Functions\expect('wp_get_attachment_url')
-            ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
-
-        $block = ['groups' => ['sponsors'], 'limit' => 2];
-        $result = CampaignLoopBlock::build($block, 'tv1');
-
-        $this->assertSame(
-            [
-                'https://example.com/img-1.jpg',
-                'https://example.com/img-2.jpg',
-                'https://example.com/img-3.jpg',
-                'https://example.com/img-4.jpg',
-                'https://example.com/img-5.jpg',
-            ],
-            array_column($result, 'url')
-        );
-    }
-
     public function test_build_intro_outro(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
             ->with('teksttv_campaigns', [])
             ->andReturn([
@@ -175,8 +135,6 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_build_no_intro_outro_when_no_matching_campaigns(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
             ->with('teksttv_campaigns', [])
             ->andReturn([]);
@@ -193,8 +151,6 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_build_uses_default_duration(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\when('get_option')->alias(function (string $name, $default = false) {
             if ($name === 'teksttv_campaigns') {
                 return [
