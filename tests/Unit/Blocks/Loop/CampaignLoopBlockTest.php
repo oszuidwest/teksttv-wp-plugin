@@ -15,11 +15,13 @@ class CampaignLoopBlockTest extends TestCase
             'groups' => ['grp_aaa111', 'grp_bbb222'],
             'intro_image_id' => '10',
             'outro_image_id' => '20',
+            'limit' => '5',
         ]);
 
         $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
         $this->assertSame(10, $result['intro_image_id']);
         $this->assertSame(20, $result['outro_image_id']);
+        $this->assertArrayNotHasKey('limit', $result);
     }
 
     public function test_save_filters_empty_groups(): void
@@ -29,36 +31,6 @@ class CampaignLoopBlockTest extends TestCase
         ]);
 
         $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
-    }
-
-    public function test_save_with_limit(): void
-    {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
-            'limit' => '5',
-        ]);
-
-        $this->assertSame(5, $result['limit']);
-    }
-
-    public function test_save_omits_empty_limit(): void
-    {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
-            'limit' => '',
-        ]);
-
-        $this->assertArrayNotHasKey('limit', $result);
-    }
-
-    public function test_save_clamps_limit_to_ui_max(): void
-    {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
-            'limit' => '9999',
-        ]);
-
-        $this->assertSame(100, $result['limit']);
     }
 
     public function test_save_empty_groups_defaults(): void
@@ -136,7 +108,7 @@ class CampaignLoopBlockTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    public function test_build_rotation_limit(): void
+    public function test_build_ignores_legacy_limit_and_returns_all_slides_in_order(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
@@ -158,7 +130,16 @@ class CampaignLoopBlockTest extends TestCase
         $block = ['groups' => ['sponsors'], 'limit' => 2];
         $result = CampaignLoopBlock::build($block, 'tv1');
 
-        $this->assertCount(2, $result);
+        $this->assertSame(
+            [
+                'https://example.com/img-1.jpg',
+                'https://example.com/img-2.jpg',
+                'https://example.com/img-3.jpg',
+                'https://example.com/img-4.jpg',
+                'https://example.com/img-5.jpg',
+            ],
+            array_column($result, 'url')
+        );
     }
 
     public function test_build_intro_outro(): void

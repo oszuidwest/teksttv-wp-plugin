@@ -34,13 +34,12 @@ final class CampaignLoopBlock
         $outro_id = $block['outro_image_id'] ?? 0;
         $intro_url = $intro_id ? wp_get_attachment_image_url((int) $intro_id, 'thumbnail') : '';
         $outro_url = $outro_id ? wp_get_attachment_image_url((int) $outro_id, 'thumbnail') : '';
-        $limit = $block['limit'] ?? '';
         $groups_id = Helpers::field_id($prefix, $index, 'groups');
 
         ?>
         <?php AdminPage::render_block_section_start('Inhoud', 'Welke campagnegroepen komen in de loop?', 'content'); ?>
-        <div class="teksttv-field-grid teksttv-field-grid--campaign-main">
-            <div class="teksttv-field teksttv-field--primary">
+        <div class="teksttv-field-grid">
+            <div class="teksttv-field teksttv-field--full">
                 <?php if (!empty($available_groups)) : ?>
                 <label for="<?php echo esc_attr($groups_id); ?>"><?php echo esc_html('Groep(en)'); ?></label>
                 <select id="<?php echo esc_attr($groups_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
@@ -52,11 +51,6 @@ final class CampaignLoopBlock
                 <span class="teksttv-field-label"><?php echo esc_html('Groep(en)'); ?></span>
                 <p class="description"><?php echo wp_kses(sprintf('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
-            </div>
-            <div class="teksttv-field teksttv-field--primary">
-                <label <?php Helpers::field_for($prefix, $index, 'limit'); ?>><?php echo esc_html('Maximaal aantal slides'); ?></label>
-                <input type="number" <?php Helpers::field_attrs($prefix, $index, 'limit'); ?> value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max. %s" />
-                <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>
         <?php AdminPage::render_block_section_end(); ?>
@@ -110,11 +104,6 @@ final class CampaignLoopBlock
             'outro_image_id' => absint($raw['outro_image_id'] ?? 0),
         ];
 
-        $limit = $raw['limit'] ?? '';
-        if ($limit !== '') {
-            $saved['limit'] = Helpers::clamp_int($limit, 1, 100);
-        }
-
         return $saved;
     }
 
@@ -150,16 +139,6 @@ final class CampaignLoopBlock
                     ];
                 }
             }
-        }
-
-        $limit = !empty($block['limit']) ? (int) $block['limit'] : 0;
-        if ($limit > 0 && count($slides) > $limit) {
-            $offset = (int) floor(time() / 180) % count($slides);
-            $rotated = [];
-            for ($i = 0; $i < $limit; $i++) {
-                $rotated[] = $slides[($offset + $i) % count($slides)];
-            }
-            $slides = $rotated;
         }
 
         if (!empty($slides)) {
