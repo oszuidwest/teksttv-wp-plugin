@@ -109,6 +109,67 @@ class PostMetaTest extends TestCase
         PostMeta::enqueue_assets('post-new.php');
     }
 
+    public function test_plain_text_content_survives_repeated_save_and_render_cycles(): void
+    {
+        $stored_meta = [
+            '_teksttv_content' => '<p>&lt;strong&gt;literal&lt;/strong&gt; &amp;lt;em&amp;gt;</p><p>Tweede regel</p>',
+        ];
+        $expected_editor_content = "<strong>literal</strong> &lt;em&gt;\nTweede regel";
+        $expected_storage = "&lt;strong&gt;literal&lt;/strong&gt; &amp;lt;em&amp;gt;\nTweede regel";
+        Functions\when('get_option')->justReturn([]);
+        Functions\expect('wp_kses')->twice()->with($expected_storage, ['p' => [], 'br' => []])
+            ->andReturn($expected_storage);
+        Functions\when('update_post_meta')->alias(
+            static function (int $post_id, string $key, mixed $value) use (&$stored_meta): bool {
+                $stored_meta[$key] = $value;
+                return true;
+            }
+        );
+
+        for ($cycle = 0; $cycle < 2; $cycle++) {
+            $editor_content = self::callPrivate(
+                PostMeta::class,
+                'plain_editor_content',
+                [$stored_meta['_teksttv_content']]
+            );
+            $this->assertSame($expected_editor_content, $editor_content);
+
+            self::callPrivate(PostMeta::class, 'process_save', [
+                42,
+                ['active' => true, 'content' => $editor_content],
+            ]);
+            $this->assertSame($expected_storage, $stored_meta['_teksttv_content']);
+        }
+    }
+
+    public function test_rich_text_content_still_uses_the_feature_allowlist(): void
+    {
+        $features = ['bold'];
+        $stored_content = null;
+        Functions\when('get_option')->alias(
+            static fn(string $name, mixed $default = false): mixed => $name === 'teksttv_features' ? $features : $default
+        );
+        Functions\expect('wp_kses')->once()->with(
+            '<p><strong>Vet</strong><em>niet cursief</em></p>',
+            ['p' => [], 'br' => [], 'strong' => [], 'b' => []]
+        )->andReturn('<p><strong>Vet</strong>niet cursief</p>');
+        Functions\when('update_post_meta')->alias(
+            static function (int $post_id, string $key, mixed $value) use (&$stored_content): bool {
+                if ($key === '_teksttv_content') {
+                    $stored_content = $value;
+                }
+                return true;
+            }
+        );
+
+        self::callPrivate(PostMeta::class, 'process_save', [
+            42,
+            ['active' => true, 'content' => '<p><strong>Vet</strong><em>niet cursief</em></p>'],
+        ]);
+
+        $this->assertSame('<p><strong>Vet</strong>niet cursief</p>', $stored_content);
+    }
+
     /**
      * @param list<string> $features
      */

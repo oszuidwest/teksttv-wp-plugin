@@ -259,7 +259,7 @@ class PostMeta
         $data = [
             'active' => isset($_POST['teksttv_active']),
             'title' => sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? '')),
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via wp_kses in process_save()
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- encoded as text or sanitized via wp_kses in process_save()
             'content' => wp_unslash($_POST['teksttv_content'] ?? ''),
             'date_start' => sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? '')),
             'date_end' => sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? '')),
@@ -286,7 +286,7 @@ class PostMeta
             update_post_meta($post_id, '_teksttv_title', $data['title'] ?? '');
         }
 
-        // Content — strip tags that are disabled by features
+        // Content — strip tags that are disabled by features.
         $allowed_tags = ['p' => [], 'br' => []];
         if (Helpers::has_feature('bold')) {
             $allowed_tags['strong'] = [];
@@ -304,7 +304,14 @@ class PostMeta
             $allowed_tags['ol'] = [];
             $allowed_tags['li'] = [];
         }
-        $content = wp_kses($data['content'] ?? '', $allowed_tags);
+
+        $content = (string) ($data['content'] ?? '');
+        if (!self::has_rich_text_features()) {
+            // Encode plain text into the HTML storage contract. Existing
+            // entities must be encoded again to make the round trip lossless.
+            $content = htmlspecialchars($content, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', true);
+        }
+        $content = wp_kses($content, $allowed_tags);
         update_post_meta($post_id, '_teksttv_content', $content);
 
         // Scheduling (only save if feature enabled)
