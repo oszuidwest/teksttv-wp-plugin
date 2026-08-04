@@ -72,23 +72,25 @@ export function requestAiGeneration(
 
     const originalHtml = btn.innerHTML;
     const loadingMessages = [
-        'Even nadenken...',
-        'Artikel aan het lezen...',
-        'De essentie aan het vinden...',
-        'Aan het samenvatten...',
-        'Tekst TV klaar maken...',
-        'Tekst aan het polijsten...',
+        'Even nadenken…',
+        'Artikel aan het lezen…',
+        'De essentie aan het vinden…',
+        'Aan het samenvatten…',
+        'Tekst TV klaarmaken…',
+        'Tekst aan het polijsten…',
     ];
     let msgIndex = 0;
-    const spinnerHtml = '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon"></span> ';
+    const spinnerHtml =
+        '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon" aria-hidden="true"></span> ';
     btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
     btn.innerHTML = spinnerHtml + loadingMessages[0];
     const msgInterval = window.setInterval(() => {
         msgIndex = (msgIndex + 1) % loadingMessages.length;
         btn.innerHTML = spinnerHtml + loadingMessages[msgIndex];
     }, 2500);
     statusEl?.classList.remove('is-error', 'is-warning');
-    if (statusEl) statusEl.textContent = '';
+    if (statusEl) statusEl.textContent = 'AI-inhoud wordt gegenereerd…';
 
     wp.apiFetch<GenerateResponse>({
         url: config.generateUrl,
@@ -116,12 +118,15 @@ export function requestAiGeneration(
             if (data.warning && statusEl) {
                 statusEl.textContent = data.warning;
                 statusEl.classList.add('is-warning');
+            } else if (statusEl) {
+                statusEl.textContent = 'AI-inhoud is gegenereerd.';
             }
         })
         .catch((error) => showError(getAiGenerationErrorMessage(error)))
         .finally(() => {
             window.clearInterval(msgInterval);
             btn.disabled = false;
+            btn.removeAttribute('aria-busy');
             btn.innerHTML = originalHtml;
         });
 }

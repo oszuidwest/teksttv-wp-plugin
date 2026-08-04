@@ -2,7 +2,9 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
 
 final class IframeLoopBlock
@@ -27,26 +29,28 @@ final class IframeLoopBlock
     {
         $name = $block['name'] ?? '';
         $url = $block['url'] ?? '';
-        $duration = $block['duration'] ?? '';
         $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe']);
 
         ?>
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke pagina wordt in de loop ingesloten?', 'content'); ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
-                <label><?php echo esc_html('Naam'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" data-summary />
+                <label <?php Helpers::field_for($prefix, $index, 'name'); ?>><?php echo esc_html('Naam'); ?></label>
+                <input type="text" <?php Helpers::field_attrs($prefix, $index, 'name'); ?> value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" autocomplete="off" data-summary />
                 <p class="description"><?php echo esc_html('Alleen ter herkenning in dit beheerscherm. Wordt niet uitgezonden.'); ?></p>
             </div>
             <div class="teksttv-field teksttv-field--full">
-                <label><?php echo esc_html('URL'); ?></label>
-                <input type="url" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" />
+                <label <?php Helpers::field_for($prefix, $index, 'url'); ?>><?php echo esc_html('URL'); ?></label>
+                <input type="url" <?php Helpers::field_attrs($prefix, $index, 'url'); ?> value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
-            <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_duration); ?>" /> <span class="teksttv-unit">sec</span>
-            </div>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--duration">
+            <?php DurationField::render($prefix, $index, 'duration', 'Iframe', (string) ($block['duration'] ?? ''), $default_duration); ?>
+        </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 
@@ -63,7 +67,7 @@ final class IframeLoopBlock
 
         $dur = $raw['duration'] ?? '';
         if ($dur !== '') {
-            $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
+            $saved['duration'] = Helpers::clamp_int($dur, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
         }
 
         return $saved;

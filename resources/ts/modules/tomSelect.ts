@@ -9,7 +9,7 @@ export function initTomSelectIn(container: Element | Document = document): void 
         if ((el as unknown as { tomselect?: unknown }).tomselect) return;
         new TomSelect(el, {
             plugins: ['remove_button'],
-            placeholder: el.dataset.placeholder || 'Filter...',
+            placeholder: el.dataset.placeholder || 'Filter…',
             allowEmptyOption: true,
         });
     });

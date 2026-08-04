@@ -62,12 +62,12 @@
 }
 
 .teksttv-preview-container.is-loading::before {
-    content: "Preview wordt geladen...";
+    content: "Preview wordt geladen…";
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: #787c82;
+    color: #c3c4c7;
     font-size: 13px;
     pointer-events: none;
     z-index: 0;
@@ -180,7 +180,8 @@
     padding: 0;
 }
 
-.teksttv-preview-container:hover .teksttv-preview-enlarge-btn {
+.teksttv-preview-container:hover .teksttv-preview-enlarge-btn,
+.teksttv-preview-container:focus-within .teksttv-preview-enlarge-btn {
     opacity: 1;
 }
 
@@ -188,10 +189,21 @@
     background: rgba(0, 0, 0, 0.7);
 }
 
+.teksttv-preview-enlarge-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
 .teksttv-preview-enlarge-btn .dashicons {
     font-size: 16px;
     width: 16px;
     height: 16px;
+}
+
+@media (hover: none), (max-width: 782px) {
+    .teksttv-preview-enlarge-btn {
+        opacity: 1;
+    }
 }
 
 /* A <dialog> shown via showModal(); undo the UA dialog sizing/border. */
@@ -293,7 +305,7 @@
 .teksttv-no-preview {
     padding: 20px;
     text-align: center;
-    color: #787c82;
+    color: var(--teksttv-color-content-subtle);
     background: #f6f7f7;
     border: 1px dashed #c3c4c7;
     border-radius: 4px;

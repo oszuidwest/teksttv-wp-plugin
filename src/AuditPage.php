@@ -20,8 +20,8 @@ class AuditPage
 
         add_submenu_page(
             'teksttv',
-            'AI Audit',
-            'AI Audit',
+            'AI-audit',
+            'AI-audit',
             'manage_teksttv',
             'teksttv-audit',
             [self::class, 'render_page']
@@ -47,38 +47,37 @@ class AuditPage
         $stats = self::compute_stats(self::query_ai_post_statuses());
 
         echo '<div class="wrap teksttv-admin">';
-        echo '<h1>' . esc_html('AI Audit') . '</h1>';
+        echo '<h1>' . esc_html('AI-audit') . '</h1>';
+
+        $format_pct = static fn(int|float $pct): string => $total_posts > 0 ? (string) $pct . '%' : '—';
+        $stat_cards = [
+            'Berichten met AI' => (string) $total_posts,
+            'Koppen bewerkt' => $format_pct($stats['title_modified_pct']),
+            'Teksten bewerkt' => $format_pct($stats['body_modified_pct']),
+            'Totaal bewerkt' => $format_pct($stats['any_modified_pct']),
+        ];
 
         ?>
         <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
-            <div class="teksttv-audit-stats">
+            <dl class="teksttv-audit-stats">
+                <?php foreach ($stat_cards as $stat_label => $stat_value) : ?>
                 <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $total_posts); ?></span>
-                    <span class="teksttv-audit-stat-label"><?php echo esc_html('Posts met AI'); ?></span>
+                    <dt class="teksttv-audit-stat-label"><?php echo esc_html($stat_label); ?></dt>
+                    <dd class="teksttv-audit-stat-number"><?php echo esc_html($stat_value); ?></dd>
                 </div>
-                <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['title_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php echo esc_html('Koppen bewerkt'); ?></span>
-                </div>
-                <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['body_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php echo esc_html('Teksten bewerkt'); ?></span>
-                </div>
-                <div class="teksttv-audit-stat-card">
-                    <span class="teksttv-audit-stat-number"><?php echo esc_html((string) $stats['any_modified_pct']); ?>%</span>
-                    <span class="teksttv-audit-stat-label"><?php echo esc_html('Totaal bewerkt'); ?></span>
-                </div>
-            </div>
+                <?php endforeach; ?>
+            </dl>
 
+            <section class="teksttv-card teksttv-workbench-section teksttv-audit-results">
+                <h2><?php echo esc_html('Berichten'); ?></h2>
             <?php if (empty($posts)) : ?>
-                <div class="teksttv-card">
-                    <p><?php echo esc_html('Nog geen posts met AI-gegenereerde content.'); ?></p>
-                </div>
+                <?php AdminPage::render_empty_state('chart-bar', 'Nog geen AI-auditgegevens', 'Er zijn nog geen berichten met AI-gegenereerde inhoud.'); ?>
             <?php else : ?>
+                <div class="teksttv-table-scroll">
                 <table class="widefat teksttv-audit-table">
                     <thead>
                         <tr>
-                            <th><?php echo esc_html('Post'); ?></th>
+                            <th><?php echo esc_html('Bericht'); ?></th>
                             <th><?php echo esc_html('Kop'); ?></th>
                             <th><?php echo esc_html('Tekst'); ?></th>
                             <th><?php echo esc_html('Datum'); ?></th>
@@ -97,6 +96,7 @@ class AuditPage
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
                 <?php if ($total_pages > 1) : ?>
                 <div class="tablenav bottom">
                     <div class="tablenav-pages">
@@ -115,6 +115,7 @@ class AuditPage
                 </div>
                 <?php endif; ?>
             <?php endif; ?>
+            </section>
         </div>
         <?php
 
@@ -141,17 +142,17 @@ class AuditPage
         $current_body = get_post_meta($post_id, '_teksttv_content', true);
 
         echo '<div class="wrap teksttv-admin">';
-        echo '<h1>AI Audit: ' . esc_html($post->post_title) . '</h1>';
+        echo '<h1>AI-audit: ' . esc_html($post->post_title) . '</h1>';
         echo '<p>';
         echo '<a href="' . esc_url(admin_url('admin.php?page=teksttv-audit')) . '">&larr; ' . esc_html('Terug naar overzicht') . '</a>';
-        echo ' | <a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html('Post bewerken') . '</a>';
+        echo ' | <a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html('Bericht bewerken') . '</a>';
         echo ' | <a href="' . esc_url($toggle_url) . '">' . esc_html($toggle_label) . '</a>';
         echo '</p>';
 
         ?>
         <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
             <div class="teksttv-card">
-                <h3><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
+                <h2><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h2>
                 <?php
                 $title_diff = self::render_diff($ai_title ?: '', $current_title ?: '', $split);
                 if ($title_diff) {
@@ -164,7 +165,7 @@ class AuditPage
             </div>
 
             <div class="teksttv-card">
-                <h3><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h3>
+                <h2><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h2>
                 <?php
                 $body_diff = self::render_diff(
                     wp_strip_all_tags($ai_body ?: ''),

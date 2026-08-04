@@ -1,4 +1,6 @@
+import { markFormDirty } from '../../modules/dirtyForms';
 import { cancelSlideAnimation, hide, show, siblingFocusTarget, slideDown, slideUp } from '../../modules/dom';
+import { removeElementWithUndo } from '../../modules/undo';
 import { appendImageItems, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -25,14 +27,14 @@ export function setBlockOpen(block: HTMLElement, expanded: boolean, animate = tr
 }
 
 /** Toggle the accordion body of the block owning `trigger`. */
-export function toggleBlockOpen(trigger: Element): void {
+function toggleBlockOpen(trigger: Element): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
     setBlockOpen(block, !block.classList.contains('is-expanded'));
 }
 
-/** Slide up and remove the block owning `trigger`, then run `onRemoved`. */
-export function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
+/** Remove the block owning `trigger` and offer a persistent undo action. */
+function removeClosestBlock(trigger: Element, onRemoved: () => void, focusUndo: boolean): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
     // The list root declares where focus goes when its last block is removed.
@@ -42,17 +44,98 @@ export function removeClosestBlock(trigger: Element, onRemoved: () => void): voi
         '.teksttv-block-toggle-control',
         emptyFocus ? document.querySelector<HTMLElement>(emptyFocus) : null,
     );
+    // Fire while the block is still connected so the event reaches the form,
+    // including when this is the last block in the list.
+    markFormDirty(block);
 
-    block
-        .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')
-        .forEach((control) => {
-            control.disabled = true;
-        });
-    slideUp(block, 200, () => {
-        block.remove();
-        onRemoved();
-        focusTarget?.focus();
+    const title = block.querySelector<HTMLElement>('.teksttv-block-title')?.textContent?.trim() || 'Onderdeel';
+    removeElementWithUndo(block, {
+        message: `${title} verwijderd.`,
+        focusAfterRemove: focusTarget,
+        focusAfterRestore: (restored) => restored.querySelector('.teksttv-block-toggle-control'),
+        focusUndo,
+        onChange: onRemoved,
     });
+}
+
+/** Move a block one position for keyboard and switch-control users. */
+function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => void): void {
+    const block = trigger.closest<HTMLElement>('.teksttv-block');
+    const root = block?.parentElement;
+    if (!block || !root) return;
+    const sibling = direction < 0 ? block.previousElementSibling : block.nextElementSibling;
+    if (!(sibling instanceof HTMLElement) || !sibling.classList.contains('teksttv-block')) return;
+
+    if (direction < 0) root.insertBefore(block, sibling);
+    else root.insertBefore(sibling, block);
+    onMoved();
+    markFormDirty(block);
+    const actions = trigger.closest<HTMLDetailsElement>('.teksttv-block-actions');
+    actions?.removeAttribute('open');
+    const focusTarget =
+        actions?.querySelector<HTMLElement>('.teksttv-block-actions-toggle') ??
+        (trigger instanceof HTMLElement ? trigger : null);
+    focusTarget?.focus();
+}
+
+/** Close native disclosure menus on Escape or when focus moves elsewhere. */
+export function initDisclosureMenus(root: HTMLElement): void {
+    const openMenuSelector = '.teksttv-block-actions[open], .teksttv-dropdown-button[open]';
+
+    root.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !(e.target instanceof Element)) return;
+        const actions = e.target.closest<HTMLDetailsElement>(openMenuSelector);
+        if (!actions) return;
+        e.preventDefault();
+        actions.removeAttribute('open');
+        actions.querySelector<HTMLElement>(':scope > summary')?.focus();
+    });
+
+    document.addEventListener('click', (e) => {
+        const target = e.target;
+        if (!(target instanceof Node)) return;
+        root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
+            if (!actions.contains(target)) actions.removeAttribute('open');
+        });
+    });
+
+    document.addEventListener('focusin', (e) => {
+        const target = e.target;
+        if (!(target instanceof Node)) return;
+        root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
+            if (!actions.contains(target)) actions.removeAttribute('open');
+        });
+    });
+}
+
+/**
+ * Shared block-header controls: keyboard reorder, remove, accordion toggle.
+ * Returns true when the click was one of them. Summaries are derived from a
+ * block's own fields, so reordering or removing never changes them.
+ */
+export function handleBlockControlsClick(e: MouseEvent, root: HTMLElement, reindex: () => void): boolean {
+    if (!(e.target instanceof Element)) return false;
+
+    const move = e.target.closest('.teksttv-block-order-control');
+    if (move && root.contains(move)) {
+        moveClosestBlock(move, move.matches('.teksttv-move-block-up') ? -1 : 1, reindex);
+        return true;
+    }
+
+    const rem = e.target.closest('.teksttv-remove-block');
+    if (rem && root.contains(rem)) {
+        e.stopPropagation();
+        removeClosestBlock(rem, reindex, e.detail === 0);
+        return true;
+    }
+
+    const toggle = e.target.closest('.teksttv-block-toggle-control');
+    if (toggle && root.contains(toggle)) {
+        toggleBlockOpen(toggle);
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -63,21 +146,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     if (!(e.target instanceof Element) || !ctx.blocksEl) return;
     const blocksRoot = ctx.blocksEl;
 
-    const rem = e.target.closest('.teksttv-remove-block');
-    if (rem && blocksRoot.contains(rem)) {
-        e.stopPropagation();
-        removeClosestBlock(rem, () => {
-            ctx.reindexBlocks();
-            ctx.refreshSummaries();
-        });
-        return;
-    }
-
-    const toggle = e.target.closest('.teksttv-block-toggle-control');
-    if (toggle && blocksRoot.contains(toggle)) {
-        toggleBlockOpen(toggle);
-        return;
-    }
+    if (handleBlockControlsClick(e, blocksRoot, ctx.reindexBlocks)) return;
 
     const slidesBtn = e.target.closest('.teksttv-campaign-add-slides');
     if (slidesBtn && blocksRoot.contains(slidesBtn)) {
@@ -95,7 +164,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     const imgItemRm = e.target.closest('.teksttv-remove-image');
     if (imgItemRm && blocksRoot.contains(imgItemRm)) {
         e.preventDefault();
-        removeImageItem(imgItemRm);
+        removeImageItem(imgItemRm, undefined, e.detail === 0);
         return;
     }
 
@@ -115,6 +184,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
             previewBox?.classList.remove('is-hidden');
             removeBtn?.classList.remove('is-hidden');
             ctx.refreshSummaries();
+            markFormDirty(picker);
         });
         return;
     }
@@ -130,5 +200,6 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         picker.querySelector<HTMLElement>('.teksttv-block-image-preview')?.classList.add('is-hidden');
         (imgRm as HTMLElement).classList.add('is-hidden');
         ctx.refreshSummaries();
+        markFormDirty(picker);
     }
 }

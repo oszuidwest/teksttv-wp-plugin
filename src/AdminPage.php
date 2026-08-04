@@ -138,8 +138,8 @@ class AdminPage
         if (current_user_can('manage_teksttv_content') && Helpers::ai_supported()) {
             add_submenu_page(
                 'teksttv',
-                'Content & AI',
-                'Content & AI',
+                'Inhoud & AI',
+                'Inhoud & AI',
                 'manage_teksttv_content',
                 'teksttv-content',
                 [self::class, 'render_prompts_page']
@@ -183,7 +183,7 @@ class AdminPage
         foreach (Helpers::DURATION_DEFAULTS as $duration_option => $duration_default) {
             register_setting('teksttv_settings', $duration_option, [
                 'type' => 'integer',
-                'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
+                'sanitize_callback' => fn($v) => Helpers::clamp_int($v, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS),
                 'default' => $duration_default,
             ]);
         }
@@ -351,8 +351,7 @@ class AdminPage
         $channel_label = array_column($channels, 'label', 'slug')[$channel_slug] ?? '';
 
         $blocks = Helpers::get_loop_config($channel_slug);
-        $api_url = rest_url('teksttv/v1/slides?channel=' . $channel_slug);
-        $page_title = count($channels) > 1 ? sprintf('Loop: %s', $channel_label) : 'Loop';
+        $page_title = sprintf('Kanaal: %s', $channel_label ?: $channel_slug);
         $ticker_items = Helpers::get_ticker_config($channel_slug);
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
@@ -365,6 +364,7 @@ class AdminPage
     public static function render_settings_page(): void
     {
         $channels = Helpers::get_channels();
+        $api_base_url = rest_url('teksttv/v1/slides');
         $features = Helpers::get_features();
         $all_taxonomies = Helpers::get_post_taxonomies();
         $enabled_taxonomies = get_option('teksttv_enabled_taxonomies', ['category']);
@@ -397,7 +397,7 @@ class AdminPage
         if (!$reg) {
             return;
         }
-        $body_id = str_replace('_', '-', $prefix) . '-' . (string) $index . '-body';
+        $body_id = Helpers::field_id($prefix, $index, 'body');
 
         ?>
         <div class="teksttv-block" data-type="<?php echo esc_attr($type); ?>">
@@ -412,23 +412,87 @@ class AdminPage
     }
 
     /**
+     * Render the shared empty-state placeholder. Repeatable lists render it
+     * always and CSS hides it while items exist (`:has(> .teksttv-block)`).
+     */
+    public static function render_empty_state(
+        string $icon,
+        string $title,
+        string $description = ''
+    ): void {
+        ?>
+        <div class="teksttv-empty-state">
+            <span class="dashicons dashicons-<?php echo esc_attr($icon); ?>" aria-hidden="true"></span>
+            <h3 class="teksttv-empty-state-title"><?php echo esc_html($title); ?></h3>
+            <?php if ($description !== '') : ?>
+            <p><?php echo esc_html($description); ?></p>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /** Start a consistently styled field group inside a loop or campaign block. */
+    public static function render_block_section_start(string $title, string $description = '', string $modifier = ''): void
+    {
+        $classes = 'teksttv-block-section';
+        if ($modifier !== '') {
+            $classes .= ' teksttv-block-section--' . sanitize_html_class($modifier);
+        }
+
+        ?>
+        <section class="<?php echo esc_attr($classes); ?>">
+            <div class="teksttv-block-section-heading">
+                <h3><?php echo esc_html($title); ?></h3>
+                <?php if ($description !== '') : ?>
+                <p><?php echo esc_html($description); ?></p>
+                <?php endif; ?>
+            </div>
+        <?php
+    }
+
+    /** Close a field group opened by render_block_section_start(). */
+    public static function render_block_section_end(): void
+    {
+        echo '</section>';
+    }
+
+    /** Render the shared save bar that closes every admin form. */
+    public static function render_form_actions(): void
+    {
+        submit_button('Wijzigingen opslaan');
+    }
+
+    /**
      * Render the shared block header: drag handle, accordion toggle wired to
      * the body via `$body_id`, and the remove button. The classes and ARIA
      * wiring are a contract with the workbench JS; keep every accordion
      * (loop, ticker, campaigns) on this one renderer.
      */
-    public static function render_block_header(string $body_id, string $title, string $icon, string $color, string $remove_label): void
-    {
+    public static function render_block_header(
+        string $body_id,
+        string $title,
+        string $icon,
+        string $color,
+        string $remove_label,
+        bool $summary_hidden = false
+    ): void {
         ?>
         <div class="teksttv-block-header">
             <span class="teksttv-block-handle dashicons dashicons-move" aria-hidden="true"></span>
             <button type="button" class="teksttv-block-toggle-control" aria-expanded="false" aria-controls="<?php echo esc_attr($body_id); ?>">
                 <span class="teksttv-block-icon" style="background:<?php echo esc_attr($color); ?>" aria-hidden="true"><span class="dashicons dashicons-<?php echo esc_attr($icon); ?>"></span></span>
                 <span class="teksttv-block-title"><?php echo esc_html($title); ?></span>
-                <span class="teksttv-block-summary"></span>
+                <span class="teksttv-block-summary" aria-hidden="<?php echo esc_attr($summary_hidden ? 'true' : 'false'); ?>"></span>
                 <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
             </button>
-            <button type="button" class="button-link teksttv-remove-block" aria-label="<?php echo esc_attr($remove_label); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+            <details class="teksttv-block-actions" name="teksttv-block-actions">
+                <summary class="teksttv-block-actions-toggle" aria-label="<?php echo esc_attr(sprintf('Acties voor %s', $title)); ?>"><span class="dashicons dashicons-ellipsis" aria-hidden="true"></span></summary>
+                <div class="teksttv-block-actions-menu">
+                    <button type="button" class="teksttv-block-order-control teksttv-move-block-up"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span><?php echo esc_html('Omhoog verplaatsen'); ?></button>
+                    <button type="button" class="teksttv-block-order-control teksttv-move-block-down"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span><?php echo esc_html('Omlaag verplaatsen'); ?></button>
+                    <button type="button" class="teksttv-remove-block"><span class="dashicons dashicons-trash" aria-hidden="true"></span><?php echo esc_html($remove_label); ?></button>
+                </div>
+            </details>
         </div>
         <?php
     }
@@ -450,7 +514,10 @@ class AdminPage
         <div class="teksttv-block-scheduling-toggle">
             <label>
                 <input type="checkbox" class="teksttv-scheduling-checkbox" <?php checked($has_scheduling); ?> />
-                <?php echo esc_html('Planning inschakelen'); ?>
+                <span class="teksttv-block-scheduling-copy">
+                    <strong><?php echo esc_html('Planning'); ?></strong>
+                    <span><?php echo esc_html('Alleen tonen binnen een periode of op vaste dagen.'); ?></span>
+                </span>
             </label>
         </div>
         <div class="teksttv-field-grid teksttv-field-grid--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>
@@ -473,15 +540,15 @@ class AdminPage
 
         ?>
         <div class="teksttv-field">
-            <label><?php echo esc_html('Vanaf'); ?></label>
-            <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
+            <label <?php Helpers::field_for($prefix, $index, 'date_start'); ?>><?php echo esc_html('Vanaf'); ?></label>
+            <input type="date" <?php Helpers::field_attrs($prefix, $index, 'date_start'); ?> value="<?php echo esc_attr($date_start); ?>" />
         </div>
         <div class="teksttv-field">
-            <label><?php echo esc_html('Tot en met'); ?></label>
-            <input type="date" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
+            <label <?php Helpers::field_for($prefix, $index, 'date_end'); ?>><?php echo esc_html('Tot en met'); ?></label>
+            <input type="date" <?php Helpers::field_attrs($prefix, $index, 'date_end'); ?> value="<?php echo esc_attr($date_end); ?>" />
         </div>
         <div class="teksttv-field teksttv-field--primary">
-            <label><?php echo esc_html('Dagen'); ?></label>
+            <span class="teksttv-field-label"><?php echo esc_html('Dagen'); ?></span>
             <?php self::render_days_row($prefix . '[' . $index . '][days][]', Helpers::normalize_days($block['days'] ?? null)); ?>
         </div>
         <?php

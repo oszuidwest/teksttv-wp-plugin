@@ -22,8 +22,8 @@ class AuditPageTest extends TestCase
             ->once()
             ->with(
                 'teksttv',
-                'AI Audit',
-                'AI Audit',
+                'AI-audit',
+                'AI-audit',
                 'manage_teksttv',
                 'teksttv-audit',
                 [AuditPage::class, 'render_page']

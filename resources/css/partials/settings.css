@@ -11,7 +11,7 @@
 }
 
 #teksttv-channels {
-    min-width: 560px;
+    min-width: 620px;
 }
 
 #teksttv-groups {
@@ -33,6 +33,14 @@
     width: 100%;
 }
 
+/* The per-cell field labels reuse WP core's .screen-reader-text and are only
+   un-hidden on mobile, where the table headers are gone (see below). */
+
+.teksttv-channel-endpoint {
+    width: 150px;
+    white-space: nowrap;
+}
+
 .teksttv-management-table .teksttv-table-actions {
     width: 80px;
     text-align: right;
@@ -40,4 +48,120 @@
 
 .teksttv-settings-form .form-table th {
     width: 180px;
+}
+
+.teksttv-feature-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 24px 40px;
+    margin-top: 20px;
+}
+
+.teksttv-feature-group {
+    min-width: 0;
+}
+
+.teksttv-card .teksttv-feature-group h3 {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.teksttv-feature-group > p {
+    margin: 3px 0 8px;
+    color: var(--teksttv-color-content-muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.teksttv-feature-options {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.teksttv-feature-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+}
+
+.teksttv-feature-option input {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+@media (max-width: 782px) {
+    .teksttv-feature-groups {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 22px;
+        margin-top: 18px;
+    }
+
+    .teksttv-management-table,
+    #teksttv-channels {
+        min-width: 0;
+    }
+
+    .teksttv-management-table thead {
+        display: none;
+    }
+
+    .teksttv-management-table,
+    .teksttv-management-table tbody {
+        display: block;
+    }
+
+    .teksttv-management-table tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px 8px;
+        padding: 12px;
+        border-bottom: 1px solid #c3c4c7;
+    }
+
+    .teksttv-management-table tr:last-child {
+        border-bottom: 0;
+    }
+
+    .teksttv-management-table td {
+        display: block;
+        padding: 0;
+    }
+
+    #teksttv-channels td:nth-child(1),
+    #teksttv-channels td:nth-child(2),
+    #teksttv-groups td:first-child {
+        grid-column: 1 / -1;
+    }
+
+    #teksttv-channels .teksttv-channel-endpoint {
+        width: auto;
+    }
+
+    .teksttv-management-table .teksttv-table-actions {
+        width: auto;
+    }
+
+    #teksttv-groups .teksttv-table-actions {
+        grid-column: 2;
+    }
+
+    /* Un-hide the core screen-reader-text labels now the headers are gone. */
+    .teksttv-management-table .teksttv-mobile-field-label {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 0 0 4px;
+        clip: auto;
+        clip-path: none;
+        overflow: visible;
+        white-space: normal;
+        color: #50575e;
+        font-size: 12px;
+        font-weight: 600;
+    }
 }

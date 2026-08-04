@@ -2,7 +2,9 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
 
 final class ImageLoopBlock
@@ -26,29 +28,29 @@ final class ImageLoopBlock
     public static function render_fields(int|string $index, array $block, string $prefix): void
     {
         $image_id = $block['image_id'] ?? 0;
-        $duration = $block['duration'] ?? '';
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
         $image_url = $image_id ? wp_get_attachment_image_url((int) $image_id, 'medium') : '';
 
         ?>
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke afbeelding komt in de loop?', 'content'); ?>
         <div class="teksttv-block-image-row teksttv-image-picker">
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
-                <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" />
+                <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" width="120" height="80" loading="lazy" />
             </div>
             <div class="teksttv-block-image-fields">
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][image_id]" value="<?php echo esc_attr($image_id ? (string) $image_id : ''); ?>" class="teksttv-block-image-id" data-summary data-summary-label="<?php echo esc_attr('Afbeelding'); ?>" data-summary-empty="<?php echo esc_attr('Geen afbeelding'); ?>" />
                 <p>
-                    <button type="button" class="button teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon"></span> <?php echo esc_html('Afbeelding kiezen'); ?></button>
+                    <button type="button" class="button teksttv-block-image-select"><?php echo esc_html('Afbeelding kiezen'); ?></button>
                     <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php echo esc_html('Verwijderen'); ?></button>
                 </p>
-                <div class="teksttv-field-grid">
-                    <div class="teksttv-field teksttv-field--compact">
-                        <label><?php echo esc_html('Duur'); ?></label>
-                        <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
-                    </div>
-                </div>
             </div>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--duration">
+            <?php DurationField::render($prefix, $index, 'duration', 'Afbeelding', (string) ($block['duration'] ?? ''), $default_image); ?>
+        </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 
@@ -64,7 +66,7 @@ final class ImageLoopBlock
 
         $dur = $raw['duration'] ?? '';
         if ($dur !== '') {
-            $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
+            $saved['duration'] = Helpers::clamp_int($dur, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
         }
 
         return $saved;

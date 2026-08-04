@@ -2,7 +2,9 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
 use TekstTV\OpenWeatherProvider;
 use TekstTV\WeatherProvider;
@@ -138,23 +140,25 @@ final class WeatherLoopBlock
     {
         $location = $block['location'] ?? '';
         $title = $block['title'] ?? '';
-        $duration = $block['duration'] ?? '';
 
         ?>
-        <div class="teksttv-field-grid">
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke weersverwachting komt in de loop?', 'content'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--paired">
             <div class="teksttv-field teksttv-field--text">
-                <label><?php echo esc_html('Locatie'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda,NL'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
+                <label <?php Helpers::field_for($prefix, $index, 'location'); ?>><?php echo esc_html('Locatie'); ?></label>
+                <input type="text" <?php Helpers::field_attrs($prefix, $index, 'location'); ?> value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda, NL'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
             </div>
             <div class="teksttv-field teksttv-field--text">
-                <label><?php echo esc_html('Titel'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" />
-            </div>
-            <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration]" value="<?php echo esc_attr((string) $duration); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) self::DEFAULT_DURATION_SECONDS); ?>" /> <span class="teksttv-unit">sec</span>
+                <label <?php Helpers::field_for($prefix, $index, 'title'); ?>><?php echo esc_html('Titel'); ?></label>
+                <input type="text" <?php Helpers::field_attrs($prefix, $index, 'title'); ?> value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" autocomplete="off" />
             </div>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--duration">
+            <?php DurationField::render($prefix, $index, 'duration', 'Weer', (string) ($block['duration'] ?? ''), self::DEFAULT_DURATION_SECONDS); ?>
+        </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 
@@ -171,7 +175,7 @@ final class WeatherLoopBlock
 
         $dur = $raw['duration'] ?? '';
         if ($dur !== '') {
-            $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
+            $saved['duration'] = Helpers::clamp_int($dur, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
         }
 
         return $saved;

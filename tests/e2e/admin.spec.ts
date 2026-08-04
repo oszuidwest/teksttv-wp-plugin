@@ -21,9 +21,19 @@ test.describe('administrator admin screens', () => {
         test('administrator can save settings', async ({ page }) => {
             await page.goto('/wp-admin/admin.php?page=teksttv-settings');
             await page.fill('input[name="teksttv_duration_text"]', '42');
+            await page.fill('input[name="teksttv_channels[0][slug]"]', 'tv_one');
+            const copyEndpoint = page.locator('#teksttv-channels .teksttv-copy-endpoint').first();
+            await expect(copyEndpoint).toBeEnabled();
+            await expect(copyEndpoint).toHaveAttribute('data-endpoint', /[?&]channel=tv_one$/);
+            const saveResponse = page.waitForResponse(
+                (response) =>
+                    response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/options.php'),
+            );
             await page.click('#submit');
             // The Settings API reloads the page; the saved value must persist.
+            expect((await saveResponse).status()).toBeLessThan(400);
             await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
+            await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
         });
     });
 
@@ -32,17 +42,43 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#teksttv-blocks')).toBeVisible();
     });
 
+    test('workbench screens share section, heading and action sizing', async ({ page }) => {
+        await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kanaal: TV 1');
+        const loopSections = page.locator('.teksttv-workbench-section');
+        await expect(loopSections).toHaveCount(2);
+        await expect(loopSections.locator(':scope > h2')).toHaveText(['Loop', 'Tickerberichten']);
+
+        const loopActionWidths = await page
+            .locator('#teksttv-add-block-toggle, #teksttv-add-ticker-toggle')
+            .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
+        expect(loopActionWidths.length).toBeGreaterThan(0);
+        expect(Math.max(...loopActionWidths)).toBeLessThan(190);
+
+        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        const campaignSections = page.locator('.teksttv-workbench-section');
+        await expect(campaignSections).toHaveCount(2);
+        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Groepen', 'Campagnes']);
+        const campaignActionWidths = await page
+            .locator('#teksttv-add-group, #teksttv-add-campaign')
+            .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
+        expect(campaignActionWidths.length).toBeGreaterThan(0);
+        expect(Math.max(...campaignActionWidths)).toBeLessThan(190);
+    });
+
     test('campaign layout uses one width contract and responsive field grid', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
 
         const groupPanel = page.locator('.teksttv-campaign-groups');
+        const campaignPanel = page.locator('.teksttv-campaign-workbench');
         const campaignList = page.locator('#teksttv-campaigns');
         await expect(groupPanel).toBeVisible();
+        await expect(campaignPanel).toBeVisible();
         await expect(campaignList).toBeVisible();
 
         const desktopWidths = await Promise.all([
             groupPanel.evaluate((element) => element.getBoundingClientRect().width),
-            campaignList.evaluate((element) => element.getBoundingClientRect().width),
+            campaignPanel.evaluate((element) => element.getBoundingClientRect().width),
         ]);
         expect(desktopWidths[0]).toBeLessThanOrEqual(800);
         expect(Math.abs(desktopWidths[0] - desktopWidths[1])).toBeLessThan(1);
@@ -50,24 +86,52 @@ test.describe('administrator admin screens', () => {
         const firstCampaign = campaignList.locator(':scope > .teksttv-block').first();
         await firstCampaign.locator('.teksttv-block-toggle-control').click();
         await expect(firstCampaign.locator('.teksttv-block-body')).toBeVisible();
-        const fields = firstCampaign.locator('.teksttv-field-grid').first().locator(':scope > .teksttv-field');
-        await expect(fields).toHaveCount(3);
+        const fields = firstCampaign.locator('.teksttv-block-section--content .teksttv-field');
+        await expect(fields).toHaveCount(2);
 
         const desktopFields = await fields.evaluateAll((elements) =>
             elements.map((element) => element.getBoundingClientRect().width),
         );
-        expect(desktopFields[0]).toBeGreaterThan(desktopFields[1]);
-        expect(desktopFields[1]).toBeGreaterThan(desktopFields[2]);
+        expect(Math.abs(desktopFields[0] - desktopFields[1])).toBeLessThan(1);
+
+        const firstRowLabels = fields.locator(':scope > label');
+        await expect(firstRowLabels).toHaveCount(2);
+        const labelTops = await firstRowLabels.evaluateAll((elements) =>
+            elements.map((element) => element.getBoundingClientRect().top),
+        );
+        expect(Math.max(...labelTops) - Math.min(...labelTops)).toBeLessThan(1);
+
+        const nameInput = fields.first().locator('input');
+        const startDateLabel = firstCampaign.locator('input[name$="[date_start]"]').locator('..').locator('label');
+        const [nameInputBottom, startDateLabelTop] = await Promise.all([
+            nameInput.evaluate((element) => element.getBoundingClientRect().bottom),
+            startDateLabel.evaluate((element) => element.getBoundingClientRect().top),
+        ]);
+        expect(startDateLabelTop - nameInputBottom).toBeGreaterThanOrEqual(11);
+
+        const durationRow = firstCampaign.locator('.teksttv-block-section--duration .teksttv-input-with-unit');
+        const [durationInputBox, durationUnitBox] = await Promise.all([
+            durationRow.locator('input').evaluate((element) => element.getBoundingClientRect().toJSON()),
+            durationRow.locator('.teksttv-unit').evaluate((element) => element.getBoundingClientRect().toJSON()),
+        ]);
+        const durationCenterOffset = Math.abs(
+            (durationUnitBox.top + durationUnitBox.bottom) / 2 - (durationInputBox.top + durationInputBox.bottom) / 2,
+        );
+        expect(durationCenterOffset).toBeLessThanOrEqual(1);
+        await expect(durationRow.locator('input')).toHaveAccessibleName('Per slide (seconden)');
 
         await page.setViewportSize({ width: 760, height: 900 });
         const mobileFields = await fields.evaluateAll((elements) =>
             elements.map((element) => {
                 const box = element.getBoundingClientRect();
-                return { left: box.left, width: box.width };
+                return { left: box.left, right: box.right, width: box.width };
             }),
         );
-        expect(mobileFields.every(({ left }) => Math.abs(left - mobileFields[0].left) < 1)).toBe(true);
         expect(mobileFields.every(({ width }) => Math.abs(width - mobileFields[0].width) < 1)).toBe(true);
+        const mobilePanelBox = await campaignPanel.evaluate((element) => element.getBoundingClientRect().toJSON());
+        expect(
+            mobileFields.every(({ left, right }) => left >= mobilePanelBox.left && right <= mobilePanelBox.right),
+        ).toBe(true);
     });
 
     test('post editor hides unconfigured AI controls and fills the available tablet width', async ({ page }) => {
@@ -95,6 +159,14 @@ test.describe('administrator admin screens', () => {
             tinyMceEditor.fire('keyup');
         });
         await expect(page.locator('#teksttv-wordcount')).toHaveText(/^2(?: \/ \d+)? woorden$/);
+    });
+
+    test('post editor exposes the preview enlargement control on keyboard focus', async ({ page }) => {
+        await openFixturePostEditor(page);
+        const enlarge = page.locator('#teksttv-preview-enlarge');
+        await enlarge.focus();
+        await expect(enlarge).toBeFocused();
+        await expect(enlarge).toHaveCSS('opacity', '1');
     });
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {

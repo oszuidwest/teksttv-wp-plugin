@@ -20,6 +20,9 @@ export default defineConfig({
         baseURL: process.env.WP_BASE_URL || 'http://localhost:8888',
         storageState: ADMIN_STORAGE_STATE,
         trace: 'on-first-retry',
+        // Real browsers allow clipboard writes on a user gesture; headless
+        // Chromium needs the permission granted explicitly.
+        permissions: ['clipboard-write'],
     },
     projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
 });

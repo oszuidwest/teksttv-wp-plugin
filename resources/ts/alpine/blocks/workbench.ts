@@ -1,9 +1,11 @@
 import Sortable from 'sortablejs';
-import { reindexNames, siblingFocusTarget } from '../../modules/dom';
+import { markFormDirty } from '../../modules/dirtyForms';
+import { cloneTemplate, reindexNames, siblingFocusTarget } from '../../modules/dom';
 import { initTomSelectIn } from '../../modules/tomSelect';
+import { removeElementWithUndo } from '../../modules/undo';
 import { debounce } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
-import { handleBlocksClick, removeClosestBlock, setBlockOpen, toggleBlockOpen } from './handleBlocksClick';
+import { handleBlockControlsClick, handleBlocksClick, initDisclosureMenus, setBlockOpen } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -13,32 +15,37 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let blocksEl: HTMLElement | null = null;
     let tickerEl: HTMLElement | null = null;
     let groupsTbody: HTMLTableSectionElement | null = null;
-    let newGroupSeq = 0;
 
-    function reindexDisclosureIds(root: HTMLElement): void {
-        // The id scheme must match the server-rendered ids (AdminPage /
-        // CampaignsPage build them from the option prefix, which mirrors the
-        // list root's id).
-        root.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block, index) => {
-            const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-            const toggle = block.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
-            if (!(body && toggle)) return;
+    function reindexBlockUi(block: Element, index: number, total: number): void {
+        const root = block.parentElement;
+        const body = block.querySelector<HTMLElement>('.teksttv-block-body');
+        const toggle = block.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
+        if (root && body && toggle) {
             const bodyId = `${root.id}-${index}-body`;
             body.id = bodyId;
             toggle.setAttribute('aria-controls', bodyId);
-        });
+        }
+        const up = block.querySelector<HTMLButtonElement>('.teksttv-move-block-up');
+        const down = block.querySelector<HTMLButtonElement>('.teksttv-move-block-down');
+        if (up) up.disabled = index === 0;
+        if (down) down.disabled = index === total - 1;
     }
 
     function reindexBlocks(): void {
         if (!blocksEl) return;
-        reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/);
-        reindexDisclosureIds(blocksEl);
+        reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/, reindexBlockUi);
     }
 
     function reindexTicker(): void {
         if (!tickerEl) return;
-        reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/);
-        reindexDisclosureIds(tickerEl);
+        reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/, reindexBlockUi);
+    }
+
+    // Only called after a user-driven add/remove, so marking dirty here is safe.
+    function reindexGroups(): void {
+        if (!groupsTbody) return;
+        reindexNames(groupsTbody, '.teksttv-group-row', /(teksttv_campaign_groups)\[\d+\]/);
+        markFormDirty(groupsTbody);
     }
 
     function refreshSummaries(): void {
@@ -56,16 +63,10 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     ): void {
         const reindex = root === tickerEl ? reindexTicker : root === blocksEl ? reindexBlocks : null;
         if (!reindex) return;
-        const template = document.getElementById(templateId);
-        if (!(template instanceof HTMLTemplateElement)) return;
-        const newBlock = template.content.firstElementChild?.cloneNode(true);
-        if (!(newBlock instanceof HTMLElement)) return;
+        const newBlock = cloneTemplate(templateId);
+        if (!newBlock) return;
         root.append(newBlock);
         reindex();
-        if (root === blocksEl) {
-            // Only the blocks list renders an empty-state; a ticker insert must not remove it.
-            document.querySelector('#teksttv-empty-state')?.remove();
-        }
         setBlockOpen(newBlock, true, false);
         // A no-op for templates without .teksttv-tomselect fields — the
         // class on the rendered fields is the declaration.
@@ -75,6 +76,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             : newBlock.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
         focusTarget?.focus();
         refreshSummaries();
+        markFormDirty(root);
     }
 
     const clickCtx: BlocksWorkbenchContext = {
@@ -96,32 +98,39 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         }
     }
 
-    return {
-        menuBlockOpen: false,
-        menuTickerOpen: false,
+    function initSortable(root: HTMLElement, reindex: () => void): void {
+        new Sortable(root, {
+            ...BLOCK_SORTABLE_OPTS,
+            onEnd: ({ oldIndex, newIndex }) => {
+                if (oldIndex === newIndex) return;
+                reindex();
+                markFormDirty(root);
+            },
+        });
+    }
 
+    function setAllOpen(root: HTMLElement | null, expanded: boolean): void {
+        root?.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block) => {
+            setBlockOpen(block, expanded);
+        });
+    }
+
+    return {
         init(): void {
             blocksEl = document.querySelector<HTMLElement>('#teksttv-blocks, #teksttv-campaigns');
             if (!blocksEl) return;
 
-            new Sortable(blocksEl, {
-                ...BLOCK_SORTABLE_OPTS,
-                onEnd: (evt) => {
-                    if (evt.oldIndex !== evt.newIndex) reindexBlocks();
-                },
-            });
+            initSortable(blocksEl, reindexBlocks);
+            initDisclosureMenus(blocksEl.closest('form') ?? blocksEl);
 
             tickerEl = document.querySelector<HTMLElement>('#teksttv-ticker');
             if (opts.ticker && tickerEl) {
-                new Sortable(tickerEl, {
-                    ...BLOCK_SORTABLE_OPTS,
-                    onEnd: (evt) => {
-                        if (evt.oldIndex !== evt.newIndex) reindexTicker();
-                    },
-                });
+                initSortable(tickerEl, reindexTicker);
             }
 
             refreshSummaries();
+            reindexBlocks();
+            if (tickerEl) reindexTicker();
 
             if (opts.groups) {
                 groupsTbody = document.querySelector('#teksttv-groups')?.querySelector('tbody') ?? null;
@@ -143,20 +152,12 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, { focusText: true });
         },
 
-        expandAllBlocks(): void {
-            if (!blocksEl) return;
-            blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                if (!(block instanceof HTMLElement)) return;
-                setBlockOpen(block, true);
-            });
+        setAllBlocksOpen(expanded: boolean): void {
+            setAllOpen(blocksEl, expanded);
         },
 
-        collapseAllBlocks(): void {
-            if (!blocksEl) return;
-            blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                if (!(block instanceof HTMLElement)) return;
-                setBlockOpen(block, false);
-            });
+        setAllTickerOpen(expanded: boolean): void {
+            setAllOpen(tickerEl, expanded);
         },
 
         blocksClick(e: MouseEvent): void {
@@ -168,22 +169,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         },
 
         tickerClick(e: MouseEvent): void {
-            if (!(e.target instanceof Element) || !tickerEl) return;
-
-            const rem = e.target.closest('.teksttv-remove-block');
-            if (rem && tickerEl.contains(rem)) {
-                e.stopPropagation();
-                removeClosestBlock(rem, () => {
-                    reindexTicker();
-                    refreshSummaries();
-                });
-                return;
-            }
-
-            const toggle = e.target.closest('.teksttv-block-toggle-control');
-            if (toggle && tickerEl.contains(toggle)) {
-                toggleBlockOpen(toggle);
-            }
+            if (tickerEl) handleBlockControlsClick(e, tickerEl, reindexTicker);
         },
 
         tickerFieldChange(e: Event): void {
@@ -192,21 +178,13 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addGroupRow(): void {
             if (!groupsTbody) return;
-            // New rows have an empty id; the server derives a stable id from the
-            // label on save. The index only needs to be unique within the form.
-            const key = `new-${newGroupSeq++}`;
-            const row =
-                '<tr class="teksttv-group-row">' +
-                '<td>' +
-                `<input type="hidden" name="teksttv_campaign_groups[${key}][id]" value="" />` +
-                `<input type="text" name="teksttv_campaign_groups[${key}][label]" value="" class="regular-text" required placeholder="Bijv. Campagne" />` +
-                '</td>' +
-                '<td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="Groep verwijderen"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>' +
-                '</tr>';
-            groupsTbody.insertAdjacentHTML('beforeend', row);
-            groupsTbody
-                .querySelector<HTMLInputElement>(':scope > .teksttv-group-row:last-of-type input[name$="[label]"]')
-                ?.focus();
+            // New rows have an empty id; the server derives a stable id from
+            // the label on save. Reindexing keeps the form keys unique.
+            const row = cloneTemplate('tmpl-teksttv-group-row');
+            if (!row) return;
+            groupsTbody.append(row);
+            reindexGroups();
+            row.querySelector<HTMLInputElement>('input[name$="[label]"]')?.focus();
         },
 
         groupsClick(e: MouseEvent): void {
@@ -220,8 +198,13 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 'input[name$="[label]"]',
                 document.querySelector<HTMLElement>('#teksttv-add-group'),
             );
-            row.remove();
-            focusTarget?.focus();
+            removeElementWithUndo(row, {
+                message: 'Groep verwijderd.',
+                focusAfterRemove: focusTarget,
+                focusAfterRestore: (restored) => restored.querySelector('input[name$="[label]"]'),
+                focusUndo: e.detail === 0,
+                onChange: reindexGroups,
+            });
         },
     };
 }

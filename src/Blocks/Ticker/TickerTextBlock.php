@@ -2,7 +2,9 @@
 
 namespace TekstTV\Blocks\Ticker;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
+use TekstTV\Helpers;
 
 final class TickerTextBlock
 {
@@ -27,12 +29,14 @@ final class TickerTextBlock
         $message = $item['message'] ?? '';
 
         ?>
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke tekst loopt door de ticker?', 'content'); ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
-                <label><?php echo esc_html('Bericht'); ?></label>
-                <input type="text" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][message]" value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr('Ticker tekst...'); ?>" data-summary />
+                <label <?php Helpers::field_for($prefix, $index, 'message'); ?>><?php echo esc_html('Bericht'); ?></label>
+                <input type="text" <?php Helpers::field_attrs($prefix, $index, 'message'); ?> value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr('Tickertekst…'); ?>" autocomplete="off" data-summary />
             </div>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 

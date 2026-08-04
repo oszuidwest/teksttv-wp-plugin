@@ -2,6 +2,11 @@
 
 const slideTimers = new WeakMap<HTMLElement, number>();
 
+/** Respect the user's OS/browser motion preference in scripted animations. */
+export function prefersReducedMotion(): boolean {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 /** Cancel a pending slide completion and remove its temporary inline styles. */
 export function cancelSlideAnimation(el: HTMLElement): void {
     const timer = slideTimers.get(el);
@@ -31,14 +36,10 @@ export function show(el: HTMLElement): void {
     el.style.removeProperty('display');
 }
 
-/** True when computed display is none. */
-export function isHidden(el: HTMLElement): boolean {
-    return window.getComputedStyle(el).display === 'none';
-}
-
 export function slideDown(el: HTMLElement, durationMs = 150): void {
     cancelSlideAnimation(el);
     show(el);
+    if (prefersReducedMotion()) return;
     el.style.overflow = 'hidden';
     const target = el.scrollHeight;
     el.style.height = '0';
@@ -55,6 +56,11 @@ export function slideDown(el: HTMLElement, durationMs = 150): void {
 
 export function slideUp(el: HTMLElement, durationMs = 150, onComplete?: () => void): void {
     cancelSlideAnimation(el);
+    if (prefersReducedMotion()) {
+        hide(el);
+        onComplete?.();
+        return;
+    }
     el.style.overflow = 'hidden';
     el.style.transition = '';
     el.style.height = `${el.offsetHeight}px`;
@@ -68,23 +74,6 @@ export function slideUp(el: HTMLElement, durationMs = 150, onComplete?: () => vo
         el.style.removeProperty('transition');
         onComplete?.();
     });
-}
-
-export function slideToggle(el: HTMLElement, durationMs = 150): void {
-    if (isHidden(el)) {
-        slideDown(el, durationMs);
-    } else {
-        slideUp(el, durationMs);
-    }
-}
-
-export function fadeOutRemove(el: HTMLElement, durationMs: number, onRemoved?: () => void): void {
-    el.style.transition = `opacity ${durationMs}ms ease`;
-    el.style.opacity = '0';
-    window.setTimeout(() => {
-        el.remove();
-        onRemoved?.();
-    }, durationMs);
 }
 
 /**
@@ -104,19 +93,49 @@ export function dispatchInput(el: Element): void {
     el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+/** Clone the first element of a `<template>` by id; null when absent. */
+export function cloneTemplate(templateId: string): HTMLElement | null {
+    const template = document.getElementById(templateId);
+    if (!(template instanceof HTMLTemplateElement)) return null;
+    const node = template.content.firstElementChild?.cloneNode(true);
+    return node instanceof HTMLElement ? node : null;
+}
+
 /**
- * Rewrite indexed `name` attributes on inputs/selects/textareas after reorder
- * or delete, plus `data-name` on containers (the campaign slides list stores
- * its field name there and later-added hidden inputs derive from it).
- * `pattern` must capture the name prefix in group 1; each match becomes `$1[<item index>]`.
+ * Rewrite indexed names, ids, label targets, and data-name values after a
+ * repeated item is moved or removed.
  */
-export function reindexNames(container: HTMLElement, itemSelector: string, pattern: RegExp): void {
-    container.querySelectorAll(itemSelector).forEach((item, i) => {
-        item.querySelectorAll('input, select, textarea').forEach((input) => {
+export function reindexNames(
+    container: HTMLElement,
+    itemSelector: string,
+    pattern: RegExp,
+    onItem?: (item: Element, index: number, total: number) => void,
+): void {
+    const items = container.querySelectorAll(itemSelector);
+    const idPrefix = container.id ? `${container.id}-` : '';
+    const idUpdates: Array<{
+        input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+        id: string;
+        tomSelectInput: HTMLInputElement | undefined;
+        label: HTMLLabelElement | undefined;
+    }> = [];
+    items.forEach((item, i) => {
+        item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+            'input, select, textarea',
+        ).forEach((input) => {
             const name = input.getAttribute('name');
-            if (name) {
-                input.setAttribute('name', name.replace(pattern, `$1[${i}]`));
-            }
+            if (!name) return;
+            input.setAttribute('name', name.replace(pattern, `$1[${i}]`));
+
+            if (!idPrefix || !input.id.startsWith(idPrefix)) return;
+            const id = idPrefix + input.id.slice(idPrefix.length).replace(/^\d+-/, `${i}-`);
+            if (id === input.id) return;
+            const tomSelectInput = (input as typeof input & { tomselect?: { control_input?: HTMLInputElement } })
+                .tomselect?.control_input;
+            const label = Array.from(item.querySelectorAll<HTMLLabelElement>('label[for]')).find(
+                (candidate) => candidate.htmlFor === (tomSelectInput?.id ?? input.id),
+            );
+            idUpdates.push({ input, id, tomSelectInput, label });
         });
         item.querySelectorAll<HTMLElement>('[data-name]').forEach((el) => {
             const dataName = el.dataset.name;
@@ -124,5 +143,11 @@ export function reindexNames(container: HTMLElement, itemSelector: string, patte
                 el.dataset.name = dataName.replace(pattern, `$1[${i}]`);
             }
         });
+        onItem?.(item, i, items.length);
     });
+    for (const { input, id, tomSelectInput, label } of idUpdates) {
+        input.id = id;
+        if (tomSelectInput) tomSelectInput.id = `${id}-ts-control`;
+        if (label) label.htmlFor = tomSelectInput?.id ?? id;
+    }
 }

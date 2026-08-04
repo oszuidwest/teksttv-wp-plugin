@@ -38,7 +38,7 @@ class CategoryMeta
             <div x-data="teksttvCategoryMedia">
             <p>
                 <input type="hidden" name="teksttv_category_image" id="teksttv-cat-image-id" value="" />
-                <img id="teksttv-cat-image-preview" class="teksttv-cat-image-preview is-hidden" src="" />
+                <img id="teksttv-cat-image-preview" class="teksttv-cat-image-preview is-hidden" src="" alt="" width="150" height="150" />
                 <br />
                 <button type="button" class="button" id="teksttv-cat-image-select" @click="pickImage($event)"><?php echo esc_html('Afbeelding kiezen'); ?></button>
                 <button type="button" class="button is-hidden" id="teksttv-cat-image-remove" @click="clearImage($event)"><?php echo esc_html('Verwijderen'); ?></button>
@@ -61,7 +61,7 @@ class CategoryMeta
             <td>
                 <div x-data="teksttvCategoryMedia">
                 <input type="hidden" name="teksttv_category_image" id="teksttv-cat-image-id" value="<?php echo esc_attr($image_id); ?>" />
-                <img id="teksttv-cat-image-preview" class="teksttv-cat-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>" src="<?php echo esc_url($image_url); ?>" />
+                <img id="teksttv-cat-image-preview" class="teksttv-cat-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>" src="<?php echo esc_url($image_url); ?>" alt="" width="150" height="150" />
                 <br />
                 <button type="button" class="button" id="teksttv-cat-image-select" @click="pickImage($event)"><?php echo esc_html('Afbeelding kiezen'); ?></button>
                 <button type="button" class="button <?php echo $image_url ? '' : 'is-hidden'; ?>" id="teksttv-cat-image-remove" @click="clearImage($event)"><?php echo esc_html('Verwijderen'); ?></button>

@@ -2,8 +2,10 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
+use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Blocks\Common\RecentPostsQuery;
 use TekstTV\Blocks\Common\TaxonomyFilters;
 use TekstTV\Helpers;
@@ -33,29 +35,27 @@ final class ArticlesLoopBlock
     public static function render_fields(int|string $index, array $block, string $prefix): void
     {
         $count = $block['count'] ?? 3;
-        $dur_text = $block['duration_text'] ?? '';
-        $dur_image = $block['duration_image'] ?? '';
         $default_text = (int) get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text']);
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
 
         ?>
-        <div class="teksttv-field-grid">
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke artikelen komen in de loop?', 'content'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--selection">
             <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Aantal'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
+                <label <?php Helpers::field_for($prefix, $index, 'count'); ?>><?php echo esc_html('Aantal'); ?></label>
+                <input type="number" <?php Helpers::field_attrs($prefix, $index, 'count'); ?> value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
         <div class="teksttv-field-grid teksttv-field-grid--duration">
-            <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur tekst'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_text]" value="<?php echo esc_attr((string) $dur_text); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_text); ?>" /> <span class="teksttv-unit">sec</span>
-            </div>
-            <div class="teksttv-field teksttv-field--compact">
-                <label><?php echo esc_html('Duur afbeelding'); ?></label>
-                <input type="number" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][duration_image]" value="<?php echo esc_attr((string) $dur_image); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $default_image); ?>" /> <span class="teksttv-unit">sec</span>
-            </div>
+            <?php
+            DurationField::render($prefix, $index, 'duration_text', 'Tekst', (string) ($block['duration_text'] ?? ''), $default_text);
+            DurationField::render($prefix, $index, 'duration_image', 'Afbeelding', (string) ($block['duration_image'] ?? ''), $default_image);
+            ?>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 
@@ -73,10 +73,10 @@ final class ArticlesLoopBlock
         $dt = $raw['duration_text'] ?? '';
         $di = $raw['duration_image'] ?? '';
         if ($dt !== '') {
-            $saved['duration_text'] = Helpers::clamp_int($dt, 1, 120);
+            $saved['duration_text'] = Helpers::clamp_int($dt, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
         }
         if ($di !== '') {
-            $saved['duration_image'] = Helpers::clamp_int($di, 1, 120);
+            $saved['duration_image'] = Helpers::clamp_int($di, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
         }
 
         return $saved;

@@ -17,6 +17,33 @@ class Helpers
     private static ?bool $ai_supported_cache = null;
 
     /**
+     * Build a stable, reindexable id for a repeated admin form field. The
+     * prefix mirrors the list root's DOM id, and the scheme must match the
+     * JS reindexer (`${root.id}-${index}-${key}` in workbench.ts).
+     */
+    public static function field_id(string $prefix, int|string $index, string $field): string
+    {
+        return str_replace('_', '-', $prefix . '-' . (string) $index . '-' . $field);
+    }
+
+    /**
+     * Echo the escaped `for` attribute matching field_attrs() for the same
+     * field. `$field` is the form key (underscores allowed); the id variant
+     * is derived.
+     */
+    public static function field_for(string $prefix, int|string $index, string $field): void
+    {
+        echo 'for="' . esc_attr(self::field_id($prefix, $index, $field)) . '"';
+    }
+
+    /** Echo the escaped `id` + `name` attribute pair for a repeated admin form field. */
+    public static function field_attrs(string $prefix, int|string $index, string $field): void
+    {
+        echo 'id="' . esc_attr(self::field_id($prefix, $index, $field)) . '"'
+            . ' name="' . esc_attr($prefix . '[' . (string) $index . '][' . $field . ']') . '"';
+    }
+
+    /**
      * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
      *
      * Keys are PHP-normalised to ints; callers that need string ISO day
@@ -248,6 +275,9 @@ class Helpers
         return max($min, min($max, absint($value)));
     }
 
+    public const DURATION_MIN_SECONDS = 1;
+    public const DURATION_MAX_SECONDS = 120;
+
     /**
      * Default seconds for the per-type duration options. Single source for the
      * registered setting defaults, the admin placeholders, and build-time
@@ -283,7 +313,7 @@ class Helpers
     public static function fixed_duration_ms(mixed $override_seconds, int $default_seconds): int
     {
         $seconds = !empty($override_seconds) ? (int) $override_seconds : $default_seconds;
-        return self::clamp_int($seconds, 1, 120) * 1000;
+        return self::clamp_int($seconds, self::DURATION_MIN_SECONDS, self::DURATION_MAX_SECONDS) * 1000;
     }
 
     /**

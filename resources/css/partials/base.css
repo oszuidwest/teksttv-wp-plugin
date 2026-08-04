@@ -1,4 +1,21 @@
+:root {
+    --teksttv-color-surface: var(--wpds-color-background-surface-neutral, #fff);
+    --teksttv-color-surface-subtle: var(--wpds-color-background-surface-neutral-weak, #f6f7f7);
+    --teksttv-color-content: var(--wpds-color-foreground-content-neutral, #1d2327);
+    --teksttv-color-content-subtle: var(--wpds-color-foreground-content-neutral-weak, #50575e);
+    --teksttv-color-content-muted: #646970;
+    --teksttv-color-content-on-accent: #fff;
+    --teksttv-color-border: #c3c4c7;
+    --teksttv-color-accent: var(--wp-admin-theme-color, #2271b1);
+    --teksttv-color-accent-hover: var(--wp-admin-theme-color-darker-10, #135e96);
+    --teksttv-color-critical: #b32d2e;
+    --teksttv-radius-control: var(--wpds-border-radius-sm, 4px);
+    --teksttv-radius-card: var(--wpds-border-radius-lg, 4px);
+    --teksttv-radius-popover: var(--wpds-border-radius-md, 4px);
+}
+
 .teksttv-admin,
+.teksttv-snackbar,
 .teksttv-admin *,
 .teksttv-admin *::before,
 .teksttv-admin *::after {
@@ -13,6 +30,10 @@
     max-width: 900px;
 }
 
+.teksttv-admin > h1 {
+    margin-bottom: 16px;
+}
+
 .is-hidden {
     display: none !important;
 }
@@ -23,14 +44,19 @@
 
 .teksttv-card,
 .teksttv-block {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
+    background: var(--teksttv-color-surface);
+    border: 1px solid var(--teksttv-color-border);
+    border-radius: var(--teksttv-radius-card);
 }
 
 .teksttv-card {
     padding: 16px 20px;
     margin-bottom: 16px;
+}
+
+.teksttv-card h2 {
+    margin: 0 0 4px;
+    font-size: 15px;
 }
 
 .teksttv-card h3 {
@@ -48,11 +74,11 @@
     font-weight: 600;
     margin-bottom: 4px;
     font-size: 13px;
-    color: #1d2327;
+    color: var(--teksttv-color-content);
 }
 
-.teksttv-card-actions {
-    margin-top: 8px;
+.teksttv-workbench-section > h2 {
+    margin-bottom: 12px;
 }
 
 .teksttv-form-table {
@@ -97,12 +123,17 @@
 }
 
 .teksttv-empty-state {
-    padding: 32px 20px;
+    display: flex;
+    min-height: 150px;
+    padding: 28px 20px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    color: #787c82;
-    border: 2px dashed #c3c4c7;
-    border-radius: 4px;
-    margin-bottom: 16px;
+    color: var(--teksttv-color-content-subtle);
+    border: 2px dashed var(--teksttv-color-border);
+    border-radius: var(--teksttv-radius-card);
+    background: var(--teksttv-color-surface-subtle);
 }
 
 .teksttv-empty-state .dashicons {
@@ -110,5 +141,125 @@
     width: 36px;
     height: 36px;
     margin-bottom: 8px;
-    color: #c3c4c7;
+    color: var(--teksttv-color-content-muted);
+}
+
+.teksttv-empty-state .teksttv-empty-state-title {
+    margin: 0 0 4px;
+    color: var(--teksttv-color-content);
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.teksttv-empty-state p {
+    max-width: 46ch;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Empty states are always server-rendered; they only show when their list has
+   no items left, so add/remove needs no JS bookkeeping. */
+:is(#teksttv-blocks, #teksttv-ticker, #teksttv-campaigns):has(> .teksttv-block) > .teksttv-empty-state {
+    display: none;
+}
+
+.teksttv-table-empty td {
+    padding: 20px 12px;
+    color: var(--teksttv-color-content-subtle);
+    text-align: center;
+}
+
+.teksttv-snackbar {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 100100;
+    display: flex;
+    min-width: min(360px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px 10px 16px;
+    border-radius: var(--teksttv-radius-popover);
+    background: var(--teksttv-color-content);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
+    color: var(--teksttv-color-content-on-accent);
+}
+
+.teksttv-snackbar[hidden] {
+    display: none;
+}
+
+.teksttv-snackbar-action {
+    min-height: 36px;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: var(--teksttv-radius-control);
+    background: transparent;
+    color: #72aee6;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.teksttv-snackbar-message {
+    flex: 1;
+}
+
+.teksttv-snackbar-dismiss {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--teksttv-radius-control);
+    place-items: center;
+    flex: 0 0 36px;
+    background: transparent;
+    color: var(--teksttv-color-content-on-accent);
+    cursor: pointer;
+}
+
+.teksttv-snackbar-action:hover,
+.teksttv-snackbar-action:focus-visible,
+.teksttv-snackbar-dismiss:hover,
+.teksttv-snackbar-dismiss:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--teksttv-color-content-on-accent);
+}
+
+.teksttv-snackbar-action:focus-visible,
+.teksttv-snackbar-dismiss:focus-visible {
+    outline: 2px solid var(--teksttv-color-content-on-accent);
+    outline-offset: 1px;
+}
+
+tbody:has(> .teksttv-group-row) > .teksttv-table-empty {
+    display: none;
+}
+
+@media (max-width: 782px) {
+    .teksttv-card {
+        padding: 16px;
+    }
+
+    .teksttv-snackbar {
+        right: 16px;
+        bottom: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .teksttv-admin *,
+    .teksttv-admin *::before,
+    .teksttv-admin *::after,
+    .teksttv-meta-box *,
+    .teksttv-meta-box *::before,
+    .teksttv-meta-box *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
