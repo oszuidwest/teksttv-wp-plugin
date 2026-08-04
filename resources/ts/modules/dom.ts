@@ -113,6 +113,12 @@ export function reindexNames(
 ): void {
     const items = container.querySelectorAll(itemSelector);
     const idPrefix = container.id ? `${container.id}-` : '';
+    const idUpdates: Array<{
+        input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+        id: string;
+        tomSelectInput: HTMLInputElement | undefined;
+        label: HTMLLabelElement | undefined;
+    }> = [];
     items.forEach((item, i) => {
         item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
             'input, select, textarea',
@@ -126,10 +132,10 @@ export function reindexNames(
             if (id === input.id) return;
             const tomSelectInput = (input as typeof input & { tomselect?: { control_input?: HTMLInputElement } })
                 .tomselect?.control_input;
-            const label = (tomSelectInput ?? input).labels?.[0];
-            input.id = id;
-            if (tomSelectInput) tomSelectInput.id = `${id}-ts-control`;
-            if (label) label.htmlFor = tomSelectInput?.id ?? id;
+            const label = Array.from(item.querySelectorAll<HTMLLabelElement>('label[for]')).find(
+                (candidate) => candidate.htmlFor === (tomSelectInput?.id ?? input.id),
+            );
+            idUpdates.push({ input, id, tomSelectInput, label });
         });
         item.querySelectorAll<HTMLElement>('[data-name]').forEach((el) => {
             const dataName = el.dataset.name;
@@ -139,4 +145,9 @@ export function reindexNames(
         });
         onItem?.(item, i, items.length);
     });
+    for (const { input, id, tomSelectInput, label } of idUpdates) {
+        input.id = id;
+        if (tomSelectInput) tomSelectInput.id = `${id}-ts-control`;
+        if (label) label.htmlFor = tomSelectInput?.id ?? id;
+    }
 }

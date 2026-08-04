@@ -21,9 +21,19 @@ test.describe('administrator admin screens', () => {
         test('administrator can save settings', async ({ page }) => {
             await page.goto('/wp-admin/admin.php?page=teksttv-settings');
             await page.fill('input[name="teksttv_duration_text"]', '42');
+            await page.fill('input[name="teksttv_channels[0][slug]"]', 'tv_one');
+            const copyEndpoint = page.locator('#teksttv-channels .teksttv-copy-endpoint').first();
+            await expect(copyEndpoint).toBeEnabled();
+            await expect(copyEndpoint).toHaveAttribute('data-endpoint', /[?&]channel=tv_one$/);
+            const saveResponse = page.waitForResponse(
+                (response) =>
+                    response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/options.php'),
+            );
             await page.click('#submit');
             // The Settings API reloads the page; the saved value must persist.
+            expect((await saveResponse).status()).toBeLessThan(400);
             await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
+            await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
         });
     });
 
@@ -42,6 +52,7 @@ test.describe('administrator admin screens', () => {
         const loopActionWidths = await page
             .locator('#teksttv-add-block-toggle, #teksttv-add-ticker-toggle')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
+        expect(loopActionWidths.length).toBeGreaterThan(0);
         expect(Math.max(...loopActionWidths)).toBeLessThan(190);
 
         await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
@@ -51,6 +62,7 @@ test.describe('administrator admin screens', () => {
         const campaignActionWidths = await page
             .locator('#teksttv-add-group, #teksttv-add-campaign')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
+        expect(campaignActionWidths.length).toBeGreaterThan(0);
         expect(Math.max(...campaignActionWidths)).toBeLessThan(190);
     });
 
@@ -83,6 +95,7 @@ test.describe('administrator admin screens', () => {
         expect(Math.abs(desktopFields[0] - desktopFields[1])).toBeLessThan(1);
 
         const firstRowLabels = fields.locator(':scope > label');
+        await expect(firstRowLabels).toHaveCount(2);
         const labelTops = await firstRowLabels.evaluateAll((elements) =>
             elements.map((element) => element.getBoundingClientRect().top),
         );

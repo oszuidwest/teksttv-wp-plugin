@@ -256,11 +256,11 @@ test.describe('admin interaction contracts', () => {
         await expect(blocks.first().locator('.teksttv-move-block-up')).toBeDisabled();
         await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
 
-        const brokenLabels = await page.locator('#teksttv-blocks label[for]').evaluateAll(
+        const brokenLabels = await page.locator('#teksttv-blocks .teksttv-field > label[for]').evaluateAll(
             (labels) =>
                 labels.filter((label) => {
-                    const id = label.getAttribute('for');
-                    return !id || !document.getElementById(id);
+                    const control = (label as HTMLLabelElement).control;
+                    return !control || control.closest('.teksttv-field') !== label.parentElement;
                 }).length,
         );
         expect(brokenLabels).toBe(0);
@@ -336,11 +336,11 @@ test.describe('admin interaction contracts', () => {
         await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('E2E two');
         await expect(rows.last().locator('.teksttv-copy-endpoint')).toBeDisabled();
-        await rows.last().locator('input[name$="[slug]"]').fill('e2e-two');
+        await rows.last().locator('input[name$="[slug]"]').fill('e2e_two');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Two');
         const copyEndpoint = rows.last().locator('.teksttv-copy-endpoint');
         await expect(copyEndpoint).toBeEnabled();
-        await expect(copyEndpoint).toHaveAttribute('data-endpoint', /\/wp-json\/teksttv\/v1\/slides\?channel=e2e-two$/);
+        await expect(copyEndpoint).toHaveAttribute('data-endpoint', /\/wp-json\/teksttv\/v1\/slides\?channel=e2e_two$/);
         await page.locator('#teksttv-add-channel').click();
         await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-three');
@@ -359,7 +359,7 @@ test.describe('admin interaction contracts', () => {
         await expect(page.locator('#teksttv-snackbar')).toContainText('Kanaal verwijderd.');
         await page.locator('.teksttv-snackbar-action').click();
         await expect(rows).toHaveCount(3);
-        await expect(rows.nth(1).locator('input[name$="[slug]"]')).toHaveValue('e2e-two');
+        await expect(rows.nth(1).locator('input[name$="[slug]"]')).toHaveValue('e2e_two');
         await expect(rows.nth(1).locator('input[name$="[slug]"]')).toBeFocused();
 
         await rows.nth(1).locator('.teksttv-remove-channel').click();
