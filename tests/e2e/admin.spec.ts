@@ -13,10 +13,8 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#submit')).toBeVisible();
     });
 
-    test.describe('settings mutation', () => {
-        test.afterEach(() => {
-            reseedFixtures();
-        });
+    test.describe('option mutation', () => {
+        test.afterEach(reseedFixtures);
 
         test('administrator can save settings', async ({ page }) => {
             await page.goto('/wp-admin/admin.php?page=teksttv-settings');
@@ -34,6 +32,25 @@ test.describe('administrator admin screens', () => {
             expect((await saveResponse).status()).toBeLessThan(400);
             await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
             await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
+        });
+
+        test('post editor uses a plain textarea when rich text options are disabled', async ({ page }) => {
+            runWp('option', 'update', 'teksttv_features', '["custom_title","page_separator"]', '--format=json');
+
+            await openFixturePostEditor(page);
+
+            const editor = page.locator('#teksttv_content');
+            await expect(editor).toBeVisible();
+            await expect(page.locator('#teksttv_content_ifr')).toHaveCount(0);
+            await expect(page.locator('#wp-teksttv_content-editor-container')).toHaveCount(0);
+            await expect(page.locator('#teksttv-title')).toHaveAttribute(
+                'placeholder',
+                'Laat leeg om de titel van het artikel te gebruiken.',
+            );
+
+            await editor.fill('Eerste slide');
+            await page.locator('.teksttv-plain-separator').click();
+            await expect(editor).toHaveValue('Eerste slide\n---');
         });
     });
 
@@ -229,29 +246,6 @@ test.describe('administrator admin screens', () => {
         await enlarge.focus();
         await expect(enlarge).toBeFocused();
         await expect(enlarge).toHaveCSS('opacity', '1');
-    });
-
-    test('post editor uses a plain textarea when rich text options are disabled', async ({ page }) => {
-        runWp('option', 'update', 'teksttv_features', '["custom_title","page_separator"]', '--format=json');
-
-        try {
-            await openFixturePostEditor(page);
-
-            const editor = page.locator('#teksttv_content');
-            await expect(editor).toBeVisible();
-            await expect(page.locator('#teksttv_content_ifr')).toHaveCount(0);
-            await expect(page.locator('#wp-teksttv_content-editor-container')).toHaveCount(0);
-            await expect(page.locator('#teksttv-title')).toHaveAttribute(
-                'placeholder',
-                'Laat leeg om de titel van het artikel te gebruiken.',
-            );
-
-            await editor.fill('Eerste slide');
-            await page.locator('.teksttv-plain-separator').click();
-            await expect(editor).toHaveValue('Eerste slide\n---');
-        } finally {
-            reseedFixtures();
-        }
     });
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
