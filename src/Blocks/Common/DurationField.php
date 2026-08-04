@@ -25,9 +25,9 @@ final class DurationField
 
         ?>
         <div class="teksttv-field teksttv-field--compact">
-            <label for="<?php echo esc_attr($field_id); ?>" data-teksttv-label="<?php echo esc_attr($field_key); ?>"><?php echo esc_html($label); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
+            <label for="<?php echo esc_attr($field_id); ?>"><?php echo esc_html($label); ?><span class="screen-reader-text"><?php echo esc_html(' (seconden)'); ?></span></label>
             <div class="teksttv-input-with-unit">
-                <input type="number" id="<?php echo esc_attr($field_id); ?>" data-teksttv-field="<?php echo esc_attr($field_key); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][<?php echo esc_attr($name_key); ?>]" value="<?php echo esc_attr((string) $value); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $placeholder); ?>" />
+                <input type="number" id="<?php echo esc_attr($field_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][<?php echo esc_attr($name_key); ?>]" value="<?php echo esc_attr((string) $value); ?>" min="1" max="120" class="small-text" placeholder="<?php echo esc_attr((string) $placeholder); ?>" />
                 <span class="teksttv-unit">sec</span>
             </div>
         </div>

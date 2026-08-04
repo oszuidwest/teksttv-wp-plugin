@@ -35,13 +35,13 @@ final class IframeLoopBlock
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
-                <label for="<?php echo esc_attr($name_id); ?>" data-teksttv-label="name"><?php echo esc_html('Naam'); ?></label>
-                <input type="text" id="<?php echo esc_attr($name_id); ?>" data-teksttv-field="name" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" autocomplete="off" data-summary />
+                <label for="<?php echo esc_attr($name_id); ?>"><?php echo esc_html('Naam'); ?></label>
+                <input type="text" id="<?php echo esc_attr($name_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" autocomplete="off" data-summary />
                 <p class="description"><?php echo esc_html('Alleen ter herkenning in dit beheerscherm. Wordt niet uitgezonden.'); ?></p>
             </div>
             <div class="teksttv-field teksttv-field--full">
-                <label for="<?php echo esc_attr($url_id); ?>" data-teksttv-label="url"><?php echo esc_html('URL'); ?></label>
-                <input type="url" id="<?php echo esc_attr($url_id); ?>" data-teksttv-field="url" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
+                <label for="<?php echo esc_attr($url_id); ?>"><?php echo esc_html('URL'); ?></label>
+                <input type="url" id="<?php echo esc_attr($url_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
             <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), $default_duration); ?>

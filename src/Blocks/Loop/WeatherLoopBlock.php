@@ -145,12 +145,12 @@ final class WeatherLoopBlock
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--text">
-                <label for="<?php echo esc_attr($location_id); ?>" data-teksttv-label="location"><?php echo esc_html('Locatie'); ?></label>
-                <input type="text" id="<?php echo esc_attr($location_id); ?>" data-teksttv-field="location" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda, NL'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
+                <label for="<?php echo esc_attr($location_id); ?>"><?php echo esc_html('Locatie'); ?></label>
+                <input type="text" id="<?php echo esc_attr($location_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][location]" value="<?php echo esc_attr((string) $location); ?>" class="regular-text" placeholder="<?php echo esc_attr('Breda, NL'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Geen locatie'); ?>" />
             </div>
             <div class="teksttv-field teksttv-field--text">
-                <label for="<?php echo esc_attr($title_id); ?>" data-teksttv-label="title"><?php echo esc_html('Titel'); ?></label>
-                <input type="text" id="<?php echo esc_attr($title_id); ?>" data-teksttv-field="title" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" autocomplete="off" />
+                <label for="<?php echo esc_attr($title_id); ?>"><?php echo esc_html('Titel'); ?></label>
+                <input type="text" id="<?php echo esc_attr($title_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][title]" value="<?php echo esc_attr((string) $title); ?>" class="regular-text" placeholder="<?php echo esc_attr('Het weer'); ?>" autocomplete="off" />
             </div>
             <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), self::DEFAULT_DURATION_SECONDS); ?>
         </div>

@@ -397,7 +397,7 @@ class AdminPage
         if (!$reg) {
             return;
         }
-        $body_id = str_replace('_', '-', $prefix) . '-' . (string) $index . '-body';
+        $body_id = Helpers::field_id($prefix, $index, 'body');
 
         ?>
         <div class="teksttv-block" data-type="<?php echo esc_attr($type); ?>">
@@ -477,12 +477,12 @@ class AdminPage
 
         ?>
         <div class="teksttv-field">
-            <label for="<?php echo esc_attr($date_start_id); ?>" data-teksttv-label="date-start"><?php echo esc_html('Vanaf'); ?></label>
-            <input type="date" id="<?php echo esc_attr($date_start_id); ?>" data-teksttv-field="date-start" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
+            <label for="<?php echo esc_attr($date_start_id); ?>"><?php echo esc_html('Vanaf'); ?></label>
+            <input type="date" id="<?php echo esc_attr($date_start_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
         </div>
         <div class="teksttv-field">
-            <label for="<?php echo esc_attr($date_end_id); ?>" data-teksttv-label="date-end"><?php echo esc_html('Tot en met'); ?></label>
-            <input type="date" id="<?php echo esc_attr($date_end_id); ?>" data-teksttv-field="date-end" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
+            <label for="<?php echo esc_attr($date_end_id); ?>"><?php echo esc_html('Tot en met'); ?></label>
+            <input type="date" id="<?php echo esc_attr($date_end_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
         </div>
         <div class="teksttv-field teksttv-field--primary">
             <span class="teksttv-field-label"><?php echo esc_html('Dagen'); ?></span>

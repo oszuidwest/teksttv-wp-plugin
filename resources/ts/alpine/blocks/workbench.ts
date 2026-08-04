@@ -1,15 +1,10 @@
 import Sortable from 'sortablejs';
 import { markFormDirty } from '../../modules/dirtyForms';
-import { cloneTemplate, reindexNames, reindexRowLabelIds, siblingFocusTarget } from '../../modules/dom';
+import { cloneTemplate, reindexNames, siblingFocusTarget } from '../../modules/dom';
 import { initTomSelectIn } from '../../modules/tomSelect';
 import { debounce } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
-import {
-    handleBlockControlsClick,
-    handleBlocksClick,
-    setBlockOpen,
-    updateBlockOrderControls,
-} from './handleBlocksClick';
+import { handleBlockControlsClick, handleBlocksClick, setBlockOpen } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -20,73 +15,34 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let tickerEl: HTMLElement | null = null;
     let groupsTbody: HTMLTableSectionElement | null = null;
 
-    function reindexDisclosureIds(root: HTMLElement): void {
-        // The id scheme must match the server-rendered ids (AdminPage /
-        // CampaignsPage build them from the option prefix, which mirrors the
-        // list root's id).
-        root.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block, index) => {
-            const body = block.querySelector<HTMLElement>('.teksttv-block-body');
-            const toggle = block.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
-            if (!(body && toggle)) return;
+    function reindexBlockUi(block: Element, index: number, total: number): void {
+        const root = block.parentElement;
+        const body = block.querySelector<HTMLElement>('.teksttv-block-body');
+        const toggle = block.querySelector<HTMLButtonElement>('.teksttv-block-toggle-control');
+        if (root && body && toggle) {
             const bodyId = `${root.id}-${index}-body`;
             body.id = bodyId;
             toggle.setAttribute('aria-controls', bodyId);
-        });
-    }
-
-    function reindexFieldIds(root: HTMLElement): void {
-        root.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block, index) => {
-            // Single pass over the controls records each field's final label
-            // target, so the label loop needs no per-label re-query.
-            const labelTargets = new Map<string, string>();
-            block.querySelectorAll<HTMLElement>('[data-teksttv-field]').forEach((control) => {
-                const key = control.dataset.teksttvField;
-                if (!key) return;
-                const id = `${root.id}-${index}-${key}`;
-                control.id = id;
-
-                // Tom Select moves label focus to its generated text input.
-                // Keep that id in step when a block is reordered or removed.
-                const tomSelect = (
-                    control as HTMLElement & {
-                        tomselect?: { control_input?: HTMLInputElement };
-                    }
-                ).tomselect;
-                if (tomSelect?.control_input) {
-                    tomSelect.control_input.id = `${id}-ts-control`;
-                    labelTargets.set(key, tomSelect.control_input.id);
-                } else {
-                    labelTargets.set(key, id);
-                }
-            });
-            block.querySelectorAll<HTMLLabelElement>('[data-teksttv-label]').forEach((label) => {
-                const key = label.dataset.teksttvLabel;
-                if (!key) return;
-                label.htmlFor = labelTargets.get(key) ?? `${root.id}-${index}-${key}`;
-            });
-        });
+        }
+        const up = block.querySelector<HTMLButtonElement>('.teksttv-move-block-up');
+        const down = block.querySelector<HTMLButtonElement>('.teksttv-move-block-down');
+        if (up) up.disabled = index === 0;
+        if (down) down.disabled = index === total - 1;
     }
 
     function reindexBlocks(): void {
         if (!blocksEl) return;
-        reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/);
-        reindexDisclosureIds(blocksEl);
-        reindexFieldIds(blocksEl);
-        updateBlockOrderControls(blocksEl);
+        reindexNames(blocksEl, ':scope > .teksttv-block', /(teksttv_(?:blocks|campaigns))\[\d+\]/, reindexBlockUi);
     }
 
     function reindexTicker(): void {
         if (!tickerEl) return;
-        reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/);
-        reindexDisclosureIds(tickerEl);
-        reindexFieldIds(tickerEl);
-        updateBlockOrderControls(tickerEl);
+        reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/, reindexBlockUi);
     }
 
     function reindexGroups(): void {
         if (!groupsTbody) return;
         reindexNames(groupsTbody, '.teksttv-group-row', /(teksttv_campaign_groups)\[\d+\]/);
-        reindexRowLabelIds(groupsTbody, '.teksttv-group-row', 'teksttv-group', ['label']);
     }
 
     function refreshSummaries(): void {
@@ -139,6 +95,17 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         }
     }
 
+    function initSortable(root: HTMLElement, reindex: () => void): void {
+        new Sortable(root, {
+            ...BLOCK_SORTABLE_OPTS,
+            onEnd: ({ oldIndex, newIndex }) => {
+                if (oldIndex === newIndex) return;
+                reindex();
+                markFormDirty(root);
+            },
+        });
+    }
+
     return {
         menuBlockOpen: false,
         menuTickerOpen: false,
@@ -147,32 +114,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             blocksEl = document.querySelector<HTMLElement>('#teksttv-blocks, #teksttv-campaigns');
             if (!blocksEl) return;
 
-            new Sortable(blocksEl, {
-                ...BLOCK_SORTABLE_OPTS,
-                onEnd: (evt) => {
-                    if (evt.oldIndex !== evt.newIndex) {
-                        reindexBlocks();
-                        markFormDirty(blocksEl as HTMLElement);
-                    }
-                },
-            });
+            initSortable(blocksEl, reindexBlocks);
 
             tickerEl = document.querySelector<HTMLElement>('#teksttv-ticker');
-            if (opts.ticker && tickerEl) {
-                new Sortable(tickerEl, {
-                    ...BLOCK_SORTABLE_OPTS,
-                    onEnd: (evt) => {
-                        if (evt.oldIndex !== evt.newIndex) {
-                            reindexTicker();
-                            markFormDirty(tickerEl as HTMLElement);
-                        }
-                    },
-                });
-            }
+            if (opts.ticker && tickerEl) initSortable(tickerEl, reindexTicker);
 
             refreshSummaries();
-            updateBlockOrderControls(blocksEl);
-            if (tickerEl) updateBlockOrderControls(tickerEl);
+            reindexBlocks();
+            if (tickerEl) reindexTicker();
 
             if (opts.groups) {
                 groupsTbody = document.querySelector('#teksttv-groups')?.querySelector('tbody') ?? null;
@@ -194,19 +143,10 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             insertBlockFromTemplate(tickerEl, `tmpl-teksttv-ticker-${type}`, { focusText: true });
         },
 
-        expandAllBlocks(): void {
+        setAllBlocksOpen(expanded: boolean): void {
             if (!blocksEl) return;
-            blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                if (!(block instanceof HTMLElement)) return;
-                setBlockOpen(block, true);
-            });
-        },
-
-        collapseAllBlocks(): void {
-            if (!blocksEl) return;
-            blocksEl.querySelectorAll(':scope > .teksttv-block').forEach((block) => {
-                if (!(block instanceof HTMLElement)) return;
-                setBlockOpen(block, false);
+            blocksEl.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block) => {
+                setBlockOpen(block, expanded);
             });
         },
 

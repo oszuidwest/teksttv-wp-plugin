@@ -23,13 +23,11 @@ echo '<h1>' . esc_html('Tekst TV-instellingen') . '</h1>';
  * @var callable(int|string, array{slug: string, label: string}): void $render_channel_row
  */
 $render_channel_row = static function (int|string $i, array $ch) use ($api_base_url): void {
-    $slug_id = 'teksttv-channel-' . (string) $i . '-slug';
-    $label_id = 'teksttv-channel-' . (string) $i . '-label';
     $api_url = $ch['slug'] !== '' ? add_query_arg('channel', $ch['slug'], $api_base_url) : '';
     ?>
     <tr class="teksttv-channel-row">
-        <td><label class="screen-reader-text teksttv-mobile-field-label" for="<?php echo esc_attr($slug_id); ?>"><?php echo esc_html('Slug'); ?></label><input type="text" id="<?php echo esc_attr($slug_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" autocomplete="off" spellcheck="false" /></td>
-        <td><label class="screen-reader-text teksttv-mobile-field-label" for="<?php echo esc_attr($label_id); ?>"><?php echo esc_html('Naam'); ?></label><input type="text" id="<?php echo esc_attr($label_id); ?>" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" autocomplete="off" /></td>
+        <td><label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Slug'); ?></span><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" autocomplete="off" spellcheck="false" /></label></td>
+        <td><label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Naam'); ?></span><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" autocomplete="off" /></label></td>
         <td class="teksttv-channel-endpoint"><button type="button" class="button teksttv-copy-endpoint" data-endpoint="<?php echo esc_url($api_url); ?>" <?php disabled($api_url === ''); ?>><span class="dashicons dashicons-clipboard" aria-hidden="true"></span><span class="teksttv-copy-endpoint-label" aria-live="polite"><?php echo esc_html('Link kopiëren'); ?></span></button></td>
         <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
     </tr>

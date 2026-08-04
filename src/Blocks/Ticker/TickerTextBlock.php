@@ -31,8 +31,8 @@ final class TickerTextBlock
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
-                <label for="<?php echo esc_attr($message_id); ?>" data-teksttv-label="message"><?php echo esc_html('Bericht'); ?></label>
-                <input type="text" id="<?php echo esc_attr($message_id); ?>" data-teksttv-field="message" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][message]" value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr('Tickertekst…'); ?>" autocomplete="off" data-summary />
+                <label for="<?php echo esc_attr($message_id); ?>"><?php echo esc_html('Bericht'); ?></label>
+                <input type="text" id="<?php echo esc_attr($message_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][message]" value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr('Tickertekst…'); ?>" autocomplete="off" data-summary />
             </div>
         </div>
         <?php

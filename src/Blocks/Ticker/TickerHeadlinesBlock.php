@@ -37,12 +37,12 @@ final class TickerHeadlinesBlock
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($count_id); ?>" data-teksttv-label="count"><?php echo esc_html('Aantal'); ?></label>
-                <input type="number" id="<?php echo esc_attr($count_id); ?>" data-teksttv-field="count" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="20" class="small-text" data-summary="%sx" />
+                <label for="<?php echo esc_attr($count_id); ?>"><?php echo esc_html('Aantal'); ?></label>
+                <input type="number" id="<?php echo esc_attr($count_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="20" class="small-text" data-summary="%sx" />
             </div>
             <div class="teksttv-field teksttv-field--text">
-                <label for="<?php echo esc_attr($prefix_id); ?>" data-teksttv-label="prefix"><?php echo esc_html('Voorvoegsel'); ?></label>
-                <input type="text" id="<?php echo esc_attr($prefix_id); ?>" data-teksttv-field="prefix" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][prefix]" value="<?php echo esc_attr((string) $item_prefix); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Nieuws:'); ?>" autocomplete="off" />
+                <label for="<?php echo esc_attr($prefix_id); ?>"><?php echo esc_html('Voorvoegsel'); ?></label>
+                <input type="text" id="<?php echo esc_attr($prefix_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][prefix]" value="<?php echo esc_attr((string) $item_prefix); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Nieuws:'); ?>" autocomplete="off" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($item['taxonomy_filters'] ?? []), $prefix); ?>
         </div>

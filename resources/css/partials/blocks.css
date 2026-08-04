@@ -134,10 +134,6 @@
     align-items: start;
 }
 
-.teksttv-field--campaign-half {
-    grid-column: span 6;
-}
-
 .teksttv-block-body > .teksttv-field-grid + .teksttv-field-grid {
     margin-top: 12px;
 }

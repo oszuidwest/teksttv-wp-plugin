@@ -81,9 +81,7 @@ export function removeImageItem(button: Element, onRemoved?: () => void): void {
  */
 export function appendImageItems(list: Element, attachments: WPMediaAttachment[], inputName: string): void {
     const firstNewIndex = list.children.length;
-    for (const att of attachments) {
-        list.insertAdjacentHTML('beforeend', imageItemHtml(att, inputName));
-    }
+    list.insertAdjacentHTML('beforeend', attachments.map((att) => imageItemHtml(att, inputName)).join(''));
     window.setTimeout(() => {
         list.children[firstNewIndex]?.querySelector<HTMLButtonElement>('.teksttv-remove-image')?.focus();
     });

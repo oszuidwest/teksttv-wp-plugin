@@ -1,23 +1,20 @@
-const DIRTY_EVENT = 'teksttv:form-dirty';
+const dirtyForms = new Set<HTMLFormElement>();
 
 /** Mark the plugin form containing `source` as changed. */
 export function markFormDirty(source: Element): void {
-    source.dispatchEvent(new CustomEvent(DIRTY_EVENT, { bubbles: true }));
+    const form = source.closest<HTMLFormElement>('.teksttv-admin form');
+    if (form) dirtyForms.add(form);
 }
 
 /** Warn before leaving a Tekst TV admin form with unsaved changes. */
 export function initDirtyFormGuards(): void {
-    const dirtyForms = new Set<HTMLFormElement>();
-    const forms = document.querySelectorAll<HTMLFormElement>('.teksttv-admin form');
-
-    forms.forEach((form) => {
+    document.querySelectorAll<HTMLFormElement>('.teksttv-admin form').forEach((form) => {
         const markDirty = (): void => {
             dirtyForms.add(form);
         };
 
         form.addEventListener('input', markDirty);
         form.addEventListener('change', markDirty);
-        form.addEventListener(DIRTY_EVENT, markDirty);
         form.addEventListener('submit', () => dirtyForms.delete(form));
     });
 

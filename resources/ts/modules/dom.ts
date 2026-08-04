@@ -124,12 +124,6 @@ export function dispatchInput(el: Element): void {
     el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-/**
- * Rewrite indexed `name` attributes on inputs/selects/textareas after reorder
- * or delete, plus `data-name` on containers (the campaign slides list stores
- * its field name there and later-added hidden inputs derive from it).
- * `pattern` must capture the name prefix in group 1; each match becomes `$1[<item index>]`.
- */
 /** Clone the first element of a `<template>` by id; null when absent. */
 export function cloneTemplate(templateId: string): HTMLElement | null {
     const template = document.getElementById(templateId);
@@ -139,34 +133,34 @@ export function cloneTemplate(templateId: string): HTMLElement | null {
 }
 
 /**
- * Renumber the `id`/`for` pairs of a management table's per-row field labels
- * after a row is added or removed, keeping label association index-stable.
+ * Rewrite indexed names, ids, label targets, and data-name values after a
+ * repeated item is moved or removed.
  */
-export function reindexRowLabelIds(
-    tbody: HTMLElement,
-    rowSelector: string,
-    idPrefix: string,
-    fields: readonly string[],
+export function reindexNames(
+    container: HTMLElement,
+    itemSelector: string,
+    pattern: RegExp,
+    onItem?: (item: Element, index: number, total: number) => void,
 ): void {
-    tbody.querySelectorAll<HTMLTableRowElement>(rowSelector).forEach((row, index) => {
-        fields.forEach((field) => {
-            const input = row.querySelector<HTMLInputElement>(`input[name$="[${field}]"]`);
-            const label = input?.previousElementSibling;
-            if (!input || !(label instanceof HTMLLabelElement)) return;
-            const id = `${idPrefix}-${index}-${field}`;
-            input.id = id;
-            label.htmlFor = id;
-        });
-    });
-}
-
-export function reindexNames(container: HTMLElement, itemSelector: string, pattern: RegExp): void {
-    container.querySelectorAll(itemSelector).forEach((item, i) => {
-        item.querySelectorAll('input, select, textarea').forEach((input) => {
+    const items = container.querySelectorAll(itemSelector);
+    const idPrefix = container.id ? `${container.id}-` : '';
+    items.forEach((item, i) => {
+        item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+            'input, select, textarea',
+        ).forEach((input) => {
             const name = input.getAttribute('name');
-            if (name) {
-                input.setAttribute('name', name.replace(pattern, `$1[${i}]`));
-            }
+            if (!name) return;
+            input.setAttribute('name', name.replace(pattern, `$1[${i}]`));
+
+            if (!idPrefix || !input.id.startsWith(idPrefix)) return;
+            const id = idPrefix + input.id.slice(idPrefix.length).replace(/^\d+-/, `${i}-`);
+            if (id === input.id) return;
+            const tomSelectInput = (input as typeof input & { tomselect?: { control_input?: HTMLInputElement } })
+                .tomselect?.control_input;
+            const label = (tomSelectInput ?? input).labels?.[0];
+            input.id = id;
+            if (tomSelectInput) tomSelectInput.id = `${id}-ts-control`;
+            if (label) label.htmlFor = tomSelectInput?.id ?? id;
         });
         item.querySelectorAll<HTMLElement>('[data-name]').forEach((el) => {
             const dataName = el.dataset.name;
@@ -174,5 +168,6 @@ export function reindexNames(container: HTMLElement, itemSelector: string, patte
                 el.dataset.name = dataName.replace(pattern, `$1[${i}]`);
             }
         });
+        onItem?.(item, i, items.length);
     });
 }

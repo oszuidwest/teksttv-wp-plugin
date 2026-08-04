@@ -59,17 +59,6 @@ export function removeClosestBlock(trigger: Element, onRemoved: () => void): voi
     });
 }
 
-/** Keep the first/last keyboard reorder buttons in sync with list position. */
-export function updateBlockOrderControls(root: HTMLElement): void {
-    const blocks = Array.from(root.querySelectorAll<HTMLElement>(':scope > .teksttv-block'));
-    blocks.forEach((block, index) => {
-        const up = block.querySelector<HTMLButtonElement>('.teksttv-move-block-up');
-        const down = block.querySelector<HTMLButtonElement>('.teksttv-move-block-down');
-        if (up) up.disabled = index === 0;
-        if (down) down.disabled = index === blocks.length - 1;
-    });
-}
-
 /** Move a block one position for keyboard and switch-control users. */
 export function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => void): void {
     const block = trigger.closest<HTMLElement>('.teksttv-block');

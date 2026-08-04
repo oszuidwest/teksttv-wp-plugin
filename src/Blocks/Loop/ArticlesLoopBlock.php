@@ -41,8 +41,8 @@ final class ArticlesLoopBlock
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($count_id); ?>" data-teksttv-label="count"><?php echo esc_html('Aantal'); ?></label>
-                <input type="number" id="<?php echo esc_attr($count_id); ?>" data-teksttv-field="count" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
+                <label for="<?php echo esc_attr($count_id); ?>"><?php echo esc_html('Aantal'); ?></label>
+                <input type="number" id="<?php echo esc_attr($count_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>

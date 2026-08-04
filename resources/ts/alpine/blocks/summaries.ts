@@ -1,10 +1,8 @@
 function getSchedulingSuffix(block: HTMLElement): string {
-    const dates = Array.from(
-        block.querySelectorAll<HTMLInputElement>('.teksttv-field-grid--scheduling input[type="date"]'),
-    );
+    const dates = block.querySelectorAll<HTMLInputElement>('.teksttv-field-grid--scheduling input[type="date"]');
     if (!dates.length) return '';
     const ds = dates[0]?.value ?? '';
-    const de = dates.at(-1)?.value ?? '';
+    const de = dates[dates.length - 1]?.value ?? '';
     if (ds || de) {
         return ` · ${ds || '…'} – ${de || '…'}`;
     }

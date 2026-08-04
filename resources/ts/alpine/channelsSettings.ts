@@ -1,5 +1,5 @@
 import { markFormDirty } from '../modules/dirtyForms';
-import { cloneTemplate, reindexNames, reindexRowLabelIds, siblingFocusTarget } from '../modules/dom';
+import { cloneTemplate, reindexNames, siblingFocusTarget } from '../modules/dom';
 
 /** Settings tab: repeatable channel rows. */
 export function createChannelsSettingsPage() {
@@ -9,7 +9,6 @@ export function createChannelsSettingsPage() {
     function reindexChannels(): void {
         if (!channelsTbody) return;
         reindexNames(channelsTbody, 'tr', /(teksttv_channels)\[\d+\]/);
-        reindexRowLabelIds(channelsTbody, '.teksttv-channel-row', 'teksttv-channel', ['slug', 'label']);
     }
 
     function updateEndpoint(row: HTMLTableRowElement, slug: string): void {

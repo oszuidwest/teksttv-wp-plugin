@@ -39,10 +39,10 @@ final class CampaignLoopBlock
 
         ?>
         <div class="teksttv-field-grid teksttv-field-grid--campaign-main">
-            <div class="teksttv-field teksttv-field--campaign-half">
+            <div class="teksttv-field teksttv-field--primary">
                 <?php if (!empty($available_groups)) : ?>
-                <label for="<?php echo esc_attr($groups_id); ?>" data-teksttv-label="groups"><?php echo esc_html('Groep(en)'); ?></label>
-                <select id="<?php echo esc_attr($groups_id); ?>" data-teksttv-field="groups" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
+                <label for="<?php echo esc_attr($groups_id); ?>"><?php echo esc_html('Groep(en)'); ?></label>
+                <select id="<?php echo esc_attr($groups_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
                     <?php foreach ($available_groups as $group_option) : ?>
                     <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
                     <?php endforeach; ?>
@@ -52,9 +52,9 @@ final class CampaignLoopBlock
                 <p class="description"><?php echo wp_kses(sprintf('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
-            <div class="teksttv-field teksttv-field--campaign-half">
-                <label for="<?php echo esc_attr($limit_id); ?>" data-teksttv-label="limit"><?php echo esc_html('Maximaal aantal slides'); ?></label>
-                <input type="number" id="<?php echo esc_attr($limit_id); ?>" data-teksttv-field="limit" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max. %s" />
+            <div class="teksttv-field teksttv-field--primary">
+                <label for="<?php echo esc_attr($limit_id); ?>"><?php echo esc_html('Maximaal aantal slides'); ?></label>
+                <input type="number" id="<?php echo esc_attr($limit_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max. %s" />
                 <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>
