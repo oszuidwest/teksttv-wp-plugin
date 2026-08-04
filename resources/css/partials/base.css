@@ -171,13 +171,3 @@ tbody:has(> .teksttv-group-row) > .teksttv-table-empty {
         width: 100%;
     }
 }
-
-@media (prefers-reduced-motion: reduce) {
-    .teksttv-admin *,
-    .teksttv-admin *::before,
-    .teksttv-admin *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
