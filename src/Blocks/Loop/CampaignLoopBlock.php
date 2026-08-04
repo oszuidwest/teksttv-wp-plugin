@@ -38,19 +38,19 @@ final class CampaignLoopBlock
         $groups_id = Helpers::field_id($prefix, $index, 'groups');
 
         ?>
-        <?php AdminPage::render_block_section_start('Inhoud', 'Welke campagnegroepen komen in de loop?', 'content'); ?>
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke reclameblokken komen in de loop?', 'content'); ?>
         <div class="teksttv-field-grid teksttv-field-grid--campaign-main">
             <div class="teksttv-field teksttv-field--primary">
                 <?php if (!empty($available_groups)) : ?>
-                <label for="<?php echo esc_attr($groups_id); ?>"><?php echo esc_html('Groep(en)'); ?></label>
-                <select id="<?php echo esc_attr($groups_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
+                <label for="<?php echo esc_attr($groups_id); ?>"><?php echo esc_html('Reclameblokken'); ?></label>
+                <select id="<?php echo esc_attr($groups_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies reclameblokken…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen reclameblok'); ?>" multiple>
                     <?php foreach ($available_groups as $group_option) : ?>
                     <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
-                <span class="teksttv-field-label"><?php echo esc_html('Groep(en)'); ?></span>
-                <p class="description"><?php echo wp_kses(sprintf('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
+                <span class="teksttv-field-label"><?php echo esc_html('Reclameblokken'); ?></span>
+                <p class="description"><?php echo wp_kses(sprintf('Geen reclameblokken geconfigureerd. <a href="%s">Reclameblokken beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
             <div class="teksttv-field teksttv-field--primary">

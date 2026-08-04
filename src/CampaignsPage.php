@@ -15,8 +15,8 @@ class CampaignsPage
     {
         add_submenu_page(
             'teksttv',
-            'Campagnes',
-            'Campagnes',
+            'Reclame',
+            'Reclame',
             'manage_teksttv_campaigns',
             'teksttv-campaigns',
             [self::class, 'render_page']
@@ -59,16 +59,16 @@ class CampaignsPage
             <?php AdminPage::render_block_header($body_id, $name ?: 'Campagne', 'megaphone', '#d63638', 'Campagne verwijderen', true); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />
-                <?php AdminPage::render_block_section_start('Campagne', 'Geef de campagne een naam en optionele groep.', 'content'); ?>
+                <?php AdminPage::render_block_section_start('Campagne', 'Geef de campagne een naam en een optioneel reclameblok.', 'content'); ?>
                 <div class="teksttv-field-grid teksttv-field-grid--campaign-details">
                     <div class="teksttv-field teksttv-field--primary">
                         <label <?php Helpers::field_for('teksttv_campaigns', $index, 'name'); ?>><?php echo esc_html('Naam'); ?></label>
                         <input type="text" <?php Helpers::field_attrs('teksttv_campaigns', $index, 'name'); ?> value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Sponsor X'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Naamloze campagne'); ?>" />
                     </div>
                     <div class="teksttv-field teksttv-field--choice">
-                        <label <?php Helpers::field_for('teksttv_campaigns', $index, 'group'); ?>><?php echo esc_html('Groep'); ?></label>
+                        <label <?php Helpers::field_for('teksttv_campaigns', $index, 'group'); ?>><?php echo esc_html('Reclameblok'); ?></label>
                         <select <?php Helpers::field_attrs('teksttv_campaigns', $index, 'group'); ?> class="teksttv-campaign-group-select">
-                            <option value=""><?php echo esc_html('— Geen groep —'); ?></option>
+                            <option value=""><?php echo esc_html('— Geen reclameblok —'); ?></option>
                             <?php foreach ($groups as $group_option) : ?>
                             <option value="<?php echo esc_attr($group_option['id']); ?>" <?php selected($group, $group_option['id']); ?>><?php echo esc_html($group_option['label']); ?></option>
                             <?php endforeach; ?>

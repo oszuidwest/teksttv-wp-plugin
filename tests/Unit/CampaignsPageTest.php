@@ -8,6 +8,22 @@ use TekstTV\Helpers;
 
 class CampaignsPageTest extends TestCase
 {
+    public function test_register_menu_uses_advertising_page_label(): void
+    {
+        Functions\expect('add_submenu_page')
+            ->once()
+            ->with(
+                'teksttv',
+                'Reclame',
+                'Reclame',
+                'manage_teksttv_campaigns',
+                'teksttv-campaigns',
+                [CampaignsPage::class, 'render_page']
+            );
+
+        CampaignsPage::register_menu();
+    }
+
     // =========================================================================
     // sanitize_groups() — stable ids survive renames
     // =========================================================================

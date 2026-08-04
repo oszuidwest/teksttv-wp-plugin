@@ -12,7 +12,7 @@ namespace TekstTV;
 defined('ABSPATH') || exit;
 
 echo '<div class="wrap teksttv-admin">';
-echo '<h1>' . esc_html('Campagnes') . '</h1>';
+echo '<h1>' . esc_html('Reclame') . '</h1>';
 settings_errors('teksttv_campaigns');
 
 /**
@@ -27,7 +27,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
     <tr class="teksttv-group-row">
         <td>
             <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
-            <label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Naam'); ?></span><input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. Campagne'); ?>" autocomplete="off" /></label>
+            <label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Naam'); ?></span><input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. Lokale sponsors'); ?>" autocomplete="off" /></label>
         </td>
         <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group"><?php echo esc_html('Verwijderen'); ?></button></td>
     </tr>
@@ -38,10 +38,10 @@ $render_group_row = static function (int|string $gi, array $group): void {
 <form method="post" class="teksttv-admin-column" x-data="teksttvCampaignsPage">
     <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
 
-    <!-- Groups management -->
+    <!-- Advertising block management -->
     <section class="teksttv-card teksttv-campaign-groups teksttv-workbench-section">
-        <h2><?php echo esc_html('Groepen'); ?></h2>
-        <p class="description"><?php echo esc_html('Definieer groepen om campagnes te organiseren. In de loop kies je per campagne-blok welke groepen getoond worden.'); ?></p>
+        <h2><?php echo esc_html('Reclameblokken'); ?></h2>
+        <p class="description"><?php echo esc_html('Definieer reclameblokken om campagnes te organiseren. In de loop kies je per campagne-blok welke reclameblokken getoond worden.'); ?></p>
         <div class="teksttv-table-scroll">
             <table class="widefat teksttv-management-table" id="teksttv-groups" @click="groupsClick($event)">
                 <thead>
@@ -52,7 +52,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
                 </thead>
                 <tbody>
                     <tr class="teksttv-table-empty">
-                        <td colspan="2"><?php echo esc_html('Nog geen groepen. Voeg een groep toe om campagnes te ordenen.'); ?></td>
+                        <td colspan="2"><?php echo esc_html('Nog geen reclameblokken. Voeg een reclameblok toe om campagnes te ordenen.'); ?></td>
                     </tr>
                     <?php foreach ($groups as $gi => $group) :
                         $render_group_row($gi, $group);
@@ -61,7 +61,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
             </table>
         </div>
         <div class="teksttv-add-block-bar teksttv-section-actions">
-            <button type="button" class="button teksttv-add-action" id="teksttv-add-group" @click.prevent="addGroupRow()"><?php echo esc_html('Groep toevoegen'); ?></button>
+            <button type="button" class="button teksttv-add-action" id="teksttv-add-group" @click.prevent="addGroupRow()"><?php echo esc_html('Reclameblok toevoegen'); ?></button>
         </div>
     </section>
 

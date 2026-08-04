@@ -56,9 +56,10 @@ test.describe('administrator admin screens', () => {
         expect(Math.max(...loopActionWidths)).toBeLessThan(190);
 
         await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reclame');
         const campaignSections = page.locator('.teksttv-workbench-section');
         await expect(campaignSections).toHaveCount(2);
-        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Groepen', 'Campagnes']);
+        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Reclameblokken', 'Campagnes']);
         const campaignActionWidths = await page
             .locator('#teksttv-add-group, #teksttv-add-campaign')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));

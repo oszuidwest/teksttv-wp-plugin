@@ -199,7 +199,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 document.querySelector<HTMLElement>('#teksttv-add-group'),
             );
             removeElementWithUndo(row, {
-                message: 'Groep verwijderd.',
+                message: 'Reclameblok verwijderd.',
                 focusAfterRemove: focusTarget,
                 focusAfterRestore: (restored) => restored.querySelector('input[name$="[label]"]'),
                 focusUndo: e.detail === 0,
