@@ -14,7 +14,7 @@ export default defineConfig({
     retries: process.env.CI ? 1 : 0,
     reporter: 'list',
     use: {
-        baseURL: 'http://127.0.0.1:8888',
+        // baseURL comes from the worker's Playground server via a fixture in tests/e2e/test.ts.
         trace: 'on-first-retry',
         // Real browsers allow clipboard writes on a user gesture; headless
         // Chromium needs the permission granted explicitly.

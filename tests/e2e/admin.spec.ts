@@ -14,8 +14,8 @@ test.describe('administrator admin screens', () => {
     });
 
     test.describe('settings mutation', () => {
-        test.afterEach(async ({ runWordPressPHP }) => {
-            await reseedFixtures(runWordPressPHP);
+        test.afterEach(async ({ runWordPressPHPFile }) => {
+            await reseedFixtures(runWordPressPHPFile);
         });
 
         test('administrator can save settings', async ({ page }) => {

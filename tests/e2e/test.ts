@@ -1,16 +1,14 @@
-import { readFile } from 'node:fs/promises';
 import { type BrowserContext, test as base, expect } from '@playwright/test';
-import { type RunCLIServer, runCLI } from '@wp-playground/cli';
+import type { RunCLIServer } from '@wp-playground/cli';
 import { login } from './helpers';
-
-const PROJECT_ROOT = process.cwd();
-const PLAYGROUND_PORT = 8888;
-const PLAYGROUND_URL = `http://127.0.0.1:${PLAYGROUND_PORT}`;
+import { E2E_VFS_PATH, PLAYGROUND_BASE_PORT, startPlayground } from './playground';
 
 export type RunWordPressPHP = (code: string) => Promise<string>;
+export type RunWordPressPHPFile = (file: string) => Promise<string>;
 
 interface TestFixtures {
     runWordPressPHP: RunWordPressPHP;
+    runWordPressPHPFile: RunWordPressPHPFile;
 }
 
 type StorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
@@ -21,33 +19,13 @@ interface WorkerFixtures {
 }
 
 /**
- * Start one disposable Playground per Playwright worker. The Blueprint owns
- * WordPress configuration and fixture setup; mounts expose only the packaged
- * plugin and E2E support files to the WebAssembly filesystem.
+ * Start one disposable Playground per Playwright worker, on a per-worker port
+ * so workers never collide. Tests reach it through the overridden `baseURL`.
  */
 export const test = base.extend<TestFixtures, WorkerFixtures>({
     playgroundServer: [
-        async ({ playwright: _playwright }, use) => {
-            const blueprint = JSON.parse(await readFile(`${PROJECT_ROOT}/blueprint.json`, 'utf8'));
-            const server = await runCLI({
-                command: 'server',
-                blueprint,
-                php: '8.3',
-                port: PLAYGROUND_PORT,
-                'site-url': PLAYGROUND_URL,
-                workers: 6,
-                wp: '7.0',
-                mount: [
-                    {
-                        hostPath: `${PROJECT_ROOT}/release/teksttv`,
-                        vfsPath: '/wordpress/wp-content/plugins/teksttv',
-                    },
-                    {
-                        hostPath: `${PROJECT_ROOT}/tests/e2e`,
-                        vfsPath: '/wordpress/wp-content/e2e',
-                    },
-                ],
-            });
+        async ({ playwright: _playwright }, use, workerInfo) => {
+            const server = await startPlayground(PLAYGROUND_BASE_PORT + workerInfo.workerIndex);
 
             try {
                 await use(server);
@@ -57,6 +35,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         },
         { scope: 'worker', auto: true },
     ],
+
+    baseURL: async ({ playgroundServer }, use) => {
+        await use(playgroundServer.serverUrl);
+    },
 
     adminStorageState: [
         async ({ browser, playgroundServer }, use) => {
@@ -86,6 +68,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
             return response.text;
         });
+    },
+
+    runWordPressPHPFile: async ({ runWordPressPHP }, use) => {
+        await use((file: string) => runWordPressPHP(`require '${E2E_VFS_PATH}/${file}';`));
     },
 });
 

@@ -34,8 +34,8 @@ test.describe('slides REST endpoint', () => {
     });
 
     test.describe('iframe contract', () => {
-        test.afterEach(async ({ runWordPressPHP }) => {
-            await reseedFixtures(runWordPressPHP);
+        test.afterEach(async ({ runWordPressPHPFile }) => {
+            await reseedFixtures(runWordPressPHPFile);
         });
 
         test('serves a representative HTTPS iframe accepted by the frontend schema', async ({
@@ -59,12 +59,15 @@ test.describe('slides REST endpoint', () => {
     });
 
     test.describe('post metadata persistence', () => {
-        test.afterEach(async ({ runWordPressPHP }) => {
-            await reseedFixtures(runWordPressPHP);
+        test.afterEach(async ({ runWordPressPHPFile }) => {
+            await reseedFixtures(runWordPressPHPFile);
         });
 
-        test('saves through WordPress and changes the packaged REST payload', async ({ request, runWordPressPHP }) => {
-            const output = await runWordPressPHP("require '/wordpress/wp-content/e2e/save-post-meta.php';");
+        test('saves through WordPress and changes the packaged REST payload', async ({
+            request,
+            runWordPressPHPFile,
+        }) => {
+            const output = await runWordPressPHPFile('save-post-meta.php');
             expect(output).toContain('post-meta-save-ok ');
 
             const response = await request.get('/wp-json/teksttv/v1/slides?channel=tv1');

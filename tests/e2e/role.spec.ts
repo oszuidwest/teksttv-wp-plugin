@@ -6,11 +6,11 @@ import { expect, test } from './test';
 // own user, so start from a clean context.
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test.afterEach(async ({ page, runWordPressPHP }) => {
+test.afterEach(async ({ page, runWordPressPHPFile }) => {
     try {
         expect(await getBrowserErrors(page)).toEqual([]);
     } finally {
-        await reseedFixtures(runWordPressPHP);
+        await reseedFixtures(runWordPressPHPFile);
     }
 });
 

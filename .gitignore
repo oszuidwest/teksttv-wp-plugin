@@ -8,7 +8,6 @@ release/
 .phpunit.cache
 test-results/
 playwright-report/
-.playwright/
 
 *.md
 !README.md
