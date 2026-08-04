@@ -27,7 +27,7 @@ export function updateTeksttvWordCount(
     const wc = document.querySelector('#teksttv-wordcount');
     if (!(wc instanceof HTMLElement)) return;
 
-    const pages = splitPages(content);
+    const pages = splitPages(content, config?.pageSeparator ?? true);
     const text = pages
         .map((page) => stripTags(page))
         .join(' ')

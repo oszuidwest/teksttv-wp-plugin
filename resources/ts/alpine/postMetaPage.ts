@@ -277,9 +277,13 @@ export function createPostMetaPage() {
             const start = textarea.selectionStart;
             const end = textarea.selectionEnd;
             const needsLeadingBreak = start > 0 && textarea.value[start - 1] !== '\n';
-            const needsTrailingBreak = end < textarea.value.length && textarea.value[end] !== '\n';
-            const separator = `${needsLeadingBreak ? '\n' : ''}---${needsTrailingBreak ? '\n' : ''}`;
+            const hasTrailingBreak = textarea.value[end] === '\n';
+            const separator = `${needsLeadingBreak ? '\n' : ''}---${hasTrailingBreak ? '' : '\n'}`;
             textarea.setRangeText(separator, start, end, 'end');
+            if (hasTrailingBreak) {
+                const caret = textarea.selectionEnd + 1;
+                textarea.setSelectionRange(caret, caret);
+            }
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
             textarea.focus();
         },

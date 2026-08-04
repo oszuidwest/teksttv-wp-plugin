@@ -102,10 +102,17 @@ class PostMetaTest extends TestCase
         $this->assertFalse(Filters\has('mce_external_plugins'));
     }
 
+    public function test_enqueue_assets_omits_the_auto_draft_fallback_title(): void
+    {
+        $this->stubSuccessfulAssetEnqueue(['bold'], true);
+
+        PostMeta::enqueue_assets('post-new.php');
+    }
+
     /**
      * @param list<string> $features
      */
-    private function stubSuccessfulAssetEnqueue(array $features): void
+    private function stubSuccessfulAssetEnqueue(array $features, bool $auto_draft = false): void
     {
         $page_separator = in_array('page_separator', $features, true);
         Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(true);
@@ -125,7 +132,17 @@ class PostMetaTest extends TestCase
             TEKSTTV_VERSION
         )->once();
         Functions\when('wp_script_is')->justReturn(false);
-        Functions\when('get_the_ID')->justReturn(false);
+        Functions\when('get_the_ID')->justReturn($auto_draft ? 42 : false);
+        if ($auto_draft) {
+            $post = self::makePost();
+            $post->post_date = '0000-00-00 00:00:00';
+            Functions\when('get_post_thumbnail_id')->justReturn(0);
+            Functions\when('get_post_meta')->justReturn('');
+            Functions\when('get_post')->justReturn($post);
+            Functions\when('current_time')->justReturn('2026-08-04');
+            Functions\expect('get_post_status')->with(42)->once()->andReturn('auto-draft');
+            Functions\expect('get_the_title')->never();
+        }
         Functions\when('get_option')->alias(static function (string $name, mixed $default = false) use ($features): mixed {
             return $name === 'teksttv_features' ? $features : $default;
         });
@@ -133,7 +150,17 @@ class PostMetaTest extends TestCase
         Functions\when('wp_json_encode')->alias('json_encode');
         Functions\expect('wp_add_inline_script')->with(
             'teksttv-admin',
-            Mockery::pattern('/^var teksttvPost = .*"pageSeparator":' . ($page_separator ? 'true' : 'false') . '.*;$/'),
+            Mockery::on(static function (string $script) use ($page_separator, $auto_draft): bool {
+                $prefix = 'var teksttvPost = ';
+                if (!str_starts_with($script, $prefix) || !str_ends_with($script, ';')) {
+                    return false;
+                }
+
+                $config = json_decode(substr($script, strlen($prefix), -1), true);
+                return is_array($config)
+                    && $config['pageSeparator'] === $page_separator
+                    && (!$auto_draft || ($config['isNewPost'] === true && $config['fallbackTitle'] === ''));
+            }),
             'before'
         )->once();
     }

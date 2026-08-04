@@ -96,6 +96,8 @@ class PostMeta
 
         $prompts = Helpers::get_ai_prompts();
         $ai_supported = Helpers::ai_supported();
+        $is_new_post = !$post_id || get_post_status($post_id) === 'auto-draft';
+        $fallback_title = $is_new_post ? '' : get_the_title($post_id);
 
         $config = [
             'previewUrl' => $preview_url,
@@ -106,8 +108,8 @@ class PostMeta
             'generateUrl' => rest_url('teksttv/v1/generate'),
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
-            'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
-            'fallbackTitle' => $post_id ? get_the_title($post_id) : '',
+            'isNewPost' => $is_new_post,
+            'fallbackTitle' => $fallback_title,
             'titleCharLimit' => $prompts['title_char_limit'],
             'wordLimit' => $prompts['word_limit'],
             'wordLimitPhoto' => $prompts['word_limit_photo'],

@@ -50,7 +50,31 @@ test.describe('administrator admin screens', () => {
 
             await editor.fill('Eerste slide');
             await page.locator('.teksttv-plain-separator').click();
-            await expect(editor).toHaveValue('Eerste slide\n---');
+            await expect(editor).toHaveValue('Eerste slide\n---\n');
+            await editor.pressSequentially('Tweede slide');
+            await expect(editor).toHaveValue('Eerste slide\n---\nTweede slide');
+
+            await editor.fill('Eerste slide\nTweede slide');
+            await editor.evaluate((element) => {
+                const textarea = element as HTMLTextAreaElement;
+                const separatorPosition = 'Eerste slide'.length;
+                textarea.setSelectionRange(separatorPosition, separatorPosition);
+            });
+            await page.locator('.teksttv-plain-separator').click();
+            await editor.pressSequentially('Nieuwe ');
+            await expect(editor).toHaveValue('Eerste slide\n---\nNieuwe Tweede slide');
+        });
+
+        test('post editor keeps the counter and preview on one slide when separators are disabled', async ({
+            page,
+        }) => {
+            runWp('option', 'update', 'teksttv_features', '["custom_title"]', '--format=json');
+
+            await openFixturePostEditor(page);
+            await page.locator('#teksttv_content').fill('Eerste slide\n---\nTweede slide');
+
+            await expect(page.locator('#teksttv-wordcount')).toHaveText(/^5(?: \/ \d+)? woorden$/);
+            await expect(page.locator('#teksttv-preview-counter')).toHaveText('1 / 1');
         });
 
         test('post editor contains the empty preview at narrow widths', async ({ page }) => {
