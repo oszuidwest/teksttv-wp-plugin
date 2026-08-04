@@ -44,7 +44,8 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          # Reads engines.node so package.json stays the single source of truth.
+          node-version-file: package.json
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

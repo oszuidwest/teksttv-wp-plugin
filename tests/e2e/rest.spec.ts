@@ -34,9 +34,7 @@ test.describe('slides REST endpoint', () => {
     });
 
     test.describe('iframe contract', () => {
-        test.afterEach(async ({ runWordPressPHPFile }) => {
-            await reseedFixtures(runWordPressPHPFile);
-        });
+        test.afterEach(reseedFixtures);
 
         test('serves a representative HTTPS iframe accepted by the frontend schema', async ({
             request,
@@ -59,9 +57,7 @@ test.describe('slides REST endpoint', () => {
     });
 
     test.describe('post metadata persistence', () => {
-        test.afterEach(async ({ runWordPressPHPFile }) => {
-            await reseedFixtures(runWordPressPHPFile);
-        });
+        test.afterEach(reseedFixtures);
 
         test('saves through WordPress and changes the packaged REST payload', async ({
             request,

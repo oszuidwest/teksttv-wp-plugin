@@ -410,9 +410,7 @@ test.describe('admin interaction contracts', () => {
     // above are pure DOM work that a reload discards, so they skip the
     // fixture reseed round-trip.
     test.describe('persisting saves', () => {
-        test.afterEach(async ({ runWordPressPHPFile }) => {
-            await reseedFixtures(runWordPressPHPFile);
-        });
+        test.afterEach(reseedFixtures);
 
         test('preserves an explicit no-weekdays schedule across saving and rendering', async ({ page }) => {
             await page.goto(LOOP_URL);

@@ -134,13 +134,11 @@ export function createPostMetaPage() {
             // missed on a fast page load.
             if (!bindTinyMceEvents()) {
                 let attempts = 0;
-                const retryTinyMceBinding = (): void => {
-                    attempts++;
-                    if (!bindTinyMceEvents() && attempts < 50) {
-                        window.setTimeout(retryTinyMceBinding, 100);
+                const retryTimer = window.setInterval(() => {
+                    if (bindTinyMceEvents() || ++attempts >= 50) {
+                        window.clearInterval(retryTimer);
                     }
-                };
-                window.setTimeout(retryTinyMceBinding, 100);
+                }, 100);
             }
 
             document.addEventListener('input', (e) => {

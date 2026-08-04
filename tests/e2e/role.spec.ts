@@ -10,7 +10,7 @@ test.afterEach(async ({ page, runWordPressPHPFile }) => {
     try {
         expect(await getBrowserErrors(page)).toEqual([]);
     } finally {
-        await reseedFixtures(runWordPressPHPFile);
+        await reseedFixtures({ runWordPressPHPFile });
     }
 });
 

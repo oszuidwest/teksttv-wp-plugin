@@ -14,9 +14,7 @@ test.describe('administrator admin screens', () => {
     });
 
     test.describe('option mutation', () => {
-        test.afterEach(async ({ runWordPressPHPFile }) => {
-            await reseedFixtures(runWordPressPHPFile);
-        });
+        test.afterEach(reseedFixtures);
 
         test('administrator can save settings', async ({ page }) => {
             await page.goto('/wp-admin/admin.php?page=teksttv-settings');
@@ -272,18 +270,14 @@ test.describe('administrator admin screens', () => {
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
         await openFixturePostEditor(page);
         const wordCount = page.locator('#teksttv-wordcount');
-        // Wait for the admin initialization (and its TinyMCE binding retry)
-        // before this test emits the keyup fallback event.
+        // The initial count is rendered synchronously at Alpine init, so this
+        // only confirms the admin script has initialized before the keyup.
         await expect(wordCount).toHaveText(/^5(?: \/ \d+)? woorden$/);
         await page.evaluate(() => {
             // Avoid input/change/SetContent so this specifically covers the keyup fallback.
             const tinyMceEditor = window.tinymce?.get('teksttv_content');
             if (!tinyMceEditor) throw new Error('TinyMCE editor teksttv_content not found.');
-            const setContentWithoutEvents = tinyMceEditor.setContent as (
-                content: string,
-                options: { no_events: boolean },
-            ) => void;
-            setContentWithoutEvents.call(tinyMceEditor, '<p>Twee woorden</p>', { no_events: true });
+            tinyMceEditor.setContent('<p>Twee woorden</p>', { no_events: true });
             tinyMceEditor.fire('keyup');
         });
         await expect(wordCount).toHaveText(/^2(?: \/ \d+)? woorden$/);
