@@ -3,13 +3,6 @@
     color: var(--teksttv-color-content);
 }
 
-.teksttv-meta-box,
-.teksttv-meta-box *,
-.teksttv-meta-box *::before,
-.teksttv-meta-box *::after {
-    box-sizing: border-box;
-}
-
 .teksttv-toggle-bar {
     padding: var(--teksttv-space-lg) var(--teksttv-space-xl);
     background: var(--teksttv-color-surface);
@@ -25,7 +18,8 @@
     cursor: pointer;
 }
 
-.teksttv-toggle-control input {
+.teksttv-toggle-control input,
+.teksttv-day-toggle input[type="checkbox"] {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -94,14 +88,6 @@
     line-height: 1.35;
 }
 
-.teksttv-toggle-description,
-.teksttv-collapsible-description {
-    color: var(--teksttv-color-content-subtle);
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1.4;
-}
-
 .teksttv-fields {
     padding: var(--teksttv-space-xl);
     border-top: 1px solid var(--teksttv-color-border-subtle);
@@ -151,13 +137,6 @@
 
 .teksttv-panel-header h4 {
     font-size: 13px;
-}
-
-.teksttv-panel-header .description,
-.teksttv-preview-header .description {
-    margin: 2px 0 0;
-    color: var(--teksttv-color-content-subtle);
-    line-height: 1.45;
 }
 
 .teksttv-field-group + .teksttv-field-group {
@@ -583,19 +562,6 @@
     min-width: 0;
 }
 
-.teksttv-day-toggle input[type="checkbox"] {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    border: 0;
-    white-space: nowrap;
-}
-
 .teksttv-day-toggle span {
     display: flex;
     min-width: 34px;
@@ -696,14 +662,6 @@
         padding-left: 0;
         border-top: 1px solid var(--teksttv-color-border-subtle);
         border-left: 0;
-    }
-
-    .teksttv-collapsible {
-        padding: 0;
-    }
-
-    .teksttv-scheduling {
-        padding-top: var(--teksttv-space-sm);
     }
 }
 

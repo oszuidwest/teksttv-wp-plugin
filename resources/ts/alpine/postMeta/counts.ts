@@ -22,8 +22,11 @@ export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): v
     footer?.classList.toggle('is-hidden', !hasCount);
 }
 
-export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined, hasPhoto = false): void {
-    const content = getTeksttvEditorHtml();
+export function updateTeksttvWordCount(
+    config: TeksttvPostConfig | undefined,
+    hasPhoto = false,
+    content = getTeksttvEditorHtml(),
+): void {
     const wc = document.querySelector('#teksttv-wordcount');
     if (!(wc instanceof HTMLElement)) return;
 

@@ -23,7 +23,11 @@ export function hasSidebarPhoto(config: TeksttvPostConfig | undefined, customIma
 }
 
 /** Leest kop, body en afbeeldingslijst uit de DOM naar preview-slides. */
-export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, customImageData: ImageData | null): Slide[] {
+export function buildSlidesFromDom(
+    config: TeksttvPostConfig | undefined,
+    customImageData: ImageData | null,
+    content = getTeksttvEditorHtml(),
+): Slide[] {
     const customTitle = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
     const postTitle = (
         (document.querySelector<HTMLInputElement>('#title')?.value ?? '') ||
@@ -32,7 +36,6 @@ export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, custom
     ).trim();
     const fallbackTitle = document.querySelector<HTMLInputElement>('#teksttv-title')?.dataset.fallbackTitle ?? '';
     const title = customTitle || postTitle || fallbackTitle;
-    const content = getTeksttvEditorHtml();
     const result: Slide[] = [];
 
     const expandedPages = splitPages(content, config?.pageSeparator ?? true);

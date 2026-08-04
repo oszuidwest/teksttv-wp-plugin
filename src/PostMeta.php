@@ -142,13 +142,7 @@ class PostMeta
 
     private static function has_rich_text_features(): bool
     {
-        foreach (self::RICH_TEXT_FEATURES as $feature) {
-            if (Helpers::has_feature($feature)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_intersect(self::RICH_TEXT_FEATURES, Helpers::get_features()) !== [];
     }
 
     private static function plain_editor_content(string $content): string
@@ -204,7 +198,7 @@ class PostMeta
             $toolbar_items[] = 'numlist';
         }
         $has_page_separator = Helpers::has_feature('page_separator');
-        $use_tinymce = $toolbar_items !== [];
+        $use_tinymce = self::has_rich_text_features();
         if ($has_page_separator && $use_tinymce) {
             $toolbar_items[] = 'teksttv_separator';
         }

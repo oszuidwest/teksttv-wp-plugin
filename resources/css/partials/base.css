@@ -26,9 +26,13 @@
 
 .teksttv-admin,
 .teksttv-snackbar,
+.teksttv-meta-box,
 .teksttv-admin *,
 .teksttv-admin *::before,
-.teksttv-admin *::after {
+.teksttv-admin *::after,
+.teksttv-meta-box *,
+.teksttv-meta-box *::before,
+.teksttv-meta-box *::after {
     box-sizing: border-box;
 }
 
