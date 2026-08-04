@@ -270,9 +270,14 @@ test.describe('administrator admin screens', () => {
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
         await openFixturePostEditor(page);
         const wordCount = page.locator('#teksttv-wordcount');
-        // The initial count is rendered synchronously at Alpine init, so this
-        // only confirms the admin script has initialized before the keyup.
+
+        await page.waitForFunction(() => Boolean(window.tinymce?.get('teksttv_content')));
         await expect(wordCount).toHaveText(/^5(?: \/ \d+)? woorden$/);
+
+        // Let the initial 500 ms update and 400 ms debounce settle so only the
+        // keyup below can produce the next count.
+        await page.waitForTimeout(1_000);
+
         await page.evaluate(() => {
             // Avoid input/change/SetContent so this specifically covers the keyup fallback.
             const tinyMceEditor = window.tinymce?.get('teksttv_content');

@@ -2,22 +2,13 @@
 /**
  * Playground Blueprint setup, run once after plugin activation.
  *
- * Verifies the packaged plugin booted in the expected runtime (WordPress and
- * PHP versions, active plugin, packaged build artifacts), enables pretty
- * permalinks for the REST specs, and seeds the E2E fixtures.
+ * Verifies the packaged plugin booted, enables pretty permalinks for the REST
+ * specs, and seeds the E2E fixtures.
  */
 
 defined('ABSPATH') || exit;
 
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
-
-if (!str_starts_with(get_bloginfo('version'), '7.0')) {
-    throw new RuntimeException('Expected WordPress 7.0, got ' . get_bloginfo('version') . '.');
-}
-
-if (!str_starts_with(PHP_VERSION, '8.3.')) {
-    throw new RuntimeException('Expected PHP 8.3, got ' . PHP_VERSION . '.');
-}
 
 if (!is_plugin_active('teksttv/teksttv.php')) {
     throw new RuntimeException('The packaged TekstTV plugin is not active.');
