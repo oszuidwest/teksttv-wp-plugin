@@ -29,19 +29,17 @@ final class IframeLoopBlock
         $name = $block['name'] ?? '';
         $url = $block['url'] ?? '';
         $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe']);
-        $name_id = Helpers::field_id($prefix, $index, 'name');
-        $url_id = Helpers::field_id($prefix, $index, 'url');
 
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
-                <label for="<?php echo esc_attr($name_id); ?>"><?php echo esc_html('Naam'); ?></label>
-                <input type="text" id="<?php echo esc_attr($name_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][name]" value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" autocomplete="off" data-summary />
+                <label <?php Helpers::field_for($prefix, $index, 'name'); ?>><?php echo esc_html('Naam'); ?></label>
+                <input type="text" <?php Helpers::field_attrs($prefix, $index, 'name'); ?> value="<?php echo esc_attr((string) $name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Weerdashboard'); ?>" autocomplete="off" data-summary />
                 <p class="description"><?php echo esc_html('Alleen ter herkenning in dit beheerscherm. Wordt niet uitgezonden.'); ?></p>
             </div>
             <div class="teksttv-field teksttv-field--full">
-                <label for="<?php echo esc_attr($url_id); ?>"><?php echo esc_html('URL'); ?></label>
-                <input type="url" id="<?php echo esc_attr($url_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][url]" value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
+                <label <?php Helpers::field_for($prefix, $index, 'url'); ?>><?php echo esc_html('URL'); ?></label>
+                <input type="url" <?php Helpers::field_attrs($prefix, $index, 'url'); ?> value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
             <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), $default_duration); ?>

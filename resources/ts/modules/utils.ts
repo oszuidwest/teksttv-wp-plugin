@@ -1,3 +1,4 @@
+import { markFormDirty } from './dirtyForms';
 import { fadeOutRemove, siblingFocusTarget } from './dom';
 import type { Slide, WPMediaAttachment } from './types';
 
@@ -63,6 +64,8 @@ export function removeImageItem(button: Element, onRemoved?: () => void): void {
             document.querySelector<HTMLElement>('#teksttv-add-images'),
     );
 
+    // Mark dirty while the item is still connected to its form.
+    markFormDirty(item);
     item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
         'input, select, textarea',
     ).forEach((control) => {
@@ -82,6 +85,7 @@ export function removeImageItem(button: Element, onRemoved?: () => void): void {
 export function appendImageItems(list: Element, attachments: WPMediaAttachment[], inputName: string): void {
     const firstNewIndex = list.children.length;
     list.insertAdjacentHTML('beforeend', attachments.map((att) => imageItemHtml(att, inputName)).join(''));
+    markFormDirty(list);
     window.setTimeout(() => {
         list.children[firstNewIndex]?.querySelector<HTMLButtonElement>('.teksttv-remove-image')?.focus();
     });

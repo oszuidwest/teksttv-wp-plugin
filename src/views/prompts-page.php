@@ -191,7 +191,7 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
         </div>
         <?php endif; ?>
 
-        <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
+        <?php AdminPage::render_form_actions(); ?>
     </form>
 </div>
 <?php

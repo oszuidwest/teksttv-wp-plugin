@@ -213,7 +213,7 @@ $render_channel_row = static function (int|string $i, array $ch) use ($api_base_
             </table>
         </div>
 
-        <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
+        <?php AdminPage::render_form_actions(); ?>
     </form>
 
     <template id="tmpl-teksttv-channel-row">

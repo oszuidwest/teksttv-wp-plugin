@@ -40,9 +40,11 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/, reindexBlockUi);
     }
 
+    // Only called after a user-driven add/remove, so marking dirty here is safe.
     function reindexGroups(): void {
         if (!groupsTbody) return;
         reindexNames(groupsTbody, '.teksttv-group-row', /(teksttv_campaign_groups)\[\d+\]/);
+        markFormDirty(groupsTbody);
     }
 
     function refreshSummaries(): void {
@@ -174,7 +176,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!row) return;
             groupsTbody.append(row);
             reindexGroups();
-            markFormDirty(groupsTbody);
             row.querySelector<HTMLInputElement>('input[name$="[label]"]')?.focus();
         },
 
@@ -191,7 +192,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             );
             row.remove();
             reindexGroups();
-            markFormDirty(groupsTbody);
             focusTarget?.focus();
         },
     };

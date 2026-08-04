@@ -26,13 +26,12 @@ final class TickerTextBlock
     public static function render_fields(int|string $index, array $item, string $prefix): void
     {
         $message = $item['message'] ?? '';
-        $message_id = Helpers::field_id($prefix, $index, 'message');
 
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
-                <label for="<?php echo esc_attr($message_id); ?>"><?php echo esc_html('Bericht'); ?></label>
-                <input type="text" id="<?php echo esc_attr($message_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][message]" value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr('Tickertekst…'); ?>" autocomplete="off" data-summary />
+                <label <?php Helpers::field_for($prefix, $index, 'message'); ?>><?php echo esc_html('Bericht'); ?></label>
+                <input type="text" <?php Helpers::field_attrs($prefix, $index, 'message'); ?> value="<?php echo esc_attr((string) $message); ?>" class="large-text" placeholder="<?php echo esc_attr('Tickertekst…'); ?>" autocomplete="off" data-summary />
             </div>
         </div>
         <?php

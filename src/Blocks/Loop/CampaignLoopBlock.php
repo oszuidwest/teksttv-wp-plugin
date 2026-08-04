@@ -35,7 +35,6 @@ final class CampaignLoopBlock
         $outro_url = $outro_id ? wp_get_attachment_image_url((int) $outro_id, 'thumbnail') : '';
         $limit = $block['limit'] ?? '';
         $groups_id = Helpers::field_id($prefix, $index, 'groups');
-        $limit_id = Helpers::field_id($prefix, $index, 'limit');
 
         ?>
         <div class="teksttv-field-grid teksttv-field-grid--campaign-main">
@@ -53,8 +52,8 @@ final class CampaignLoopBlock
                 <?php endif; ?>
             </div>
             <div class="teksttv-field teksttv-field--primary">
-                <label for="<?php echo esc_attr($limit_id); ?>"><?php echo esc_html('Maximaal aantal slides'); ?></label>
-                <input type="number" id="<?php echo esc_attr($limit_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][limit]" value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max. %s" />
+                <label <?php Helpers::field_for($prefix, $index, 'limit'); ?>><?php echo esc_html('Maximaal aantal slides'); ?></label>
+                <input type="number" <?php Helpers::field_attrs($prefix, $index, 'limit'); ?> value="<?php echo esc_attr((string) $limit); ?>" min="1" max="100" class="small-text" placeholder="<?php echo esc_attr('Alle'); ?>" data-summary="max. %s" />
                 <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>

@@ -7,9 +7,11 @@ export function createChannelsSettingsPage() {
     let apiBase = '';
     const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
 
+    // Only called after a user-driven add/remove, so marking dirty here is safe.
     function reindexChannels(): void {
         if (!channelsTbody) return;
         reindexNames(channelsTbody, 'tr', /(teksttv_channels)\[\d+\]/);
+        markFormDirty(channelsTbody);
     }
 
     function updateEndpoint(row: HTMLTableRowElement, slug: string): void {
@@ -39,31 +41,8 @@ export function createChannelsSettingsPage() {
         if (!endpoint || !label) return;
 
         try {
-            let copied = false;
-            if (navigator.clipboard?.writeText) {
-                try {
-                    await navigator.clipboard.writeText(endpoint);
-                    copied = true;
-                } catch {
-                    // Fall through to the legacy command for older WP admin
-                    // contexts and browsers that deny Clipboard API access.
-                }
-            }
-            if (!copied) {
-                const field = document.createElement('textarea');
-                field.value = endpoint;
-                field.setAttribute('readonly', '');
-                field.style.position = 'fixed';
-                field.style.opacity = '0';
-                document.body.append(field);
-                try {
-                    field.select();
-                    copied = document.execCommand('copy');
-                } finally {
-                    field.remove();
-                }
-                if (!copied) throw new Error('Copy command failed');
-            }
+            // Requires a secure context; wp-admin runs on HTTPS (or localhost).
+            await navigator.clipboard.writeText(endpoint);
             label.textContent = 'Gekopieerd!';
         } catch {
             label.textContent = 'Kopiëren mislukt';
@@ -89,7 +68,6 @@ export function createChannelsSettingsPage() {
             if (!row) return;
             channelsTbody.append(row);
             reindexChannels();
-            markFormDirty(channelsTbody);
             row.querySelector<HTMLInputElement>('input[name$="[slug]"]')?.focus();
         },
 
@@ -119,7 +97,6 @@ export function createChannelsSettingsPage() {
             );
             row.remove();
             reindexChannels();
-            markFormDirty(channelsTbody);
             focusTarget?.focus();
         },
     };

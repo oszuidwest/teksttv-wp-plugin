@@ -412,6 +412,28 @@ class AdminPage
     }
 
     /**
+     * Render the shared empty-state placeholder. Repeatable lists render it
+     * always and CSS hides it while items exist (`:has(> .teksttv-block)`).
+     */
+    public static function render_empty_state(string $icon, string $message): void
+    {
+        ?>
+        <div class="teksttv-empty-state">
+            <span class="dashicons dashicons-<?php echo esc_attr($icon); ?>" aria-hidden="true"></span>
+            <p><?php echo esc_html($message); ?></p>
+        </div>
+        <?php
+    }
+
+    /** Render the shared save bar that closes every admin form. */
+    public static function render_form_actions(): void
+    {
+        ?>
+        <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
+        <?php
+    }
+
+    /**
      * Render the shared block header: drag handle, accordion toggle wired to
      * the body via `$body_id`, and the remove button. The classes and ARIA
      * wiring are a contract with the workbench JS; keep every accordion
@@ -472,17 +494,15 @@ class AdminPage
     {
         $date_start = $block['date_start'] ?? '';
         $date_end = $block['date_end'] ?? '';
-        $date_start_id = Helpers::field_id($prefix, $index, 'date-start');
-        $date_end_id = Helpers::field_id($prefix, $index, 'date-end');
 
         ?>
         <div class="teksttv-field">
-            <label for="<?php echo esc_attr($date_start_id); ?>"><?php echo esc_html('Vanaf'); ?></label>
-            <input type="date" id="<?php echo esc_attr($date_start_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_start]" value="<?php echo esc_attr($date_start); ?>" />
+            <label <?php Helpers::field_for($prefix, $index, 'date_start'); ?>><?php echo esc_html('Vanaf'); ?></label>
+            <input type="date" <?php Helpers::field_attrs($prefix, $index, 'date_start'); ?> value="<?php echo esc_attr($date_start); ?>" />
         </div>
         <div class="teksttv-field">
-            <label for="<?php echo esc_attr($date_end_id); ?>"><?php echo esc_html('Tot en met'); ?></label>
-            <input type="date" id="<?php echo esc_attr($date_end_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr($index); ?>][date_end]" value="<?php echo esc_attr($date_end); ?>" />
+            <label <?php Helpers::field_for($prefix, $index, 'date_end'); ?>><?php echo esc_html('Tot en met'); ?></label>
+            <input type="date" <?php Helpers::field_attrs($prefix, $index, 'date_end'); ?> value="<?php echo esc_attr($date_end); ?>" />
         </div>
         <div class="teksttv-field teksttv-field--primary">
             <span class="teksttv-field-label"><?php echo esc_html('Dagen'); ?></span>

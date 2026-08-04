@@ -18,6 +18,28 @@ echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html($page_title) . '</h1>';
 settings_errors('teksttv');
 
+/**
+ * One renderer for both add-menus (blocks and ticker), so the dropdown markup
+ * and its ARIA wiring exist in exactly one place. `$key` derives the element
+ * ids (`teksttv-add-{$key}-*`), the `x-ref`, and the Alpine open-state
+ * (`menu{Key}Open`); `$method` is the Alpine handler that inserts the type.
+ *
+ * @var callable(string, string, array<string, array{icon: string, label: string}>, string): void $render_add_menu
+ */
+$render_add_menu = static function (string $key, string $label, array $types, string $method): void {
+    $state = 'menu' . ucfirst($key) . 'Open';
+    ?>
+    <div class="teksttv-dropdown-button" @click.outside="<?php echo esc_attr($state); ?> = false" @keydown.escape.prevent.stop="<?php echo esc_attr($state); ?> = false; $refs.<?php echo esc_attr($key); ?>Toggle.focus()">
+        <button type="button" class="button teksttv-add-action" id="teksttv-add-<?php echo esc_attr($key); ?>-toggle" x-ref="<?php echo esc_attr($key); ?>Toggle" aria-haspopup="menu" aria-controls="teksttv-add-<?php echo esc_attr($key); ?>-menu" :aria-expanded="<?php echo esc_attr($state); ?>.toString()" @click.prevent.stop="<?php echo esc_attr($state); ?> = !<?php echo esc_attr($state); ?>"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html($label); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon" aria-hidden="true"></span></button>
+        <div class="teksttv-dropdown-menu" id="teksttv-add-<?php echo esc_attr($key); ?>-menu" role="menu" :class="{ 'is-open': <?php echo esc_attr($state); ?> }">
+            <?php foreach ($types as $type_slug => $type_meta) : ?>
+            <button type="button" role="menuitem" data-type="<?php echo esc_attr((string) $type_slug); ?>" @click.prevent="<?php echo esc_attr($state); ?> = false; <?php echo esc_attr($method); ?>('<?php echo esc_js((string) $type_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($type_meta['icon']); ?>" aria-hidden="true"></span> <?php echo esc_html($type_meta['label']); ?></button>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php
+};
+
 ?>
 <div class="teksttv-tab-content teksttv-admin-column" x-data="teksttvLoopPage">
     <form method="post">
@@ -30,24 +52,14 @@ settings_errors('teksttv');
             <h2><?php echo esc_html('Loop'); ?></h2>
             <div id="teksttv-blocks" data-empty-focus="#teksttv-add-block-toggle" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
                 <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
-                <div class="teksttv-empty-state">
-                    <span class="dashicons dashicons-playlist-video" aria-hidden="true"></span>
-                    <p><?php echo esc_html('Nog geen blokken. Voeg een blok toe om te beginnen.'); ?></p>
-                </div>
+                <?php AdminPage::render_empty_state('playlist-video', 'Nog geen blokken. Voeg een blok toe om te beginnen.'); ?>
                 <?php foreach ($blocks as $i => $block) {
                     AdminPage::render_block_generic($i, $block);
                 } ?>
             </div>
 
             <div class="teksttv-add-block-bar teksttv-section-actions">
-                <div class="teksttv-dropdown-button" @click.outside="menuBlockOpen = false" @keydown.escape.prevent.stop="menuBlockOpen = false; $refs.blockToggle.focus()">
-                    <button type="button" class="button teksttv-add-action" id="teksttv-add-block-toggle" x-ref="blockToggle" aria-haspopup="menu" aria-controls="teksttv-add-block-menu" :aria-expanded="menuBlockOpen.toString()" @click.prevent.stop="menuBlockOpen = !menuBlockOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Blok toevoegen'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon" aria-hidden="true"></span></button>
-                    <div class="teksttv-dropdown-menu" id="teksttv-add-block-menu" role="menu" :class="{ 'is-open': menuBlockOpen }">
-                        <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
-                        <button type="button" role="menuitem" data-type="<?php echo esc_attr($block_slug); ?>" @click.prevent="menuBlockOpen = false; addLoopBlock('<?php echo esc_js((string) $block_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($block_meta['icon']); ?>" aria-hidden="true"></span> <?php echo esc_html($block_meta['label']); ?></button>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
+                <?php $render_add_menu('block', 'Blok toevoegen', BlockRegistry::all('loop'), 'addLoopBlock'); ?>
                 <div class="teksttv-view-actions">
                     <button type="button" class="button-link teksttv-action-expand-blocks" id="teksttv-expand-all" @click.prevent="setAllBlocksOpen(true)"><?php echo esc_html('Alles openklappen'); ?></button>
                     <button type="button" class="button-link teksttv-action-collapse-blocks" id="teksttv-collapse-all" @click.prevent="setAllBlocksOpen(false)"><?php echo esc_html('Alles dichtklappen'); ?></button>
@@ -58,25 +70,15 @@ settings_errors('teksttv');
         <section class="teksttv-card teksttv-workbench-section">
             <h2><?php echo esc_html('Tickerberichten'); ?></h2>
             <div id="teksttv-ticker" data-empty-focus="#teksttv-add-ticker-toggle, #teksttv-add-ticker-single" @click="tickerClick($event)" @change="tickerFieldChange($event)" @input="tickerFieldChange($event)">
-                <div class="teksttv-empty-state">
-                    <span class="dashicons dashicons-editor-alignleft" aria-hidden="true"></span>
-                    <p><?php echo esc_html('Nog geen tickerberichten. Voeg een tickerbericht toe om te beginnen.'); ?></p>
-                </div>
+                <?php AdminPage::render_empty_state('editor-alignleft', 'Nog geen tickerberichten. Voeg een tickerbericht toe om te beginnen.'); ?>
                 <?php foreach ($ticker_items as $ti => $ticker_item) :
                     AdminPage::render_block_generic($ti, $ticker_item, 'teksttv_ticker');
                 endforeach; ?>
             </div>
             <div class="teksttv-add-block-bar teksttv-section-actions">
-                <?php if (count($ticker_types) > 1) : ?>
-                <div class="teksttv-dropdown-button" @click.outside="menuTickerOpen = false" @keydown.escape.prevent.stop="menuTickerOpen = false; $refs.tickerToggle.focus()">
-                    <button type="button" class="button teksttv-add-action" id="teksttv-add-ticker-toggle" x-ref="tickerToggle" aria-haspopup="menu" aria-controls="teksttv-add-ticker-menu" :aria-expanded="menuTickerOpen.toString()" @click.prevent.stop="menuTickerOpen = !menuTickerOpen"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Ticker toevoegen'); ?> <span class="dashicons dashicons-arrow-down-alt2 teksttv-button-icon" aria-hidden="true"></span></button>
-                    <div class="teksttv-dropdown-menu" id="teksttv-add-ticker-menu" role="menu" :class="{ 'is-open': menuTickerOpen }">
-                        <?php foreach ($ticker_types as $ticker_slug => $ticker_meta) : ?>
-                        <button type="button" role="menuitem" data-type="<?php echo esc_attr($ticker_slug); ?>" @click.prevent="menuTickerOpen = false; addTickerBlock('<?php echo esc_js((string) $ticker_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($ticker_meta['icon']); ?>" aria-hidden="true"></span> <?php echo esc_html($ticker_meta['label']); ?></button>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php else :
+                <?php if (count($ticker_types) > 1) :
+                    $render_add_menu('ticker', 'Ticker toevoegen', $ticker_types, 'addTickerBlock');
+                else :
                     $single_ticker = array_key_first($ticker_types);
                     ?>
                 <button type="button" class="button teksttv-add-action" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>" @click.prevent="addTickerBlock('<?php echo esc_js((string) $single_ticker); ?>')"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Ticker toevoegen'); ?></button>
@@ -92,7 +94,7 @@ settings_errors('teksttv');
         </template>
         <?php endforeach; ?>
 
-        <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
+        <?php AdminPage::render_form_actions(); ?>
     </form>
 
     <!-- Block templates (generated from registry) -->

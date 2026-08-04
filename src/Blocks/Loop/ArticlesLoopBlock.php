@@ -36,13 +36,12 @@ final class ArticlesLoopBlock
         $count = $block['count'] ?? 3;
         $default_text = (int) get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text']);
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
-        $count_id = Helpers::field_id($prefix, $index, 'count');
 
         ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--compact">
-                <label for="<?php echo esc_attr($count_id); ?>"><?php echo esc_html('Aantal'); ?></label>
-                <input type="number" id="<?php echo esc_attr($count_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][count]" value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
+                <label <?php Helpers::field_for($prefix, $index, 'count'); ?>><?php echo esc_html('Aantal'); ?></label>
+                <input type="number" <?php Helpers::field_attrs($prefix, $index, 'count'); ?> value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>

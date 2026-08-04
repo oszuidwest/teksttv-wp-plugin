@@ -69,10 +69,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
         <h2><?php echo esc_html('Campagnes'); ?></h2>
         <div id="teksttv-campaigns" data-empty-focus="#teksttv-add-campaign" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
             <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
-            <div class="teksttv-empty-state">
-                <span class="dashicons dashicons-megaphone" aria-hidden="true"></span>
-                <p><?php echo esc_html('Nog geen campagnes. Voeg een campagne toe om te beginnen.'); ?></p>
-            </div>
+            <?php AdminPage::render_empty_state('megaphone', 'Nog geen campagnes. Voeg een campagne toe om te beginnen.'); ?>
             <?php foreach ($campaigns as $i => $campaign) {
                 CampaignsPage::render_campaign($i, $campaign, $channels, $groups);
             } ?>
@@ -86,7 +83,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
             </div>
         </div>
     </section>
-    <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
+    <?php AdminPage::render_form_actions(); ?>
 </form>
 
 <template id="tmpl-teksttv-campaign">

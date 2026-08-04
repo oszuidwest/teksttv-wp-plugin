@@ -123,7 +123,6 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
         if (!list || !baseName) return;
         pickImages((attachments) => {
             appendImageItems(list, attachments, baseName);
-            markFormDirty(list);
         });
         return;
     }
@@ -132,7 +131,6 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     if (imgItemRm && blocksRoot.contains(imgItemRm)) {
         e.preventDefault();
         removeImageItem(imgItemRm);
-        markFormDirty(blocksRoot);
         return;
     }
 

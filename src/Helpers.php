@@ -27,6 +27,23 @@ class Helpers
     }
 
     /**
+     * Echo the escaped `for` attribute matching field_attrs() for the same
+     * field. `$field` is the form key (underscores allowed); the id variant
+     * is derived.
+     */
+    public static function field_for(string $prefix, int|string $index, string $field): void
+    {
+        echo 'for="' . esc_attr(self::field_id($prefix, $index, str_replace('_', '-', $field))) . '"';
+    }
+
+    /** Echo the escaped `id` + `name` attribute pair for a repeated admin form field. */
+    public static function field_attrs(string $prefix, int|string $index, string $field): void
+    {
+        echo 'id="' . esc_attr(self::field_id($prefix, $index, str_replace('_', '-', $field))) . '"'
+            . ' name="' . esc_attr($prefix . '[' . (string) $index . '][' . $field . ']') . '"';
+    }
+
+    /**
      * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
      *
      * Keys are PHP-normalised to ints; callers that need string ISO day
