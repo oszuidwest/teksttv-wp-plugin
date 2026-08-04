@@ -79,22 +79,35 @@ class PostMetaTest extends TestCase
         Filters\expectAdded('mce_external_plugins')
             ->with([PostMeta::class, 'register_tinymce_plugin'])
             ->once();
-        $this->stubSuccessfulAssetEnqueue(true);
+        $this->stubSuccessfulAssetEnqueue(['page_separator', 'bold']);
 
         PostMeta::enqueue_assets($hook);
     }
 
     public function test_enqueue_assets_skips_separator_plugin_when_feature_disabled(): void
     {
-        $this->stubSuccessfulAssetEnqueue(false);
+        $this->stubSuccessfulAssetEnqueue(['bold']);
 
         PostMeta::enqueue_assets('post.php');
 
         $this->assertFalse(Filters\has('mce_external_plugins'));
     }
 
-    private function stubSuccessfulAssetEnqueue(bool $page_separator): void
+    public function test_enqueue_assets_skips_separator_plugin_for_plain_text_editor(): void
     {
+        $this->stubSuccessfulAssetEnqueue(['page_separator']);
+
+        PostMeta::enqueue_assets('post.php');
+
+        $this->assertFalse(Filters\has('mce_external_plugins'));
+    }
+
+    /**
+     * @param list<string> $features
+     */
+    private function stubSuccessfulAssetEnqueue(array $features): void
+    {
+        $page_separator = in_array('page_separator', $features, true);
         Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(true);
         Functions\when('get_current_screen')->justReturn((object) ['post_type' => 'post']);
         Functions\expect('wp_enqueue_media')->once();
@@ -113,8 +126,8 @@ class PostMetaTest extends TestCase
         )->once();
         Functions\when('wp_script_is')->justReturn(false);
         Functions\when('get_the_ID')->justReturn(false);
-        Functions\when('get_option')->alias(static function (string $name, mixed $default = false) use ($page_separator): mixed {
-            return $name === 'teksttv_features' ? ($page_separator ? ['page_separator'] : []) : $default;
+        Functions\when('get_option')->alias(static function (string $name, mixed $default = false) use ($features): mixed {
+            return $name === 'teksttv_features' ? $features : $default;
         });
         Functions\when('rest_url')->returnArg();
         Functions\when('wp_json_encode')->alias('json_encode');

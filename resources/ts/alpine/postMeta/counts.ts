@@ -6,16 +6,20 @@ export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): v
     const cc = document.querySelector('#teksttv-charcount');
     if (!(cc instanceof HTMLElement)) return;
 
+    const footer = cc.closest('.teksttv-title-footer');
     const limit = config?.titleCharLimit ?? 0;
     const title = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
     const len = title.length;
+    const hasCount = limit > 0 && len > 0;
 
-    if (limit > 0 && len > 0) {
+    if (hasCount) {
         const over = len > limit;
         cc.innerHTML = `<span${over ? ' class="teksttv-charcount-over"' : ''}>${len} / ${limit} tekens</span>`;
     } else {
         cc.textContent = '';
     }
+
+    footer?.classList.toggle('is-hidden', !hasCount);
 }
 
 export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined, hasPhoto = false): void {

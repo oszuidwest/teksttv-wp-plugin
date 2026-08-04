@@ -4,6 +4,9 @@ namespace TekstTV;
 
 class PostMeta
 {
+    /** @var list<string> */
+    private const RICH_TEXT_FEATURES = ['bold', 'italic', 'underline', 'lists'];
+
     public static function init(): void
     {
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
@@ -53,7 +56,7 @@ class PostMeta
         }
 
         $page_separator = Helpers::has_feature('page_separator');
-        if ($page_separator) {
+        if ($page_separator && self::has_rich_text_features()) {
             // mce_external_plugins is page-level: core applies it once, for the
             // first TinyMCE editor initialized, and merges the result into every
             // editor on the page. Per-editor scoping happens via the toolbar in
@@ -137,6 +140,28 @@ class PostMeta
         return (new \DateTimeImmutable($start_date))->modify('+' . $default_days . ' days')->format('Y-m-d');
     }
 
+    private static function has_rich_text_features(): bool
+    {
+        foreach (self::RICH_TEXT_FEATURES as $feature) {
+            if (Helpers::has_feature($feature)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function plain_editor_content(string $content): string
+    {
+        $content = preg_replace('/<br\s*\/?>/i', "\n", $content) ?? $content;
+        $content = preg_replace('/<\/(?:p|li|div)>/i', "\n", $content) ?? $content;
+        $content = wp_strip_all_tags($content);
+        $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $content = preg_replace("/\r\n?/", "\n", $content) ?? $content;
+
+        return preg_replace("/\n{3,}/", "\n\n", $content) ?? $content;
+    }
+
     public static function render_meta_box(\WP_Post $post): void
     {
         wp_nonce_field('teksttv_save_meta', 'teksttv_meta_nonce');
@@ -174,21 +199,17 @@ class PostMeta
         if (Helpers::has_feature('underline')) {
             $toolbar_items[] = 'underline';
         }
-        if (!empty($toolbar_items)) {
-            $toolbar_items[] = '|';
-        }
         if (Helpers::has_feature('lists')) {
             $toolbar_items[] = 'bullist';
             $toolbar_items[] = 'numlist';
-            $toolbar_items[] = '|';
         }
-        if (Helpers::has_feature('page_separator')) {
+        $has_page_separator = Helpers::has_feature('page_separator');
+        $use_tinymce = $toolbar_items !== [];
+        if ($has_page_separator && $use_tinymce) {
             $toolbar_items[] = 'teksttv_separator';
-            $toolbar_items[] = '|';
         }
-        $toolbar_items[] = 'removeformat';
-        $toolbar_items[] = 'undo';
-        $toolbar_items[] = 'redo';
+
+        $plain_content = $use_tinymce ? '' : self::plain_editor_content((string) $content);
 
         $valid_elements = ['br', 'p'];
         if (Helpers::has_feature('bold')) {

@@ -1,26 +1,10 @@
-.teksttv-editor-layout {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-}
-
-.teksttv-editor-main {
-    flex: 1;
-    min-width: 0;
-}
-
 .teksttv-editor-preview {
-    width: 400px;
-    flex-shrink: 0;
     position: sticky;
     top: 40px;
 }
 
 .teksttv-preview-header {
-    display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
 }
 
 .teksttv-preview-nav {
@@ -30,10 +14,10 @@
 }
 
 .teksttv-preview-nav .button {
-    padding: 0 4px;
-    min-height: 28px;
-    min-width: 28px;
     display: flex;
+    min-width: var(--teksttv-control-height);
+    min-height: var(--teksttv-control-height);
+    padding: 0 4px;
     align-items: center;
     justify-content: center;
 }
@@ -45,20 +29,20 @@
 }
 
 .teksttv-preview-counter {
+    min-width: 40px;
+    color: var(--teksttv-color-content-subtle);
     font-size: 12px;
     font-weight: 600;
-    color: #50575e;
-    min-width: 40px;
     text-align: center;
 }
 
 .teksttv-preview-container {
     position: relative;
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
     overflow: hidden;
+    border: 1px solid var(--teksttv-color-border);
+    border-radius: var(--teksttv-radius-control);
     aspect-ratio: 16 / 9;
-    background: #1d2327;
+    background: var(--teksttv-color-content);
 }
 
 .teksttv-preview-container.is-loading::before {
@@ -95,8 +79,8 @@
 
 .teksttv-preview-thumbs {
     display: flex;
-    gap: 6px;
-    margin-top: 8px;
+    gap: var(--teksttv-space-sm);
+    margin-top: var(--teksttv-space-sm);
     overflow-x: auto;
     padding: 4px 0;
 }
@@ -115,24 +99,24 @@
     position: absolute;
     inset: 0;
     z-index: 1;
-    border: 2px solid #c3c4c7;
-    border-radius: 3px;
+    border: 2px solid var(--teksttv-color-border);
+    border-radius: var(--teksttv-radius-control);
     background: transparent;
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: border-color var(--teksttv-motion-fast) var(--teksttv-motion-easing);
 }
 
 .teksttv-preview-thumb:hover {
-    border-color: #8c8f94;
+    border-color: var(--teksttv-color-border-strong);
 }
 
 .teksttv-preview-thumb.is-active {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px #2271b1;
+    border-color: var(--teksttv-color-accent);
+    box-shadow: 0 0 0 1px var(--teksttv-color-accent);
 }
 
 .teksttv-preview-thumb:focus-visible {
-    outline: 2px solid #2271b1;
+    outline: 2px solid var(--wpds-color-stroke-focus, var(--teksttv-color-accent));
     outline-offset: -4px;
 }
 
@@ -167,7 +151,7 @@
     z-index: 2;
     background: rgba(0, 0, 0, 0.5);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--teksttv-radius-control);
     color: #fff;
     width: 28px;
     height: 28px;
@@ -176,7 +160,9 @@
     justify-content: center;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.15s;
+    transition:
+        opacity var(--teksttv-motion-fast) var(--teksttv-motion-easing),
+        background-color var(--teksttv-motion-fast) var(--teksttv-motion-easing);
     padding: 0;
 }
 
@@ -303,23 +289,37 @@
 }
 
 .teksttv-no-preview {
-    padding: 20px;
-    text-align: center;
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    padding: var(--teksttv-space-xl);
+    border: 1px dashed var(--teksttv-color-border);
+    border-radius: var(--teksttv-radius-control);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: var(--teksttv-color-surface-subtle);
     color: var(--teksttv-color-content-subtle);
-    background: #f6f7f7;
-    border: 1px dashed #c3c4c7;
-    border-radius: 4px;
     font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
 }
 
-@media (max-width: 1200px) {
-    .teksttv-editor-layout {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .teksttv-editor-preview {
-        width: 100%;
-        max-width: 500px;
-        position: static;
-    }
+.teksttv-no-preview > .dashicons {
+    width: 32px;
+    height: 32px;
+    margin-bottom: var(--teksttv-space-sm);
+    color: var(--teksttv-color-content-muted);
+    font-size: 32px;
+}
+
+.teksttv-no-preview strong {
+    color: var(--teksttv-color-content);
+    font-size: 14px;
+}
+
+.teksttv-no-preview p {
+    max-width: 34ch;
+    margin: var(--teksttv-space-xs) 0 0;
 }

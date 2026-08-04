@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBrowserErrors, openFixturePostEditor } from './helpers';
+import { getBrowserErrors, openFixturePostEditor, runWp } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 
 test.afterEach(async ({ page }) => {
@@ -148,6 +148,87 @@ test.describe('administrator admin screens', () => {
         expect(Math.abs(layoutWidth - mainWidth)).toBeLessThan(1);
     });
 
+    test('post editor uses an equal split studio on desktop', async ({ page }) => {
+        await page.setViewportSize({ width: 1600, height: 1000 });
+        await openFixturePostEditor(page);
+
+        const layout = page.locator('.teksttv-editor-layout');
+        const main = layout.locator('.teksttv-editor-main');
+        const preview = layout.locator('.teksttv-editor-preview');
+        const [mainBox, previewBox] = await Promise.all([
+            main.evaluate((element) => element.getBoundingClientRect().toJSON()),
+            preview.evaluate((element) => element.getBoundingClientRect().toJSON()),
+        ]);
+
+        expect(Math.abs(mainBox.width - previewBox.width)).toBeLessThan(1);
+        expect(previewBox.left - mainBox.right).toBeLessThanOrEqual(1);
+        await expect(main).toHaveCSS('border-right-style', 'solid');
+        await expect(page.getByRole('heading', { name: 'Schrijven', exact: true })).toBeVisible();
+
+        const placeholderRatio = await preview.evaluate((element) => {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'teksttv-no-preview';
+            element.append(placeholder);
+            const box = placeholder.getBoundingClientRect();
+            placeholder.remove();
+            return box.width / box.height;
+        });
+        expect(Math.abs(placeholderRatio - 16 / 9)).toBeLessThan(0.01);
+    });
+
+    test('post editor sections and controls stay within the mobile viewport', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await openFixturePostEditor(page);
+
+        const metaBox = page.locator('.teksttv-meta-box');
+        const overflow = await metaBox.evaluate((element) => element.scrollWidth - element.clientWidth);
+        expect(overflow).toBeLessThanOrEqual(1);
+
+        const bounds = await metaBox.evaluate((element) => element.getBoundingClientRect().toJSON());
+        const panelBounds = await metaBox
+            .locator('.teksttv-content-section, .teksttv-editor-preview, .teksttv-media-section, .teksttv-collapsible')
+            .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().toJSON()));
+        expect(panelBounds.every((panel) => panel.left >= bounds.left && panel.right <= bounds.right + 1)).toBe(true);
+
+        const imageCards = page.locator('.teksttv-image-card');
+        await expect(imageCards).toHaveCount(3);
+        const cardWidths = await imageCards.evaluateAll((cards) =>
+            cards.map((card) => card.getBoundingClientRect().width),
+        );
+        expect(cardWidths.every((width) => width >= 80)).toBe(true);
+
+        await expect(page.locator('#teksttv-active')).toHaveAccessibleName(/Toon op Tekst TV/);
+        await expect(page.locator('#teksttv-add-images .dashicons')).toHaveCount(0);
+        await expect(page.locator('#teksttv_content-html')).toHaveCount(0);
+        await expect(page.getByText('Nieuwe slide', { exact: true })).toBeVisible();
+        const editorToolbarHeight = await page
+            .locator('#wp-teksttv_content-editor-container .mce-toolbar-grp')
+            .evaluate((element) => element.getBoundingClientRect().height);
+        expect(editorToolbarHeight).toBeLessThanOrEqual(60);
+        const controlHeights = await Promise.all([
+            page.locator('#teksttv-title').evaluate((element) => element.getBoundingClientRect().height),
+            page.locator('#teksttv-add-images').evaluate((element) => element.getBoundingClientRect().height),
+        ]);
+        expect(controlHeights.every((height) => height >= 40)).toBe(true);
+
+        const titleFooter = page.locator('.teksttv-title-footer');
+        await expect(titleFooter).toHaveClass(/is-hidden/);
+        const emptyTitleGap = await page.locator('#teksttv-title').evaluate((title) => {
+            const textLabel = document.querySelector<HTMLLabelElement>('label[for="teksttv_content"]');
+            if (!textLabel) throw new Error('Tekst label not found.');
+            return textLabel.getBoundingClientRect().top - title.getBoundingClientRect().bottom;
+        });
+        expect(emptyTitleGap).toBeLessThanOrEqual(32);
+
+        await page.locator('#teksttv-title').fill('Korte kop');
+        await expect(titleFooter).not.toHaveClass(/is-hidden/);
+        const [characterCountRight, wordCountRight] = await Promise.all([
+            page.locator('#teksttv-charcount').evaluate((element) => element.getBoundingClientRect().right),
+            page.locator('#teksttv-wordcount').evaluate((element) => element.getBoundingClientRect().right),
+        ]);
+        expect(Math.abs(characterCountRight - wordCountRight)).toBeLessThanOrEqual(1);
+    });
+
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
         await openFixturePostEditor(page);
         const editor = page.frameLocator('#teksttv_content_ifr').locator('body');
@@ -167,6 +248,29 @@ test.describe('administrator admin screens', () => {
         await enlarge.focus();
         await expect(enlarge).toBeFocused();
         await expect(enlarge).toHaveCSS('opacity', '1');
+    });
+
+    test('post editor uses a plain textarea when rich text options are disabled', async ({ page }) => {
+        runWp('option', 'update', 'teksttv_features', '["custom_title","page_separator"]', '--format=json');
+
+        try {
+            await openFixturePostEditor(page);
+
+            const editor = page.locator('#teksttv_content');
+            await expect(editor).toBeVisible();
+            await expect(page.locator('#teksttv_content_ifr')).toHaveCount(0);
+            await expect(page.locator('#wp-teksttv_content-editor-container')).toHaveCount(0);
+            await expect(page.locator('#teksttv-title')).toHaveAttribute(
+                'placeholder',
+                'Laat leeg om de titel van het artikel te gebruiken.',
+            );
+
+            await editor.fill('Eerste slide');
+            await page.locator('.teksttv-plain-separator').click();
+            await expect(editor).toHaveValue('Eerste slide\n---');
+        } finally {
+            reseedFixtures();
+        }
     });
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {

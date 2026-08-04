@@ -30,9 +30,8 @@ export function buildSlidesFromDom(config: TeksttvPostConfig | undefined, custom
         (document.querySelector<HTMLInputElement>('input[name="post_title"]')?.value ?? '') ||
         ''
     ).trim();
-    const placeholderTitle =
-        document.querySelector<HTMLInputElement>('#teksttv-title')?.getAttribute('placeholder') ?? '';
-    const title = customTitle || postTitle || placeholderTitle;
+    const fallbackTitle = document.querySelector<HTMLInputElement>('#teksttv-title')?.dataset.fallbackTitle ?? '';
+    const title = customTitle || postTitle || fallbackTitle;
     const content = getTeksttvEditorHtml();
     const result: Slide[] = [];
 
