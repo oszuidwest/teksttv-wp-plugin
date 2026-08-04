@@ -29,7 +29,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
             <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
             <label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Naam'); ?></span><input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. Campagne'); ?>" autocomplete="off" /></label>
         </td>
-        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group" aria-label="<?php echo esc_attr('Groep verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group"><?php echo esc_html('Verwijderen'); ?></button></td>
     </tr>
     <?php
 };
@@ -61,7 +61,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
             </table>
         </div>
         <div class="teksttv-add-block-bar teksttv-section-actions">
-            <button type="button" class="button teksttv-add-action" id="teksttv-add-group" @click.prevent="addGroupRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Groep toevoegen'); ?></button>
+            <button type="button" class="button teksttv-add-action" id="teksttv-add-group" @click.prevent="addGroupRow()"><?php echo esc_html('Groep toevoegen'); ?></button>
         </div>
     </section>
 
@@ -69,14 +69,14 @@ $render_group_row = static function (int|string $gi, array $group): void {
         <h2><?php echo esc_html('Campagnes'); ?></h2>
         <div id="teksttv-campaigns" data-empty-focus="#teksttv-add-campaign" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
             <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
-            <?php AdminPage::render_empty_state('megaphone', 'Nog geen campagnes. Voeg een campagne toe om te beginnen.'); ?>
+            <?php AdminPage::render_empty_state('megaphone', 'Nog geen campagnes', 'Voeg een campagne toe en koppel daarna de gewenste slides.'); ?>
             <?php foreach ($campaigns as $i => $campaign) {
                 CampaignsPage::render_campaign($i, $campaign, $channels, $groups);
             } ?>
         </div>
 
         <div class="teksttv-add-block-bar teksttv-section-actions">
-            <button type="button" class="button teksttv-add-action" id="teksttv-add-campaign" @click.prevent="addCampaignBlock()"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php echo esc_html('Campagne toevoegen'); ?></button>
+            <button type="button" class="button teksttv-add-action" id="teksttv-add-campaign" @click.prevent="addCampaignBlock()"><?php echo esc_html('Campagne toevoegen'); ?></button>
             <div class="teksttv-view-actions">
                 <button type="button" class="button-link teksttv-action-expand-blocks" id="teksttv-expand-all" @click.prevent="setAllBlocksOpen(true)"><?php echo esc_html('Alles openklappen'); ?></button>
                 <button type="button" class="button-link teksttv-action-collapse-blocks" id="teksttv-collapse-all" @click.prevent="setAllBlocksOpen(false)"><?php echo esc_html('Alles dichtklappen'); ?></button>

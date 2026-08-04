@@ -2,6 +2,7 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Common\DurationField;
@@ -38,19 +39,23 @@ final class ArticlesLoopBlock
         $default_image = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
 
         ?>
-        <div class="teksttv-field-grid">
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke artikelen komen in de loop?', 'content'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--selection">
             <div class="teksttv-field teksttv-field--compact">
                 <label <?php Helpers::field_for($prefix, $index, 'count'); ?>><?php echo esc_html('Aantal'); ?></label>
                 <input type="number" <?php Helpers::field_attrs($prefix, $index, 'count'); ?> value="<?php echo esc_attr((string) $count); ?>" min="1" max="50" class="small-text" data-summary="%sx" />
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($block['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
         <div class="teksttv-field-grid teksttv-field-grid--duration">
             <?php
-            DurationField::render($prefix, $index, 'duration_text', 'Duur tekst', (string) ($block['duration_text'] ?? ''), $default_text);
-            DurationField::render($prefix, $index, 'duration_image', 'Duur afbeelding', (string) ($block['duration_image'] ?? ''), $default_image);
+            DurationField::render($prefix, $index, 'duration_text', 'Tekst', (string) ($block['duration_text'] ?? ''), $default_text);
+            DurationField::render($prefix, $index, 'duration_image', 'Afbeelding', (string) ($block['duration_image'] ?? ''), $default_image);
             ?>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 

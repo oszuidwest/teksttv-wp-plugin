@@ -1,5 +1,6 @@
 import { markFormDirty } from '../modules/dirtyForms';
 import { cloneTemplate, reindexNames, siblingFocusTarget } from '../modules/dom';
+import { removeElementWithUndo } from '../modules/undo';
 
 /** Settings tab: repeatable channel rows. */
 export function createChannelsSettingsPage() {
@@ -95,9 +96,14 @@ export function createChannelsSettingsPage() {
                 'input[name$="[slug]"]',
                 document.querySelector<HTMLElement>('#teksttv-add-channel'),
             );
-            row.remove();
-            reindexChannels();
-            focusTarget?.focus();
+            removeElementWithUndo(row, {
+                message: 'Kanaal verwijderd.',
+                focusAfterRemove: focusTarget,
+                focusAfterRestore: (restored) => restored.querySelector('input[name$="[slug]"]'),
+                focusUndo: e.detail === 0,
+                onRemove: reindexChannels,
+                onRestore: reindexChannels,
+            });
         },
     };
 }

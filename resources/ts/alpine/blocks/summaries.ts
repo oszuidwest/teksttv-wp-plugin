@@ -50,7 +50,14 @@ export function updateBlockSummaries(blocksEl: HTMLElement): void {
         });
 
         const summary = [...new Set(parts)].join(' · ');
+        const fullSummary = summary + getSchedulingSuffix(blockEl);
         const sumEl = blockEl.querySelector('.teksttv-block-summary');
-        if (sumEl) sumEl.textContent = summary + getSchedulingSuffix(blockEl);
+        if (blockEl.dataset.summaryAsTitle) {
+            const title = blockEl.querySelector('.teksttv-block-title');
+            if (title) title.textContent = summary || blockEl.dataset.summaryAsTitle;
+            if (sumEl) sumEl.textContent = '';
+        } else if (sumEl) {
+            sumEl.textContent = fullSummary;
+        }
     });
 }

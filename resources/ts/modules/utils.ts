@@ -1,6 +1,7 @@
 import { markFormDirty } from './dirtyForms';
-import { fadeOutRemove, siblingFocusTarget } from './dom';
+import { siblingFocusTarget } from './dom';
 import type { Slide, WPMediaAttachment } from './types';
+import { removeElementWithUndo } from './undo';
 
 /** Escape a string for safe insertion into an HTML attribute. */
 export function escAttr(value: string | number): string {
@@ -51,10 +52,9 @@ export function stripTags(html: string): string {
 }
 
 /**
- * Remove the image item owning a remove button. Disable its form controls
- * before fading so an immediate save cannot submit an item that appears gone.
+ * Remove the image item owning a remove button and offer an undo action.
  */
-export function removeImageItem(button: Element, onRemoved?: () => void): void {
+export function removeImageItem(button: Element, onRemoved?: () => void, focusUndo = false): void {
     const item = button.closest('.teksttv-image-item');
     if (!(item instanceof HTMLElement)) return;
     const focusTarget = siblingFocusTarget(
@@ -66,14 +66,13 @@ export function removeImageItem(button: Element, onRemoved?: () => void): void {
 
     // Mark dirty while the item is still connected to its form.
     markFormDirty(item);
-    item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
-        'input, select, textarea',
-    ).forEach((control) => {
-        control.disabled = true;
-    });
-    fadeOutRemove(item, 150, () => {
-        onRemoved?.();
-        focusTarget?.focus();
+    removeElementWithUndo(item, {
+        message: 'Afbeelding verwijderd.',
+        focusAfterRemove: focusTarget,
+        focusAfterRestore: (restored) => restored.querySelector('.teksttv-remove-image'),
+        focusUndo,
+        onRemove: onRemoved,
+        onRestore: onRemoved,
     });
 }
 

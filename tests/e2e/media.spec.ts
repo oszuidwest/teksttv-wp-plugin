@@ -53,6 +53,7 @@ test.describe('media picker interactions', () => {
         });
 
         const customCard = page.locator('#teksttv-sidebar-card-custom');
+        await expect(customCard).toHaveAttribute('aria-pressed', 'false');
         await customCard.click();
         await selectFixtureImage(page);
         await requestStarted;
@@ -62,6 +63,8 @@ test.describe('media picker interactions', () => {
         await noneCard.click();
         await expect(idField).toHaveValue('0');
         await expect(noneCard).toHaveClass(/is-active/);
+        await expect(noneCard).toHaveAttribute('aria-pressed', 'true');
+        await expect(customCard).toHaveAttribute('aria-pressed', 'false');
 
         const response = page.waitForResponse('**/wp-json/teksttv/v1/image-data?**');
         releaseResponse();
@@ -141,12 +144,16 @@ test.describe('media picker interactions', () => {
             await expect(frame).toHaveAttribute('aria-hidden', 'true');
         }
 
-        const inputDisabledImmediately = await existingItem.locator('.teksttv-remove-image').evaluate((button) => {
-            button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-            const input = button.closest('.teksttv-image-item')?.querySelector('input[name="teksttv_images[]"]');
-            return input instanceof HTMLInputElement && input.disabled;
-        });
-        expect(inputDisabledImmediately).toBe(true);
+        await existingItem.locator('.teksttv-remove-image').click();
+        await expect(existingItem).toHaveCount(0);
+        await expect(previewCounter).toHaveText('1 / 1');
+        await expect(page.locator('#teksttv-snackbar')).toContainText('Afbeelding verwijderd.');
+
+        await page.locator('.teksttv-snackbar-action').click();
+        await expect(existingItem).toHaveCount(1);
+        await expect(previewCounter).toHaveText('1 / 2');
+
+        await existingItem.locator('.teksttv-remove-image').click();
         await expect(existingItem).toHaveCount(0);
         await expect(previewCounter).toHaveText('1 / 1');
 

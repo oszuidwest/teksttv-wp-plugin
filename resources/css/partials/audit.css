@@ -29,7 +29,7 @@
 
 .teksttv-audit-stat-label {
     font-size: 12px;
-    color: #787c82;
+    color: var(--teksttv-color-content-subtle);
     margin-top: 4px;
 }
 
@@ -54,15 +54,15 @@
 
 .teksttv-audit-badge--ok {
     background: #edfaef;
-    color: #00a32a;
+    color: #006b1b;
 }
 
 .teksttv-audit-badge--edited {
     background: #fef8ee;
-    color: #bd8600;
+    color: #704700;
 }
 
 .teksttv-audit-badge--none {
     background: #f0f0f1;
-    color: #787c82;
+    color: var(--teksttv-color-content-subtle);
 }

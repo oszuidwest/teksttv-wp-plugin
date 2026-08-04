@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chromium, type FullConfig } from '@playwright/test';
-import { ADMIN_STORAGE_STATE, login } from './helpers';
+import { ADMIN_STORAGE_STATE, login, runWp } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 
 /**
@@ -14,6 +14,7 @@ import { reseedFixtures } from './reseed-fixtures';
  * (role.spec.ts opts out to test its own user).
  */
 export default async function globalSetup(config: FullConfig): Promise<void> {
+    runWp('rewrite', 'structure', '/%postname%/');
     reseedFixtures();
 
     const { baseURL } = config.projects[0].use;

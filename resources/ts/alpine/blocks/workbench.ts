@@ -2,9 +2,10 @@ import Sortable from 'sortablejs';
 import { markFormDirty } from '../../modules/dirtyForms';
 import { cloneTemplate, reindexNames, siblingFocusTarget } from '../../modules/dom';
 import { initTomSelectIn } from '../../modules/tomSelect';
+import { removeElementWithUndo } from '../../modules/undo';
 import { debounce } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
-import { handleBlockControlsClick, handleBlocksClick, setBlockOpen } from './handleBlocksClick';
+import { handleBlockControlsClick, handleBlocksClick, initBlockActionMenus, setBlockOpen } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -123,9 +124,13 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             if (!blocksEl) return;
 
             initSortable(blocksEl, reindexBlocks);
+            initBlockActionMenus(blocksEl);
 
             tickerEl = document.querySelector<HTMLElement>('#teksttv-ticker');
-            if (opts.ticker && tickerEl) initSortable(tickerEl, reindexTicker);
+            if (opts.ticker && tickerEl) {
+                initSortable(tickerEl, reindexTicker);
+                initBlockActionMenus(tickerEl);
+            }
 
             refreshSummaries();
             reindexBlocks();
@@ -197,9 +202,14 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 'input[name$="[label]"]',
                 document.querySelector<HTMLElement>('#teksttv-add-group'),
             );
-            row.remove();
-            reindexGroups();
-            focusTarget?.focus();
+            removeElementWithUndo(row, {
+                message: 'Groep verwijderd.',
+                focusAfterRemove: focusTarget,
+                focusAfterRestore: (restored) => restored.querySelector('input[name$="[label]"]'),
+                focusUndo: e.detail === 0,
+                onRemove: reindexGroups,
+                onRestore: reindexGroups,
+            });
         },
     };
 }

@@ -31,26 +31,44 @@ async function expectSequentialNames(root: Locator, itemSelector: string, prefix
 // intermediate mousemove events, which dragTo does not emit.
 async function dragBlockToStart(page: Page, sourceBlock: Locator, targetBlock: Locator): Promise<void> {
     const source = await sourceBlock.locator('.teksttv-block-handle').boundingBox();
-    const target = await targetBlock.locator('.teksttv-block-handle').boundingBox();
+    const target = await targetBlock.boundingBox();
     if (!source || !target) throw new Error('Sortable handles must be visible before dragging.');
 
     await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
     await page.mouse.down();
     await page.waitForTimeout(100);
-    await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 20 });
+    await page.mouse.move(target.x + Math.min(target.width / 2, 80), target.y + 1, { steps: 20 });
     await page.waitForTimeout(200);
     await page.mouse.up();
+}
+
+async function openBlockActions(block: Locator): Promise<void> {
+    const actions = block.locator('.teksttv-block-actions');
+    if ((await actions.getAttribute('open')) === null) await actions.locator('.teksttv-block-actions-toggle').click();
+    await expect(actions).toHaveAttribute('open', '');
 }
 
 test.describe('admin interaction contracts', () => {
     test('adds every registered loop block expanded at the next free index', async ({ page }) => {
         await page.goto(LOOP_URL);
 
+        const addToggle = page.locator('#teksttv-add-block-toggle');
+        const addMenu = page.locator('#teksttv-add-block-menu');
+        await expect(addToggle).not.toHaveAttribute('aria-haspopup', 'menu');
+        await expect(addMenu).not.toHaveAttribute('role', 'menu');
+        await expect(addMenu.locator('button').first()).not.toHaveAttribute('role', 'menuitem');
+
         const types = await page
             .locator('#teksttv-add-block-menu button[data-type]')
             .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('data-type')));
         // The menu is registry-driven; assert the built-ins are present without pinning order or forbidding add-ons.
         expect(types).toEqual(expect.arrayContaining(['articles', 'image', 'iframe', 'campaign', 'weather']));
+
+        await addToggle.click();
+        await addMenu.locator('button').last().focus();
+        await page.keyboard.press('Tab');
+        await expect(addMenu).toBeHidden();
+        await expect(addToggle).toHaveAttribute('aria-expanded', 'false');
 
         const initialCount = await page.locator('#teksttv-blocks > .teksttv-block').count();
         for (const [offset, type] of types.entries()) {
@@ -105,10 +123,12 @@ test.describe('admin interaction contracts', () => {
 
         await addLoopBlock(page, 'image');
         await expect(blocks.nth(initialCount).locator('.teksttv-block-toggle-control')).toBeFocused();
+        await openBlockActions(blocks.nth(initialCount));
         await expect(blocks.nth(initialCount).locator('.teksttv-remove-block')).toHaveAccessibleName(/verwijder blok/i);
 
         await addLoopBlock(page, 'iframe');
         await expect(blocks.nth(initialCount + 1).locator('.teksttv-block-toggle-control')).toBeFocused();
+        await openBlockActions(blocks.nth(initialCount));
         await blocks.nth(initialCount).locator('.teksttv-remove-block').click();
 
         await expect(blocks).toHaveCount(initialCount + 1);
@@ -117,6 +137,41 @@ test.describe('admin interaction contracts', () => {
             .locator('.teksttv-block-toggle-control')
             .evaluateAll((toggles) => toggles.map((toggle) => toggle.getAttribute('aria-controls')));
         expect(new Set(controlledIds).size).toBe(controlledIds.length);
+    });
+
+    test('keeps keyboard undo persistent and restores focus to the removed block', async ({ page }) => {
+        await page.goto(LOOP_URL);
+        await addLoopBlock(page, 'image');
+
+        const imageBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="image"]').last();
+        await openBlockActions(imageBlock);
+        const remove = imageBlock.locator('.teksttv-remove-block');
+        await remove.focus();
+        await page.keyboard.press('Enter');
+
+        const snackbar = page.locator('#teksttv-snackbar');
+        const undo = snackbar.locator('.teksttv-snackbar-action');
+        await expect(imageBlock).toHaveCount(0);
+        await expect(snackbar).toBeVisible();
+        await expect(undo).toBeFocused();
+        await page.waitForTimeout(8_100);
+        await expect(snackbar).toBeVisible();
+
+        await page.keyboard.press('Enter');
+        const restored = page.locator('#teksttv-blocks > .teksttv-block[data-type="image"]').last();
+        await expect(restored).toHaveCount(1);
+        await expect(restored.locator('.teksttv-block-toggle-control')).toBeFocused();
+    });
+
+    test('closes block actions when keyboard focus leaves the menu', async ({ page }) => {
+        await page.goto(LOOP_URL);
+        const block = page.locator('#teksttv-blocks > .teksttv-block').first();
+        await openBlockActions(block);
+
+        const actions = block.locator('.teksttv-block-actions');
+        await block.locator('.teksttv-remove-block').focus();
+        await page.keyboard.press('Tab');
+        await expect(actions).not.toHaveAttribute('open', '');
     });
 
     test('shows the shared empty state again after removing the last workbench item', async ({ page }) => {
@@ -130,7 +185,9 @@ test.describe('admin interaction contracts', () => {
                 await removeButtons.first().dispatchEvent('click');
                 await expect(removeButtons).toHaveCount(previousCount - 1);
             }
-            await expect(root.locator(':scope > .teksttv-empty-state')).toBeVisible();
+            const emptyState = root.locator(':scope > .teksttv-empty-state');
+            await expect(emptyState).toBeVisible();
+            await expect(emptyState.locator('button')).toHaveCount(0);
         }
 
         await addLoopBlock(page, 'articles');
@@ -139,28 +196,28 @@ test.describe('admin interaction contracts', () => {
         await expect(page.locator('#teksttv-ticker > .teksttv-empty-state')).toBeHidden();
     });
 
-    test('removes a middle loop block and reindexes every remaining field', async ({ page }) => {
+    test('removes, restores and reindexes a middle loop block through the snackbar', async ({ page }) => {
         await page.goto(LOOP_URL);
         await addLoopBlock(page, 'image');
         await addLoopBlock(page, 'iframe');
 
         const blocks = page.locator('#teksttv-blocks > .teksttv-block');
-        const disabledStates = await blocks
-            .nth(1)
-            .locator('.teksttv-remove-block')
-            .evaluate((button) => {
-                button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-                const block = button.closest('.teksttv-block');
-                const controls = block?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
-                    'input, select, textarea',
-                );
-                return Array.from(controls ?? [], (control) => control.disabled);
-            });
-        expect(disabledStates.length).toBeGreaterThan(0);
-        expect(disabledStates.every(Boolean)).toBe(true);
+        await openBlockActions(blocks.nth(1));
+        await blocks.nth(1).locator('.teksttv-remove-block').click();
         await expect(blocks).toHaveCount(2);
         await expect(blocks.nth(0)).toHaveAttribute('data-type', 'articles');
         await expect(blocks.nth(1)).toHaveAttribute('data-type', 'iframe');
+        await expect(page.locator('#teksttv-snackbar')).toContainText('Afbeelding verwijderd.');
+
+        await page.locator('.teksttv-snackbar-action').click();
+        await expect(blocks).toHaveCount(3);
+        await expect(blocks.nth(1)).toHaveAttribute('data-type', 'image');
+        await expect(blocks.nth(1).locator('.teksttv-block-toggle-control')).toBeFocused();
+        await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
+
+        await openBlockActions(blocks.nth(1));
+        await blocks.nth(1).locator('.teksttv-remove-block').click();
+        await expect(blocks).toHaveCount(2);
         await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
     });
 
@@ -170,6 +227,9 @@ test.describe('admin interaction contracts', () => {
         await addLoopBlock(page, 'iframe');
 
         const blocks = page.locator('#teksttv-blocks > .teksttv-block');
+        await blocks.nth(1).locator('.teksttv-block-toggle-control').click();
+        await blocks.nth(2).locator('.teksttv-block-toggle-control').click();
+        await expect(blocks.nth(2).locator('.teksttv-block-body')).toBeHidden();
         await dragBlockToStart(page, blocks.nth(2), blocks.nth(0));
 
         await expect(blocks.nth(0)).toHaveAttribute('data-type', 'iframe');
@@ -182,6 +242,7 @@ test.describe('admin interaction contracts', () => {
 
         const blocks = page.locator('#teksttv-blocks > .teksttv-block');
         const iframe = page.locator('#teksttv-blocks > .teksttv-block[data-type="iframe"]').last();
+        await openBlockActions(iframe);
         await iframe.locator('.teksttv-move-block-up').focus();
         await page.keyboard.press('Enter');
 
@@ -212,6 +273,11 @@ test.describe('admin interaction contracts', () => {
         await expect(scheduling).toBeHidden();
         await toggle.check();
         await expect(scheduling).toBeVisible();
+        const firstDay = scheduling.locator('input[type="checkbox"]').first();
+        await firstDay.focus();
+        await expect(firstDay).toBeFocused();
+        await page.keyboard.press('Space');
+        await expect(firstDay).not.toBeChecked();
         await startDate.fill('2026-08-01');
 
         await toggle.uncheck();
@@ -240,6 +306,7 @@ test.describe('admin interaction contracts', () => {
 
         const ticker = page.locator('#teksttv-ticker > .teksttv-block');
         await expectSequentialNames(page.locator('#teksttv-ticker'), ':scope > .teksttv-block', 'teksttv_ticker');
+        await openBlockActions(ticker.nth(1));
         await ticker.nth(1).locator('.teksttv-remove-block').click();
 
         await expect(ticker).toHaveCount(2);
@@ -283,6 +350,14 @@ test.describe('admin interaction contracts', () => {
         await expect(rows).toHaveCount(2);
         await expect(rows.nth(1).locator('input[name$="[slug]"]')).toHaveValue('e2e-three');
         await expect(rows.nth(1).locator('input[name$="[slug]"]')).toBeFocused();
+        await expect(page.locator('#teksttv-snackbar')).toContainText('Kanaal verwijderd.');
+        await page.locator('.teksttv-snackbar-action').click();
+        await expect(rows).toHaveCount(3);
+        await expect(rows.nth(1).locator('input[name$="[slug]"]')).toHaveValue('e2e-two');
+        await expect(rows.nth(1).locator('input[name$="[slug]"]')).toBeFocused();
+
+        await rows.nth(1).locator('.teksttv-remove-channel').click();
+        await expect(rows).toHaveCount(2);
         await expectSequentialNames(
             page.locator('#teksttv-channels tbody'),
             ':scope > .teksttv-channel-row',
@@ -497,6 +572,7 @@ test.describe('admin interaction contracts', () => {
             const addedCampaign = campaigns.last();
             await addedCampaign.locator('input[name$="[name]"]').fill('E2E Added Campaign');
             await addedCampaign.locator('input[name$="[duration]"]').fill('19');
+            await openBlockActions(campaigns.nth(1));
             await campaigns.nth(1).locator('.teksttv-remove-block').click();
 
             await expect(campaigns).toHaveCount(2);

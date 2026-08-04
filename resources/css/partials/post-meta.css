@@ -59,19 +59,6 @@
     gap: 10px;
 }
 
-.teksttv-generate-btn {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 4px;
-}
-
-.teksttv-generate-btn .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-}
-
 .teksttv-generate-status {
     font-size: 12px;
     color: #50575e;
@@ -82,7 +69,7 @@
 }
 
 .teksttv-generate-status.is-warning {
-    color: #dba617;
+    color: #8a5a00;
 }
 
 .teksttv-title-footer {
@@ -94,7 +81,7 @@
 
 .teksttv-charcount {
     font-size: 12px;
-    color: #787c82;
+    color: var(--teksttv-color-content-subtle);
     white-space: nowrap;
 }
 
@@ -137,9 +124,9 @@
     align-items: center;
     width: 100px;
     padding: 0;
-    border: 2px solid #c3c4c7;
-    border-radius: 6px;
-    background: #fff;
+    border: 2px solid var(--teksttv-color-border);
+    border-radius: var(--teksttv-radius-control);
+    background: var(--teksttv-color-surface);
     cursor: pointer;
     overflow: hidden;
     transition: border-color 0.15s;
@@ -147,6 +134,11 @@
 
 .teksttv-image-card:hover {
     border-color: #8c8f94;
+}
+
+.teksttv-image-card:focus-visible {
+    outline: 2px solid var(--teksttv-color-accent);
+    outline-offset: 2px;
 }
 
 .teksttv-image-card.is-active {
@@ -207,7 +199,7 @@
 
 .teksttv-wordcount {
     font-size: 12px;
-    color: #787c82;
+    color: var(--teksttv-color-content-subtle);
     margin-left: auto;
 }
 
@@ -231,7 +223,7 @@
 }
 
 .teksttv-collapsible-icon {
-    color: #787c82;
+    color: var(--teksttv-color-content-subtle);
     transition: transform 0.15s;
     font-size: 16px;
     width: 16px;
@@ -290,7 +282,16 @@
 }
 
 .teksttv-day-toggle input[type="checkbox"] {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    border: 0;
+    white-space: nowrap;
 }
 
 .teksttv-day-toggle span {
@@ -324,6 +325,13 @@
     background: #2271b1;
     border-color: #2271b1;
     color: #fff;
+}
+
+.teksttv-day-toggle input:focus-visible + span {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid var(--teksttv-color-accent);
+    outline-offset: 2px;
 }
 
 .teksttv-day-toggle span:hover {

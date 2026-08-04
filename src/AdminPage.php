@@ -415,22 +415,51 @@ class AdminPage
      * Render the shared empty-state placeholder. Repeatable lists render it
      * always and CSS hides it while items exist (`:has(> .teksttv-block)`).
      */
-    public static function render_empty_state(string $icon, string $message): void
-    {
+    public static function render_empty_state(
+        string $icon,
+        string $title,
+        string $description = ''
+    ): void {
         ?>
         <div class="teksttv-empty-state">
             <span class="dashicons dashicons-<?php echo esc_attr($icon); ?>" aria-hidden="true"></span>
-            <p><?php echo esc_html($message); ?></p>
+            <h3 class="teksttv-empty-state-title"><?php echo esc_html($title); ?></h3>
+            <?php if ($description !== '') : ?>
+            <p><?php echo esc_html($description); ?></p>
+            <?php endif; ?>
         </div>
         <?php
+    }
+
+    /** Start a consistently styled field group inside a loop or campaign block. */
+    public static function render_block_section_start(string $title, string $description = '', string $modifier = ''): void
+    {
+        $classes = 'teksttv-block-section';
+        if ($modifier !== '') {
+            $classes .= ' teksttv-block-section--' . sanitize_html_class($modifier);
+        }
+
+        ?>
+        <section class="<?php echo esc_attr($classes); ?>">
+            <div class="teksttv-block-section-heading">
+                <h3><?php echo esc_html($title); ?></h3>
+                <?php if ($description !== '') : ?>
+                <p><?php echo esc_html($description); ?></p>
+                <?php endif; ?>
+            </div>
+        <?php
+    }
+
+    /** Close a field group opened by render_block_section_start(). */
+    public static function render_block_section_end(): void
+    {
+        echo '</section>';
     }
 
     /** Render the shared save bar that closes every admin form. */
     public static function render_form_actions(): void
     {
-        ?>
-        <div class="teksttv-form-actions"><?php submit_button('Wijzigingen opslaan', 'primary', 'submit', false); ?></div>
-        <?php
+        submit_button('Wijzigingen opslaan');
     }
 
     /**
@@ -439,20 +468,31 @@ class AdminPage
      * wiring are a contract with the workbench JS; keep every accordion
      * (loop, ticker, campaigns) on this one renderer.
      */
-    public static function render_block_header(string $body_id, string $title, string $icon, string $color, string $remove_label): void
-    {
+    public static function render_block_header(
+        string $body_id,
+        string $title,
+        string $icon,
+        string $color,
+        string $remove_label,
+        bool $summary_hidden = false
+    ): void {
         ?>
         <div class="teksttv-block-header">
             <span class="teksttv-block-handle dashicons dashicons-move" aria-hidden="true"></span>
             <button type="button" class="teksttv-block-toggle-control" aria-expanded="false" aria-controls="<?php echo esc_attr($body_id); ?>">
                 <span class="teksttv-block-icon" style="background:<?php echo esc_attr($color); ?>" aria-hidden="true"><span class="dashicons dashicons-<?php echo esc_attr($icon); ?>"></span></span>
                 <span class="teksttv-block-title"><?php echo esc_html($title); ?></span>
-                <span class="teksttv-block-summary"></span>
+                <span class="teksttv-block-summary" aria-hidden="<?php echo esc_attr($summary_hidden ? 'true' : 'false'); ?>"></span>
                 <span class="teksttv-block-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
             </button>
-            <button type="button" class="button-link teksttv-block-order-control teksttv-move-block-up" aria-label="<?php echo esc_attr(sprintf('%s omhoog verplaatsen', $title)); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
-            <button type="button" class="button-link teksttv-block-order-control teksttv-move-block-down" aria-label="<?php echo esc_attr(sprintf('%s omlaag verplaatsen', $title)); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
-            <button type="button" class="button-link teksttv-remove-block" aria-label="<?php echo esc_attr($remove_label); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+            <details class="teksttv-block-actions" name="teksttv-block-actions">
+                <summary class="teksttv-block-actions-toggle" aria-label="<?php echo esc_attr(sprintf('Acties voor %s', $title)); ?>"><span class="dashicons dashicons-ellipsis" aria-hidden="true"></span></summary>
+                <div class="teksttv-block-actions-menu">
+                    <button type="button" class="teksttv-block-order-control teksttv-move-block-up"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span><?php echo esc_html('Omhoog verplaatsen'); ?></button>
+                    <button type="button" class="teksttv-block-order-control teksttv-move-block-down"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span><?php echo esc_html('Omlaag verplaatsen'); ?></button>
+                    <button type="button" class="teksttv-remove-block"><span class="dashicons dashicons-trash" aria-hidden="true"></span><?php echo esc_html($remove_label); ?></button>
+                </div>
+            </details>
         </div>
         <?php
     }
@@ -474,7 +514,10 @@ class AdminPage
         <div class="teksttv-block-scheduling-toggle">
             <label>
                 <input type="checkbox" class="teksttv-scheduling-checkbox" <?php checked($has_scheduling); ?> />
-                <?php echo esc_html('Planning inschakelen'); ?>
+                <span class="teksttv-block-scheduling-copy">
+                    <strong><?php echo esc_html('Planning'); ?></strong>
+                    <span><?php echo esc_html('Alleen tonen binnen een periode of op vaste dagen.'); ?></span>
+                </span>
             </label>
         </div>
         <div class="teksttv-field-grid teksttv-field-grid--scheduling" <?php echo $has_scheduling ? '' : 'style="display:none;"'; ?>>

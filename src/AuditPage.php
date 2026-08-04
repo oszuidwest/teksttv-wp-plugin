@@ -71,7 +71,7 @@ class AuditPage
             <section class="teksttv-card teksttv-workbench-section teksttv-audit-results">
                 <h2><?php echo esc_html('Berichten'); ?></h2>
             <?php if (empty($posts)) : ?>
-                <?php AdminPage::render_empty_state('chart-bar', 'Nog geen berichten met AI-gegenereerde inhoud.'); ?>
+                <?php AdminPage::render_empty_state('chart-bar', 'Nog geen AI-auditgegevens', 'Er zijn nog geen berichten met AI-gegenereerde inhoud.'); ?>
             <?php else : ?>
                 <div class="teksttv-table-scroll">
                 <table class="widefat teksttv-audit-table">

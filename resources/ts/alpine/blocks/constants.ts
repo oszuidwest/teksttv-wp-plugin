@@ -1,3 +1,5 @@
+import { prefersReducedMotion } from '../../modules/dom';
+
 /** Loop / campaigns block workbench (+ optional ticker Sortable). */
 export type WorkbenchOpts = {
     ticker: boolean;
@@ -12,5 +14,5 @@ export const BLOCK_SORTABLE_OPTS = {
     draggable: '.teksttv-block',
     ghostClass: 'teksttv-sortable-ghost',
     dragClass: 'teksttv-sortable-drag',
-    animation: 150,
+    animation: prefersReducedMotion() ? 0 : 150,
 } as const;

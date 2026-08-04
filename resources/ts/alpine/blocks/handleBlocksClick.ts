@@ -1,5 +1,6 @@
 import { markFormDirty } from '../../modules/dirtyForms';
 import { cancelSlideAnimation, hide, show, siblingFocusTarget, slideDown, slideUp } from '../../modules/dom';
+import { removeElementWithUndo } from '../../modules/undo';
 import { appendImageItems, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -32,8 +33,8 @@ function toggleBlockOpen(trigger: Element): void {
     setBlockOpen(block, !block.classList.contains('is-expanded'));
 }
 
-/** Slide up and remove the block owning `trigger`, then run `onRemoved`. */
-function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
+/** Remove the block owning `trigger` and offer a persistent undo action. */
+function removeClosestBlock(trigger: Element, onRemoved: () => void, focusUndo: boolean): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
     // The list root declares where focus goes when its last block is removed.
@@ -47,15 +48,14 @@ function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
     // including when this is the last block in the list.
     markFormDirty(block);
 
-    block
-        .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')
-        .forEach((control) => {
-            control.disabled = true;
-        });
-    slideUp(block, 200, () => {
-        block.remove();
-        onRemoved();
-        focusTarget?.focus();
+    const title = block.querySelector<HTMLElement>('.teksttv-block-title')?.textContent?.trim() || 'Onderdeel';
+    removeElementWithUndo(block, {
+        message: `${title} verwijderd.`,
+        focusAfterRemove: focusTarget,
+        focusAfterRestore: (restored) => restored.querySelector('.teksttv-block-toggle-control'),
+        focusUndo,
+        onRemove: onRemoved,
+        onRestore: onRemoved,
     });
 }
 
@@ -71,7 +71,40 @@ function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => vo
     else root.insertBefore(sibling, block);
     onMoved();
     markFormDirty(block);
-    if (trigger instanceof HTMLElement) trigger.focus();
+    const actions = trigger.closest<HTMLDetailsElement>('.teksttv-block-actions');
+    actions?.removeAttribute('open');
+    const focusTarget =
+        actions?.querySelector<HTMLElement>('.teksttv-block-actions-toggle') ??
+        (trigger instanceof HTMLElement ? trigger : null);
+    focusTarget?.focus();
+}
+
+/** Close native block action menus on Escape or when focus moves elsewhere. */
+export function initBlockActionMenus(root: HTMLElement): void {
+    root.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !(e.target instanceof Element)) return;
+        const actions = e.target.closest<HTMLDetailsElement>('.teksttv-block-actions[open]');
+        if (!actions) return;
+        e.preventDefault();
+        actions.removeAttribute('open');
+        actions.querySelector<HTMLElement>('.teksttv-block-actions-toggle')?.focus();
+    });
+
+    document.addEventListener('click', (e) => {
+        const target = e.target;
+        if (!(target instanceof Node)) return;
+        root.querySelectorAll<HTMLDetailsElement>('.teksttv-block-actions[open]').forEach((actions) => {
+            if (!actions.contains(target)) actions.removeAttribute('open');
+        });
+    });
+
+    document.addEventListener('focusin', (e) => {
+        const target = e.target;
+        if (!(target instanceof Node)) return;
+        root.querySelectorAll<HTMLDetailsElement>('.teksttv-block-actions[open]').forEach((actions) => {
+            if (!actions.contains(target)) actions.removeAttribute('open');
+        });
+    });
 }
 
 /**
@@ -91,7 +124,7 @@ export function handleBlockControlsClick(e: MouseEvent, root: HTMLElement, reind
     const rem = e.target.closest('.teksttv-remove-block');
     if (rem && root.contains(rem)) {
         e.stopPropagation();
-        removeClosestBlock(rem, reindex);
+        removeClosestBlock(rem, reindex, e.detail === 0);
         return true;
     }
 
@@ -130,7 +163,7 @@ export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): v
     const imgItemRm = e.target.closest('.teksttv-remove-image');
     if (imgItemRm && blocksRoot.contains(imgItemRm)) {
         e.preventDefault();
-        removeImageItem(imgItemRm);
+        removeImageItem(imgItemRm, undefined, e.detail === 0);
         return;
     }
 

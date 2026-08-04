@@ -55,11 +55,12 @@ class CampaignsPage
         $body_id = Helpers::field_id('teksttv_campaigns', $index, 'body');
 
         ?>
-        <div class="teksttv-block" data-type="campaign_item">
-            <?php AdminPage::render_block_header($body_id, $name ?: 'Campagne', 'megaphone', '#d63638', 'Campagne verwijderen'); ?>
+        <div class="teksttv-block" data-type="campaign_item" data-summary-as-title="Campagne">
+            <?php AdminPage::render_block_header($body_id, $name ?: 'Campagne', 'megaphone', '#d63638', 'Campagne verwijderen', true); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />
-                <div class="teksttv-field-grid">
+                <?php AdminPage::render_block_section_start('Campagne', 'Geef de campagne een naam en optionele groep.', 'content'); ?>
+                <div class="teksttv-field-grid teksttv-field-grid--campaign-details">
                     <div class="teksttv-field teksttv-field--primary">
                         <label <?php Helpers::field_for('teksttv_campaigns', $index, 'name'); ?>><?php echo esc_html('Naam'); ?></label>
                         <input type="text" <?php Helpers::field_attrs('teksttv_campaigns', $index, 'name'); ?> value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Sponsor X'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Naamloze campagne'); ?>" />
@@ -73,14 +74,21 @@ class CampaignsPage
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <?php DurationField::render('teksttv_campaigns', $index, 'duration', 'Duur per slide', (string) ($campaign['duration'] ?? ''), $default_duration); ?>
                 </div>
-                <div class="teksttv-field-grid">
+                <?php AdminPage::render_block_section_end(); ?>
+                <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
+                <div class="teksttv-field-grid teksttv-field-grid--duration">
+                    <?php DurationField::render('teksttv_campaigns', $index, 'duration', 'Per slide', (string) ($campaign['duration'] ?? ''), $default_duration); ?>
+                </div>
+                <?php AdminPage::render_block_section_end(); ?>
+                <?php AdminPage::render_block_section_start('Planning', 'Bepaal op welke dagen de campagne actief is.', 'planning'); ?>
+                <div class="teksttv-field-grid teksttv-field-grid--scheduling">
                     <?php AdminPage::render_scheduling_inputs($index, $campaign, 'teksttv_campaigns'); ?>
                 </div>
+                <?php AdminPage::render_block_section_end(); ?>
+                <?php AdminPage::render_block_section_start('Kanalen', 'Kies waar deze campagne wordt uitgezonden.', 'channels'); ?>
                 <div class="teksttv-field-grid">
                     <div class="teksttv-field teksttv-field--full">
-                        <span class="teksttv-field-label"><?php echo esc_html('Kanalen'); ?></span>
                         <?php foreach ($channels as $ch) : ?>
                         <label class="teksttv-inline-checkbox">
                             <input type="checkbox" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][channels][]" value="<?php echo esc_attr($ch['slug']); ?>" <?php checked(in_array($ch['slug'], $campaign_channels, true)); ?> />
@@ -90,8 +98,9 @@ class CampaignsPage
                         <p class="description"><?php echo esc_html('Zonder geselecteerde kanalen is deze campagne nergens actief.'); ?></p>
                     </div>
                 </div>
+                <?php AdminPage::render_block_section_end(); ?>
+                <?php AdminPage::render_block_section_start('Slides', 'Voeg de beelden toe in de gewenste volgorde.', 'slides'); ?>
                 <div class="teksttv-campaign-slides-section">
-                    <h3 class="teksttv-section-label"><?php echo esc_html('Slides'); ?></h3>
                     <div class="teksttv-campaign-slides teksttv-images-list" data-name="teksttv_campaigns[<?php echo esc_attr($index); ?>][slides][]">
                         <?php foreach ($slides as $attachment_id) :
                             $thumb = wp_get_attachment_image_url((int) $attachment_id, 'thumbnail');
@@ -104,8 +113,9 @@ class CampaignsPage
                             <?php endif;
                         endforeach; ?>
                     </div>
-                    <button type="button" class="button teksttv-campaign-add-slides"><span class="dashicons dashicons-format-gallery teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Slides toevoegen'); ?></button>
+                    <button type="button" class="button teksttv-add-action teksttv-campaign-add-slides"><?php echo esc_html('Slides toevoegen'); ?></button>
                 </div>
+                <?php AdminPage::render_block_section_end(); ?>
             </div>
         </div>
         <?php

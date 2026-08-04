@@ -2,6 +2,7 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
@@ -31,6 +32,7 @@ final class ImageLoopBlock
         $image_url = $image_id ? wp_get_attachment_image_url((int) $image_id, 'medium') : '';
 
         ?>
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke afbeelding komt in de loop?', 'content'); ?>
         <div class="teksttv-block-image-row teksttv-image-picker">
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
                 <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" width="120" height="80" loading="lazy" />
@@ -38,14 +40,17 @@ final class ImageLoopBlock
             <div class="teksttv-block-image-fields">
                 <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][image_id]" value="<?php echo esc_attr($image_id ? (string) $image_id : ''); ?>" class="teksttv-block-image-id" data-summary data-summary-label="<?php echo esc_attr('Afbeelding'); ?>" data-summary-empty="<?php echo esc_attr('Geen afbeelding'); ?>" />
                 <p>
-                    <button type="button" class="button teksttv-block-image-select"><span class="dashicons dashicons-upload teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Afbeelding kiezen'); ?></button>
+                    <button type="button" class="button teksttv-block-image-select"><?php echo esc_html('Afbeelding kiezen'); ?></button>
                     <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>"><?php echo esc_html('Verwijderen'); ?></button>
                 </p>
-                <div class="teksttv-field-grid">
-                    <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), $default_image); ?>
-                </div>
             </div>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--duration">
+            <?php DurationField::render($prefix, $index, 'duration', 'Afbeelding', (string) ($block['duration'] ?? ''), $default_image); ?>
+        </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 

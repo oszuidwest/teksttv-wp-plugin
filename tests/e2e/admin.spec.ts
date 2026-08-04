@@ -51,7 +51,7 @@ test.describe('administrator admin screens', () => {
         const campaignActionWidths = await page
             .locator('#teksttv-add-group, #teksttv-add-campaign')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
-        expect(Math.max(...campaignActionWidths) - Math.min(...campaignActionWidths)).toBeLessThan(1);
+        expect(Math.max(...campaignActionWidths)).toBeLessThan(190);
     });
 
     test('campaign layout uses one width contract and responsive field grid', async ({ page }) => {
@@ -74,14 +74,13 @@ test.describe('administrator admin screens', () => {
         const firstCampaign = campaignList.locator(':scope > .teksttv-block').first();
         await firstCampaign.locator('.teksttv-block-toggle-control').click();
         await expect(firstCampaign.locator('.teksttv-block-body')).toBeVisible();
-        const fields = firstCampaign.locator('.teksttv-field-grid').first().locator(':scope > .teksttv-field');
-        await expect(fields).toHaveCount(3);
+        const fields = firstCampaign.locator('.teksttv-block-section--content .teksttv-field');
+        await expect(fields).toHaveCount(2);
 
         const desktopFields = await fields.evaluateAll((elements) =>
             elements.map((element) => element.getBoundingClientRect().width),
         );
-        expect(desktopFields[0]).toBeGreaterThan(desktopFields[1]);
-        expect(desktopFields[1]).toBeGreaterThan(desktopFields[2]);
+        expect(Math.abs(desktopFields[0] - desktopFields[1])).toBeLessThan(1);
 
         const firstRowLabels = fields.locator(':scope > label');
         const labelTops = await firstRowLabels.evaluateAll((elements) =>
@@ -97,7 +96,7 @@ test.describe('administrator admin screens', () => {
         ]);
         expect(startDateLabelTop - nameInputBottom).toBeGreaterThanOrEqual(11);
 
-        const durationRow = fields.last().locator('.teksttv-input-with-unit');
+        const durationRow = firstCampaign.locator('.teksttv-block-section--duration .teksttv-input-with-unit');
         const [durationInputBox, durationUnitBox] = await Promise.all([
             durationRow.locator('input').evaluate((element) => element.getBoundingClientRect().toJSON()),
             durationRow.locator('.teksttv-unit').evaluate((element) => element.getBoundingClientRect().toJSON()),
@@ -106,17 +105,20 @@ test.describe('administrator admin screens', () => {
             (durationUnitBox.top + durationUnitBox.bottom) / 2 - (durationInputBox.top + durationInputBox.bottom) / 2,
         );
         expect(durationCenterOffset).toBeLessThanOrEqual(1);
-        await expect(durationRow.locator('input')).toHaveAccessibleName('Duur per slide (seconden)');
+        await expect(durationRow.locator('input')).toHaveAccessibleName('Per slide (seconden)');
 
         await page.setViewportSize({ width: 760, height: 900 });
         const mobileFields = await fields.evaluateAll((elements) =>
             elements.map((element) => {
                 const box = element.getBoundingClientRect();
-                return { left: box.left, width: box.width };
+                return { left: box.left, right: box.right, width: box.width };
             }),
         );
-        expect(mobileFields.every(({ left }) => Math.abs(left - mobileFields[0].left) < 1)).toBe(true);
         expect(mobileFields.every(({ width }) => Math.abs(width - mobileFields[0].width) < 1)).toBe(true);
+        const mobilePanelBox = await campaignPanel.evaluate((element) => element.getBoundingClientRect().toJSON());
+        expect(
+            mobileFields.every(({ left, right }) => left >= mobilePanelBox.left && right <= mobilePanelBox.right),
+        ).toBe(true);
     });
 
     test('post editor hides unconfigured AI controls and fills the available tablet width', async ({ page }) => {
@@ -144,6 +146,14 @@ test.describe('administrator admin screens', () => {
             tinyMceEditor.fire('keyup');
         });
         await expect(page.locator('#teksttv-wordcount')).toHaveText(/^2(?: \/ \d+)? woorden$/);
+    });
+
+    test('post editor exposes the preview enlargement control on keyboard focus', async ({ page }) => {
+        await openFixturePostEditor(page);
+        const enlarge = page.locator('#teksttv-preview-enlarge');
+        await enlarge.focus();
+        await expect(enlarge).toBeFocused();
+        await expect(enlarge).toHaveCSS('opacity', '1');
     });
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {

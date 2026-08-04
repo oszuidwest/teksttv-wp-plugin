@@ -2,6 +2,7 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\Common\DurationField;
 use TekstTV\Helpers;
@@ -31,6 +32,7 @@ final class IframeLoopBlock
         $default_duration = (int) get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe']);
 
         ?>
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke pagina wordt in de loop ingesloten?', 'content'); ?>
         <div class="teksttv-field-grid">
             <div class="teksttv-field teksttv-field--full">
                 <label <?php Helpers::field_for($prefix, $index, 'name'); ?>><?php echo esc_html('Naam'); ?></label>
@@ -42,8 +44,13 @@ final class IframeLoopBlock
                 <input type="url" <?php Helpers::field_attrs($prefix, $index, 'url'); ?> value="<?php echo esc_attr((string) $url); ?>" class="regular-text" placeholder="https://" inputmode="url" autocomplete="off" spellcheck="false" />
                 <p class="description"><?php echo esc_html('De pagina moet ingesloten (embedded) mogen worden. Gebruik voor dashboards de embed-URL.'); ?></p>
             </div>
-            <?php DurationField::render($prefix, $index, 'duration', 'Duur', (string) ($block['duration'] ?? ''), $default_duration); ?>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Weergaveduur', 'Leeg laten gebruikt de standaardinstelling.', 'duration'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--duration">
+            <?php DurationField::render($prefix, $index, 'duration', 'Iframe', (string) ($block['duration'] ?? ''), $default_duration); ?>
+        </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 

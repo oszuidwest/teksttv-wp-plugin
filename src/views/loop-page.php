@@ -29,11 +29,11 @@ settings_errors('teksttv');
 $render_add_menu = static function (string $key, string $label, array $types, string $method): void {
     $state = 'menu' . ucfirst($key) . 'Open';
     ?>
-    <div class="teksttv-dropdown-button" @click.outside="<?php echo esc_attr($state); ?> = false" @keydown.escape.prevent.stop="<?php echo esc_attr($state); ?> = false; $refs.<?php echo esc_attr($key); ?>Toggle.focus()">
-        <button type="button" class="button teksttv-add-action" id="teksttv-add-<?php echo esc_attr($key); ?>-toggle" x-ref="<?php echo esc_attr($key); ?>Toggle" aria-haspopup="menu" aria-controls="teksttv-add-<?php echo esc_attr($key); ?>-menu" :aria-expanded="<?php echo esc_attr($state); ?>.toString()" @click.prevent.stop="<?php echo esc_attr($state); ?> = !<?php echo esc_attr($state); ?>"><span><?php echo esc_html($label); ?></span><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
-        <div class="teksttv-dropdown-menu" id="teksttv-add-<?php echo esc_attr($key); ?>-menu" role="menu" :class="{ 'is-open': <?php echo esc_attr($state); ?> }">
+    <div class="teksttv-dropdown-button" @click.outside="<?php echo esc_attr($state); ?> = false" @focusout="if (!$el.contains($event.relatedTarget)) <?php echo esc_attr($state); ?> = false" @keydown.escape.prevent.stop="<?php echo esc_attr($state); ?> = false; $refs.<?php echo esc_attr($key); ?>Toggle.focus()">
+        <button type="button" class="button teksttv-add-action" id="teksttv-add-<?php echo esc_attr($key); ?>-toggle" x-ref="<?php echo esc_attr($key); ?>Toggle" aria-controls="teksttv-add-<?php echo esc_attr($key); ?>-menu" :aria-expanded="<?php echo esc_attr($state); ?>.toString()" @click.prevent.stop="<?php echo esc_attr($state); ?> = !<?php echo esc_attr($state); ?>"><?php echo esc_html($label); ?></button>
+        <div class="teksttv-dropdown-menu" id="teksttv-add-<?php echo esc_attr($key); ?>-menu" :class="{ 'is-open': <?php echo esc_attr($state); ?> }">
             <?php foreach ($types as $type_slug => $type_meta) : ?>
-            <button type="button" role="menuitem" data-type="<?php echo esc_attr((string) $type_slug); ?>" @click.prevent="<?php echo esc_attr($state); ?> = false; <?php echo esc_attr($method); ?>('<?php echo esc_js((string) $type_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($type_meta['icon']); ?>" aria-hidden="true"></span> <?php echo esc_html($type_meta['label']); ?></button>
+            <button type="button" data-type="<?php echo esc_attr((string) $type_slug); ?>" @click.prevent="<?php echo esc_attr($state); ?> = false; <?php echo esc_attr($method); ?>('<?php echo esc_js((string) $type_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($type_meta['icon']); ?>" aria-hidden="true"></span> <?php echo esc_html($type_meta['label']); ?></button>
             <?php endforeach; ?>
         </div>
     </div>
@@ -52,7 +52,7 @@ $render_add_menu = static function (string $key, string $label, array $types, st
             <h2><?php echo esc_html('Loop'); ?></h2>
             <div id="teksttv-blocks" data-empty-focus="#teksttv-add-block-toggle" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
                 <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
-                <?php AdminPage::render_empty_state('playlist-video', 'Nog geen blokken. Voeg een blok toe om te beginnen.'); ?>
+                <?php AdminPage::render_empty_state('playlist-video', 'Nog geen blokken', 'Voeg een blok toe om de loop op te bouwen.'); ?>
                 <?php foreach ($blocks as $i => $block) {
                     AdminPage::render_block_generic($i, $block);
                 } ?>
@@ -70,7 +70,7 @@ $render_add_menu = static function (string $key, string $label, array $types, st
         <section class="teksttv-card teksttv-workbench-section">
             <h2><?php echo esc_html('Tickerberichten'); ?></h2>
             <div id="teksttv-ticker" data-empty-focus="#teksttv-add-ticker-toggle, #teksttv-add-ticker-single" @click="tickerClick($event)" @change="tickerFieldChange($event)" @input="tickerFieldChange($event)">
-                <?php AdminPage::render_empty_state('editor-alignleft', 'Nog geen tickerberichten. Voeg een tickerbericht toe om te beginnen.'); ?>
+                <?php AdminPage::render_empty_state('editor-alignleft', 'Nog geen tickerberichten', 'Voeg een tickerbericht toe om onder in beeld te tonen.'); ?>
                 <?php foreach ($ticker_items as $ti => $ticker_item) :
                     AdminPage::render_block_generic($ti, $ticker_item, 'teksttv_ticker');
                 endforeach; ?>
@@ -81,7 +81,7 @@ $render_add_menu = static function (string $key, string $label, array $types, st
                 else :
                     $single_ticker = array_key_first($ticker_types);
                     ?>
-                <button type="button" class="button teksttv-add-action" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>" @click.prevent="addTickerBlock('<?php echo esc_js((string) $single_ticker); ?>')"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Ticker toevoegen'); ?></button>
+                <button type="button" class="button teksttv-add-action" id="teksttv-add-ticker-single" data-type="<?php echo esc_attr((string) $single_ticker); ?>" @click.prevent="addTickerBlock('<?php echo esc_js((string) $single_ticker); ?>')"><?php echo esc_html('Ticker toevoegen'); ?></button>
                 <?php endif; ?>
                 <div class="teksttv-view-actions">
                     <button type="button" class="button-link teksttv-action-expand-blocks" id="teksttv-expand-ticker" @click.prevent="setAllTickerOpen(true)"><?php echo esc_html('Alles openklappen'); ?></button>

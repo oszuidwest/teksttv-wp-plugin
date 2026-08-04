@@ -41,26 +41,6 @@
     white-space: nowrap;
 }
 
-.teksttv-copy-endpoint {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 4px;
-}
-
-.teksttv-copy-endpoint .dashicons {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
-}
-
-.teksttv-management-table .button-link-delete {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 36px;
-    min-height: 36px;
-}
-
 .teksttv-management-table .teksttv-table-actions {
     width: 80px;
     text-align: right;
@@ -70,8 +50,59 @@
     width: 180px;
 }
 
+.teksttv-feature-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 24px 40px;
+    margin-top: 20px;
+}
+
+.teksttv-feature-group {
+    min-width: 0;
+}
+
+.teksttv-card .teksttv-feature-group h3 {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.teksttv-feature-group > p {
+    margin: 3px 0 8px;
+    color: #646970;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.teksttv-feature-options {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.teksttv-feature-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+}
+
+.teksttv-feature-option input {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
 @media (max-width: 782px) {
-    .teksttv-management-table {
+    .teksttv-feature-groups {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 22px;
+        margin-top: 18px;
+    }
+
+    .teksttv-management-table,
+    #teksttv-channels {
         min-width: 0;
     }
 

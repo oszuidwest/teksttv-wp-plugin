@@ -2,6 +2,7 @@
 
 namespace TekstTV\Blocks\Loop;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Helpers;
 
@@ -37,6 +38,7 @@ final class CampaignLoopBlock
         $groups_id = Helpers::field_id($prefix, $index, 'groups');
 
         ?>
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke campagnegroepen komen in de loop?', 'content'); ?>
         <div class="teksttv-field-grid teksttv-field-grid--campaign-main">
             <div class="teksttv-field teksttv-field--primary">
                 <?php if (!empty($available_groups)) : ?>
@@ -57,12 +59,15 @@ final class CampaignLoopBlock
                 <p class="description"><?php echo esc_html('Beperk het aantal slides dat tegelijk getoond wordt. Roteert automatisch door alle beschikbare slides. Laat leeg om alles te tonen.'); ?></p>
             </div>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
+        <?php AdminPage::render_block_section_start('Overgangen', 'Optionele beelden voor en na de campagneslides.', 'transitions'); ?>
         <div class="teksttv-field-grid teksttv-field-grid--transitions">
             <?php
             self::render_transition_picker('Introafbeelding', $prefix . '[' . $index . '][intro_image_id]', (int) $intro_id, $intro_url ?: '');
             self::render_transition_picker('Outroafbeelding', $prefix . '[' . $index . '][outro_image_id]', (int) $outro_id, $outro_url ?: '');
             ?>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 
@@ -80,7 +85,7 @@ final class CampaignLoopBlock
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
                 <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" width="80" height="50" loading="lazy" />
             </div>
-            <button type="button" class="button button-small teksttv-block-image-select" aria-label="<?php echo esc_attr($label . ' kiezen'); ?>"><span class="dashicons dashicons-upload teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Kiezen'); ?></button>
+            <button type="button" class="button button-small teksttv-block-image-select" aria-label="<?php echo esc_attr($label . ' kiezen'); ?>"><?php echo esc_html('Kiezen'); ?></button>
             <button type="button" class="button-link teksttv-block-image-remove <?php echo $image_url ? '' : 'is-hidden'; ?>" aria-label="<?php echo esc_attr($label . ' verwijderen'); ?>"><?php echo esc_html('Verwijderen'); ?></button>
         </div>
         <?php

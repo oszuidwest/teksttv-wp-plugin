@@ -28,9 +28,23 @@ $render_channel_row = static function (int|string $i, array $ch) use ($api_base_
     <tr class="teksttv-channel-row">
         <td><label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Slug'); ?></span><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][slug]" value="<?php echo esc_attr($ch['slug']); ?>" class="regular-text" pattern="[a-z0-9\-]+" required placeholder="<?php echo esc_attr('bijv. tv1'); ?>" autocomplete="off" spellcheck="false" /></label></td>
         <td><label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Naam'); ?></span><input type="text" name="teksttv_channels[<?php echo esc_attr((string) $i); ?>][label]" value="<?php echo esc_attr($ch['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. TV 1'); ?>" autocomplete="off" /></label></td>
-        <td class="teksttv-channel-endpoint"><button type="button" class="button teksttv-copy-endpoint" data-endpoint="<?php echo esc_url($api_url); ?>" <?php disabled($api_url === ''); ?>><span class="dashicons dashicons-clipboard" aria-hidden="true"></span><span class="teksttv-copy-endpoint-label" aria-live="polite"><?php echo esc_html('Link kopiëren'); ?></span></button></td>
-        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel" aria-label="<?php echo esc_attr('Kanaal verwijderen'); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></td>
+        <td class="teksttv-channel-endpoint"><button type="button" class="button teksttv-copy-endpoint" data-endpoint="<?php echo esc_url($api_url); ?>" <?php disabled($api_url === ''); ?>><span class="teksttv-copy-endpoint-label" aria-live="polite"><?php echo esc_html('Link kopiëren'); ?></span></button></td>
+        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-channel"><?php echo esc_html('Verwijderen'); ?></button></td>
     </tr>
+    <?php
+};
+
+/**
+ * Render one feature toggle.
+ *
+ * @var callable(string, string): void $render_feature_option
+ */
+$render_feature_option = static function (string $value, string $label) use ($features): void {
+    ?>
+    <label class="teksttv-feature-option">
+        <input type="checkbox" name="teksttv_features[]" value="<?php echo esc_attr($value); ?>" <?php checked(in_array($value, $features, true)); ?> />
+        <span><?php echo esc_html($label); ?></span>
+    </label>
     <?php
 };
 
@@ -61,7 +75,7 @@ $render_channel_row = static function (int|string $i, array $ch) use ($api_base_
                 </table>
             </div>
             <div class="teksttv-add-block-bar teksttv-section-actions">
-                <button type="button" class="button teksttv-add-action" id="teksttv-add-channel" @click.prevent="addChannelRow()"><span class="dashicons dashicons-plus-alt2 teksttv-button-icon" aria-hidden="true"></span> <?php echo esc_html('Kanaal toevoegen'); ?></button>
+                <button type="button" class="button teksttv-add-action" id="teksttv-add-channel" @click.prevent="addChannelRow()"><?php echo esc_html('Kanaal toevoegen'); ?></button>
             </div>
         </div>
 
@@ -69,54 +83,49 @@ $render_channel_row = static function (int|string $i, array $ch) use ($api_base_
         <div class="teksttv-card">
             <h2><?php echo esc_html('Berichteditor'); ?></h2>
             <p class="description"><?php echo esc_html('Bepaal welke opties beschikbaar zijn bij het bewerken van een bericht.'); ?></p>
-            <fieldset class="teksttv-checkbox-list">
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="custom_title" <?php checked(in_array('custom_title', $features, true)); ?> />
-                    <?php echo esc_html('Kop overschrijven'); ?>
-                </label>
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="sidebar_image" <?php checked(in_array('sidebar_image', $features, true)); ?> />
-                    <?php echo esc_html('Sidebar afbeelding kiezen'); ?>
-                </label>
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="extra_images" <?php checked(in_array('extra_images', $features, true)); ?> />
-                    <?php echo esc_html('Extra afbeeldingen'); ?>
-                </label>
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="scheduling" <?php checked(in_array('scheduling', $features, true)); ?> />
-                    <?php echo esc_html('Planning (datums & weekdagen)'); ?>
-                </label>
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="page_separator" <?php checked(in_array('page_separator', $features, true)); ?> />
-                    <?php echo esc_html('Paginascheiding (meerdere slides)'); ?>
-                </label>
-            </fieldset>
-            <h3><?php echo esc_html('Tekstopmaak'); ?></h3>
-            <fieldset class="teksttv-checkbox-list teksttv-checkbox-list--inline">
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="bold" <?php checked(in_array('bold', $features, true)); ?> />
-                    <strong><?php echo esc_html('Vet'); ?></strong>
-                </label>
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="italic" <?php checked(in_array('italic', $features, true)); ?> />
-                    <em><?php echo esc_html('Cursief'); ?></em>
-                </label>
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="underline" <?php checked(in_array('underline', $features, true)); ?> />
-                    <u><?php echo esc_html('Onderstreept'); ?></u>
-                </label>
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="lists" <?php checked(in_array('lists', $features, true)); ?> />
-                    <?php echo esc_html('Lijsten'); ?>
-                </label>
-            </fieldset>
-            <h3><?php echo esc_html('AI'); ?></h3>
-            <fieldset class="teksttv-checkbox-list">
-                <label class="teksttv-checkbox-list-item">
-                    <input type="checkbox" name="teksttv_features[]" value="ai_generate" <?php checked(in_array('ai_generate', $features, true)); ?> />
-                    <?php echo esc_html('AI tekst genereren'); ?>
-                </label>
-            </fieldset>
+            <div class="teksttv-feature-groups">
+                <section class="teksttv-feature-group">
+                    <h3><?php echo esc_html('Inhoud & media'); ?></h3>
+                    <p><?php echo esc_html('Extra mogelijkheden voor de inhoud van een bericht.'); ?></p>
+                    <fieldset class="teksttv-feature-options">
+                        <legend class="screen-reader-text"><?php echo esc_html('Inhoud en media'); ?></legend>
+                        <?php $render_feature_option('custom_title', 'Kop overschrijven'); ?>
+                        <?php $render_feature_option('sidebar_image', 'Sidebarafbeelding kiezen'); ?>
+                        <?php $render_feature_option('extra_images', 'Extra afbeeldingen'); ?>
+                    </fieldset>
+                </section>
+
+                <section class="teksttv-feature-group">
+                    <h3><?php echo esc_html('Publicatie'); ?></h3>
+                    <p><?php echo esc_html('Bepaal wanneer en hoe berichten worden getoond.'); ?></p>
+                    <fieldset class="teksttv-feature-options">
+                        <legend class="screen-reader-text"><?php echo esc_html('Publicatie'); ?></legend>
+                        <?php $render_feature_option('scheduling', 'Planning'); ?>
+                        <?php $render_feature_option('page_separator', 'Meerdere slides'); ?>
+                    </fieldset>
+                </section>
+
+                <section class="teksttv-feature-group">
+                    <h3><?php echo esc_html('Tekstopmaak'); ?></h3>
+                    <p><?php echo esc_html('Kies welke opmaak beschikbaar is in de editor.'); ?></p>
+                    <fieldset class="teksttv-feature-options">
+                        <legend class="screen-reader-text"><?php echo esc_html('Tekstopmaak'); ?></legend>
+                        <?php $render_feature_option('bold', 'Vetgedrukt'); ?>
+                        <?php $render_feature_option('italic', 'Cursief'); ?>
+                        <?php $render_feature_option('underline', 'Onderstrepen'); ?>
+                        <?php $render_feature_option('lists', 'Lijsten'); ?>
+                    </fieldset>
+                </section>
+
+                <section class="teksttv-feature-group">
+                    <h3><?php echo esc_html('AI-assistent'); ?></h3>
+                    <p><?php echo esc_html('Ondersteuning voor het schrijven van Tekst TV-teksten.'); ?></p>
+                    <fieldset class="teksttv-feature-options">
+                        <legend class="screen-reader-text"><?php echo esc_html('AI-assistent'); ?></legend>
+                        <?php $render_feature_option('ai_generate', 'Tekst genereren'); ?>
+                    </fieldset>
+                </section>
+            </div>
         </div>
 
         <!-- Slide duur -->

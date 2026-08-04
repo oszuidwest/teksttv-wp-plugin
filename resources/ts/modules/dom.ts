@@ -2,6 +2,11 @@
 
 const slideTimers = new WeakMap<HTMLElement, number>();
 
+/** Respect the user's OS/browser motion preference in scripted animations. */
+export function prefersReducedMotion(): boolean {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 /** Cancel a pending slide completion and remove its temporary inline styles. */
 export function cancelSlideAnimation(el: HTMLElement): void {
     const timer = slideTimers.get(el);
@@ -39,6 +44,7 @@ export function isHidden(el: HTMLElement): boolean {
 export function slideDown(el: HTMLElement, durationMs = 150): void {
     cancelSlideAnimation(el);
     show(el);
+    if (prefersReducedMotion()) return;
     el.style.overflow = 'hidden';
     const target = el.scrollHeight;
     el.style.height = '0';
@@ -55,6 +61,11 @@ export function slideDown(el: HTMLElement, durationMs = 150): void {
 
 export function slideUp(el: HTMLElement, durationMs = 150, onComplete?: () => void): void {
     cancelSlideAnimation(el);
+    if (prefersReducedMotion()) {
+        hide(el);
+        onComplete?.();
+        return;
+    }
     el.style.overflow = 'hidden';
     el.style.transition = '';
     el.style.height = `${el.offsetHeight}px`;

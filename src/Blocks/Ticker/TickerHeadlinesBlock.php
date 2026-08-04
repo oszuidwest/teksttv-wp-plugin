@@ -2,6 +2,7 @@
 
 namespace TekstTV\Blocks\Ticker;
 
+use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Blocks\BuildContext;
 use TekstTV\Blocks\Common\RecentPostsQuery;
@@ -33,7 +34,8 @@ final class TickerHeadlinesBlock
         $item_prefix = $item['prefix'] ?? '';
 
         ?>
-        <div class="teksttv-field-grid">
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke nieuwskoppen lopen door de ticker?', 'content'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--headlines">
             <div class="teksttv-field teksttv-field--compact">
                 <label <?php Helpers::field_for($prefix, $index, 'count'); ?>><?php echo esc_html('Aantal'); ?></label>
                 <input type="number" <?php Helpers::field_attrs($prefix, $index, 'count'); ?> value="<?php echo esc_attr((string) $count); ?>" min="1" max="20" class="small-text" data-summary="%sx" />
@@ -44,6 +46,7 @@ final class TickerHeadlinesBlock
             </div>
             <?php TaxonomyFilters::render_selects($index, (array) ($item['taxonomy_filters'] ?? []), $prefix); ?>
         </div>
+        <?php AdminPage::render_block_section_end(); ?>
         <?php
     }
 

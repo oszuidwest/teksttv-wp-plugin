@@ -1,9 +1,10 @@
 /** Sidebar-afbeeldingskiezer: alleen staat/actieve kaart en verborgen veld. Preview herbereken extern. */
 export function applySidebarCardState(state: string, refreshPreview: () => void): void {
     for (const c of document.querySelectorAll('.teksttv-image-card')) {
-        c.classList.remove('is-active');
+        const selected = c instanceof HTMLElement && c.dataset.state === state;
+        c.classList.toggle('is-active', selected);
+        c.setAttribute('aria-pressed', String(selected));
     }
-    document.querySelector(`.teksttv-image-card[data-state="${state}"]`)?.classList.add('is-active');
     const cards = document.querySelector('.teksttv-image-cards');
     if (cards instanceof HTMLElement) cards.dataset.active = state;
 
