@@ -3,8 +3,7 @@ type UndoRemovalOptions = {
     focusAfterRemove?: HTMLElement | null;
     focusAfterRestore?: (element: HTMLElement) => HTMLElement | null;
     focusUndo?: boolean;
-    onRemove?: () => void;
-    onRestore?: () => void;
+    onChange?: () => void;
 };
 
 type PendingUndo = {
@@ -65,7 +64,7 @@ export function removeElementWithUndo(element: HTMLElement, options: UndoRemoval
     pendingUndo?.dismiss(false);
 
     element.remove();
-    options.onRemove?.();
+    options.onChange?.();
 
     snackbar.message.textContent = options.message;
     snackbar.root.hidden = false;
@@ -73,7 +72,7 @@ export function removeElementWithUndo(element: HTMLElement, options: UndoRemoval
     const restore = (): void => {
         const anchor = nextSibling?.parentNode === parent ? nextSibling : null;
         parent.insertBefore(element, anchor);
-        options.onRestore?.();
+        options.onChange?.();
         dismissSnackbar(snackbar.root);
         options.focusAfterRestore?.(element)?.focus();
     };

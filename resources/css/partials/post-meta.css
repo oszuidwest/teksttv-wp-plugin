@@ -142,8 +142,8 @@
 }
 
 .teksttv-image-card.is-active {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 1px #2271b1;
+    border-color: var(--teksttv-color-accent);
+    box-shadow: 0 0 0 1px var(--teksttv-color-accent);
 }
 
 .teksttv-image-card-label {
@@ -159,9 +159,9 @@
 }
 
 .teksttv-image-card.is-active .teksttv-image-card-label {
-    background: #2271b1;
-    border-color: #2271b1;
-    color: #fff;
+    background: var(--teksttv-color-accent);
+    border-color: var(--teksttv-color-accent);
+    color: var(--teksttv-color-content-on-accent);
 }
 
 .teksttv-image-card-thumb {
@@ -322,9 +322,9 @@
 }
 
 .teksttv-day-toggle input:checked + span {
-    background: #2271b1;
-    border-color: #2271b1;
-    color: #fff;
+    background: var(--teksttv-color-accent);
+    border-color: var(--teksttv-color-accent);
+    color: var(--teksttv-color-content-on-accent);
 }
 
 .teksttv-day-toggle input:focus-visible + span {
@@ -339,8 +339,8 @@
 }
 
 .teksttv-day-toggle input:checked + span:hover {
-    background: #135e96;
-    border-color: #135e96;
+    background: var(--teksttv-color-accent-hover);
+    border-color: var(--teksttv-color-accent-hover);
 }
 
 .teksttv-images-section h4 {

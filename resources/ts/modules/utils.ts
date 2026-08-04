@@ -71,8 +71,7 @@ export function removeImageItem(button: Element, onRemoved?: () => void, focusUn
         focusAfterRemove: focusTarget,
         focusAfterRestore: (restored) => restored.querySelector('.teksttv-remove-image'),
         focusUndo,
-        onRemove: onRemoved,
-        onRestore: onRemoved,
+        onChange: onRemoved,
     });
 }
 

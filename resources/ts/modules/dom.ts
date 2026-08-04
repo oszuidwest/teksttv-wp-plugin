@@ -36,11 +36,6 @@ export function show(el: HTMLElement): void {
     el.style.removeProperty('display');
 }
 
-/** True when computed display is none. */
-export function isHidden(el: HTMLElement): boolean {
-    return window.getComputedStyle(el).display === 'none';
-}
-
 export function slideDown(el: HTMLElement, durationMs = 150): void {
     cancelSlideAnimation(el);
     show(el);
@@ -79,23 +74,6 @@ export function slideUp(el: HTMLElement, durationMs = 150, onComplete?: () => vo
         el.style.removeProperty('transition');
         onComplete?.();
     });
-}
-
-export function slideToggle(el: HTMLElement, durationMs = 150): void {
-    if (isHidden(el)) {
-        slideDown(el, durationMs);
-    } else {
-        slideUp(el, durationMs);
-    }
-}
-
-export function fadeOutRemove(el: HTMLElement, durationMs: number, onRemoved?: () => void): void {
-    el.style.transition = `opacity ${durationMs}ms ease`;
-    el.style.opacity = '0';
-    window.setTimeout(() => {
-        el.remove();
-        onRemoved?.();
-    }, durationMs);
 }
 
 /**

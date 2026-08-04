@@ -101,8 +101,7 @@ export function createChannelsSettingsPage() {
                 focusAfterRemove: focusTarget,
                 focusAfterRestore: (restored) => restored.querySelector('input[name$="[slug]"]'),
                 focusUndo: e.detail === 0,
-                onRemove: reindexChannels,
-                onRestore: reindexChannels,
+                onChange: reindexChannels,
             });
         },
     };

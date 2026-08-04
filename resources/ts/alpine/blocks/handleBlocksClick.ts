@@ -54,8 +54,7 @@ function removeClosestBlock(trigger: Element, onRemoved: () => void, focusUndo: 
         focusAfterRemove: focusTarget,
         focusAfterRestore: (restored) => restored.querySelector('.teksttv-block-toggle-control'),
         focusUndo,
-        onRemove: onRemoved,
-        onRestore: onRemoved,
+        onChange: onRemoved,
     });
 }
 
@@ -79,21 +78,23 @@ function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => vo
     focusTarget?.focus();
 }
 
-/** Close native block action menus on Escape or when focus moves elsewhere. */
-export function initBlockActionMenus(root: HTMLElement): void {
+/** Close native disclosure menus on Escape or when focus moves elsewhere. */
+export function initDisclosureMenus(root: HTMLElement): void {
+    const openMenuSelector = '.teksttv-block-actions[open], .teksttv-dropdown-button[open]';
+
     root.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape' || !(e.target instanceof Element)) return;
-        const actions = e.target.closest<HTMLDetailsElement>('.teksttv-block-actions[open]');
+        const actions = e.target.closest<HTMLDetailsElement>(openMenuSelector);
         if (!actions) return;
         e.preventDefault();
         actions.removeAttribute('open');
-        actions.querySelector<HTMLElement>('.teksttv-block-actions-toggle')?.focus();
+        actions.querySelector<HTMLElement>(':scope > summary')?.focus();
     });
 
     document.addEventListener('click', (e) => {
         const target = e.target;
         if (!(target instanceof Node)) return;
-        root.querySelectorAll<HTMLDetailsElement>('.teksttv-block-actions[open]').forEach((actions) => {
+        root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
             if (!actions.contains(target)) actions.removeAttribute('open');
         });
     });
@@ -101,7 +102,7 @@ export function initBlockActionMenus(root: HTMLElement): void {
     document.addEventListener('focusin', (e) => {
         const target = e.target;
         if (!(target instanceof Node)) return;
-        root.querySelectorAll<HTMLDetailsElement>('.teksttv-block-actions[open]').forEach((actions) => {
+        root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
             if (!actions.contains(target)) actions.removeAttribute('open');
         });
     });

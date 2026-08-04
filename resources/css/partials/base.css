@@ -6,7 +6,6 @@
     --teksttv-color-content-muted: #646970;
     --teksttv-color-content-on-accent: #fff;
     --teksttv-color-border: #c3c4c7;
-    --teksttv-color-border-subtle: #dcdcde;
     --teksttv-color-accent: var(--wp-admin-theme-color, #2271b1);
     --teksttv-color-accent-hover: var(--wp-admin-theme-color-darker-10, #135e96);
     --teksttv-color-critical: #b32d2e;
@@ -16,6 +15,7 @@
 }
 
 .teksttv-admin,
+.teksttv-snackbar,
 .teksttv-admin *,
 .teksttv-admin *::before,
 .teksttv-admin *::after {
@@ -226,12 +226,12 @@
 .teksttv-snackbar-dismiss:hover,
 .teksttv-snackbar-dismiss:focus-visible {
     background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    color: var(--teksttv-color-content-on-accent);
 }
 
 .teksttv-snackbar-action:focus-visible,
 .teksttv-snackbar-dismiss:focus-visible {
-    outline: 2px solid #fff;
+    outline: 2px solid var(--teksttv-color-content-on-accent);
     outline-offset: 1px;
 }
 

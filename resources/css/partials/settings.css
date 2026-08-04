@@ -70,7 +70,7 @@
 
 .teksttv-feature-group > p {
     margin: 3px 0 8px;
-    color: #646970;
+    color: var(--teksttv-color-content-muted);
     font-size: 12px;
     line-height: 1.45;
 }

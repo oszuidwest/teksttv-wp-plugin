@@ -21,22 +21,21 @@ settings_errors('teksttv');
 /**
  * One renderer for both add-menus (blocks and ticker), so the dropdown markup
  * and its ARIA wiring exist in exactly one place. `$key` derives the element
- * ids (`teksttv-add-{$key}-*`), the `x-ref`, and the Alpine open-state
- * (`menu{Key}Open`); `$method` is the Alpine handler that inserts the type.
+ * ids (`teksttv-add-{$key}-*`); `$method` is the Alpine handler that inserts
+ * the type.
  *
  * @var callable(string, string, array<string, array{icon: string, label: string}>, string): void $render_add_menu
  */
 $render_add_menu = static function (string $key, string $label, array $types, string $method): void {
-    $state = 'menu' . ucfirst($key) . 'Open';
     ?>
-    <div class="teksttv-dropdown-button" @click.outside="<?php echo esc_attr($state); ?> = false" @focusout="if (!$el.contains($event.relatedTarget)) <?php echo esc_attr($state); ?> = false" @keydown.escape.prevent.stop="<?php echo esc_attr($state); ?> = false; $refs.<?php echo esc_attr($key); ?>Toggle.focus()">
-        <button type="button" class="button teksttv-add-action" id="teksttv-add-<?php echo esc_attr($key); ?>-toggle" x-ref="<?php echo esc_attr($key); ?>Toggle" aria-controls="teksttv-add-<?php echo esc_attr($key); ?>-menu" :aria-expanded="<?php echo esc_attr($state); ?>.toString()" @click.prevent.stop="<?php echo esc_attr($state); ?> = !<?php echo esc_attr($state); ?>"><?php echo esc_html($label); ?></button>
-        <div class="teksttv-dropdown-menu" id="teksttv-add-<?php echo esc_attr($key); ?>-menu" :class="{ 'is-open': <?php echo esc_attr($state); ?> }">
+    <details class="teksttv-dropdown-button">
+        <summary class="button teksttv-add-action" id="teksttv-add-<?php echo esc_attr($key); ?>-toggle"><?php echo esc_html($label); ?></summary>
+        <div class="teksttv-dropdown-menu" id="teksttv-add-<?php echo esc_attr($key); ?>-menu">
             <?php foreach ($types as $type_slug => $type_meta) : ?>
-            <button type="button" data-type="<?php echo esc_attr((string) $type_slug); ?>" @click.prevent="<?php echo esc_attr($state); ?> = false; <?php echo esc_attr($method); ?>('<?php echo esc_js((string) $type_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($type_meta['icon']); ?>" aria-hidden="true"></span> <?php echo esc_html($type_meta['label']); ?></button>
+            <button type="button" data-type="<?php echo esc_attr((string) $type_slug); ?>" @click.prevent="<?php echo esc_attr($method); ?>('<?php echo esc_js((string) $type_slug); ?>')"><span class="dashicons dashicons-<?php echo esc_attr($type_meta['icon']); ?>" aria-hidden="true"></span> <?php echo esc_html($type_meta['label']); ?></button>
             <?php endforeach; ?>
         </div>
-    </div>
+    </details>
     <?php
 };
 

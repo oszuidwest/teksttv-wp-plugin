@@ -5,7 +5,7 @@ import { initTomSelectIn } from '../../modules/tomSelect';
 import { removeElementWithUndo } from '../../modules/undo';
 import { debounce } from '../../modules/utils';
 import { BLOCK_SORTABLE_OPTS, type WorkbenchOpts } from './constants';
-import { handleBlockControlsClick, handleBlocksClick, initBlockActionMenus, setBlockOpen } from './handleBlocksClick';
+import { handleBlockControlsClick, handleBlocksClick, initDisclosureMenus, setBlockOpen } from './handleBlocksClick';
 import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
@@ -116,20 +116,16 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     }
 
     return {
-        menuBlockOpen: false,
-        menuTickerOpen: false,
-
         init(): void {
             blocksEl = document.querySelector<HTMLElement>('#teksttv-blocks, #teksttv-campaigns');
             if (!blocksEl) return;
 
             initSortable(blocksEl, reindexBlocks);
-            initBlockActionMenus(blocksEl);
+            initDisclosureMenus(blocksEl.closest('form') ?? blocksEl);
 
             tickerEl = document.querySelector<HTMLElement>('#teksttv-ticker');
             if (opts.ticker && tickerEl) {
                 initSortable(tickerEl, reindexTicker);
-                initBlockActionMenus(tickerEl);
             }
 
             refreshSummaries();
@@ -207,8 +203,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
                 focusAfterRemove: focusTarget,
                 focusAfterRestore: (restored) => restored.querySelector('input[name$="[label]"]'),
                 focusUndo: e.detail === 0,
-                onRemove: reindexGroups,
-                onRestore: reindexGroups,
+                onChange: reindexGroups,
             });
         },
     };

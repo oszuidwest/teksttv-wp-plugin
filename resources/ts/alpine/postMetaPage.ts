@@ -1,5 +1,5 @@
 import Sortable from 'sortablejs';
-import { hide, show, slideDown, slideUp } from '../modules/dom';
+import { hide, prefersReducedMotion, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
 import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
@@ -105,7 +105,7 @@ export function createPostMetaPage() {
                 new Sortable(imagesListEl, {
                     ghostClass: 'teksttv-sortable-ghost',
                     dragClass: 'teksttv-sortable-drag',
-                    animation: 150,
+                    animation: prefersReducedMotion() ? 0 : 150,
                 });
             }
 

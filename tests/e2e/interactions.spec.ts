@@ -68,7 +68,13 @@ test.describe('admin interaction contracts', () => {
         await addMenu.locator('button').last().focus();
         await page.keyboard.press('Tab');
         await expect(addMenu).toBeHidden();
-        await expect(addToggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(addToggle.locator('..')).not.toHaveAttribute('open', '');
+
+        await addToggle.click();
+        await addMenu.locator('button').first().focus();
+        await page.keyboard.press('Escape');
+        await expect(addMenu).toBeHidden();
+        await expect(addToggle).toBeFocused();
 
         const initialCount = await page.locator('#teksttv-blocks > .teksttv-block').count();
         for (const [offset, type] of types.entries()) {
@@ -154,7 +160,7 @@ test.describe('admin interaction contracts', () => {
         await expect(imageBlock).toHaveCount(0);
         await expect(snackbar).toBeVisible();
         await expect(undo).toBeFocused();
-        await page.waitForTimeout(8_100);
+        await page.clock.fastForward(8_100);
         await expect(snackbar).toBeVisible();
 
         await page.keyboard.press('Enter');
