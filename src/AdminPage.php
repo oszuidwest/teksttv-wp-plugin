@@ -566,7 +566,7 @@ class AdminPage
         <div class="teksttv-days-row">
             <?php foreach (Helpers::get_day_labels() as $num => $label) : ?>
             <label class="teksttv-day-toggle">
-                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" <?php checked($days === null || in_array((string) $num, $days, true)); ?> />
+                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" class="teksttv-visually-hidden" <?php checked($days === null || in_array((string) $num, $days, true)); ?> />
                 <span><?php echo esc_html($label); ?></span>
             </label>
             <?php endforeach; ?>

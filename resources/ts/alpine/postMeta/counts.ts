@@ -9,8 +9,9 @@ export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): v
     const limit = config?.titleCharLimit ?? 0;
     const title = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
     const len = title.length;
+    const hasCount = limit > 0 && len > 0;
 
-    if (limit > 0 && len > 0) {
+    if (hasCount) {
         const over = len > limit;
         cc.innerHTML = `<span${over ? ' class="teksttv-charcount-over"' : ''}>${len} / ${limit} tekens</span>`;
     } else {
@@ -18,12 +19,15 @@ export function updateTeksttvCharCount(config: TeksttvPostConfig | undefined): v
     }
 }
 
-export function updateTeksttvWordCount(config: TeksttvPostConfig | undefined, hasPhoto = false): void {
-    const content = getTeksttvEditorHtml();
+export function updateTeksttvWordCount(
+    config: TeksttvPostConfig | undefined,
+    hasPhoto = false,
+    content = getTeksttvEditorHtml(),
+): void {
     const wc = document.querySelector('#teksttv-wordcount');
     if (!(wc instanceof HTMLElement)) return;
 
-    const pages = splitPages(content);
+    const pages = splitPages(content, config?.pageSeparator ?? true);
     const text = pages
         .map((page) => stripTags(page))
         .join(' ')

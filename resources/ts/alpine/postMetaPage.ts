@@ -6,6 +6,7 @@ import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postM
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
+import { getTeksttvEditorHtml } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
 import { updatePreviewThumbnails } from './postMeta/previewThumbnails';
@@ -21,8 +22,8 @@ export function createPostMetaPage() {
 
     const previewUrl = config?.previewUrl ?? '';
 
-    function getSlides(): Slide[] {
-        return buildSlidesFromDom(config, customImageData);
+    function getSlides(content?: string): Slide[] {
+        return buildSlidesFromDom(config, customImageData, content);
     }
 
     function updatePreviewNav(): void {
@@ -43,12 +44,13 @@ export function createPostMetaPage() {
     }
 
     const updatePreview = debounce(() => {
-        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
+        const content = getTeksttvEditorHtml();
+        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData), content);
 
         const iframe = document.querySelector<HTMLIFrameElement>('#teksttv-preview-iframe');
         if (!(previewUrl && iframe)) return;
 
-        slides = getSlides();
+        slides = getSlides(content);
         if (currentSlideIndex >= slides.length) currentSlideIndex = slides.length - 1;
         if (currentSlideIndex < 0) currentSlideIndex = 0;
         updatePreviewNav();
@@ -283,6 +285,24 @@ export function createPostMetaPage() {
         onTitleInputMeta(): void {
             updateTeksttvCharCount(config);
             updatePreview();
+        },
+
+        insertPlainSeparator(): void {
+            const textarea = document.querySelector<HTMLTextAreaElement>('#teksttv_content');
+            if (!textarea) return;
+
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const needsLeadingBreak = start > 0 && textarea.value[start - 1] !== '\n';
+            const hasTrailingBreak = textarea.value[end] === '\n';
+            const separator = `${needsLeadingBreak ? '\n' : ''}---${hasTrailingBreak ? '' : '\n'}`;
+            textarea.setRangeText(separator, start, end, 'end');
+            if (hasTrailingBreak) {
+                const caret = textarea.selectionEnd + 1;
+                textarea.setSelectionRange(caret, caret);
+            }
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.focus();
         },
     };
 }
