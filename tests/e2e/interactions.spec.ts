@@ -261,6 +261,8 @@ test.describe('admin interaction contracts', () => {
         await page.locator('#teksttv-add-channel').click();
         await expect(rows.last().locator('.teksttv-remove-channel')).toHaveClass(/button-link-delete/);
         await expect(rows.last().locator('input[name$="[slug]"]')).toBeFocused();
+        await rows.last().locator('input[name$="[slug]"]').fill('E2E two');
+        await expect(rows.last().locator('.teksttv-copy-endpoint')).toBeDisabled();
         await rows.last().locator('input[name$="[slug]"]').fill('e2e-two');
         await rows.last().locator('input[name$="[label]"]').fill('E2E Two');
         const copyEndpoint = rows.last().locator('.teksttv-copy-endpoint');

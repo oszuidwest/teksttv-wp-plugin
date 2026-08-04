@@ -93,7 +93,7 @@ class CampaignsPage
                     </div>
                 </div>
                 <div class="teksttv-campaign-slides-section">
-                    <span class="teksttv-section-label"><?php echo esc_html('Slides'); ?></span>
+                    <h3 class="teksttv-section-label"><?php echo esc_html('Slides'); ?></h3>
                     <div class="teksttv-campaign-slides teksttv-images-list" data-name="teksttv_campaigns[<?php echo esc_attr($index); ?>][slides][]">
                         <?php foreach ($slides as $attachment_id) :
                             $thumb = wp_get_attachment_image_url((int) $attachment_id, 'thumbnail');
@@ -179,7 +179,7 @@ class CampaignsPage
             // Duration
             $dur = $item['duration'] ?? '';
             if ($dur !== '') {
-                $saved['duration'] = Helpers::clamp_int($dur, 1, 120);
+                $saved['duration'] = Helpers::clamp_int($dur, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
             }
 
             $saved = array_merge($saved, Helpers::extract_scheduling_fields($item));

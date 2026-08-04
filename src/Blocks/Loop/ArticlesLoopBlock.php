@@ -69,10 +69,10 @@ final class ArticlesLoopBlock
         $dt = $raw['duration_text'] ?? '';
         $di = $raw['duration_image'] ?? '';
         if ($dt !== '') {
-            $saved['duration_text'] = Helpers::clamp_int($dt, 1, 120);
+            $saved['duration_text'] = Helpers::clamp_int($dt, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
         }
         if ($di !== '') {
-            $saved['duration_image'] = Helpers::clamp_int($di, 1, 120);
+            $saved['duration_image'] = Helpers::clamp_int($di, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
         }
 
         return $saved;

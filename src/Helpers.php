@@ -258,6 +258,9 @@ class Helpers
         return max($min, min($max, absint($value)));
     }
 
+    public const DURATION_MIN_SECONDS = 1;
+    public const DURATION_MAX_SECONDS = 120;
+
     /**
      * Default seconds for the per-type duration options. Single source for the
      * registered setting defaults, the admin placeholders, and build-time
@@ -293,7 +296,7 @@ class Helpers
     public static function fixed_duration_ms(mixed $override_seconds, int $default_seconds): int
     {
         $seconds = !empty($override_seconds) ? (int) $override_seconds : $default_seconds;
-        return self::clamp_int($seconds, 1, 120) * 1000;
+        return self::clamp_int($seconds, self::DURATION_MIN_SECONDS, self::DURATION_MAX_SECONDS) * 1000;
     }
 
     /**

@@ -9,7 +9,9 @@ export function markFormDirty(source: Element): void {
 /** Warn before leaving a Tekst TV admin form with unsaved changes. */
 export function initDirtyFormGuards(): void {
     document.querySelectorAll<HTMLFormElement>('.teksttv-admin form').forEach((form) => {
-        const markDirty = (): void => {
+        const markDirty = (event: Event): void => {
+            if (event.type === 'input' && event.target instanceof Element && event.target.closest('.ts-control'))
+                return;
             dirtyForms.add(form);
         };
 

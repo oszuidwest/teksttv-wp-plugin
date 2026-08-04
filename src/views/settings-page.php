@@ -127,19 +127,19 @@ $render_channel_row = static function (int|string $i, array $ch) use ($api_base_
                 <tr>
                     <th scope="row"><label for="teksttv_duration_text"><?php echo esc_html('Tekstslide'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_text" name="teksttv_duration_text" value="<?php echo esc_attr(get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text'])); ?>" min="1" max="120" class="small-text" /> <?php echo esc_html('seconden'); ?>
+                        <input type="number" id="teksttv_duration_text" name="teksttv_duration_text" value="<?php echo esc_attr(get_option('teksttv_duration_text', Helpers::DURATION_DEFAULTS['teksttv_duration_text'])); ?>" min="<?php echo esc_attr((string) Helpers::DURATION_MIN_SECONDS); ?>" max="<?php echo esc_attr((string) Helpers::DURATION_MAX_SECONDS); ?>" class="small-text" /> <?php echo esc_html('seconden'); ?>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="teksttv_duration_image"><?php echo esc_html('Afbeeldingslide'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_image" name="teksttv_duration_image" value="<?php echo esc_attr(get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image'])); ?>" min="1" max="120" class="small-text" /> <?php echo esc_html('seconden'); ?>
+                        <input type="number" id="teksttv_duration_image" name="teksttv_duration_image" value="<?php echo esc_attr(get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image'])); ?>" min="<?php echo esc_attr((string) Helpers::DURATION_MIN_SECONDS); ?>" max="<?php echo esc_attr((string) Helpers::DURATION_MAX_SECONDS); ?>" class="small-text" /> <?php echo esc_html('seconden'); ?>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="teksttv_duration_iframe"><?php echo esc_html('Iframe-slide'); ?></label></th>
                     <td>
-                        <input type="number" id="teksttv_duration_iframe" name="teksttv_duration_iframe" value="<?php echo esc_attr(get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe'])); ?>" min="1" max="120" class="small-text" /> <?php echo esc_html('seconden'); ?>
+                        <input type="number" id="teksttv_duration_iframe" name="teksttv_duration_iframe" value="<?php echo esc_attr(get_option('teksttv_duration_iframe', Helpers::DURATION_DEFAULTS['teksttv_duration_iframe'])); ?>" min="<?php echo esc_attr((string) Helpers::DURATION_MIN_SECONDS); ?>" max="<?php echo esc_attr((string) Helpers::DURATION_MAX_SECONDS); ?>" class="small-text" /> <?php echo esc_html('seconden'); ?>
                     </td>
                 </tr>
             </table>

@@ -5,6 +5,7 @@ import { cloneTemplate, reindexNames, siblingFocusTarget } from '../modules/dom'
 export function createChannelsSettingsPage() {
     let channelsTbody: HTMLTableSectionElement | null = null;
     let apiBase = '';
+    const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
 
     function reindexChannels(): void {
         if (!channelsTbody) return;
@@ -17,7 +18,8 @@ export function createChannelsSettingsPage() {
         if (!button || !label) return;
 
         let endpoint = '';
-        if (apiBase && slug) {
+        const slugInput = row.querySelector<HTMLInputElement>('input[name$="[slug]"]');
+        if (apiBase && slug && slugInput?.checkValidity()) {
             const url = new URL(apiBase, window.location.href);
             url.searchParams.set('channel', slug);
             endpoint = url.toString();
@@ -54,9 +56,12 @@ export function createChannelsSettingsPage() {
                 field.style.position = 'fixed';
                 field.style.opacity = '0';
                 document.body.append(field);
-                field.select();
-                copied = document.execCommand('copy');
-                field.remove();
+                try {
+                    field.select();
+                    copied = document.execCommand('copy');
+                } finally {
+                    field.remove();
+                }
                 if (!copied) throw new Error('Copy command failed');
             }
             label.textContent = 'Gekopieerd!';
@@ -64,9 +69,12 @@ export function createChannelsSettingsPage() {
             label.textContent = 'Kopiëren mislukt';
         }
 
-        window.setTimeout(() => {
+        window.clearTimeout(copyResetTimers.get(button));
+        const timer = window.setTimeout(() => {
             if (button.isConnected) label.textContent = 'Link kopiëren';
+            copyResetTimers.delete(button);
         }, 1500);
+        copyResetTimers.set(button, timer);
     }
 
     return {

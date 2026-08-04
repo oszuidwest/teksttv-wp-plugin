@@ -183,7 +183,7 @@ class AdminPage
         foreach (Helpers::DURATION_DEFAULTS as $duration_option => $duration_default) {
             register_setting('teksttv_settings', $duration_option, [
                 'type' => 'integer',
-                'sanitize_callback' => fn($v) => Helpers::clamp_int($v, 1, 120),
+                'sanitize_callback' => fn($v) => Helpers::clamp_int($v, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS),
                 'default' => $duration_default,
             ]);
         }
