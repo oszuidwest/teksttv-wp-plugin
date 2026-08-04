@@ -4,9 +4,8 @@
 
     tinymce.PluginManager.add('teksttv_separator', function (editor) {
         editor.addButton('teksttv_separator', {
-            text: 'Paginascheiding',
-            icon: 'hr',
-            tooltip: 'Paginascheiding invoegen (---)',
+            text: 'Nieuwe slide',
+            tooltip: 'Nieuwe slide invoegen',
             onclick: function () {
                 editor.execCommand('mceInsertContent', false, '<p>---</p>');
             },

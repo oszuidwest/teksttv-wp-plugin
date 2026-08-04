@@ -34,6 +34,7 @@ export interface TeksttvPostConfig {
     aiSupported: boolean;
     postId: number;
     isNewPost: boolean;
+    fallbackTitle: string;
     titleCharLimit: number;
     wordLimit: number;
     wordLimitPhoto: number;
