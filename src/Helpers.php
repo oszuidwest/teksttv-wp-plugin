@@ -23,7 +23,7 @@ class Helpers
      */
     public static function field_id(string $prefix, int|string $index, string $field): string
     {
-        return str_replace('_', '-', $prefix) . '-' . (string) $index . '-' . $field;
+        return str_replace('_', '-', $prefix . '-' . (string) $index . '-' . $field);
     }
 
     /**
@@ -33,13 +33,13 @@ class Helpers
      */
     public static function field_for(string $prefix, int|string $index, string $field): void
     {
-        echo 'for="' . esc_attr(self::field_id($prefix, $index, str_replace('_', '-', $field))) . '"';
+        echo 'for="' . esc_attr(self::field_id($prefix, $index, $field)) . '"';
     }
 
     /** Echo the escaped `id` + `name` attribute pair for a repeated admin form field. */
     public static function field_attrs(string $prefix, int|string $index, string $field): void
     {
-        echo 'id="' . esc_attr(self::field_id($prefix, $index, str_replace('_', '-', $field))) . '"'
+        echo 'id="' . esc_attr(self::field_id($prefix, $index, $field)) . '"'
             . ' name="' . esc_attr($prefix . '[' . (string) $index . '][' . $field . ']') . '"';
     }
 

@@ -108,6 +108,12 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         });
     }
 
+    function setAllOpen(root: HTMLElement | null, expanded: boolean): void {
+        root?.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block) => {
+            setBlockOpen(block, expanded);
+        });
+    }
+
     return {
         menuBlockOpen: false,
         menuTickerOpen: false,
@@ -146,10 +152,11 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         },
 
         setAllBlocksOpen(expanded: boolean): void {
-            if (!blocksEl) return;
-            blocksEl.querySelectorAll<HTMLElement>(':scope > .teksttv-block').forEach((block) => {
-                setBlockOpen(block, expanded);
-            });
+            setAllOpen(blocksEl, expanded);
+        },
+
+        setAllTickerOpen(expanded: boolean): void {
+            setAllOpen(tickerEl, expanded);
         },
 
         blocksClick(e: MouseEvent): void {

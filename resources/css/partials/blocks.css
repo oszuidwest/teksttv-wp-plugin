@@ -417,6 +417,20 @@
     display: inline-flex;
 }
 
+.teksttv-dropdown-button > .teksttv-add-action {
+    width: auto;
+    gap: 6px;
+    padding-inline: 12px;
+}
+
+.teksttv-dropdown-button > .teksttv-add-action > span {
+    line-height: 20px;
+}
+
+.teksttv-dropdown-button > .teksttv-add-action .dashicons {
+    margin: 0;
+}
+
 .teksttv-dropdown-menu {
     display: none;
     position: absolute;
@@ -482,9 +496,7 @@
         align-items: stretch;
     }
 
-    .teksttv-section-actions .teksttv-add-action,
-    .teksttv-section-actions .teksttv-dropdown-button,
-    .teksttv-section-actions .teksttv-dropdown-button > .button {
+    .teksttv-section-actions > .teksttv-add-action {
         width: 100%;
     }
 

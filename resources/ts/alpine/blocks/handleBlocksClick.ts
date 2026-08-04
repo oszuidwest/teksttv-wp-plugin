@@ -26,14 +26,14 @@ export function setBlockOpen(block: HTMLElement, expanded: boolean, animate = tr
 }
 
 /** Toggle the accordion body of the block owning `trigger`. */
-export function toggleBlockOpen(trigger: Element): void {
+function toggleBlockOpen(trigger: Element): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
     setBlockOpen(block, !block.classList.contains('is-expanded'));
 }
 
 /** Slide up and remove the block owning `trigger`, then run `onRemoved`. */
-export function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
+function removeClosestBlock(trigger: Element, onRemoved: () => void): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
     // The list root declares where focus goes when its last block is removed.
@@ -60,7 +60,7 @@ export function removeClosestBlock(trigger: Element, onRemoved: () => void): voi
 }
 
 /** Move a block one position for keyboard and switch-control users. */
-export function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => void): void {
+function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => void): void {
     const block = trigger.closest<HTMLElement>('.teksttv-block');
     const root = block?.parentElement;
     if (!block || !root) return;

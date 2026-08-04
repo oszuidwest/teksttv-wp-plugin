@@ -42,7 +42,7 @@ test.describe('administrator admin screens', () => {
         const loopActionWidths = await page
             .locator('#teksttv-add-block-toggle, #teksttv-add-ticker-toggle')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
-        expect(Math.max(...loopActionWidths) - Math.min(...loopActionWidths)).toBeLessThan(1);
+        expect(Math.max(...loopActionWidths)).toBeLessThan(190);
 
         await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
         const campaignSections = page.locator('.teksttv-workbench-section');
