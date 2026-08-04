@@ -13,5 +13,4 @@ playwright-report/
 *.md
 !README.md
 !EXTENDING.md
-!UI-AUDIT.md
 .DS_Store
