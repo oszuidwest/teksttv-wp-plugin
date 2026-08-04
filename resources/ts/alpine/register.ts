@@ -23,11 +23,11 @@ function withTomSelect<T extends { init(this: unknown): void }>(component: T): T
  */
 export function registerTeksttvAlpine(): void {
     Alpine.data('teksttvLoopPage', () =>
-        withTomSelect(createBlocksWorkbench({ ticker: true, groups: false, campaignAdd: false })),
+        withTomSelect(createBlocksWorkbench({ ticker: true, commercialBlocks: false, campaignAdd: false })),
     );
 
-    Alpine.data('teksttvCampaignsPage', () =>
-        withTomSelect(createBlocksWorkbench({ ticker: false, groups: true, campaignAdd: true })),
+    Alpine.data('teksttvCommercialsPage', () =>
+        withTomSelect(createBlocksWorkbench({ ticker: false, commercialBlocks: true, campaignAdd: true })),
     );
 
     Alpine.data('teksttvSettingsPage', () => withTomSelect(createChannelsSettingsPage()));

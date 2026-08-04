@@ -10,11 +10,11 @@ import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
-/** Shared loop + campaigns blocks UI (spread into Alpine `x-data`; call `init` via `.call(this)`). */
+/** Shared loop + commercials blocks UI (spread into Alpine `x-data`; call `init` via `.call(this)`). */
 export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let blocksEl: HTMLElement | null = null;
     let tickerEl: HTMLElement | null = null;
-    let groupsTbody: HTMLTableSectionElement | null = null;
+    let commercialBlocksTbody: HTMLTableSectionElement | null = null;
 
     function reindexBlockUi(block: Element, index: number, total: number): void {
         const root = block.parentElement;
@@ -42,10 +42,10 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
     }
 
     // Only called after a user-driven add/remove, so marking dirty here is safe.
-    function reindexGroups(): void {
-        if (!groupsTbody) return;
-        reindexNames(groupsTbody, '.teksttv-group-row', /(teksttv_campaign_groups)\[\d+\]/);
-        markFormDirty(groupsTbody);
+    function reindexCommercialBlocks(): void {
+        if (!commercialBlocksTbody) return;
+        reindexNames(commercialBlocksTbody, '.teksttv-commercial-block-row', /(teksttv_commercial_blocks)\[\d+\]/);
+        markFormDirty(commercialBlocksTbody);
     }
 
     function refreshSummaries(): void {
@@ -132,8 +132,9 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             reindexBlocks();
             if (tickerEl) reindexTicker();
 
-            if (opts.groups) {
-                groupsTbody = document.querySelector('#teksttv-groups')?.querySelector('tbody') ?? null;
+            if (opts.commercialBlocks) {
+                commercialBlocksTbody =
+                    document.querySelector('#teksttv-commercial-blocks')?.querySelector('tbody') ?? null;
             }
         },
 
@@ -176,34 +177,34 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
             handleFieldChange(tickerEl, e);
         },
 
-        addGroupRow(): void {
-            if (!groupsTbody) return;
+        addCommercialBlockRow(): void {
+            if (!commercialBlocksTbody) return;
             // New rows have an empty id; the server derives a stable id from
             // the label on save. Reindexing keeps the form keys unique.
-            const row = cloneTemplate('tmpl-teksttv-group-row');
+            const row = cloneTemplate('tmpl-teksttv-commercial-block-row');
             if (!row) return;
-            groupsTbody.append(row);
-            reindexGroups();
+            commercialBlocksTbody.append(row);
+            reindexCommercialBlocks();
             row.querySelector<HTMLInputElement>('input[name$="[label]"]')?.focus();
         },
 
-        groupsClick(e: MouseEvent): void {
+        commercialBlocksClick(e: MouseEvent): void {
             if (!(e.target instanceof Element)) return;
-            const tgt = e.target.closest('.teksttv-remove-group');
-            if (!(tgt instanceof HTMLElement) || !groupsTbody?.contains(tgt)) return;
+            const tgt = e.target.closest('.teksttv-remove-commercial-block');
+            if (!(tgt instanceof HTMLElement) || !commercialBlocksTbody?.contains(tgt)) return;
             const row = tgt.closest('tr');
             if (!row) return;
             const focusTarget = siblingFocusTarget(
                 row,
                 'input[name$="[label]"]',
-                document.querySelector<HTMLElement>('#teksttv-add-group'),
+                document.querySelector<HTMLElement>('#teksttv-add-commercial-block'),
             );
             removeElementWithUndo(row, {
                 message: 'Reclameblok verwijderd.',
                 focusAfterRemove: focusTarget,
                 focusAfterRestore: (restored) => restored.querySelector('input[name$="[label]"]'),
                 focusUndo: e.detail === 0,
-                onChange: reindexGroups,
+                onChange: reindexCommercialBlocks,
             });
         },
     };

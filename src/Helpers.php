@@ -440,24 +440,24 @@ class Helpers
     }
 
     /**
-     * Get configured campaign groups as id/label pairs.
+     * Get configured commercial blocks as id/label pairs.
      *
      * @return list<array{id: string, label: string}>
      */
-    public static function get_campaign_groups(): array
+    public static function get_commercial_blocks(): array
     {
-        $groups = get_option('teksttv_campaign_groups', []);
-        if (empty($groups) || !is_array($groups)) {
+        $commercial_blocks = get_option('teksttv_commercial_blocks', []);
+        if (empty($commercial_blocks) || !is_array($commercial_blocks)) {
             return [];
         }
 
         $normalized = [];
-        foreach ($groups as $group) {
-            if (!is_array($group)) {
+        foreach ($commercial_blocks as $commercial_block) {
+            if (!is_array($commercial_block)) {
                 continue;
             }
-            $label = (string) ($group['label'] ?? '');
-            $id = (string) ($group['id'] ?? '');
+            $label = (string) ($commercial_block['label'] ?? '');
+            $id = (string) ($commercial_block['id'] ?? '');
             if ($label === '' || $id === '') {
                 continue;
             }
@@ -468,12 +468,12 @@ class Helpers
     }
 
     /**
-     * Derive a stable id from a group label, used when a newly added group has
+     * Derive a stable id from a commercial block label, used when a newly added block has
      * no id yet.
      */
-    public static function campaign_group_id(string $label): string
+    public static function commercial_block_id(string $label): string
     {
-        return 'grp_' . substr(md5($label), 0, 12);
+        return 'cblock_' . substr(md5($label), 0, 12);
     }
 
     /**

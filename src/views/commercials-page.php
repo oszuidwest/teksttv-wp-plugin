@@ -1,10 +1,10 @@
 <?php
 /**
- * Campaigns admin template.
+ * Commercials admin template.
  *
  * @var list<array<string, mixed>> $campaigns
  * @var list<array{slug: string, label: string}> $channels
- * @var list<array{id: string, label: string}> $groups
+ * @var list<array{id: string, label: string}> $commercial_blocks
  */
 
 namespace TekstTV;
@@ -13,37 +13,37 @@ defined('ABSPATH') || exit;
 
 echo '<div class="wrap teksttv-admin">';
 echo '<h1>' . esc_html('Reclame') . '</h1>';
-settings_errors('teksttv_campaigns');
+settings_errors('teksttv_commercials');
 
 /**
  * One renderer for both the saved rows and the add-row template, so the row
  * markup exists in exactly one place. New rows render an empty id; the server
  * derives a stable id from the label on save.
  *
- * @var callable(int|string, array{id: string, label: string}): void $render_group_row
+ * @var callable(int|string, array{id: string, label: string}): void $render_commercial_block_row
  */
-$render_group_row = static function (int|string $gi, array $group): void {
+$render_commercial_block_row = static function (int|string $block_index, array $commercial_block): void {
     ?>
-    <tr class="teksttv-group-row">
+    <tr class="teksttv-commercial-block-row">
         <td>
-            <input type="hidden" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][id]" value="<?php echo esc_attr($group['id']); ?>" />
-            <label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Naam'); ?></span><input type="text" name="teksttv_campaign_groups[<?php echo esc_attr((string) $gi); ?>][label]" value="<?php echo esc_attr($group['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. Lokale sponsors'); ?>" autocomplete="off" /></label>
+            <input type="hidden" name="teksttv_commercial_blocks[<?php echo esc_attr((string) $block_index); ?>][id]" value="<?php echo esc_attr($commercial_block['id']); ?>" />
+            <label><span class="screen-reader-text teksttv-mobile-field-label"><?php echo esc_html('Naam'); ?></span><input type="text" name="teksttv_commercial_blocks[<?php echo esc_attr((string) $block_index); ?>][label]" value="<?php echo esc_attr($commercial_block['label']); ?>" class="regular-text" required placeholder="<?php echo esc_attr('bijv. Lokale sponsors'); ?>" autocomplete="off" /></label>
         </td>
-        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-group"><?php echo esc_html('Verwijderen'); ?></button></td>
+        <td class="teksttv-table-actions"><button type="button" class="button-link button-link-delete teksttv-remove-commercial-block"><?php echo esc_html('Verwijderen'); ?></button></td>
     </tr>
     <?php
 };
 
 ?>
-<form method="post" class="teksttv-admin-column" x-data="teksttvCampaignsPage">
-    <?php wp_nonce_field('teksttv_save_campaigns', 'teksttv_campaigns_nonce'); ?>
+<form method="post" class="teksttv-admin-column" x-data="teksttvCommercialsPage">
+    <?php wp_nonce_field('teksttv_save_commercials', 'teksttv_commercials_nonce'); ?>
 
-    <!-- Advertising block management -->
-    <section class="teksttv-card teksttv-campaign-groups teksttv-workbench-section">
+    <!-- Commercial block management -->
+    <section class="teksttv-card teksttv-commercial-blocks teksttv-workbench-section">
         <h2><?php echo esc_html('Reclameblokken'); ?></h2>
-        <p class="description"><?php echo esc_html('Definieer reclameblokken om campagnes te organiseren. In de loop kies je per campagne-blok welke reclameblokken getoond worden.'); ?></p>
+        <p class="description"><?php echo esc_html('Definieer reclameblokken om campagnes te organiseren. Met het looponderdeel Reclame kies je welke reclameblokken worden uitgezonden.'); ?></p>
         <div class="teksttv-table-scroll">
-            <table class="widefat teksttv-management-table" id="teksttv-groups" @click="groupsClick($event)">
+            <table class="widefat teksttv-management-table" id="teksttv-commercial-blocks" @click="commercialBlocksClick($event)">
                 <thead>
                     <tr>
                         <th><?php echo esc_html('Naam'); ?></th>
@@ -54,14 +54,14 @@ $render_group_row = static function (int|string $gi, array $group): void {
                     <tr class="teksttv-table-empty">
                         <td colspan="2"><?php echo esc_html('Nog geen reclameblokken. Voeg een reclameblok toe om campagnes te ordenen.'); ?></td>
                     </tr>
-                    <?php foreach ($groups as $gi => $group) :
-                        $render_group_row($gi, $group);
+                    <?php foreach ($commercial_blocks as $block_index => $commercial_block) :
+                        $render_commercial_block_row($block_index, $commercial_block);
                     endforeach; ?>
                 </tbody>
             </table>
         </div>
         <div class="teksttv-add-block-bar teksttv-section-actions">
-            <button type="button" class="button teksttv-add-action" id="teksttv-add-group" @click.prevent="addGroupRow()"><?php echo esc_html('Reclameblok toevoegen'); ?></button>
+            <button type="button" class="button teksttv-add-action" id="teksttv-add-commercial-block" @click.prevent="addCommercialBlockRow()"><?php echo esc_html('Reclameblok toevoegen'); ?></button>
         </div>
     </section>
 
@@ -71,7 +71,7 @@ $render_group_row = static function (int|string $gi, array $group): void {
             <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
             <?php AdminPage::render_empty_state('megaphone', 'Nog geen campagnes', 'Voeg een campagne toe en koppel daarna de gewenste slides.'); ?>
             <?php foreach ($campaigns as $i => $campaign) {
-                CampaignsPage::render_campaign($i, $campaign, $channels, $groups);
+                CommercialsPage::render_campaign($i, $campaign, $channels, $commercial_blocks);
             } ?>
         </div>
 
@@ -87,11 +87,11 @@ $render_group_row = static function (int|string $gi, array $group): void {
 </form>
 
 <template id="tmpl-teksttv-campaign">
-    <?php CampaignsPage::render_campaign(0, [], $channels, $groups); ?>
+    <?php CommercialsPage::render_campaign(0, [], $channels, $commercial_blocks); ?>
 </template>
 
-<template id="tmpl-teksttv-group-row">
-    <?php $render_group_row(0, ['id' => '', 'label' => '']); ?>
+<template id="tmpl-teksttv-commercial-block-row">
+    <?php $render_commercial_block_row(0, ['id' => '', 'label' => '']); ?>
 </template>
 
 </div>
