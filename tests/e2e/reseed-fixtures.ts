@@ -1,13 +1,8 @@
-import { execFileSync } from 'node:child_process';
+import type { RunWordPressPHP } from './test';
 
-/** Restore the shared wp-env database to the deterministic E2E fixture state. */
-export function reseedFixtures(): void {
-    const output = execFileSync('bun', ['run', 'test:e2e:fixtures'], {
-        encoding: 'utf8',
-        stdio: ['inherit', 'pipe', 'inherit'],
-        timeout: 120_000,
-    });
-    process.stdout.write(output);
+/** Restore the shared Playground database to the deterministic E2E fixture state. */
+export async function reseedFixtures(runWordPressPHP: RunWordPressPHP): Promise<void> {
+    const output = await runWordPressPHP("require '/wordpress/wp-content/e2e/fixtures.php';");
     if (!output.includes('fixtures-ok ')) {
         throw new Error('Fixture reseed did not complete successfully.');
     }

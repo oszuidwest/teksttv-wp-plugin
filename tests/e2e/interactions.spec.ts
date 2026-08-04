@@ -1,6 +1,6 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
 import { addLoopBlock, addTickerBlock, submitAndReload } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
+import { expect, type Locator, type Page, test } from './test';
 
 const LOOP_URL = '/wp-admin/admin.php?page=teksttv-loop-tv1';
 
@@ -408,10 +408,10 @@ test.describe('admin interaction contracts', () => {
 
     // Only these tests submit forms and persist real option changes; the tests
     // above are pure DOM work that a reload discards, so they skip the
-    // expensive wp-env reseed round-trip.
+    // fixture reseed round-trip.
     test.describe('persisting saves', () => {
-        test.afterEach(() => {
-            reseedFixtures();
+        test.afterEach(async ({ runWordPressPHP }) => {
+            await reseedFixtures(runWordPressPHP);
         });
 
         test('preserves an explicit no-weekdays schedule across saving and rendering', async ({ page }) => {

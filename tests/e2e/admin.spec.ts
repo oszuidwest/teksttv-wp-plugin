@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
 import { getBrowserErrors, openFixturePostEditor } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
+import { expect, test } from './test';
 
 test.afterEach(async ({ page }) => {
     expect(await getBrowserErrors(page)).toEqual([]);
@@ -14,8 +14,8 @@ test.describe('administrator admin screens', () => {
     });
 
     test.describe('settings mutation', () => {
-        test.afterEach(() => {
-            reseedFixtures();
+        test.afterEach(async ({ runWordPressPHP }) => {
+            await reseedFixtures(runWordPressPHP);
         });
 
         test('administrator can save settings', async ({ page }) => {
@@ -150,15 +150,22 @@ test.describe('administrator admin screens', () => {
 
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
         await openFixturePostEditor(page);
-        const editor = page.frameLocator('#teksttv_content_ifr').locator('body');
-        await editor.evaluate((body) => {
+        const wordCount = page.locator('#teksttv-wordcount');
+        // Wait for the admin initialization (and its TinyMCE binding retry)
+        // before this test emits the keyup fallback event.
+        await expect(wordCount).toHaveText(/^5(?: \/ \d+)? woorden$/);
+        await page.evaluate(() => {
             // Avoid input/change/SetContent so this specifically covers the keyup fallback.
-            body.innerHTML = '<p>Twee woorden</p>';
-            const tinyMceEditor = window.parent.tinymce?.get('teksttv_content');
+            const tinyMceEditor = window.tinymce?.get('teksttv_content');
             if (!tinyMceEditor) throw new Error('TinyMCE editor teksttv_content not found.');
+            const setContentWithoutEvents = tinyMceEditor.setContent as (
+                content: string,
+                options: { no_events: boolean },
+            ) => void;
+            setContentWithoutEvents.call(tinyMceEditor, '<p>Twee woorden</p>', { no_events: true });
             tinyMceEditor.fire('keyup');
         });
-        await expect(page.locator('#teksttv-wordcount')).toHaveText(/^2(?: \/ \d+)? woorden$/);
+        await expect(wordCount).toHaveText(/^2(?: \/ \d+)? woorden$/);
     });
 
     test('post editor exposes the preview enlargement control on keyboard focus', async ({ page }) => {

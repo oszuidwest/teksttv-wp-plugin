@@ -111,7 +111,9 @@ export function createPostMetaPage() {
 
             updateTeksttvCharCount(config);
 
-            if (typeof tinymce !== 'undefined') {
+            const bindTinyMceEvents = (): boolean => {
+                if (typeof tinymce === 'undefined') return false;
+
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
                     // `updatePreview` debounces and also refreshes the word count.
                     // `keyup` covers keystrokes TinyMCE handles without firing `input`.
@@ -122,6 +124,21 @@ export function createPostMetaPage() {
                 tinymce.on('AddEditor', (e) => {
                     if (e.editor.id === 'teksttv_content') bindEditor(e.editor);
                 });
+                return true;
+            };
+
+            // Alpine may initialize before WordPress exposes TinyMCE. Retry
+            // briefly so the existing editor or its AddEditor event is never
+            // missed on a fast page load.
+            if (!bindTinyMceEvents()) {
+                let attempts = 0;
+                const retryTinyMceBinding = (): void => {
+                    attempts++;
+                    if (!bindTinyMceEvents() && attempts < 50) {
+                        window.setTimeout(retryTinyMceBinding, 100);
+                    }
+                };
+                window.setTimeout(retryTinyMceBinding, 100);
             }
 
             document.addEventListener('input', (e) => {

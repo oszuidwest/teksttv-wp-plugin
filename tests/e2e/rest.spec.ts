@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-import { runEvalFile, runWp } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
+import { expect, test } from './test';
 
 test.describe('slides REST endpoint', () => {
     test('backfills the eligible slide past a full batch of ineligible newer posts', async ({ request }) => {
@@ -35,13 +34,15 @@ test.describe('slides REST endpoint', () => {
     });
 
     test.describe('iframe contract', () => {
-        test.afterEach(() => {
-            reseedFixtures();
+        test.afterEach(async ({ runWordPressPHP }) => {
+            await reseedFixtures(runWordPressPHP);
         });
 
-        test('serves a representative HTTPS iframe accepted by the frontend schema', async ({ request }) => {
-            runWp(
-                'eval',
+        test('serves a representative HTTPS iframe accepted by the frontend schema', async ({
+            request,
+            runWordPressPHP,
+        }) => {
+            await runWordPressPHP(
                 "update_option('teksttv_loop_tv1', [['type' => 'iframe', 'url' => 'https://example.test/dashboard', 'duration' => 31]]);",
             );
 
@@ -58,12 +59,12 @@ test.describe('slides REST endpoint', () => {
     });
 
     test.describe('post metadata persistence', () => {
-        test.afterEach(() => {
-            reseedFixtures();
+        test.afterEach(async ({ runWordPressPHP }) => {
+            await reseedFixtures(runWordPressPHP);
         });
 
-        test('saves through WordPress and changes the packaged REST payload', async ({ request }) => {
-            const output = runEvalFile('save-post-meta.php');
+        test('saves through WordPress and changes the packaged REST payload', async ({ request, runWordPressPHP }) => {
+            const output = await runWordPressPHP("require '/wordpress/wp-content/e2e/save-post-meta.php';");
             expect(output).toContain('post-meta-save-ok ');
 
             const response = await request.get('/wp-json/teksttv/v1/slides?channel=tv1');

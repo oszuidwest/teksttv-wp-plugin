@@ -12,6 +12,7 @@ The playout in [oszuidwest/teksttv-frontend](https://github.com/oszuidwest/tekst
 - PHP 8.3 or newer
 
 For development from a Git checkout you also need [Composer](https://getcomposer.org/) and [Bun](https://bun.sh/).
+The Playground E2E suite additionally uses Node.js 24 LTS.
 
 ## Installation
 
@@ -95,21 +96,25 @@ From [`package.json`](package.json):
 | `bun run typecheck`| TypeScript type checking without emitting files |
 | `bun run analyse`  | PHPStan |
 | `bun run test`     | PHPUnit (unit) |
-| `bun run env:start`| Build + package the artifact and boot WordPress via [`wp-env`](https://www.npmjs.com/package/@wordpress/env) (needs Docker) |
-| `bun run test:e2e:fixtures` | Seed the running site with channels, a post, a loop/ticker config and a custom-role user |
-| `bun run test:e2e` | Playwright smoke suite against the running site |
+| `bun run env:start`| Build + package the artifact and boot an interactive [WordPress Playground](https://wordpress.github.io/wordpress-playground/) on port 8888 |
+| `bun run test:e2e` | Start a disposable Blueprint-configured Playground and run the Playwright smoke suite |
 
 ### End-to-end smoke suite
 
-The e2e suite installs the **built plugin artifact** (not the raw checkout)
-into a real WordPress and checks activation, administrator and custom-role
-settings saves, admin screen rendering, and the `/slides` REST shape. Locally:
+The e2e suite mounts the **built plugin artifact** (not the raw checkout) into
+a disposable WordPress Playground and checks activation, administrator and
+custom-role settings saves, admin screen rendering, and the `/slides` REST
+shape. [`blueprint.json`](blueprint.json) pins WordPress and PHP, activates and
+validates the artifact, and loads the deterministic fixtures. Locally:
 
 ```bash
-bun run env:start            # Docker required
-bun run test:e2e:fixtures
+bun run build:package
 bun run test:e2e
-bun run env:stop
 ```
+
+For interactive inspection, run `bun run env:start` and sign in with
+`admin` / `password`. Stop the ephemeral server with Ctrl-C. Playground uses
+SQLite, while the plugin itself relies on WordPress database APIs rather than
+database-specific queries.
 
 CI runs lint, the plugin artifact build, and the e2e suite; see [`.github/workflows/`](.github/workflows/).

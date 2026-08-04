@@ -1,0 +1,26 @@
+{
+    "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+    "preferredVersions": {
+        "php": "8.3",
+        "wp": "7.0"
+    },
+    "features": {
+        "networking": false
+    },
+    "constants": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_DISPLAY": false,
+        "SCRIPT_DEBUG": false,
+        "WP_ENVIRONMENT_TYPE": "local"
+    },
+    "steps": [
+        {
+            "step": "activatePlugin",
+            "pluginPath": "teksttv/teksttv.php"
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php\nrequire '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\n\nif (!str_starts_with(get_bloginfo('version'), '7.0')) {\n    throw new RuntimeException('Expected WordPress 7.0, got ' . get_bloginfo('version') . '.');\n}\n\nif (!str_starts_with(PHP_VERSION, '8.3.')) {\n    throw new RuntimeException('Expected PHP 8.3, got ' . PHP_VERSION . '.');\n}\n\nif (!is_plugin_active('teksttv/teksttv.php')) {\n    throw new RuntimeException('The packaged TekstTV plugin is not active.');\n}\n\nforeach (['vendor/autoload.php', 'assets/admin.js'] as $required_file) {\n    if (!is_file(WP_PLUGIN_DIR . '/teksttv/' . $required_file)) {\n        throw new RuntimeException('The packaged TekstTV plugin is missing ' . $required_file . '.');\n    }\n}\n\nupdate_option('permalink_structure', '/%postname%/');\nflush_rewrite_rules();\nrequire '/wordpress/wp-content/e2e/fixtures.php';"
+        }
+    ]
+}
