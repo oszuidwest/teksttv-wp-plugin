@@ -25,6 +25,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v6
+        with:
+          # Reads engines.node so package.json stays the single source of truth.
+          node-version-file: package.json
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -66,26 +71,11 @@ jobs:
           rm -rf release/teksttv
           unzip -q "$ZIP" -d release
 
-      - name: Start WordPress
-        run: bunx wp-env start
-
-      - name: Assert the release artifact activated
-        run: |
-          bunx wp-env run cli wp plugin is-active teksttv
-          bunx wp-env run cli bash -c "test -f wp-content/plugins/teksttv/vendor/autoload.php && test -f wp-content/plugins/teksttv/assets/admin.js"
-
-      - name: Load fixtures
-        run: bun run test:e2e:fixtures
-
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 
-      - name: Test the release artifact
+      - name: Test the release artifact in WordPress Playground
         run: bun run test:e2e
-
-      - name: Stop WordPress
-        if: always()
-        run: bunx wp-env stop
 
       - name: Publish immutable GitHub release
         if: ${{ !inputs.dry_run }}

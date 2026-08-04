@@ -1,5 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
 import { addLoopBlock, openFixturePostEditor } from './helpers';
+import { expect, type Page, test } from './test';
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');

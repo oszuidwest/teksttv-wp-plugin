@@ -1,6 +1,6 @@
 <?php
 /**
- * E2E fixtures, loaded inside a real WordPress via `wp eval-file`.
+ * E2E fixtures, loaded inside WordPress Playground through its PHP API.
  *
  * Seeds a channel, all features, a loop + ticker config, a published TekstTV
  * post, campaign groups + campaigns, a media-library attachment (used by the
@@ -159,7 +159,7 @@ foreach (['admin', 'teksttv_editor'] as $teksttv_login) {
 $teksttv_now = current_datetime();
 
 // Upsert a fixture post by slug: reset every per-post TekstTV meta to a
-// known-absent state (a reused wp-env keeps meta from earlier runs), then
+// known-absent state (a reused Playground keeps meta from earlier runs), then
 // apply exactly the meta the fixture needs.
 $teksttv_seed_post = static function (array $post_data, array $meta): int {
     $existing = get_page_by_path($post_data['post_name'], OBJECT, 'post');
@@ -243,7 +243,7 @@ for ($teksttv_i = 1; $teksttv_i <= 10; $teksttv_i++) {
 // The suite assumes a fully known post table (the smoke post must stay on
 // page one of wp-admin/edit.php, and only seeded posts may reach the slides
 // feed), so drop everything this file did not seed - including leftovers
-// from older fixture versions in a reused wp-env database.
+// from older fixture versions in a reused Playground database.
 $teksttv_all_post_ids = get_posts([
     'post_type' => 'post',
     'post_status' => 'any',

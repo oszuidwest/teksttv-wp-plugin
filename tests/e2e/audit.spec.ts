@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 
 test.describe('unconfigured AI administration', () => {
     test('keeps Content & AI and AI Audit unavailable without a supported text generator', async ({ request }) => {

@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
-import { getBrowserErrors, openFixturePostEditor, runWp } from './helpers';
+import { getBrowserErrors, openFixturePostEditor } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
+import { expect, test } from './test';
 
 test.afterEach(async ({ page }) => {
     expect(await getBrowserErrors(page)).toEqual([]);
@@ -34,8 +34,11 @@ test.describe('administrator admin screens', () => {
             await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
         });
 
-        test('post editor uses a plain textarea when rich text options are disabled', async ({ page }) => {
-            runWp('option', 'update', 'teksttv_features', '["custom_title","page_separator"]', '--format=json');
+        test('post editor uses a plain textarea when rich text options are disabled', async ({
+            page,
+            runWordPressPHP,
+        }) => {
+            await runWordPressPHP("update_option('teksttv_features', ['custom_title', 'page_separator']);");
 
             await openFixturePostEditor(page);
 
@@ -67,8 +70,9 @@ test.describe('administrator admin screens', () => {
 
         test('post editor keeps the counter and preview on one slide when separators are disabled', async ({
             page,
+            runWordPressPHP,
         }) => {
-            runWp('option', 'update', 'teksttv_features', '["custom_title"]', '--format=json');
+            await runWordPressPHP("update_option('teksttv_features', ['custom_title']);");
 
             await openFixturePostEditor(page);
             await page.locator('#teksttv_content').fill('Eerste slide\n---\nTweede slide');
@@ -77,8 +81,8 @@ test.describe('administrator admin screens', () => {
             await expect(page.locator('#teksttv-preview-counter')).toHaveText('1 / 1');
         });
 
-        test('post editor contains the empty preview at narrow widths', async ({ page }) => {
-            runWp('option', 'delete', 'teksttv_preview_url');
+        test('post editor contains the empty preview at narrow widths', async ({ page, runWordPressPHP }) => {
+            await runWordPressPHP("delete_option('teksttv_preview_url');");
             await page.setViewportSize({ width: 390, height: 844 });
             await openFixturePostEditor(page);
 
@@ -265,15 +269,23 @@ test.describe('administrator admin screens', () => {
 
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
         await openFixturePostEditor(page);
-        const editor = page.frameLocator('#teksttv_content_ifr').locator('body');
-        await editor.evaluate((body) => {
+        const wordCount = page.locator('#teksttv-wordcount');
+
+        await page.waitForFunction(() => Boolean(window.tinymce?.get('teksttv_content')));
+        await expect(wordCount).toHaveText(/^5(?: \/ \d+)? woorden$/);
+
+        // Let the initial 500 ms update and 400 ms debounce settle so only the
+        // keyup below can produce the next count.
+        await page.waitForTimeout(1_000);
+
+        await page.evaluate(() => {
             // Avoid input/change/SetContent so this specifically covers the keyup fallback.
-            body.innerHTML = '<p>Twee woorden</p>';
-            const tinyMceEditor = window.parent.tinymce?.get('teksttv_content');
+            const tinyMceEditor = window.tinymce?.get('teksttv_content');
             if (!tinyMceEditor) throw new Error('TinyMCE editor teksttv_content not found.');
+            tinyMceEditor.setContent('<p>Twee woorden</p>', { no_events: true });
             tinyMceEditor.fire('keyup');
         });
-        await expect(page.locator('#teksttv-wordcount')).toHaveText(/^2(?: \/ \d+)? woorden$/);
+        await expect(wordCount).toHaveText(/^2(?: \/ \d+)? woorden$/);
     });
 
     test('post editor exposes the preview enlargement control on keyboard focus', async ({ page }) => {

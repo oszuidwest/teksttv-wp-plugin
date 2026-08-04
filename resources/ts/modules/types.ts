@@ -45,7 +45,7 @@ export interface TeksttvPostConfig {
 export interface WPTinyMCEEditor {
     id: string;
     getContent(): string;
-    setContent(content: string): void;
+    setContent(content: string, options?: { no_events?: boolean }): void;
     isHidden(): boolean;
     on(event: string, callback: () => void): void;
     fire(event: string): void;

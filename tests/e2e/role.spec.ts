@@ -1,16 +1,16 @@
-import { expect, test } from '@playwright/test';
 import { getBrowserErrors, login } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
+import { expect, test } from './test';
 
 // The suite-wide storageState is the admin session; this test logs in as its
 // own user, so start from a clean context.
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test.afterEach(async ({ page }) => {
+test.afterEach(async ({ page, runWordPressPHPFile }) => {
     try {
         expect(await getBrowserErrors(page)).toEqual([]);
     } finally {
-        reseedFixtures();
+        await reseedFixtures({ runWordPressPHPFile });
     }
 });
 

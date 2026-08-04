@@ -4,7 +4,7 @@
 #
 # Input is deliberately limited to tracked production source files, the exact
 # generated asset set, and a fresh Composer --no-dev install. The resulting
-# release/teksttv/ directory is used by wp-env and is also zipped for releases.
+# release/teksttv/ directory is mounted by Playground and is also zipped for releases.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
