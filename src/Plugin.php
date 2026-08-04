@@ -13,10 +13,11 @@ class Plugin
         }
         self::$initialized = true;
 
+        Migrations::run();
         BuiltinBlocks::init();
         AdminPage::init();
         AuditPage::init();
-        CampaignsPage::init();
+        CommercialsPage::init();
         PostMeta::init();
         CategoryMeta::init();
         RestApi::init();

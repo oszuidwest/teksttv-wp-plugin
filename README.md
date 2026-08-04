@@ -1,6 +1,6 @@
 # TekstTV (WordPress plugin)
 
-WordPress plugin to manage text-TV slides and serve them as JSON to the [TekstTV playout app](https://github.com/oszuidwest/teksttv-frontend). In the Tekst TV admin menu you set up channels, build the broadcast loop from blocks (posts, images, iframes, campaigns, weather, ticker items), and manage settings, campaigns and optional AI-assisted content.
+WordPress plugin to manage text-TV slides and serve them as JSON to the [TekstTV playout app](https://github.com/oszuidwest/teksttv-frontend). In the Tekst TV admin menu you set up channels, build the broadcast loop from blocks (posts, images, iframes, commercials, weather, ticker items), and manage settings, commercials and optional AI-assisted content.
 
 ## How it fits with the frontend
 
@@ -53,16 +53,16 @@ Without `vendor/` and a built `assets/` the plugin won't load: `vendor/autoload.
 
 | Role          | Capabilities |
 |---------------|--------------|
-| Administrator | `manage_teksttv`, `manage_teksttv_campaigns`, `manage_teksttv_content`, `edit_teksttv` |
+| Administrator | `manage_teksttv`, `manage_teksttv_commercials`, `manage_teksttv_content`, `edit_teksttv` |
 | Editor        | `edit_teksttv` (TekstTV fields on posts) |
 
 If you need a different distribution, use a capability plugin.
 
 ## Usage
 
-- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, campaign and weather. The ticker is configured separately.
+- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, commercial and weather. The ticker is configured separately.
 - Settings: channel slugs (`tv1`, `tv2`, …), display duration for text and images, OpenWeather API key, feature toggles (TinyMCE, AI, scheduling), preview URL.
-- Campaigns: campaign blocks and groups used in the loop.
+- Commercials (`Reclame`): commercial blocks and their campaigns used in the loop.
 - Content & AI / AI Audit, when AI generation is enabled and a configured provider supports TekstTV's text-generation requirements: prompts and audit log.
 
 If no channels are stored, `tv1` is assumed.

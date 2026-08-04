@@ -1,9 +1,9 @@
 import { prefersReducedMotion } from '../../modules/dom';
 
-/** Loop / campaigns block workbench (+ optional ticker Sortable). */
+/** Loop / commercials block workbench (+ optional ticker Sortable). */
 export type WorkbenchOpts = {
     ticker: boolean;
-    groups: boolean;
+    commercialBlocks: boolean;
     campaignAdd: boolean;
 };
 

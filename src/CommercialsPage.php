@@ -4,52 +4,70 @@ namespace TekstTV;
 
 use TekstTV\Blocks\Common\DurationField;
 
-class CampaignsPage
+class CommercialsPage
 {
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
     }
 
+    public static function redirect_legacy_page(): void
+    {
+        wp_safe_redirect(admin_url('admin.php?page=teksttv-commercials'));
+        exit;
+    }
+
     public static function register_menu(): void
     {
         add_submenu_page(
             'teksttv',
-            'Campagnes',
-            'Campagnes',
-            'manage_teksttv_campaigns',
+            'Reclame',
+            'Reclame',
+            'manage_teksttv_commercials',
+            'teksttv-commercials',
+            [self::class, 'render_page']
+        );
+
+        // Register a hidden compatibility page so WordPress authorizes old
+        // bookmarks long enough to redirect before rendering the admin header.
+        $legacy_hook = add_submenu_page(
+            '',
+            'Reclame',
+            'Reclame',
+            'manage_teksttv_commercials',
             'teksttv-campaigns',
             [self::class, 'render_page']
         );
+        add_action('load-' . $legacy_hook, [self::class, 'redirect_legacy_page']);
     }
 
     public static function render_page(): void
     {
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified in handle_save()
-        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['teksttv_campaigns_nonce'])) {
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['teksttv_commercials_nonce'])) {
             self::handle_save();
         }
 
         $campaigns = Helpers::get_campaigns();
         $channels = Helpers::get_channels();
-        $groups = Helpers::get_campaign_groups();
+        $commercial_blocks = Helpers::get_commercial_blocks();
 
-        include TEKSTTV_PLUGIN_DIR . 'src/views/campaigns-page.php';
+        include TEKSTTV_PLUGIN_DIR . 'src/views/commercials-page.php';
     }
 
     /**
      * @param array<string, mixed> $campaign
      * @param list<array{slug: string, label: string}> $channels
-     * @param list<array{id: string, label: string}> $groups Available groups.
+     * @param list<array{id: string, label: string}> $commercial_blocks Available commercial blocks.
      */
-    public static function render_campaign(int|string $index, array $campaign, array $channels, array $groups): void
+    public static function render_campaign(int|string $index, array $campaign, array $channels, array $commercial_blocks): void
     {
         // Template rows render an empty id. A unique id is minted for each
         // submitted row so multiple additions never share the template's id.
         $id = $campaign['id'] ?? '';
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
-        $group = (string) ($campaign['group'] ?? '');
+        $commercial_block_id = (string) ($campaign['commercial_block_id'] ?? '');
         $slides = $campaign['slides'] ?? [];
         $default_duration = (int) get_option('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image']);
         $body_id = Helpers::field_id('teksttv_campaigns', $index, 'body');
@@ -59,18 +77,18 @@ class CampaignsPage
             <?php AdminPage::render_block_header($body_id, $name ?: 'Campagne', 'megaphone', '#d63638', 'Campagne verwijderen', true); ?>
             <div class="teksttv-block-body" id="<?php echo esc_attr($body_id); ?>" style="display:none;">
                 <input type="hidden" name="teksttv_campaigns[<?php echo esc_attr($index); ?>][id]" value="<?php echo esc_attr($id); ?>" />
-                <?php AdminPage::render_block_section_start('Campagne', 'Geef de campagne een naam en optionele groep.', 'content'); ?>
+                <?php AdminPage::render_block_section_start('Campagne', 'Geef de campagne een naam en een optioneel reclameblok.', 'content'); ?>
                 <div class="teksttv-field-grid teksttv-field-grid--campaign-details">
                     <div class="teksttv-field teksttv-field--primary">
                         <label <?php Helpers::field_for('teksttv_campaigns', $index, 'name'); ?>><?php echo esc_html('Naam'); ?></label>
                         <input type="text" <?php Helpers::field_attrs('teksttv_campaigns', $index, 'name'); ?> value="<?php echo esc_attr($name); ?>" class="regular-text" placeholder="<?php echo esc_attr('bijv. Sponsor X'); ?>" autocomplete="off" data-summary data-summary-empty="<?php echo esc_attr('Naamloze campagne'); ?>" />
                     </div>
                     <div class="teksttv-field teksttv-field--choice">
-                        <label <?php Helpers::field_for('teksttv_campaigns', $index, 'group'); ?>><?php echo esc_html('Groep'); ?></label>
-                        <select <?php Helpers::field_attrs('teksttv_campaigns', $index, 'group'); ?> class="teksttv-campaign-group-select">
-                            <option value=""><?php echo esc_html('— Geen groep —'); ?></option>
-                            <?php foreach ($groups as $group_option) : ?>
-                            <option value="<?php echo esc_attr($group_option['id']); ?>" <?php selected($group, $group_option['id']); ?>><?php echo esc_html($group_option['label']); ?></option>
+                        <label <?php Helpers::field_for('teksttv_campaigns', $index, 'commercial_block_id'); ?>><?php echo esc_html('Reclameblok'); ?></label>
+                        <select <?php Helpers::field_attrs('teksttv_campaigns', $index, 'commercial_block_id'); ?> class="teksttv-campaign-commercial-block-select">
+                            <option value=""><?php echo esc_html('— Geen reclameblok —'); ?></option>
+                            <?php foreach ($commercial_blocks as $commercial_block) : ?>
+                            <option value="<?php echo esc_attr($commercial_block['id']); ?>" <?php selected($commercial_block_id, $commercial_block['id']); ?>><?php echo esc_html($commercial_block['label']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -123,27 +141,27 @@ class CampaignsPage
 
     private static function handle_save(): void
     {
-        if (!isset($_POST['teksttv_campaigns_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_campaigns_nonce'])), 'teksttv_save_campaigns')) {
-            add_settings_error('teksttv_campaigns', 'nonce_failed', 'Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.');
+        if (!isset($_POST['teksttv_commercials_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['teksttv_commercials_nonce'])), 'teksttv_save_commercials')) {
+            add_settings_error('teksttv_commercials', 'nonce_failed', 'Beveiligingscontrole mislukt; wijzigingen zijn niet opgeslagen. Vernieuw de pagina en probeer het opnieuw.');
             return;
         }
 
-        if (!current_user_can('manage_teksttv_campaigns')) {
-            add_settings_error('teksttv_campaigns', 'no_permission', 'Onvoldoende rechten; wijzigingen zijn niet opgeslagen.');
+        if (!current_user_can('manage_teksttv_commercials')) {
+            add_settings_error('teksttv_commercials', 'no_permission', 'Onvoldoende rechten; wijzigingen zijn niet opgeslagen.');
             return;
         }
 
-        // Save groups
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_groups()
-        $raw_groups = isset($_POST['teksttv_campaign_groups']) ? wp_unslash($_POST['teksttv_campaign_groups']) : [];
-        update_option('teksttv_campaign_groups', self::sanitize_groups($raw_groups));
+        // Save commercial blocks.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_commercial_blocks()
+        $raw_commercial_blocks = isset($_POST['teksttv_commercial_blocks']) ? wp_unslash($_POST['teksttv_commercial_blocks']) : [];
+        update_option('teksttv_commercial_blocks', self::sanitize_commercial_blocks($raw_commercial_blocks));
 
-        // Save campaigns
+        // Save campaigns.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         update_option('teksttv_campaigns', self::sanitize_campaigns($raw, Helpers::channel_slugs()));
 
-        add_settings_error('teksttv_campaigns', 'saved', 'Campagnes opgeslagen.', 'success');
+        add_settings_error('teksttv_commercials', 'saved', 'Reclame opgeslagen.', 'success');
     }
 
     /**
@@ -173,7 +191,7 @@ class CampaignsPage
             $saved = [
                 'id' => $id,
                 'name' => sanitize_text_field($item['name'] ?? ''),
-                'group' => sanitize_key($item['group'] ?? ''),
+                'commercial_block_id' => sanitize_key($item['commercial_block_id'] ?? ''),
             ];
 
             // Channels
@@ -214,7 +232,7 @@ class CampaignsPage
     }
 
     /**
-     * Sanitize submitted campaign groups into stable id/label pairs.
+     * Sanitize submitted commercial blocks into stable id/label pairs.
      *
      * Each row carries a hidden id so a rename preserves the id (and therefore
      * every campaign/loop reference to it). Rows without an id — newly added in
@@ -224,13 +242,13 @@ class CampaignsPage
      * @param mixed $raw
      * @return list<array{id: string, label: string}>
      */
-    public static function sanitize_groups(mixed $raw): array
+    public static function sanitize_commercial_blocks(mixed $raw): array
     {
         if (!is_array($raw)) {
             return [];
         }
 
-        $groups = [];
+        $commercial_blocks = [];
         $seen = [];
         foreach ($raw as $row) {
             $label = sanitize_text_field(is_array($row) ? ($row['label'] ?? '') : $row);
@@ -239,15 +257,15 @@ class CampaignsPage
             }
             $id = sanitize_key(is_array($row) ? ($row['id'] ?? '') : '');
             if ($id === '' || isset($seen[$id])) {
-                $id = Helpers::campaign_group_id($label);
+                $id = Helpers::commercial_block_id($label);
             }
             if (isset($seen[$id])) {
                 continue;
             }
             $seen[$id] = true;
-            $groups[] = ['id' => $id, 'label' => $label];
+            $commercial_blocks[] = ['id' => $id, 'label' => $label];
         }
 
-        return $groups;
+        return $commercial_blocks;
     }
 }

@@ -604,35 +604,35 @@ class HelpersTest extends TestCase
     }
 
     // =========================================================================
-    // get_campaign_groups()
+    // get_commercial_blocks()
     // =========================================================================
 
-    public function test_get_campaign_groups_skips_malformed_entries(): void
+    public function test_get_commercial_blocks_skips_malformed_entries(): void
     {
         Functions\expect('get_option')
-            ->with('teksttv_campaign_groups', [])
+            ->with('teksttv_commercial_blocks', [])
             ->andReturn([
-                ['id' => 'grp_aaa', 'label' => 'Sponsors'],
+                ['id' => 'cblock_aaa', 'label' => 'Sponsors'],
                 ['id' => '', 'label' => 'Geen id'],
-                ['id' => 'grp_ccc', 'label' => ''],
+                ['id' => 'cblock_ccc', 'label' => ''],
                 'legacy-string',
             ]);
 
         $this->assertSame(
-            [['id' => 'grp_aaa', 'label' => 'Sponsors']],
-            Helpers::get_campaign_groups()
+            [['id' => 'cblock_aaa', 'label' => 'Sponsors']],
+            Helpers::get_commercial_blocks()
         );
     }
 
-    public function test_campaign_group_id_is_stable_for_label(): void
+    public function test_commercial_block_id_is_stable_for_label(): void
     {
         $this->assertSame(
-            Helpers::campaign_group_id('Sponsors'),
-            Helpers::campaign_group_id('Sponsors')
+            Helpers::commercial_block_id('Sponsors'),
+            Helpers::commercial_block_id('Sponsors')
         );
         $this->assertNotSame(
-            Helpers::campaign_group_id('Sponsors'),
-            Helpers::campaign_group_id('Partners')
+            Helpers::commercial_block_id('Sponsors'),
+            Helpers::commercial_block_id('Partners')
         );
     }
 
