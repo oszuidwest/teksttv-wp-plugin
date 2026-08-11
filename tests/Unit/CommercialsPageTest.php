@@ -153,11 +153,56 @@ class CommercialsPageTest extends TestCase
                     ['id' => 'camp_existing', 'name' => 'Tweede', 'channels' => ['tv1']],
                 ],
                 ['tv1'],
+                []
             ]
         );
 
         $this->assertSame('camp_existing', $campaigns[0]['id']);
         $this->assertSame('camp_generated-uuid', $campaigns[1]['id']);
         $this->assertCount(2, array_unique(array_column($campaigns, 'id')));
+    }
+
+    public function test_save_clears_campaign_reference_to_deleted_commercial_block(): void
+    {
+        $previous_post = $_POST;
+        $_POST = [
+            'teksttv_commercials_nonce' => 'valid',
+            'teksttv_commercial_blocks' => [
+                ['id' => 'cblock_kept', 'label' => 'Behouden'],
+            ],
+            'teksttv_campaigns' => [
+                [
+                    'id' => 'camp_existing',
+                    'name' => 'Campagne',
+                    'commercial_block_id' => 'cblock_deleted',
+                    'channels' => ['tv1'],
+                ],
+            ],
+        ];
+
+        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('get_option')->alias(
+            static fn (string $name, mixed $default = false): mixed => $name === 'teksttv_channels'
+                ? [['slug' => 'tv1', 'label' => 'TV 1']]
+                : $default
+        );
+        $updates = [];
+        Functions\when('update_option')->alias(
+            static function (string $name, mixed $value) use (&$updates): bool {
+                $updates[$name] = $value;
+                return true;
+            }
+        );
+        Functions\when('add_settings_error')->justReturn(null);
+
+        try {
+            self::callPrivate(CommercialsPage::class, 'handle_save');
+        } finally {
+            $_POST = $previous_post;
+        }
+
+        $this->assertSame('', $updates['teksttv_campaigns'][0]['commercial_block_id']);
     }
 }

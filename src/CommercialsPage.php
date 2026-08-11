@@ -157,22 +157,25 @@ class CommercialsPage
         // Save commercial blocks.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_commercial_blocks()
         $raw_commercial_blocks = isset($_POST['teksttv_commercial_blocks']) ? wp_unslash($_POST['teksttv_commercial_blocks']) : [];
-        update_option('teksttv_commercial_blocks', self::sanitize_commercial_blocks($raw_commercial_blocks));
+        $commercial_blocks = self::sanitize_commercial_blocks($raw_commercial_blocks);
+        update_option('teksttv_commercial_blocks', $commercial_blocks);
+        $valid_block_ids = array_fill_keys(array_column($commercial_blocks, 'id'), true);
 
         // Save campaigns.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_campaigns()
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
-        update_option('teksttv_campaigns', self::sanitize_campaigns($raw, Helpers::channel_slugs()));
+        update_option('teksttv_campaigns', self::sanitize_campaigns($raw, Helpers::channel_slugs(), $valid_block_ids));
 
         add_settings_error('teksttv_commercials', 'saved', 'Reclame opgeslagen.', 'success');
     }
 
     /**
-     * @param mixed        $raw         Unslashed submitted campaigns.
-     * @param list<string> $valid_slugs Configured channel slugs.
+     * @param mixed               $raw             Unslashed submitted campaigns.
+     * @param list<string>        $valid_slugs     Configured channel slugs.
+     * @param array<string, true> $valid_block_ids Available commercial block ids.
      * @return list<array<string, mixed>>
      */
-    private static function sanitize_campaigns(mixed $raw, array $valid_slugs): array
+    private static function sanitize_campaigns(mixed $raw, array $valid_slugs, array $valid_block_ids): array
     {
         if (!is_array($raw)) {
             return [];
@@ -191,10 +194,11 @@ class CommercialsPage
             }
             $seen_ids[$id] = true;
 
+            $commercial_block_id = sanitize_key($item['commercial_block_id'] ?? '');
             $saved = [
                 'id' => $id,
                 'name' => sanitize_text_field($item['name'] ?? ''),
-                'commercial_block_id' => sanitize_key($item['commercial_block_id'] ?? ''),
+                'commercial_block_id' => isset($valid_block_ids[$commercial_block_id]) ? $commercial_block_id : '',
             ];
 
             // Channels

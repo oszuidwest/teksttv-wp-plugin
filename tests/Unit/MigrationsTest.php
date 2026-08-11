@@ -271,6 +271,33 @@ class MigrationsTest extends TestCase
         $this->assertSame(1, $updates['teksttv_data_version']);
     }
 
+    public function test_run_accepts_equal_read_back_when_update_reports_unchanged(): void
+    {
+        $stored = [
+            'teksttv_data_version' => 0,
+            'teksttv_campaign_groups' => [['id' => 'grp_sponsors', 'label' => 'Sponsors']],
+            'teksttv_commercial_blocks' => [['id' => 'grp_sponsors', 'label' => 'Sponsors']],
+            'teksttv_campaigns' => [['id' => 'camp_1', 'commercial_block_id' => 'grp_sponsors']],
+        ];
+        self::stubOptionReads($stored);
+        Functions\when('wp_roles')->justReturn((object) ['role_objects' => []]);
+        Functions\when('update_option')->alias(
+            static function (string $name, mixed $value) use (&$stored): bool {
+                if ($name === 'teksttv_campaigns') {
+                    return false;
+                }
+                $stored[$name] = $value;
+                return true;
+            }
+        );
+        Functions\expect('delete_option')->once()->with('teksttv_campaign_groups')->andReturn(true);
+        $this->stubLoopOptionScan([]);
+
+        Migrations::run();
+
+        $this->assertSame(1, $stored['teksttv_data_version']);
+    }
+
     public function test_convert_campaigns_renames_relation_and_preserves_campaign_data(): void
     {
         $campaigns = Migrations::convert_campaigns([

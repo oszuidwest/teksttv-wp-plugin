@@ -630,7 +630,7 @@ class HelpersTest extends TestCase
         // formula (see Helpers::commercial_block_id()); pin it so any change
         // to the derivation fails loudly instead of orphaning references.
         $this->assertSame(
-            'grp_' . substr(md5('Sponsors'), 0, 12),
+            'grp_e881053494ad',
             Helpers::commercial_block_id('Sponsors')
         );
         $this->assertNotSame(

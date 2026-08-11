@@ -123,7 +123,7 @@ test.describe('media picker interactions', () => {
         await expect(idInput).toHaveValue('');
         await expect(preview).toBeHidden();
         await expect(removeButton).toBeHidden();
-        await expect(commercialBlock.locator('.teksttv-block-summary')).not.toContainText('Intro afbeelding');
+        await expect(commercialBlock.locator('.teksttv-block-summary')).not.toContainText('Introafbeelding');
     });
 
     test('keeps extra-image removal in sync with the form and preview', async ({ page }) => {

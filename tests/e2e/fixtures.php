@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 
 // Exercise the real versioned migration on every fixture reset.
 delete_option('teksttv_data_version');
+delete_option('teksttv_commercial_blocks');
 
 update_option('teksttv_channels', [['slug' => 'tv1', 'label' => 'TV 1']]);
 update_option('teksttv_preview_url', 'https://preview.example.test/');
