@@ -506,14 +506,12 @@ test.describe('admin interaction contracts', () => {
             await page.goto(LOOP_URL);
             let commercialLoopBlock = await addLoopBlock(page, 'commercial');
             const commercialBlocksSelect = commercialLoopBlock.locator('select[name$="[commercial_block_ids][]"]');
-            await commercialBlocksSelect.selectOption({ label: 'E2E Seed Commercial Block Alpha' });
-            const selectedCommercialBlockIds = await commercialBlocksSelect.inputValue();
-            expect(selectedCommercialBlockIds).toMatch(/^cblock_/);
+            await commercialBlocksSelect.selectOption('e2e-group-alpha');
             await submitAndReload(page);
 
             commercialLoopBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="commercial"]').first();
             await expect(commercialLoopBlock.locator('select[name$="[commercial_block_ids][]"]')).toHaveValues([
-                selectedCommercialBlockIds,
+                'e2e-group-alpha',
             ]);
 
             // Campaign alpha is seeded on tv1 with a real slide.

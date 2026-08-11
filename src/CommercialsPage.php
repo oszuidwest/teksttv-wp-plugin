@@ -30,13 +30,14 @@ class CommercialsPage
 
         // Register a hidden compatibility page so WordPress authorizes old
         // bookmarks long enough to redirect before rendering the admin header.
+        // The load- hook always exits, so the render callback never runs.
         $legacy_hook = add_submenu_page(
             '',
             'Reclame',
             'Reclame',
             'manage_teksttv_commercials',
             'teksttv-campaigns',
-            [self::class, 'render_page']
+            '__return_null'
         );
         add_action('load-' . $legacy_hook, [self::class, 'redirect_legacy_page']);
     }
@@ -85,7 +86,7 @@ class CommercialsPage
                     </div>
                     <div class="teksttv-field teksttv-field--choice">
                         <label <?php Helpers::field_for('teksttv_campaigns', $index, 'commercial_block_id'); ?>><?php echo esc_html('Reclameblok'); ?></label>
-                        <select <?php Helpers::field_attrs('teksttv_campaigns', $index, 'commercial_block_id'); ?> class="teksttv-campaign-commercial-block-select">
+                        <select <?php Helpers::field_attrs('teksttv_campaigns', $index, 'commercial_block_id'); ?>>
                             <option value=""><?php echo esc_html('— Geen reclameblok —'); ?></option>
                             <?php foreach ($commercial_blocks as $commercial_block) : ?>
                             <option value="<?php echo esc_attr($commercial_block['id']); ?>" <?php selected($commercial_block_id, $commercial_block['id']); ?>><?php echo esc_html($commercial_block['label']); ?></option>

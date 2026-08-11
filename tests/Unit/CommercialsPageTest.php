@@ -28,7 +28,7 @@ class CommercialsPageTest extends TestCase
                 'Reclame',
                 'manage_teksttv_commercials',
                 'teksttv-campaigns',
-                [CommercialsPage::class, 'render_page']
+                '__return_null'
             )
             ->andReturn('admin_page_teksttv-campaigns');
         Functions\expect('add_action')
