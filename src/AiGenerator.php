@@ -20,8 +20,7 @@ class AiGenerator
      *
      * wp_supports_ai() is only an environment-level switch and defaults to
      * true even when no provider is configured. The prompt-level support
-     * check also verifies the registered providers, credentials, models, and
-     * configured generation parameters.
+     * check also verifies the registered providers, credentials, and models.
      *
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
      */
@@ -293,8 +292,7 @@ class AiGenerator
      * Validate AI output against length constraints.
      *
      * @param AiConfig $config
-     * @return string '' when valid, otherwise a user-facing warning. Retry
-     *                policy belongs to the caller, not here.
+     * @return string '' when valid, otherwise a user-facing warning.
      */
     public static function validate_ai_output(string $field, string $content, array $config, bool $has_photo = false): string
     {

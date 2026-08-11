@@ -190,9 +190,6 @@ class AdminPageTest extends TestCase
             'region_taxonomy' => 'regio',
             'provider' => 'openai',
             'model' => 'openai/gpt-5',
-            'temperature' => 0.7,
-            'top_p' => 0.9,
-            'max_tokens' => 4096,
             'system' => 'Oude system prompt',
         ];
         Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
@@ -202,18 +199,12 @@ class AdminPageTest extends TestCase
             'region_taxonomy' => 'verborgen-regio',
             'provider' => 'other-provider',
             'model' => 'other-provider/expensive-model',
-            'temperature' => 2,
-            'top_p' => 0,
-            'max_tokens' => 8192,
         ]);
 
         $this->assertSame('Nieuwe system prompt', $result['system']);
         $this->assertSame('regio', $result['region_taxonomy']);
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
-        $this->assertArrayNotHasKey('temperature', $result);
-        $this->assertArrayNotHasKey('top_p', $result);
-        $this->assertArrayNotHasKey('max_tokens', $result);
     }
 
     public function test_sanitize_ai_prompts_accepts_privileged_fields_with_manage_capability(): void
@@ -226,17 +217,11 @@ class AdminPageTest extends TestCase
             'region_taxonomy' => 'regio',
             'provider' => 'openai',
             'model' => 'openai/gpt-5',
-            'temperature' => 0.7,
-            'top_p' => 0.9,
-            'max_tokens' => 4096,
         ]);
 
         $this->assertSame('regio', $result['region_taxonomy']);
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
-        $this->assertArrayNotHasKey('temperature', $result);
-        $this->assertArrayNotHasKey('top_p', $result);
-        $this->assertArrayNotHasKey('max_tokens', $result);
     }
 
     public function test_sanitize_ai_prompts_non_array_input_keeps_current(): void
