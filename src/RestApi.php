@@ -165,7 +165,8 @@ class RestApi
         $source_post->post_content = wp_kses_post($source_content);
 
         // Counted last so requests that can only 403/404 do not consume quota.
-        if (!AiGenerator::within_rate_limit(get_current_user_id())) {
+        $provider_requests = $field === 'both' ? 2 : 1;
+        if (!AiGenerator::within_rate_limit(get_current_user_id(), $provider_requests)) {
             return new WP_Error(
                 'teksttv_rate_limited',
                 sprintf('Te veel verzoeken (maximaal %d per minuut). Probeer het over een minuut opnieuw.', AiGenerator::REQUESTS_PER_MINUTE),

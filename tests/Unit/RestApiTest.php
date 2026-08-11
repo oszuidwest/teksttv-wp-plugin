@@ -164,6 +164,40 @@ class RestApiTest extends TestCase
         $this->assertErrorStatus(429, $response);
     }
 
+    public function test_generate_content_both_succeeds_when_two_quota_slots_remain(): void
+    {
+        self::stubHappyPath();
+        Functions\when('get_transient')->justReturn(AiGenerator::REQUESTS_PER_MINUTE - 2);
+        $reserved_count = null;
+        Functions\when('set_transient')->alias(
+            static function (string $key, int $count, int $expiration) use (&$reserved_count): bool {
+                $reserved_count = $count;
+                return true;
+            }
+        );
+        Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
+        Functions\when('update_post_meta')->justReturn(true);
+
+        $body_text = implode(' ', array_fill(0, 50, 'woord'));
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder('Korte kop', $body_text));
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'both']));
+
+        $this->assertSame(200, $response->get_status());
+        $this->assertSame(AiGenerator::REQUESTS_PER_MINUTE, $reserved_count);
+    }
+
+    public function test_generate_content_both_returns_429_when_only_one_quota_slot_remains(): void
+    {
+        self::stubHappyPath();
+        Functions\when('get_transient')->justReturn(AiGenerator::REQUESTS_PER_MINUTE - 1);
+        Functions\expect('set_transient')->never();
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'both']));
+
+        $this->assertErrorStatus(429, $response);
+    }
+
     public function test_generate_content_rejects_missing_editor_state_before_counting_quota(): void
     {
         self::stubHappyPath();

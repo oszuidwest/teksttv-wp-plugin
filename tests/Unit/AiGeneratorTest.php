@@ -67,15 +67,15 @@ class AiGeneratorTest extends TestCase
         ])));
     }
 
-    public function test_within_rate_limit_uses_atomic_incr_with_object_cache(): void
+    public function test_within_rate_limit_reserves_multiple_requests_with_atomic_object_cache_increment(): void
     {
         self::stubRateLimitTime();
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\expect('wp_cache_add')->with('teksttv_ai_rate_7_2', 0, 'teksttv_ai_rate', 60)->andReturn(true);
         // Counter lands on the limit exactly - still allowed.
-        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7_2', 1, 'teksttv_ai_rate')->andReturn(AiGenerator::REQUESTS_PER_MINUTE);
+        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7_2', 2, 'teksttv_ai_rate')->andReturn(AiGenerator::REQUESTS_PER_MINUTE);
 
-        $this->assertTrue(AiGenerator::within_rate_limit(7));
+        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
     }
 
     public function test_within_rate_limit_blocks_when_incr_exceeds_limit(): void
@@ -416,7 +416,7 @@ class AiGeneratorTest extends TestCase
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->with($wp_error)->andReturn(true);
-        Functions\expect('error_log')->andReturn(true);
+        Functions\expect('error_log')->never();
 
         $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst', self::aiConfig());
 
@@ -544,7 +544,7 @@ class AiGeneratorTest extends TestCase
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturnUsing(fn($v) => $v === $wp_error);
-        Functions\expect('error_log')->andReturn(true);
+        Functions\expect('error_log')->never();
 
         $result = AiGenerator::generate_for_post(self::makePost(), 'body', self::aiConfig());
 

@@ -40,7 +40,7 @@ class AiGenerator
     }
 
     /**
-     * Count one request against the per-user, per-minute AI generation limit.
+     * Count provider requests against the per-user, per-minute AI generation limit.
      *
      * With a persistent object cache, wp_cache_incr() is atomic and avoids the
      * read-then-write race where concurrent requests both pass the check before
@@ -50,9 +50,10 @@ class AiGenerator
      * Counter persistence failures fail closed so uncounted requests cannot
      * bypass the cost-control boundary.
      *
-     * @return bool True when the request is allowed and has been counted.
+     * @param int $requests Number of provider requests to reserve.
+     * @return bool True when the requests are allowed and have been counted.
      */
-    public static function within_rate_limit(int $user_id): bool
+    public static function within_rate_limit(int $user_id, int $requests = 1): bool
     {
         // Fixed calendar-minute buckets: rewrites can touch an entry's TTL but
         // never the active window, because the next minute uses a new key.
@@ -65,7 +66,7 @@ class AiGenerator
             $group = 'teksttv_ai_rate';
             // add() seeds the counter only if absent; incr() then bumps it atomically.
             wp_cache_add($key, 0, $group, $ttl);
-            $count = wp_cache_incr($key, 1, $group);
+            $count = wp_cache_incr($key, $requests, $group);
             if ($count === false) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
                 error_log('TekstTV AI rate limiter: wp_cache_incr() failed, rejecting uncounted request.');
@@ -75,10 +76,10 @@ class AiGenerator
         }
 
         $count = (int) get_transient($key);
-        if ($count >= self::REQUESTS_PER_MINUTE) {
+        if ($count + $requests > self::REQUESTS_PER_MINUTE) {
             return false;
         }
-        if (!set_transient($key, $count + 1, $ttl)) {
+        if (!set_transient($key, $count + $requests, $ttl)) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log('TekstTV AI rate limiter: set_transient() failed, rejecting uncounted request.');
             return false;
@@ -175,8 +176,6 @@ class AiGenerator
 
         $result = self::call_ai($user_prompt, $system, $config);
         if (is_wp_error($result)) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-            error_log(sprintf('TekstTV AI generation error (field: %s): %s', $field, $result->get_error_message()));
             return $result;
         }
 
