@@ -502,9 +502,6 @@ class HelpersTest extends TestCase
         $this->assertSame(100, $result['word_limit']);
         $this->assertSame(40, $result['title_char_limit']);
         $this->assertSame(50, $result['min_input_words']);
-        $this->assertSame(3, $result['max_retries']);
-        $this->assertSame(10, $result['rate_limit']);
-        $this->assertSame(2048, $result['max_tokens']);
         $this->assertNotEmpty($result['system']);
         $this->assertNotEmpty($result['prompt_title']);
         $this->assertNotEmpty($result['prompt_body']);
@@ -518,8 +515,6 @@ class HelpersTest extends TestCase
                 'system' => 'Custom system prompt',
                 'word_limit' => 200,
                 'title_char_limit' => 50,
-                'max_retries' => 5,
-                'temperature' => 0.7,
                 'model' => 'anthropic/claude-3',
             ]);
 
@@ -528,12 +523,10 @@ class HelpersTest extends TestCase
         $this->assertSame('Custom system prompt', $result['system']);
         $this->assertSame(200, $result['word_limit']);
         $this->assertSame(50, $result['title_char_limit']);
-        $this->assertSame(5, $result['max_retries']);
-        $this->assertSame(0.7, $result['temperature']);
         $this->assertSame('anthropic/claude-3', $result['model']);
     }
 
-    public function test_get_ai_prompts_clamps_legacy_generation_limits(): void
+    public function test_get_ai_prompts_clamps_out_of_range_limits(): void
     {
         Functions\expect('get_option')
             ->with('teksttv_ai_prompts', [])
@@ -542,9 +535,6 @@ class HelpersTest extends TestCase
                 'word_limit_photo' => 9999,
                 'title_char_limit' => 9999,
                 'min_input_words' => 9999,
-                'temperature' => 99,
-                'top_p' => 99,
-                'max_tokens' => 99999,
             ]);
 
         $result = Helpers::get_ai_prompts();
@@ -553,9 +543,6 @@ class HelpersTest extends TestCase
         $this->assertSame(500, $result['word_limit_photo']);
         $this->assertSame(100, $result['title_char_limit']);
         $this->assertSame(500, $result['min_input_words']);
-        $this->assertSame(2, $result['temperature']);
-        $this->assertSame(1, $result['top_p']);
-        $this->assertSame(8192, $result['max_tokens']);
     }
 
     public function test_normalize_ai_prompt_limits_preserves_photo_inheritance_marker(): void

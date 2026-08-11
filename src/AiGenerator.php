@@ -11,14 +11,16 @@ namespace TekstTV;
  */
 class AiGenerator
 {
+    public const REQUESTS_PER_MINUTE = 20;
+    private const MAX_TOKENS = 2048;
+
     /**
      * Whether the current WordPress AI configuration can satisfy the same
      * requirements used for TekstTV generation requests.
      *
      * wp_supports_ai() is only an environment-level switch and defaults to
      * true even when no provider is configured. The prompt-level support
-     * check also verifies the registered providers, credentials, models, and
-     * configured generation parameters.
+     * check also verifies the registered providers, credentials, and models.
      *
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
      */
@@ -38,7 +40,7 @@ class AiGenerator
     }
 
     /**
-     * Count one request against the per-user, per-minute AI generation limit.
+     * Count provider requests against the per-user, per-minute AI generation limit.
      *
      * With a persistent object cache, wp_cache_incr() is atomic and avoids the
      * read-then-write race where concurrent requests both pass the check before
@@ -48,9 +50,10 @@ class AiGenerator
      * Counter persistence failures fail closed so uncounted requests cannot
      * bypass the cost-control boundary.
      *
-     * @return bool True when the request is allowed and has been counted.
+     * @param int $requests Number of provider requests to reserve.
+     * @return bool True when the requests are allowed and have been counted.
      */
-    public static function within_rate_limit(int $user_id, int $rate_limit): bool
+    public static function within_rate_limit(int $user_id, int $requests = 1): bool
     {
         // Fixed calendar-minute buckets: rewrites can touch an entry's TTL but
         // never the active window, because the next minute uses a new key.
@@ -63,20 +66,20 @@ class AiGenerator
             $group = 'teksttv_ai_rate';
             // add() seeds the counter only if absent; incr() then bumps it atomically.
             wp_cache_add($key, 0, $group, $ttl);
-            $count = wp_cache_incr($key, 1, $group);
+            $count = wp_cache_incr($key, $requests, $group);
             if ($count === false) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
                 error_log('TekstTV AI rate limiter: wp_cache_incr() failed, rejecting uncounted request.');
                 return false;
             }
-            return $count <= $rate_limit;
+            return $count <= self::REQUESTS_PER_MINUTE;
         }
 
         $count = (int) get_transient($key);
-        if ($count >= $rate_limit) {
+        if ($count + $requests > self::REQUESTS_PER_MINUTE) {
             return false;
         }
-        if (!set_transient($key, $count + 1, $ttl)) {
+        if (!set_transient($key, $count + $requests, $ttl)) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log('TekstTV AI rate limiter: set_transient() failed, rejecting uncounted request.');
             return false;
@@ -165,57 +168,35 @@ class AiGenerator
      * Generate a single field (title or body) using the WP AI Client.
      *
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
-     * @return array{content: string, warning?: string}|\WP_Error
+     * @return array{content: string, warning: string}|\WP_Error
      */
     public static function generate_single_field(string $field, string $post_title, string $post_text, array $config, bool $has_photo = false)
     {
         [$user_prompt, $system] = self::build_ai_prompt($field, $post_title, $post_text, $config, $has_photo);
 
-        $last_content = '';
-        $warning = '';
-
-        for ($attempt = 1; $attempt <= $config['max_retries']; $attempt++) {
-            $result = self::call_ai($user_prompt, $system, $config);
-
-            if (is_wp_error($result)) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log(sprintf('TekstTV AI generation error (field: %s, attempt %d): %s', $field, $attempt, $result->get_error_message()));
-                return $result;
-            }
-
-            $last_content = trim($result);
-            if ($last_content === '') {
-                // An empty response (exhausted tokens, provider content filter)
-                // must never pass as success: the title length check would
-                // accept it and the editor would see nothing happen.
-                if ($attempt === $config['max_retries']) {
-                    return new \WP_Error(
-                        'teksttv_empty_output',
-                        'AI gaf een leeg antwoord terug. Probeer het opnieuw.'
-                    );
-                }
-                continue;
-            }
-
-            // A warning here means "retry if attempts remain"; the last loop
-            // pass leaves it set so the editor sees why the output is off.
-            $warning = self::validate_ai_output($field, $last_content, $config, $has_photo);
-
-            if ($warning === '') {
-                break;
-            }
+        $result = self::call_ai($user_prompt, $system, $config);
+        if (is_wp_error($result)) {
+            return $result;
         }
+
+        $content = trim($result);
+        if ($content === '') {
+            // Empty output (exhausted tokens, provider content filter) must
+            // never pass as success: validate_ai_output() accepts '' for
+            // titles and the editor would see nothing happen.
+            return new \WP_Error(
+                'teksttv_empty_output',
+                'AI gaf een leeg antwoord terug. Probeer het opnieuw.'
+            );
+        }
+
+        $warning = self::validate_ai_output($field, $content, $config, $has_photo);
 
         if ($field === 'body') {
-            $last_content = wpautop($last_content);
+            $content = wpautop($content);
         }
 
-        $response = ['content' => $last_content];
-        if (!empty($warning)) {
-            $response['warning'] = $warning;
-        }
-
-        return $response;
+        return ['content' => $content, 'warning' => $warning];
     }
 
     /**
@@ -290,14 +271,7 @@ class AiGenerator
     {
         $builder = wp_ai_client_prompt($user_prompt)
             ->using_system_instruction($system)
-            ->using_max_tokens($config['max_tokens']);
-
-        if ($config['temperature'] !== '') {
-            $builder = $builder->using_temperature((float) $config['temperature']);
-        }
-        if ($config['top_p'] !== '') {
-            $builder = $builder->using_top_p((float) $config['top_p']);
-        }
+            ->using_max_tokens(self::MAX_TOKENS);
 
         $model_setting = $config['model'];
         $provider_setting = $config['provider'];
@@ -315,8 +289,7 @@ class AiGenerator
      * Validate AI output against length constraints.
      *
      * @param AiConfig $config
-     * @return string '' when valid, otherwise a user-facing warning. Retry
-     *                policy belongs to the caller, not here.
+     * @return string '' when valid, otherwise a user-facing warning.
      */
     public static function validate_ai_output(string $field, string $content, array $config, bool $has_photo = false): string
     {

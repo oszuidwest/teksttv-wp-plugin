@@ -61,13 +61,25 @@ abstract class TestCase extends PHPUnitTestCase
     }
 
     /**
+     * Fluent builder stub with the expectations every AI request shares.
+     * 2048 is the literal wire value so the test does not depend on the
+     * private AiGenerator::MAX_TOKENS constant.
+     */
+    private static function mockBaseAiBuilder(): \Mockery\MockInterface
+    {
+        $builder = \Mockery::mock();
+        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->with(2048)->andReturnSelf();
+
+        return $builder;
+    }
+
+    /**
      * Build the fluent WordPress AI prompt mock with one response per call.
      */
     protected static function mockAiBuilder(string|\WP_Error ...$responses): \Mockery\MockInterface
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder = self::mockBaseAiBuilder();
         $builder->shouldReceive('is_supported_for_text_generation')->zeroOrMoreTimes()->andReturn(true);
         $builder->shouldReceive('generate_text')
             ->times(count($responses))
@@ -82,9 +94,7 @@ abstract class TestCase extends PHPUnitTestCase
      */
     protected static function mockUnsupportedAiBuilder(): \Mockery\MockInterface
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder = self::mockBaseAiBuilder();
         $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
 
         return $builder;

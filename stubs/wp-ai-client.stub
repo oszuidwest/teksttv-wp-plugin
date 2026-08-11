@@ -5,8 +5,6 @@
  * @phpstan-type AiClientBuilder object{
  *     using_system_instruction: callable(string): object,
  *     using_max_tokens: callable(int): object,
- *     using_temperature: callable(float): object,
- *     using_top_p: callable(float): object,
  *     using_model_preference: callable(array): object,
  *     using_provider: callable(string): object,
  *     is_supported_for_text_generation: callable(): bool,

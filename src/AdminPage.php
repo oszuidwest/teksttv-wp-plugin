@@ -262,8 +262,9 @@ class AdminPage
      * Sanitize the AI prompts option.
      *
      * Merges permitted submitted values over the stored option so a partial form
-     * cannot clear fields it never displayed. Region and technical fields are
-     * also protected here because hiding them in the UI is not authorization.
+     * cannot clear fields it never displayed. Fields that pick the provider and
+     * model (and thus the spend) or the region taxonomy require manage_teksttv
+     * here as well, because hiding them in the UI is not authorization.
      *
      * @param mixed $input
      * @return array<string, mixed>
@@ -283,9 +284,6 @@ class AdminPage
                 'region_taxonomy',
                 'provider',
                 'model',
-                'temperature',
-                'top_p',
-                'max_tokens',
             ]));
         }
 

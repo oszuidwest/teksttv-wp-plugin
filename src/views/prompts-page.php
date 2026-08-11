@@ -2,7 +2,7 @@
 /**
  * Inhoud & AI settings page template.
  *
- * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, max_retries: int, rate_limit: int, region_taxonomy: string, provider: string, model: string, temperature: string|float, top_p: string|float, max_tokens: int} $prompts
+ * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, region_taxonomy: string, provider: string, model: string} $prompts
  * @var list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
  * @var array<string, array{label: string, models: array<string, string>}> $ai_models
  */
@@ -89,20 +89,6 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
                         <p class="description"><?php echo esc_html('Minimum aantal woorden in het bronartikel. Stel 0 in om uit te schakelen.'); ?></p>
                     </td>
                 </tr>
-                <tr>
-                    <th scope="row"><label for="teksttv_ai_max_retries"><?php echo esc_html('Maximaal aantal pogingen'); ?></label></th>
-                    <td>
-                        <input type="number" id="teksttv_ai_max_retries" name="teksttv_ai_prompts[max_retries]" value="<?php echo esc_attr((string) $prompts['max_retries']); ?>" min="1" max="5" class="small-text" />
-                        <p class="description"><?php echo esc_html('Aantal pogingen als de uitvoer niet binnen de limiet valt. Elke extra poging kost een API-aanroep.'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label for="teksttv_ai_rate_limit"><?php echo esc_html('Verzoekenlimiet'); ?></label></th>
-                    <td>
-                        <input type="number" id="teksttv_ai_rate_limit" name="teksttv_ai_prompts[rate_limit]" value="<?php echo esc_attr((string) $prompts['rate_limit']); ?>" min="1" max="60" class="small-text" /> <?php echo esc_html('per minuut'); ?>
-                        <p class="description"><?php echo esc_html('Maximaal aantal AI-verzoeken per gebruiker per minuut.'); ?></p>
-                    </td>
-                </tr>
             </table>
         </div>
 
@@ -164,30 +150,6 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
             <?php else : ?>
             <p class="description"><?php echo wp_kses(sprintf('Geen AI-providers beschikbaar. Configureer een provider via <a href="%s">WordPress Connectors</a>.', esc_url(admin_url('options-connectors.php'))), ['a' => ['href' => []]]); ?></p>
             <?php endif; ?>
-            <h3><?php echo esc_html('Modelparameters'); ?></h3>
-            <table class="form-table teksttv-form-table">
-                <tr>
-                    <th scope="row"><label for="teksttv_ai_temperature"><?php echo esc_html('Temperatuur'); ?></label></th>
-                    <td>
-                        <input type="number" id="teksttv_ai_temperature" name="teksttv_ai_prompts[temperature]" value="<?php echo esc_attr($prompts['temperature']); ?>" min="0" max="2" step="0.1" class="small-text" />
-                        <p class="description"><?php echo esc_html('Creativiteit van de uitvoer. 0 = deterministisch, 1 = standaard, 2 = zeer creatief. Leeg = standaardwaarde van de provider.'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label for="teksttv_ai_top_p"><?php echo esc_html('Top P'); ?></label></th>
-                    <td>
-                        <input type="number" id="teksttv_ai_top_p" name="teksttv_ai_prompts[top_p]" value="<?php echo esc_attr($prompts['top_p']); ?>" min="0" max="1" step="0.05" class="small-text" />
-                        <p class="description"><?php echo esc_html('Nucleus sampling. Een lagere waarde geeft meer focus. Leeg = standaardwaarde van de provider.'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><label for="teksttv_ai_max_tokens"><?php echo esc_html('Maximaal aantal tokens'); ?></label></th>
-                    <td>
-                        <input type="number" id="teksttv_ai_max_tokens" name="teksttv_ai_prompts[max_tokens]" value="<?php echo esc_attr((string) $prompts['max_tokens']); ?>" min="64" max="8192" step="1" class="small-text" />
-                        <p class="description"><?php echo esc_html('Maximaal aantal tokens in het AI-antwoord. Standaard: 2048.'); ?></p>
-                    </td>
-                </tr>
-            </table>
         </div>
         <?php endif; ?>
 

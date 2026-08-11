@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
+use TekstTV\AiGenerator;
 use TekstTV\RestApi;
 
 class RestApiTest extends TestCase
@@ -36,7 +37,7 @@ class RestApiTest extends TestCase
             }
             return match ($key) {
                 'teksttv_features' => ['ai_generate', 'custom_title'],
-                'teksttv_ai_prompts' => ['min_input_words' => 0, 'max_retries' => 1],
+                'teksttv_ai_prompts' => ['min_input_words' => 0],
                 default => $default,
             };
         });
@@ -156,9 +157,43 @@ class RestApiTest extends TestCase
     public function test_generate_content_returns_429_when_rate_limited(): void
     {
         self::stubHappyPath();
-        Functions\when('get_transient')->justReturn(10); // default rate_limit is 10.
+        Functions\when('get_transient')->justReturn(AiGenerator::REQUESTS_PER_MINUTE);
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
+
+        $this->assertErrorStatus(429, $response);
+    }
+
+    public function test_generate_content_both_succeeds_when_two_quota_slots_remain(): void
+    {
+        self::stubHappyPath();
+        Functions\when('get_transient')->justReturn(AiGenerator::REQUESTS_PER_MINUTE - 2);
+        $reserved_count = null;
+        Functions\when('set_transient')->alias(
+            static function (string $key, int $count, int $expiration) use (&$reserved_count): bool {
+                $reserved_count = $count;
+                return true;
+            }
+        );
+        Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
+        Functions\when('update_post_meta')->justReturn(true);
+
+        $body_text = implode(' ', array_fill(0, 50, 'woord'));
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder('Korte kop', $body_text));
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'both']));
+
+        $this->assertSame(200, $response->get_status());
+        $this->assertSame(AiGenerator::REQUESTS_PER_MINUTE, $reserved_count);
+    }
+
+    public function test_generate_content_both_returns_429_when_only_one_quota_slot_remains(): void
+    {
+        self::stubHappyPath();
+        Functions\when('get_transient')->justReturn(AiGenerator::REQUESTS_PER_MINUTE - 1);
+        Functions\expect('set_transient')->never();
+
+        $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'both']));
 
         $this->assertErrorStatus(429, $response);
     }
@@ -298,10 +333,10 @@ class RestApiTest extends TestCase
     {
         self::stubHappyPath(['teksttv_ai_prompts' => [
             'min_input_words' => 0,
-            'max_retries' => 1,
             'word_limit' => 100,
             'word_limit_photo' => 25,
-        ]]);
+        ]
+        ]);
         Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
         Functions\when('update_post_meta')->justReturn(true);
 
@@ -319,5 +354,4 @@ class RestApiTest extends TestCase
         $this->assertArrayHasKey('warning', $with_photo->get_data(), 'has_photo did not reach the generator.');
         $this->assertArrayNotHasKey('warning', $without_photo->get_data());
     }
-
 }

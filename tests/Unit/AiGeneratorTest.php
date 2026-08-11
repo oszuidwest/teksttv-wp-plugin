@@ -29,14 +29,9 @@ class AiGeneratorTest extends TestCase
             'word_limit_photo' => 100,
             'title_char_limit' => 40,
             'min_input_words' => 0,
-            'max_retries' => 1,
-            'rate_limit' => 10,
             'region_taxonomy' => '',
             'provider' => '',
             'model' => '',
-            'temperature' => '',
-            'top_p' => '',
-            'max_tokens' => 2048,
         ];
     }
 
@@ -56,48 +51,40 @@ class AiGeneratorTest extends TestCase
         $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig()));
     }
 
-    public function test_support_check_uses_the_configured_generation_requirements(): void
+    public function test_support_check_uses_model_preference_and_bounded_output(): void
     {
         Functions\expect('wp_supports_ai')->once()->andReturn(true);
 
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->with('Test')->once()->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->with(4096)->once()->andReturnSelf();
-        $builder->shouldReceive('using_temperature')->with(0.7)->once()->andReturnSelf();
-        $builder->shouldReceive('using_top_p')->with(0.8)->once()->andReturnSelf();
+        $builder = self::mockAiBuilder();
         $builder->shouldReceive('using_model_preference')
             ->with(['anthropic', 'claude-sonnet'])
             ->once()
             ->andReturnSelf();
-        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(true);
         Functions\expect('wp_ai_client_prompt')->once()->andReturn($builder);
 
         $this->assertTrue(AiGenerator::supports_text_generation(self::aiConfig([
-            'temperature' => 0.7,
-            'top_p' => 0.8,
-            'max_tokens' => 4096,
             'model' => 'anthropic/claude-sonnet',
         ])));
     }
 
-    public function test_within_rate_limit_uses_atomic_incr_with_object_cache(): void
+    public function test_within_rate_limit_reserves_multiple_requests_with_atomic_object_cache_increment(): void
     {
         self::stubRateLimitTime();
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\expect('wp_cache_add')->with('teksttv_ai_rate_7_2', 0, 'teksttv_ai_rate', 60)->andReturn(true);
         // Counter lands on the limit exactly - still allowed.
-        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7_2', 1, 'teksttv_ai_rate')->andReturn(10);
+        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7_2', 2, 'teksttv_ai_rate')->andReturn(AiGenerator::REQUESTS_PER_MINUTE);
 
-        $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
+        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
     }
 
     public function test_within_rate_limit_blocks_when_incr_exceeds_limit(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\when('wp_cache_add')->justReturn(true);
-        Functions\expect('wp_cache_incr')->andReturn(11);
+        Functions\expect('wp_cache_incr')->andReturn(AiGenerator::REQUESTS_PER_MINUTE + 1);
 
-        $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
+        $this->assertFalse(AiGenerator::within_rate_limit(7));
     }
 
     public function test_within_rate_limit_fails_closed_when_incr_fails(): void
@@ -108,7 +95,7 @@ class AiGeneratorTest extends TestCase
         // Failing closed prevents an uncounted paid request.
         Functions\expect('error_log')->once()->andReturn(true);
 
-        $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
+        $this->assertFalse(AiGenerator::within_rate_limit(7));
     }
 
     public function test_within_rate_limit_falls_back_to_transient_without_object_cache(): void
@@ -118,7 +105,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('get_transient')->with('teksttv_ai_rate_7_2')->andReturn(3);
         Functions\expect('set_transient')->once()->with('teksttv_ai_rate_7_2', 4, 60)->andReturn(true);
 
-        $this->assertTrue(AiGenerator::within_rate_limit(7, 10));
+        $this->assertTrue(AiGenerator::within_rate_limit(7));
     }
 
     public function test_within_rate_limit_fails_closed_when_transient_write_fails(): void
@@ -128,16 +115,16 @@ class AiGeneratorTest extends TestCase
         Functions\expect('set_transient')->once()->andReturn(false);
         Functions\expect('error_log')->once()->andReturn(true);
 
-        $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
+        $this->assertFalse(AiGenerator::within_rate_limit(7));
     }
 
     public function test_within_rate_limit_transient_blocks_at_limit(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
-        Functions\when('get_transient')->justReturn(10);
+        Functions\when('get_transient')->justReturn(AiGenerator::REQUESTS_PER_MINUTE);
         Functions\expect('set_transient')->never();
 
-        $this->assertFalse(AiGenerator::within_rate_limit(7, 10));
+        $this->assertFalse(AiGenerator::within_rate_limit(7));
     }
 
     public function test_within_rate_limit_transient_resets_at_fixed_window_boundary(): void
@@ -161,18 +148,21 @@ class AiGeneratorTest extends TestCase
             }
         );
 
-        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
+        // Seed the :60 bucket two below the limit so the calls below cross it.
+        $counts['teksttv_ai_rate_7_1'] = AiGenerator::REQUESTS_PER_MINUTE - 2;
+
+        $this->assertTrue(AiGenerator::within_rate_limit(7));
         $now = 119;
-        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
-        $this->assertFalse(AiGenerator::within_rate_limit(7, 2));
+        $this->assertTrue(AiGenerator::within_rate_limit(7));
+        $this->assertFalse(AiGenerator::within_rate_limit(7));
 
         $now = 120;
-        $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
+        $this->assertTrue(AiGenerator::within_rate_limit(7));
 
         // TTLs run to the end of each minute bucket: 60 at :00, 1 at :59.
         $this->assertSame([
-            ['teksttv_ai_rate_7_1', 1, 60],
-            ['teksttv_ai_rate_7_1', 2, 1],
+            ['teksttv_ai_rate_7_1', AiGenerator::REQUESTS_PER_MINUTE - 1, 60],
+            ['teksttv_ai_rate_7_1', AiGenerator::REQUESTS_PER_MINUTE, 1],
             ['teksttv_ai_rate_7_2', 1, 60],
         ], $writes);
     }
@@ -392,19 +382,6 @@ class AiGeneratorTest extends TestCase
         $this->assertSame('teksttv_empty_output', $result->get_error_code());
     }
 
-    public function test_generate_single_field_retries_after_empty_output(): void
-    {
-        $builder = self::mockAiBuilder('', 'Korte kop');
-
-        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
-        Functions\expect('is_wp_error')->andReturn(false);
-
-        $result = AiGenerator::generate_single_field('title', 'Titel', 'Tekst', self::aiConfig(['max_retries' => 2]));
-
-        $this->assertSame('Korte kop', $result['content']);
-        $this->assertArrayNotHasKey('warning', $result);
-    }
-
     public function test_generate_single_field_returns_body_with_wpautop(): void
     {
         $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
@@ -416,7 +393,7 @@ class AiGeneratorTest extends TestCase
 
         $this->assertArrayHasKey('content', $result);
         $this->assertStringStartsWith('<p>', $result['content']);
-        $this->assertArrayNotHasKey('warning', $result);
+        $this->assertSame('', $result['warning']);
     }
 
     public function test_generate_single_field_returns_title_without_wpautop(): void
@@ -439,18 +416,17 @@ class AiGeneratorTest extends TestCase
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->with($wp_error)->andReturn(true);
-        Functions\expect('error_log')->andReturn(true);
+        Functions\expect('error_log')->never();
 
         $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst', self::aiConfig());
 
         $this->assertSame($wp_error, $result);
     }
 
-    public function test_generate_single_field_retries_on_length_violation(): void
+    public function test_generate_single_field_returns_length_warning_without_retrying(): void
     {
-        // First attempt: too many words, second attempt: still too many.
         $response = implode(' ', array_fill(0, 50, 'woord'));
-        $builder = self::mockAiBuilder($response, $response);
+        $builder = self::mockAiBuilder($response);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -460,7 +436,7 @@ class AiGeneratorTest extends TestCase
             'body',
             'Titel',
             'Tekst',
-            self::aiConfig(['word_limit' => 10, 'word_limit_photo' => 10, 'max_retries' => 2])
+            self::aiConfig(['word_limit' => 10, 'word_limit_photo' => 10])
         );
 
         $this->assertArrayHasKey('warning', $result);
@@ -568,7 +544,7 @@ class AiGeneratorTest extends TestCase
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('is_wp_error')->andReturnUsing(fn($v) => $v === $wp_error);
-        Functions\expect('error_log')->andReturn(true);
+        Functions\expect('error_log')->never();
 
         $result = AiGenerator::generate_for_post(self::makePost(), 'body', self::aiConfig());
 
