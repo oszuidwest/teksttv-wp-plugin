@@ -470,10 +470,15 @@ class Helpers
     /**
      * Derive a stable id from a commercial block label, used when a newly added block has
      * no id yet.
+     *
+     * The grp_ prefix is historical (commercial blocks were campaign groups).
+     * Keep the formula stable: a row that loses its hidden id re-derives the
+     * id its stored references already point to, and the migration's legacy
+     * label map relies on deriving those same ids.
      */
     public static function commercial_block_id(string $label): string
     {
-        return 'cblock_' . substr(md5($label), 0, 12);
+        return 'grp_' . substr(md5($label), 0, 12);
     }
 
     /**

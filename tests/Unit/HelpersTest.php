@@ -624,10 +624,13 @@ class HelpersTest extends TestCase
         );
     }
 
-    public function test_commercial_block_id_is_stable_for_label(): void
+    public function test_commercial_block_id_uses_frozen_grp_derivation(): void
     {
+        // Stored references resolve against ids derived with exactly this
+        // formula (see Helpers::commercial_block_id()); pin it so any change
+        // to the derivation fails loudly instead of orphaning references.
         $this->assertSame(
-            Helpers::commercial_block_id('Sponsors'),
+            'grp_' . substr(md5('Sponsors'), 0, 12),
             Helpers::commercial_block_id('Sponsors')
         );
         $this->assertNotSame(

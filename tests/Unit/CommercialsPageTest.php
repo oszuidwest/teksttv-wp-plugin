@@ -102,6 +102,39 @@ class CommercialsPageTest extends TestCase
         $this->assertSame(Helpers::commercial_block_id('Sponsors'), $result[0]['id']);
     }
 
+    public function test_sanitize_commercial_blocks_keeps_new_block_when_derived_id_hits_renamed_block(): void
+    {
+        // A block renamed away from 'Sponsors' keeps its label-derived id. A
+        // new block reusing that old label derives the same id; it must get a
+        // unique id instead of being silently dropped.
+        $renamed_id = Helpers::commercial_block_id('Sponsors');
+        $result = CommercialsPage::sanitize_commercial_blocks([
+            ['id' => $renamed_id, 'label' => 'Oude sponsors'],
+            ['id' => '', 'label' => 'Sponsors'],
+        ]);
+
+        $this->assertCount(2, $result);
+        $this->assertSame($renamed_id, $result[0]['id']);
+        $this->assertSame('Sponsors', $result[1]['label']);
+        $this->assertNotSame($result[0]['id'], $result[1]['id']);
+    }
+
+    public function test_sanitize_commercial_blocks_collapses_repeated_label_behind_suffixed_id(): void
+    {
+        // The renamed block holds the derived id, so new 'Sponsors' rows land
+        // on suffixed ids; a repeated label must still collapse into one block
+        // instead of claiming the next suffix.
+        $renamed_id = Helpers::commercial_block_id('Sponsors');
+        $result = CommercialsPage::sanitize_commercial_blocks([
+            ['id' => $renamed_id, 'label' => 'Oude sponsors'],
+            ['id' => '', 'label' => 'Sponsors'],
+            ['id' => '', 'label' => 'Sponsors'],
+        ]);
+
+        $this->assertCount(2, $result);
+        $this->assertSame('Sponsors', $result[1]['label']);
+    }
+
     public function test_sanitize_commercial_blocks_non_array_returns_empty(): void
     {
         $this->assertSame([], CommercialsPage::sanitize_commercial_blocks('not an array'));

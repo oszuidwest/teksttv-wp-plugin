@@ -39,7 +39,9 @@ class CommercialsPage
             'teksttv-campaigns',
             '__return_null'
         );
-        add_action('load-' . $legacy_hook, [self::class, 'redirect_legacy_page']);
+        if ($legacy_hook) {
+            add_action('load-' . $legacy_hook, [self::class, 'redirect_legacy_page']);
+        }
     }
 
     public static function render_page(): void
@@ -158,7 +160,7 @@ class CommercialsPage
         update_option('teksttv_commercial_blocks', self::sanitize_commercial_blocks($raw_commercial_blocks));
 
         // Save campaigns.
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized below
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_campaigns()
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         update_option('teksttv_campaigns', self::sanitize_campaigns($raw, Helpers::channel_slugs()));
 
@@ -225,7 +227,8 @@ class CommercialsPage
     }
 
     /**
-     * Fallback id for a campaign row that reaches the server without one.
+     * Fallback id for a campaign row that reaches the server without an id,
+     * or with one that duplicates an earlier row's.
      */
     private static function new_campaign_id(): string
     {
@@ -236,9 +239,11 @@ class CommercialsPage
      * Sanitize submitted commercial blocks into stable id/label pairs.
      *
      * Each row carries a hidden id so a rename preserves the id (and therefore
-     * every campaign/loop reference to it). Rows without an id — newly added in
-     * the browser — get a stable id derived from the label. Duplicate ids and
-     * empty labels are dropped.
+     * every campaign/loop reference to it). Rows without an id (newly added in
+     * the browser) or with a duplicate id get a stable id derived from the
+     * label. Empty labels are dropped, new rows repeating the same label
+     * collapse into one, and a derived id that still collides with a
+     * differently-labeled block gets a suffixed unique id.
      *
      * @param mixed $raw
      * @return list<array{id: string, label: string}>
@@ -260,10 +265,17 @@ class CommercialsPage
             if ($id === '' || isset($seen[$id])) {
                 $id = Helpers::commercial_block_id($label);
             }
-            if (isset($seen[$id])) {
-                continue;
+            // A colliding id either belongs to a block with this same label
+            // (a duplicate row: collapse into it) or to a block renamed away
+            // from this label (suffix until unique instead of dropping).
+            $base = $id;
+            for ($suffix = 2; isset($seen[$id]); $suffix++) {
+                if ($seen[$id] === $label) {
+                    continue 2;
+                }
+                $id = $base . '_' . $suffix;
             }
-            $seen[$id] = true;
+            $seen[$id] = $label;
             $commercial_blocks[] = ['id' => $id, 'label' => $label];
         }
 
