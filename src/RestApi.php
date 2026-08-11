@@ -164,13 +164,11 @@ class RestApi
         $source_post->post_title = sanitize_text_field($source_title);
         $source_post->post_content = wp_kses_post($source_content);
 
-        $config = Helpers::get_ai_prompts();
-
         // Counted last so requests that can only 403/404 do not consume quota.
         if (!AiGenerator::within_rate_limit(get_current_user_id())) {
             return new WP_Error(
                 'teksttv_rate_limited',
-                'Te veel verzoeken. Probeer het over een minuut opnieuw.',
+                sprintf('Te veel verzoeken (maximaal %d per minuut). Probeer het over een minuut opnieuw.', AiGenerator::REQUESTS_PER_MINUTE),
                 ['status' => 429]
             );
         }
@@ -178,7 +176,7 @@ class RestApi
         $result = AiGenerator::generate_for_post(
             $source_post,
             $field,
-            $config,
+            Helpers::get_ai_prompts(),
             (bool) $request->get_param('has_photo')
         );
         if (is_wp_error($result)) {

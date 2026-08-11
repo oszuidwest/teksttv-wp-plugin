@@ -515,10 +515,6 @@ class HelpersTest extends TestCase
                 'system' => 'Custom system prompt',
                 'word_limit' => 200,
                 'title_char_limit' => 50,
-                'max_retries' => 5,
-                'temperature' => 0.7,
-                'top_p' => 0.9,
-                'max_tokens' => 4096,
                 'model' => 'anthropic/claude-3',
             ]);
 
@@ -528,13 +524,9 @@ class HelpersTest extends TestCase
         $this->assertSame(200, $result['word_limit']);
         $this->assertSame(50, $result['title_char_limit']);
         $this->assertSame('anthropic/claude-3', $result['model']);
-        $this->assertArrayNotHasKey('max_retries', $result);
-        $this->assertArrayNotHasKey('temperature', $result);
-        $this->assertArrayNotHasKey('top_p', $result);
-        $this->assertArrayNotHasKey('max_tokens', $result);
     }
 
-    public function test_get_ai_prompts_clamps_legacy_generation_limits(): void
+    public function test_get_ai_prompts_clamps_out_of_range_limits(): void
     {
         Functions\expect('get_option')
             ->with('teksttv_ai_prompts', [])

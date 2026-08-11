@@ -11,7 +11,7 @@ namespace TekstTV;
  */
 class AiGenerator
 {
-    private const REQUESTS_PER_MINUTE = 10;
+    public const REQUESTS_PER_MINUTE = 10;
     private const MAX_TOKENS = 2048;
 
     /**
@@ -52,7 +52,7 @@ class AiGenerator
      *
      * @return bool True when the request is allowed and has been counted.
      */
-    public static function within_rate_limit(int $user_id, int $rate_limit = self::REQUESTS_PER_MINUTE): bool
+    public static function within_rate_limit(int $user_id): bool
     {
         // Fixed calendar-minute buckets: rewrites can touch an entry's TTL but
         // never the active window, because the next minute uses a new key.
@@ -71,11 +71,11 @@ class AiGenerator
                 error_log('TekstTV AI rate limiter: wp_cache_incr() failed, rejecting uncounted request.');
                 return false;
             }
-            return $count <= $rate_limit;
+            return $count <= self::REQUESTS_PER_MINUTE;
         }
 
         $count = (int) get_transient($key);
-        if ($count >= $rate_limit) {
+        if ($count >= self::REQUESTS_PER_MINUTE) {
             return false;
         }
         if (!set_transient($key, $count + 1, $ttl)) {
@@ -167,7 +167,7 @@ class AiGenerator
      * Generate a single field (title or body) using the WP AI Client.
      *
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
-     * @return array{content: string, warning?: string}|\WP_Error
+     * @return array{content: string, warning: string}|\WP_Error
      */
     public static function generate_single_field(string $field, string $post_title, string $post_text, array $config, bool $has_photo = false)
     {
@@ -182,6 +182,9 @@ class AiGenerator
 
         $content = trim($result);
         if ($content === '') {
+            // Empty output (exhausted tokens, provider content filter) must
+            // never pass as success: validate_ai_output() accepts '' for
+            // titles and the editor would see nothing happen.
             return new \WP_Error(
                 'teksttv_empty_output',
                 'AI gaf een leeg antwoord terug. Probeer het opnieuw.'
@@ -194,12 +197,7 @@ class AiGenerator
             $content = wpautop($content);
         }
 
-        $response = ['content' => $content];
-        if (!empty($warning)) {
-            $response['warning'] = $warning;
-        }
-
-        return $response;
+        return ['content' => $content, 'warning' => $warning];
     }
 
     /**

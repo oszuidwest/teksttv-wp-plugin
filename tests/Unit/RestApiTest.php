@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
+use TekstTV\AiGenerator;
 use TekstTV\RestApi;
 
 class RestApiTest extends TestCase
@@ -156,7 +157,7 @@ class RestApiTest extends TestCase
     public function test_generate_content_returns_429_when_rate_limited(): void
     {
         self::stubHappyPath();
-        Functions\when('get_transient')->justReturn(10);
+        Functions\when('get_transient')->justReturn(AiGenerator::REQUESTS_PER_MINUTE);
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'title']));
 
@@ -300,7 +301,8 @@ class RestApiTest extends TestCase
             'min_input_words' => 0,
             'word_limit' => 100,
             'word_limit_photo' => 25,
-        ]]);
+        ]
+        ]);
         Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
         Functions\when('update_post_meta')->justReturn(true);
 
@@ -318,5 +320,4 @@ class RestApiTest extends TestCase
         $this->assertArrayHasKey('warning', $with_photo->get_data(), 'has_photo did not reach the generator.');
         $this->assertArrayNotHasKey('warning', $without_photo->get_data());
     }
-
 }
