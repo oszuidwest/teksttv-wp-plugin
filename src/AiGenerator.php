@@ -11,7 +11,7 @@ namespace TekstTV;
  */
 class AiGenerator
 {
-    public const REQUESTS_PER_MINUTE = 10;
+    public const REQUESTS_PER_MINUTE = 20;
     private const MAX_TOKENS = 2048;
 
     /**
