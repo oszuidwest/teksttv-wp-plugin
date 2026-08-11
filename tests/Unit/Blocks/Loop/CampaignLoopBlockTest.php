@@ -15,11 +15,13 @@ class CampaignLoopBlockTest extends TestCase
             'groups' => ['grp_aaa111', 'grp_bbb222'],
             'intro_image_id' => '10',
             'outro_image_id' => '20',
+            'limit' => '5',
         ]);
 
         $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
         $this->assertSame(10, $result['intro_image_id']);
         $this->assertSame(20, $result['outro_image_id']);
+        $this->assertArrayNotHasKey('limit', $result);
     }
 
     public function test_save_filters_empty_groups(): void
@@ -29,36 +31,6 @@ class CampaignLoopBlockTest extends TestCase
         ]);
 
         $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
-    }
-
-    public function test_save_with_limit(): void
-    {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
-            'limit' => '5',
-        ]);
-
-        $this->assertSame(5, $result['limit']);
-    }
-
-    public function test_save_omits_empty_limit(): void
-    {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
-            'limit' => '',
-        ]);
-
-        $this->assertArrayNotHasKey('limit', $result);
-    }
-
-    public function test_save_clamps_limit_to_ui_max(): void
-    {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
-            'limit' => '9999',
-        ]);
-
-        $this->assertSame(100, $result['limit']);
     }
 
     public function test_save_empty_groups_defaults(): void
@@ -79,13 +51,9 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_build_returns_empty_when_no_groups(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-
         $block = ['groups' => []];
         $this->assertSame([], CampaignLoopBlock::build($block, 'tv1'));
     }
-
 
     public function test_build_with_campaigns(): void
     {
@@ -102,24 +70,34 @@ class CampaignLoopBlockTest extends TestCase
                     'duration' => 5,
                     'slides' => [100, 101],
                 ],
+                [
+                    'channels' => ['tv1'],
+                    'group' => 'sponsors',
+                    'duration' => 9,
+                    'slides' => [200, 201],
+                ],
             ]);
         Functions\expect('wp_get_attachment_url')
             ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
 
-        $block = ['groups' => ['sponsors']];
+        // 'limit' is a legacy key from the removed slide-limit feature. Both
+        // complete campaigns coming back in their saved order proves it is inert.
+        $block = ['groups' => ['sponsors'], 'limit' => 1];
         $result = CampaignLoopBlock::build($block, 'tv1');
 
-        $this->assertCount(2, $result);
-        $this->assertSame('commercial', $result[0]['type']);
-        $this->assertSame(5000, $result[0]['duration']);
-        $this->assertSame('https://example.com/img-100.jpg', $result[0]['url']);
-        $this->assertSame('https://example.com/img-101.jpg', $result[1]['url']);
+        $this->assertCount(4, $result);
+        $this->assertSame(['commercial', 'commercial', 'commercial', 'commercial'], array_column($result, 'type'));
+        $this->assertSame([5000, 5000, 9000, 9000], array_column($result, 'duration'));
+        $this->assertSame([
+            'https://example.com/img-100.jpg',
+            'https://example.com/img-101.jpg',
+            'https://example.com/img-200.jpg',
+            'https://example.com/img-201.jpg',
+        ], array_column($result, 'url'));
     }
 
     public function test_build_filters_by_channel(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
             ->with('teksttv_campaigns', [])
             ->andReturn([
@@ -136,35 +114,8 @@ class CampaignLoopBlockTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    public function test_build_rotation_limit(): void
-    {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-        Functions\expect('get_option')
-            ->with('teksttv_campaigns', [])
-            ->andReturn([
-                [
-                    'channels' => ['tv1'],
-                    'group' => 'sponsors',
-                    'slides' => [1, 2, 3, 4, 5],
-                ],
-            ]);
-        Functions\expect('get_option')
-            ->with('teksttv_duration_image', 7)
-            ->andReturn(7);
-        Functions\expect('wp_get_attachment_url')
-            ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
-
-        $block = ['groups' => ['sponsors'], 'limit' => 2];
-        $result = CampaignLoopBlock::build($block, 'tv1');
-
-        $this->assertCount(2, $result);
-    }
-
     public function test_build_intro_outro(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
             ->with('teksttv_campaigns', [])
             ->andReturn([
@@ -194,8 +145,6 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_build_no_intro_outro_when_no_matching_campaigns(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
             ->with('teksttv_campaigns', [])
             ->andReturn([]);
@@ -212,8 +161,6 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_build_uses_default_duration(): void
     {
-        Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
-        Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\when('get_option')->alias(function (string $name, $default = false) {
             if ($name === 'teksttv_campaigns') {
                 return [
