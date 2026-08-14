@@ -19,7 +19,7 @@
         "typecheck": "tsc && tsc -p tsconfig.tests.json",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "test": "vendor/bin/phpunit",
-        "test:js": "bun test tests/js",
+        "test:js": "bun test tests/js --isolate",
         "build:package": "bun run build && bash bin/package-plugin.sh",
         "env:start": "bun run build:package && bun tests/e2e/start-playground.ts",
         "test:e2e": "playwright test"

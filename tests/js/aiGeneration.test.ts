@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { getAiGenerationErrorMessage } from '../../resources/ts/alpine/postMeta/aiGeneration';
 import { getCurrentPostEditorState } from '../../resources/ts/alpine/postMeta/editorContent';
-import { setGlobal } from './setGlobal';
+
+function setGlobal(name: string, value: unknown): void {
+    Object.defineProperty(globalThis, name, { configurable: true, value });
+}
 
 test('reads unsaved Gutenberg title and content from the core editor store', () => {
     setGlobal('wp', {
