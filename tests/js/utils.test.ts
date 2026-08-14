@@ -1,17 +1,18 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { debounce, splitPages } from '../../resources/ts/modules/utils';
+import { setGlobal } from './setGlobal';
 
 const originalWindow = globalThis.window;
 
 afterEach(() => {
-    globalThis.window = originalWindow;
+    setGlobal('window', originalWindow);
 });
 
 describe('debounce', () => {
     test('uses native timers without requiring the WordPress Underscore snapshot', async () => {
-        globalThis.window = {
+        setGlobal('window', {
             setTimeout: globalThis.setTimeout,
-        } as unknown as Window & typeof globalThis;
+        } as unknown as Window & typeof globalThis);
         let calls = 0;
         const debounced = debounce(() => {
             calls++;

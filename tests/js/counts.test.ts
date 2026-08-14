@@ -1,22 +1,26 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { updateTeksttvWordCount } from '../../resources/ts/alpine/postMeta/counts';
 import type { TeksttvPostConfig } from '../../resources/ts/modules/types';
+import { setGlobal } from './setGlobal';
 
 const originalDocument = globalThis.document;
 const originalHTMLElement = globalThis.HTMLElement;
 
 function renderWordCount(pageSeparator: boolean): string {
-    globalThis.HTMLElement = class {
-        innerHTML = '';
-        textContent = '';
-    } as unknown as typeof HTMLElement;
+    setGlobal(
+        'HTMLElement',
+        class {
+            innerHTML = '';
+            textContent = '';
+        } as unknown as typeof HTMLElement,
+    );
 
     const wordCount = new globalThis.HTMLElement();
-    globalThis.document = {
+    setGlobal('document', {
         querySelector(selector: string) {
             return selector === '#teksttv-wordcount' ? wordCount : null;
         },
-    } as unknown as Document;
+    } as unknown as Document);
 
     updateTeksttvWordCount({ pageSeparator } as TeksttvPostConfig, false, 'Eerste slide\n---\nTweede slide');
 
@@ -24,8 +28,8 @@ function renderWordCount(pageSeparator: boolean): string {
 }
 
 afterEach(() => {
-    globalThis.document = originalDocument;
-    globalThis.HTMLElement = originalHTMLElement;
+    setGlobal('document', originalDocument);
+    setGlobal('HTMLElement', originalHTMLElement);
 });
 
 describe('updateTeksttvWordCount', () => {

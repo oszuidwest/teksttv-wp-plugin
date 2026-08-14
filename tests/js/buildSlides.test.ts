@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { buildSlidesFromDom } from '../../resources/ts/alpine/postMeta/buildSlides';
 import type { TeksttvPostConfig } from '../../resources/ts/modules/types';
+import { setGlobal } from './setGlobal';
 
 const originalDocument = globalThis.document;
 const originalHTMLElement = globalThis.HTMLElement;
@@ -14,14 +15,14 @@ function editorDocument(content: string): Document {
 }
 
 afterEach(() => {
-    globalThis.document = originalDocument;
-    globalThis.HTMLElement = originalHTMLElement;
+    setGlobal('document', originalDocument);
+    setGlobal('HTMLElement', originalHTMLElement);
 });
 
 describe('buildSlidesFromDom', () => {
     test('preserves inline hyphens in a single slide', () => {
-        globalThis.document = editorDocument('<p>foo---bar</p>');
-        globalThis.HTMLElement = class {} as typeof HTMLElement;
+        setGlobal('document', editorDocument('<p>foo---bar</p>'));
+        setGlobal('HTMLElement', class {} as typeof HTMLElement);
 
         const slides = buildSlidesFromDom(undefined, null);
 
@@ -31,8 +32,8 @@ describe('buildSlidesFromDom', () => {
 
     test('does not split preview pages when the feature is disabled', () => {
         const content = '<p>Pagina één</p><p>---</p><p>Pagina twee</p>';
-        globalThis.document = editorDocument(content);
-        globalThis.HTMLElement = class {} as typeof HTMLElement;
+        setGlobal('document', editorDocument(content));
+        setGlobal('HTMLElement', class {} as typeof HTMLElement);
 
         const slides = buildSlidesFromDom({ pageSeparator: false } as TeksttvPostConfig, null);
 
