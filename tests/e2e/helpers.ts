@@ -76,7 +76,7 @@ async function addBlock(page: Page, kind: keyof typeof ADD_BLOCK_UI, type: strin
  */
 export async function submitAndReload(page: Page): Promise<void> {
     const form = page.locator(
-        'form:has(input[name="teksttv_loop_nonce"]), form:has(input[name="teksttv_campaigns_nonce"])',
+        'form:has(input[name="teksttv_loop_nonce"]), form:has(input[name="teksttv_commercials_nonce"])',
     );
     await form.locator('input[name="submit"]').click();
     await expect(page.locator('.notice-success').first()).toBeVisible();

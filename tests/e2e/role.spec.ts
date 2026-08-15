@@ -18,8 +18,11 @@ test.afterEach(async ({ page, runWordPressPHPFile }) => {
  * A role holding only the intended TekstTV capabilities (no manage_options)
  * must be able to open and save the settings page.
  */
-test('custom-capability role can open and save settings', async ({ page }) => {
+test('custom-capability role can access commercials and save settings', async ({ page }) => {
     await login(page, 'teksttv_editor', 'password');
+
+    await page.goto('/wp-admin/admin.php?page=teksttv-commercials');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reclame');
 
     await page.goto('/wp-admin/admin.php?page=teksttv-settings');
     await expect(page.locator('input[name="teksttv_duration_text"]')).toBeVisible();

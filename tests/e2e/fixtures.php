@@ -3,13 +3,17 @@
  * E2E fixtures, loaded inside WordPress Playground through its PHP API.
  *
  * Seeds a channel, all features, a loop + ticker config, a published TekstTV
- * post, campaign groups + campaigns, a media-library attachment (used by the
+ * post, legacy campaign groups + campaigns, a media-library attachment (used by the
  * media picker specs), and a custom role/user with only the intended TekstTV
  * capabilities so the browser suite can exercise administrator and custom-role
  * save paths.
  */
 
 defined('ABSPATH') || exit;
+
+// Exercise the real versioned migration on every fixture reset.
+delete_option('teksttv_data_version');
+delete_option('teksttv_commercial_blocks');
 
 update_option('teksttv_channels', [['slug' => 'tv1', 'label' => 'TV 1']]);
 update_option('teksttv_preview_url', 'https://preview.example.test/');
@@ -39,8 +43,8 @@ update_option('teksttv_ticker_tv1', [
 ]);
 
 update_option('teksttv_campaign_groups', [
-    ['id' => 'e2e-group-alpha', 'label' => 'E2E Seed Group Alpha'],
-    ['id' => 'e2e-group-beta', 'label' => 'E2E Seed Group Beta'],
+    ['id' => 'e2e-group-alpha', 'label' => 'E2E Seed Commercial Block Alpha'],
+    ['id' => 'e2e-group-beta', 'label' => 'E2E Seed Commercial Block Beta'],
 ]);
 
 // Real media-library attachment used by the isolated picker interaction spec.
@@ -137,6 +141,10 @@ if ($teksttv_user) {
     $teksttv_user = new WP_User($teksttv_uid);
 }
 $teksttv_user->set_role('teksttv_smoke_role');
+
+// Converts the legacy options, campaign relations, and custom-role capability
+// to the canonical commercial-block model used by the browser tests.
+\TekstTV\Migrations::run();
 
 // Disable the block-editor welcome guide via the persisted preference core
 // preloads into the editor, so the onboarding modal never mounts and cannot

@@ -429,7 +429,7 @@ class AdminPage
         <?php
     }
 
-    /** Start a consistently styled field group inside a loop or campaign block. */
+    /** Start a consistently styled field group inside a loop or campaign editor. */
     public static function render_block_section_start(string $title, string $description = '', string $modifier = ''): void
     {
         $classes = 'teksttv-block-section';
@@ -464,7 +464,7 @@ class AdminPage
      * Render the shared block header: drag handle, accordion toggle wired to
      * the body via `$body_id`, and the remove button. The classes and ARIA
      * wiring are a contract with the workbench JS; keep every accordion
-     * (loop, ticker, campaigns) on this one renderer.
+     * (loop, ticker, commercials) on this one renderer.
      */
     public static function render_block_header(
         string $body_id,
@@ -527,7 +527,7 @@ class AdminPage
     /**
      * Render the bare date-range + weekday inputs for a block-shaped item,
      * without the toggle chrome. Callers provide their own container (the
-     * campaigns page renders these always-visible).
+     * commercials page renders these always-visible).
      *
      * @param array<string, mixed> $block
      */
