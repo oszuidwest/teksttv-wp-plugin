@@ -266,6 +266,9 @@ class CommercialsPage
                 continue;
             }
             $id = sanitize_key(is_array($row) ? ($row['id'] ?? '') : '');
+            if ($id === '' && in_array($label, $seen, true)) {
+                continue;
+            }
             if ($id === '' || isset($seen[$id])) {
                 $id = Helpers::commercial_block_id($label);
             }

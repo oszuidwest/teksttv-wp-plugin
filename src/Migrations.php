@@ -24,7 +24,11 @@ final class Migrations
             return;
         }
 
-        delete_option('teksttv_campaign_groups');
+        if (get_option('teksttv_campaign_groups', null) !== null && !delete_option('teksttv_campaign_groups')) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log('TekstTV: could not remove legacy campaign groups; retrying on next request.');
+            return;
+        }
         // Autoloaded: this option gates every request, so it must ride along
         // in the alloptions query instead of costing its own SELECT.
         update_option(self::DATA_VERSION_OPTION, self::CURRENT_DATA_VERSION, true);

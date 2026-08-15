@@ -144,11 +144,30 @@ class MigrationsTest extends TestCase
         $stored = ['teksttv_data_version' => 0];
         self::stubOptionReads($stored);
         Functions\expect('update_option')->once()->with('teksttv_data_version', 1, true)->andReturn(true);
-        Functions\expect('delete_option')->once()->with('teksttv_campaign_groups')->andReturn(true);
+        Functions\expect('delete_option')->never();
         Functions\when('wp_roles')->justReturn((object) ['role_objects' => []]);
         $this->stubLoopOptionScan([]);
 
         Migrations::run();
+    }
+
+    public function test_run_retries_when_legacy_option_cannot_be_deleted(): void
+    {
+        $stored = [
+            'teksttv_data_version' => 0,
+            'teksttv_campaign_groups' => [['id' => 'grp_sponsors', 'label' => 'Sponsors']],
+            'teksttv_commercial_blocks' => [['id' => 'grp_sponsors', 'label' => 'Sponsors']],
+        ];
+        self::stubOptionReads($stored);
+        Functions\when('wp_roles')->justReturn((object) ['role_objects' => []]);
+        Functions\expect('delete_option')->once()->with('teksttv_campaign_groups')->andReturn(false);
+        Functions\expect('update_option')->never();
+        $this->stubLoopOptionScan([]);
+
+        Migrations::run();
+
+        $this->assertSame(0, $stored['teksttv_data_version']);
+        $this->assertArrayHasKey('teksttv_campaign_groups', $stored);
     }
 
     public function test_run_keeps_legacy_data_when_canonical_option_cannot_be_written(): void

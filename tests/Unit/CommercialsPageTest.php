@@ -102,6 +102,16 @@ class CommercialsPageTest extends TestCase
         $this->assertSame(Helpers::commercial_block_id('Sponsors'), $result[0]['id']);
     }
 
+    public function test_sanitize_commercial_blocks_drops_new_row_with_existing_label(): void
+    {
+        $result = CommercialsPage::sanitize_commercial_blocks([
+            ['id' => 'cblock_existing', 'label' => 'Sponsors'],
+            ['id' => '', 'label' => 'Sponsors'],
+        ]);
+
+        $this->assertSame([['id' => 'cblock_existing', 'label' => 'Sponsors']], $result);
+    }
+
     public function test_sanitize_commercial_blocks_keeps_new_block_when_derived_id_hits_renamed_block(): void
     {
         // A block renamed away from 'Sponsors' keeps its label-derived id. A
