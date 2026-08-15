@@ -69,7 +69,7 @@ test.describe('administrator admin screens', () => {
         const campaignActionWidths = await page
             .locator('#teksttv-add-commercial-block, #teksttv-add-campaign')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
-        expect(campaignActionWidths.length).toBeGreaterThan(0);
+        expect(campaignActionWidths).toHaveLength(2);
         expect(Math.max(...campaignActionWidths)).toBeLessThan(190);
     });
 

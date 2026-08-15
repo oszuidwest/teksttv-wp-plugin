@@ -13,7 +13,7 @@ class Plugin
         }
         self::$initialized = true;
 
-        add_action('plugins_loaded', [Migrations::class, 'run']);
+        add_action('wp_loaded', [Migrations::class, 'run']);
         BuiltinBlocks::init();
         AdminPage::init();
         AuditPage::init();

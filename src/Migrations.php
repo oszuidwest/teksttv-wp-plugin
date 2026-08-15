@@ -110,10 +110,8 @@ final class Migrations
             if (array_key_exists('group', $campaign)) {
                 if (!array_key_exists('commercial_block_id', $campaign)) {
                     $group = $campaign['group'] ?? '';
-                    if (is_string($group) && isset($label_map[$group])) {
-                        $group = $label_map[$group];
-                    }
-                    $campaign['commercial_block_id'] = sanitize_key($group);
+                    $group = is_scalar($group) ? (string) $group : '';
+                    $campaign['commercial_block_id'] = sanitize_key($label_map[$group] ?? $group);
                 }
                 unset($campaign['group']);
             }
@@ -144,10 +142,10 @@ final class Migrations
                 if (!array_key_exists('commercial_block_ids', $item)) {
                     $legacy_ids = isset($item['groups']) && is_array($item['groups']) ? $item['groups'] : [];
                     $legacy_ids = array_map(
-                        static fn ($ref) => is_string($ref) && isset($label_map[$ref]) ? $label_map[$ref] : $ref,
-                        $legacy_ids
+                        static fn ($ref) => sanitize_key((string) ($label_map[(string) $ref] ?? $ref)),
+                        array_filter($legacy_ids, 'is_scalar')
                     );
-                    $item['commercial_block_ids'] = array_values(array_filter(array_map('sanitize_key', $legacy_ids)));
+                    $item['commercial_block_ids'] = array_values(array_filter($legacy_ids));
                 }
                 unset($item['groups']);
             }

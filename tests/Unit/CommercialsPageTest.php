@@ -215,4 +215,38 @@ class CommercialsPageTest extends TestCase
 
         $this->assertSame('', $updates['teksttv_campaigns'][0]['commercial_block_id']);
     }
+
+    public function test_save_rejects_invalid_nonce(): void
+    {
+        $previous_post = $_POST;
+        $_POST = ['teksttv_commercials_nonce' => 'invalid'];
+        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
+        Functions\expect('wp_verify_nonce')->once()->with('invalid', 'teksttv_save_commercials')->andReturn(false);
+        Functions\expect('current_user_can')->never();
+        Functions\expect('update_option')->never();
+        Functions\when('add_settings_error')->justReturn(null);
+
+        try {
+            self::callPrivate(CommercialsPage::class, 'handle_save');
+        } finally {
+            $_POST = $previous_post;
+        }
+    }
+
+    public function test_save_rejects_missing_commercials_capability(): void
+    {
+        $previous_post = $_POST;
+        $_POST = ['teksttv_commercials_nonce' => 'valid'];
+        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
+        Functions\expect('wp_verify_nonce')->once()->with('valid', 'teksttv_save_commercials')->andReturn(true);
+        Functions\expect('current_user_can')->once()->with('manage_teksttv_commercials')->andReturn(false);
+        Functions\expect('update_option')->never();
+        Functions\when('add_settings_error')->justReturn(null);
+
+        try {
+            self::callPrivate(CommercialsPage::class, 'handle_save');
+        } finally {
+            $_POST = $previous_post;
+        }
+    }
 }

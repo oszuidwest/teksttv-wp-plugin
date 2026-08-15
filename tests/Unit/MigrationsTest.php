@@ -366,6 +366,17 @@ class MigrationsTest extends TestCase
         $this->assertArrayNotHasKey('groups', $loop[1]);
     }
 
+    public function test_converters_discard_non_scalar_legacy_references(): void
+    {
+        $campaigns = Migrations::convert_campaigns([['group' => ['invalid']]]);
+        $loop = Migrations::convert_loop([
+            ['type' => 'campaign', 'groups' => [['invalid'], 'grp_valid']],
+        ]);
+
+        $this->assertSame('', $campaigns[0]['commercial_block_id']);
+        $this->assertSame(['grp_valid'], $loop[0]['commercial_block_ids']);
+    }
+
     public function test_converters_prefer_canonical_fields_on_mixed_records(): void
     {
         // Records mixing legacy and canonical keys never come from the plugin
