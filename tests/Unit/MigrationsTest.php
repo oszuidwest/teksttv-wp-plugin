@@ -106,16 +106,21 @@ class MigrationsTest extends TestCase
         $this->assertSame(1, $updates['teksttv_data_version']);
     }
 
-    public function test_run_maps_label_references_for_pre_id_data(): void
+    public function test_run_maps_colliding_label_references_for_pre_id_data(): void
     {
         // Installs that skipped the removed one-time label-to-id migration
         // still store blocks as plain labels and reference them by label.
+        $first_label = 'TekstTV collision 12618785700807';
+        $second_label = 'TekstTV collision 281271414805175';
         $stored = [
             'teksttv_data_version' => 0,
-            'teksttv_campaign_groups' => ['Sponsors'],
+            'teksttv_campaign_groups' => [$first_label, $second_label],
             'teksttv_commercial_blocks' => null,
-            'teksttv_campaigns' => [['id' => 'camp_1', 'group' => 'Sponsors']],
-            'teksttv_loop_tv1' => [['type' => 'campaign', 'groups' => ['Sponsors']]],
+            'teksttv_campaigns' => [
+                ['id' => 'camp_1', 'group' => $first_label],
+                ['id' => 'camp_2', 'group' => $second_label],
+            ],
+            'teksttv_loop_tv1' => [['type' => 'campaign', 'groups' => [$first_label, $second_label]]],
         ];
         self::stubOptionReads($stored);
 
@@ -133,10 +138,18 @@ class MigrationsTest extends TestCase
 
         Migrations::run();
 
-        $expected_id = Helpers::commercial_block_id('Sponsors');
-        $this->assertSame([['id' => $expected_id, 'label' => 'Sponsors']], $updates['teksttv_commercial_blocks']);
-        $this->assertSame($expected_id, $updates['teksttv_campaigns'][0]['commercial_block_id']);
-        $this->assertSame([$expected_id], $updates['teksttv_loop_tv1'][0]['commercial_block_ids']);
+        $base_id = Helpers::commercial_block_id($first_label);
+        $this->assertSame($base_id, Helpers::commercial_block_id($second_label));
+        $this->assertSame(
+            [
+                ['id' => $base_id, 'label' => $first_label],
+                ['id' => $base_id . '_2', 'label' => $second_label],
+            ],
+            $updates['teksttv_commercial_blocks']
+        );
+        $this->assertSame($base_id, $updates['teksttv_campaigns'][0]['commercial_block_id']);
+        $this->assertSame($base_id . '_2', $updates['teksttv_campaigns'][1]['commercial_block_id']);
+        $this->assertSame([$base_id, $base_id . '_2'], $updates['teksttv_loop_tv1'][0]['commercial_block_ids']);
     }
 
     public function test_run_on_fresh_install_only_stamps_version(): void

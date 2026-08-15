@@ -77,14 +77,15 @@ final class Migrations
      */
     private static function legacy_label_map(array $legacy_blocks): array
     {
+        $ids_by_label = array_column(CommercialsPage::sanitize_commercial_blocks($legacy_blocks), 'id', 'label');
         $map = [];
         foreach ($legacy_blocks as $row) {
             if (!is_string($row) || $row === '') {
                 continue;
             }
             $label = sanitize_text_field($row);
-            if ($label !== '') {
-                $map[$row] = Helpers::commercial_block_id($label);
+            if ($label !== '' && isset($ids_by_label[$label])) {
+                $map[$row] = $ids_by_label[$label];
             }
         }
 
