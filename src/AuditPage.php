@@ -4,8 +4,6 @@ namespace TekstTV;
 
 class AuditPage
 {
-    private const PER_PAGE = 50;
-
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
@@ -30,21 +28,18 @@ class AuditPage
 
     public static function render_page(): void
     {
+        $selected_month = self::selected_month();
+
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page, no action taken
         $detail_post_id = isset($_GET['post_id']) ? absint($_GET['post_id']) : 0;
         if ($detail_post_id > 0) {
-            self::render_detail_page($detail_post_id);
+            self::render_detail_page($detail_post_id, $selected_month);
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination, no action taken
-        $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
-
-        $query_result = self::query_ai_posts($paged);
-        $posts = $query_result['posts'];
-        $total_posts = $query_result['total'];
-        $total_pages = (int) ceil($total_posts / self::PER_PAGE);
-        $stats = self::compute_stats(self::query_ai_post_statuses());
+        $posts = self::query_ai_posts($selected_month);
+        $total_posts = count($posts);
+        $stats = self::compute_stats($posts);
 
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>' . esc_html('AI-audit') . '</h1>';
@@ -59,6 +54,13 @@ class AuditPage
 
         ?>
         <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
+            <form method="get" class="teksttv-audit-month-filter">
+                <input type="hidden" name="page" value="teksttv-audit" />
+                <label for="teksttv-audit-month"><?php echo esc_html('Maand van laatste wijziging'); ?></label>
+                <input type="month" id="teksttv-audit-month" name="month" value="<?php echo esc_attr($selected_month); ?>" required />
+                <?php submit_button('Tonen', 'secondary', '', false); ?>
+            </form>
+
             <dl class="teksttv-audit-stats">
                 <?php foreach ($stat_cards as $stat_label => $stat_value) : ?>
                 <div class="teksttv-audit-stat-card">
@@ -91,29 +93,12 @@ class AuditPage
                             <td><?php echo self::render_status_badge($post_data['title_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></td>
                             <td><?php echo self::render_status_badge($post_data['body_status']); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></td>
                             <td><?php echo esc_html($post_data['date']); ?></td>
-                            <td><a href="<?php echo esc_url(admin_url('admin.php?page=teksttv-audit&post_id=' . $post_data['id'])); ?>" class="button button-small"><?php echo esc_html('Bekijk'); ?></a></td>
+                            <td><a href="<?php echo esc_url(self::page_url($selected_month, ['post_id' => $post_data['id']])); ?>" class="button button-small"><?php echo esc_html('Bekijk'); ?></a></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
                 </div>
-                <?php if ($total_pages > 1) : ?>
-                <div class="tablenav bottom">
-                    <div class="tablenav-pages">
-                        <span class="displaying-num"><?php echo esc_html(sprintf('%d items', $total_posts)); ?></span>
-                        <?php
-                        echo wp_kses_post((string) paginate_links([
-                            'base' => add_query_arg('paged', '%#%'),
-                            'format' => '',
-                            'current' => $paged,
-                            'total' => $total_pages,
-                            'prev_text' => '&laquo;',
-                            'next_text' => '&raquo;',
-                        ]));
-                        ?>
-                    </div>
-                </div>
-                <?php endif; ?>
             <?php endif; ?>
             </section>
         </div>
@@ -122,7 +107,7 @@ class AuditPage
         echo '</div>';
     }
 
-    private static function render_detail_page(int $post_id): void
+    private static function render_detail_page(int $post_id, string $selected_month): void
     {
         $post = get_post($post_id);
         if (!$post) {
@@ -134,7 +119,8 @@ class AuditPage
         $split = !isset($_GET['view']) || $_GET['view'] !== 'inline';
         $toggle_view = $split ? 'inline' : 'split';
         $toggle_label = $split ? 'Inline weergave' : 'Side-by-side weergave';
-        $toggle_url = admin_url('admin.php?page=teksttv-audit&post_id=' . $post_id . '&view=' . $toggle_view);
+        $overview_url = self::page_url($selected_month);
+        $toggle_url = self::page_url($selected_month, ['post_id' => $post_id, 'view' => $toggle_view]);
 
         $ai_title = get_post_meta($post_id, '_teksttv_ai_title', true);
         $ai_body = get_post_meta($post_id, '_teksttv_ai_body', true);
@@ -144,7 +130,7 @@ class AuditPage
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>AI-audit: ' . esc_html($post->post_title) . '</h1>';
         echo '<p>';
-        echo '<a href="' . esc_url(admin_url('admin.php?page=teksttv-audit')) . '">&larr; ' . esc_html('Terug naar overzicht') . '</a>';
+        echo '<a href="' . esc_url($overview_url) . '">&larr; ' . esc_html('Terug naar overzicht') . '</a>';
         echo ' | <a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html('Bericht bewerken') . '</a>';
         echo ' | <a href="' . esc_url($toggle_url) . '">' . esc_html($toggle_label) . '</a>';
         echo '</p>';
@@ -200,18 +186,13 @@ class AuditPage
     }
 
     /**
-     * Query posts with AI-generated content, paginated.
+     * Query every post with AI-generated content modified in one calendar month.
      *
-     * @return array{posts: list<array{id: int, title: string, title_status: string, body_status: string, date: string}>, total: int}
+     * @return list<array{id: int, title: string, title_status: string, body_status: string, date: string}>
      */
-    private static function query_ai_posts(int $paged = 1): array
+    private static function query_ai_posts(string $selected_month): array
     {
-        $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
-            'posts_per_page' => self::PER_PAGE,
-            'paged' => $paged,
-            'orderby' => 'modified',
-            'order' => 'DESC',
-        ]));
+        $query = new \WP_Query(self::ai_post_query_args($selected_month));
 
         $results = [];
         foreach ($query->posts as $post) {
@@ -226,41 +207,64 @@ class AuditPage
             ];
         }
 
-        return [
-            'posts' => $results,
-            'total' => $query->found_posts,
-        ];
+        return $results;
     }
 
     /**
-     * Fetch audit statuses for every matching post without loading post
-     * objects or writing the ID result to the query cache.
+     * Build an audit-page URL that carries the month selection along.
      *
-     * @return list<array{title_status: string, body_status: string}>
+     * @param array<string, int|string> $args
      */
-    private static function query_ai_post_statuses(): array
+    private static function page_url(string $selected_month, array $args = []): string
     {
-        $query = new \WP_Query(array_merge(self::ai_post_query_args(), [
-            'fields' => 'ids',
-            'posts_per_page' => -1,
-            'no_found_rows' => true,
-            'cache_results' => false,
-            'orderby' => 'none',
-        ]));
-        update_meta_cache('post', $query->posts);
-
-        return array_map([self::class, 'get_post_statuses'], $query->posts);
+        return add_query_arg(
+            array_merge(['page' => 'teksttv-audit', 'month' => $selected_month], $args),
+            admin_url('admin.php')
+        );
     }
 
     /**
-     * Which posts count as AI-audited; shared by the table and the statistics.
+     * Resolve a valid YYYY-MM selection, defaulting to the current WordPress
+     * month for missing or crafted query parameters.
+     */
+    private static function selected_month(): string
+    {
+        $requested_month = '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter, no action taken
+        if (isset($_GET['month']) && is_string($_GET['month'])) {
+            $requested_month = sanitize_text_field(wp_unslash($_GET['month']));
+        }
+        $parsed = \DateTime::createFromFormat('!Y-m', $requested_month);
+        if ($parsed && $parsed->format('Y-m') === $requested_month) {
+            return $requested_month;
+        }
+
+        return current_datetime()->format('Y-m');
+    }
+
+    /**
+     * Which posts count as AI-audited in the selected month.
      *
      * @return array<string, mixed>
      */
-    private static function ai_post_query_args(): array
+    private static function ai_post_query_args(string $selected_month): array
     {
+        [$year, $month] = array_map('intval', explode('-', $selected_month));
+
         return [
             'post_type' => 'post',
+            'posts_per_page' => -1,
+            'no_found_rows' => true,
+            'update_post_term_cache' => false,
+            'orderby' => 'modified',
+            'order' => 'DESC',
+            'date_query' => [
+                [
+                    'year' => $year,
+                    'month' => $month,
+                    'column' => 'post_modified',
+                ],
+            ],
             'meta_query' => [
                 'relation' => 'OR',
                 ['key' => '_teksttv_ai_title', 'compare' => 'EXISTS'],
@@ -289,7 +293,7 @@ class AuditPage
     /**
      * Compute stats from an already-fetched post statuses array.
      *
-     * @param list<array{title_status: string, body_status: string}> $posts
+     * @param list<array{title_status: string, body_status: string, ...}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}
      */
     public static function compute_stats(array $posts): array

@@ -22,6 +22,9 @@ abstract class TestCase extends PHPUnitTestCase
         // stub it. Default every test to the real clock; override per test with
         // Functions\when() where the value matters.
         Functions\when('TekstTV\\time')->alias('time');
+        // Same process-wide persistence hazard applies to wp_unslash(); default
+        // every test to a passthrough so superglobal readers need no stub.
+        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
         $ai_cache = new \ReflectionProperty(Helpers::class, 'ai_supported_cache');

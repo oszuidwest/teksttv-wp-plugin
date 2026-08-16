@@ -40,6 +40,43 @@ class AuditPageTest extends TestCase
         AuditPage::register_menu();
     }
 
+    public function test_selected_month_accepts_valid_query_value(): void
+    {
+        $_GET['month'] = '2026-08';
+
+        try {
+            $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
+        } finally {
+            unset($_GET['month']);
+        }
+    }
+
+    public function test_selected_month_falls_back_to_current_wordpress_month(): void
+    {
+        Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
+        $_GET['month'] = '2026-13';
+
+        try {
+            $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
+        } finally {
+            unset($_GET['month']);
+        }
+    }
+
+    public function test_month_query_selects_every_post_modified_in_the_month(): void
+    {
+        $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
+
+        $this->assertSame(-1, $args['posts_per_page']);
+        $this->assertSame('modified', $args['orderby']);
+        $this->assertSame('DESC', $args['order']);
+        $this->assertSame([
+            'year' => 2026,
+            'month' => 8,
+            'column' => 'post_modified',
+        ], $args['date_query'][0]);
+    }
+
     // =========================================================================
     // compare()
     // =========================================================================
