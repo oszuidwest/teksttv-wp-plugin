@@ -7,7 +7,7 @@
     },
     "scripts": {
         "build": "bun run build:js && bun run build:css && bun run build:static",
-        "build:js": "bun build resources/ts/admin.ts --outdir assets --minify-whitespace --minify-syntax",
+        "build:js": "bun build resources/ts/admin.ts --outdir assets --format=iife --minify-whitespace --minify-syntax",
         "build:css": "bun build resources/css/admin.css --outdir assets --minify",
         "build:static": "cp resources/ts/tinymce-separator.js assets/ && cp resources/css/tinymce-content.css assets/",
         "dev": "bun run build:js -- --watch & bun run build:css -- --watch",
