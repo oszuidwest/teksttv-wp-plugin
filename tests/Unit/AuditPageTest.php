@@ -45,16 +45,33 @@ class AuditPageTest extends TestCase
     {
         $_GET['month'] = '2026-08';
 
-        $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
+        $this->assertSame(
+            ['month' => '2026-08', 'invalid' => false],
+            self::callPrivate(AuditPage::class, 'selected_month')
+        );
+    }
+
+    public function test_selected_month_defaults_without_flagging_when_absent(): void
+    {
+        Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
+        unset($_GET['month']);
+
+        $this->assertSame(
+            ['month' => '2026-08', 'invalid' => false],
+            self::callPrivate(AuditPage::class, 'selected_month')
+        );
     }
 
     #[DataProvider('invalidMonths')]
-    public function test_selected_month_falls_back_for_invalid_query_value(mixed $month): void
+    public function test_selected_month_falls_back_and_flags_invalid_query_value(mixed $month): void
     {
         Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
         $_GET['month'] = $month;
 
-        $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
+        $this->assertSame(
+            ['month' => '2026-08', 'invalid' => true],
+            self::callPrivate(AuditPage::class, 'selected_month')
+        );
     }
 
     /**
@@ -64,6 +81,7 @@ class AuditPageTest extends TestCase
     {
         return [
             'out-of-range month' => ['2026-13'],
+            'month zero' => ['2026-00'],
             'year zero' => ['0000-01'],
             'non-padded month' => ['2026-8'],
             'wrong separator' => ['2026/08'],
@@ -77,8 +95,7 @@ class AuditPageTest extends TestCase
     {
         $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
 
-        $this->assertSame(501, $args['posts_per_page']);
-        $this->assertTrue($args['no_found_rows']);
+        $this->assertSame(-1, $args['posts_per_page']);
         $this->assertSame('modified', $args['orderby']);
         $this->assertSame('DESC', $args['order']);
         $this->assertSame([

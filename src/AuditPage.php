@@ -4,8 +4,6 @@ namespace TekstTV;
 
 class AuditPage
 {
-    private const MAX_RESULTS = 500;
-
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
@@ -30,7 +28,7 @@ class AuditPage
 
     public static function render_page(): void
     {
-        $selected_month = self::selected_month();
+        ['month' => $selected_month, 'invalid' => $invalid_month] = self::selected_month();
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page, no action taken
         $detail_post_id = isset($_GET['post_id']) ? absint($_GET['post_id']) : 0;
@@ -39,18 +37,16 @@ class AuditPage
             return;
         }
 
-        $query_result = self::query_ai_posts($selected_month);
-        $posts = $query_result['posts'];
-        $has_more_posts = $query_result['has_more'];
+        ['posts' => $posts, 'error' => $query_failed] = self::query_ai_posts($selected_month);
         $shown_posts = count($posts);
         $stats = self::compute_stats($posts);
 
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>' . esc_html('AI-audit') . '</h1>';
 
-        $format_pct = static fn(int|float $pct): string => $shown_posts > 0 ? (string) $pct . '%' : '—';
+        $format_pct = static fn(int|float $pct): string => $shown_posts > 0 ? $pct . '%' : '—';
         $stat_cards = [
-            'Berichten met AI' => (string) $shown_posts . ($has_more_posts ? '+' : ''),
+            'Berichten met AI' => (string) $shown_posts,
             'Koppen bewerkt' => $format_pct($stats['title_modified_pct']),
             'Teksten bewerkt' => $format_pct($stats['body_modified_pct']),
             'Totaal bewerkt' => $format_pct($stats['any_modified_pct']),
@@ -58,10 +54,16 @@ class AuditPage
 
         ?>
         <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
+            <?php if ($invalid_month) : ?>
+            <div class="notice notice-warning inline">
+                <p><?php echo esc_html('De opgegeven maand is ongeldig; de huidige maand wordt getoond.'); ?></p>
+            </div>
+            <?php endif; ?>
             <form method="get" class="teksttv-audit-month-filter">
                 <input type="hidden" name="page" value="teksttv-audit" />
                 <label for="teksttv-audit-month"><?php echo esc_html('Maand van laatste wijziging'); ?></label>
-                <input type="month" id="teksttv-audit-month" name="month" value="<?php echo esc_attr($selected_month); ?>" required />
+                <?php // Fallback guidance for browsers without a native month control (desktop Safari/Firefox): pattern and placeholder only apply to the degraded text field. ?>
+                <input type="month" id="teksttv-audit-month" name="month" value="<?php echo esc_attr($selected_month); ?>" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="JJJJ-MM" title="<?php echo esc_attr('Gebruik JJJJ-MM'); ?>" required />
                 <?php submit_button('Tonen', 'secondary', '', false); ?>
             </form>
 
@@ -76,13 +78,12 @@ class AuditPage
 
             <section class="teksttv-card teksttv-workbench-section teksttv-audit-results">
                 <h2><?php echo esc_html('Berichten'); ?></h2>
-            <?php if ($has_more_posts) : ?>
-                <div class="notice notice-warning inline">
-                    <p><?php echo esc_html(sprintf('Deze maand bevat meer dan %d berichten. Alleen de %d meest recent gewijzigde berichten worden getoond; de percentages zijn op deze selectie gebaseerd.', self::MAX_RESULTS, $shown_posts)); ?></p>
+            <?php if ($query_failed) : ?>
+                <div class="notice notice-error inline">
+                    <p><?php echo esc_html('De auditgegevens konden niet worden opgehaald. Probeer het later opnieuw.'); ?></p>
                 </div>
-            <?php endif; ?>
-            <?php if (empty($posts)) : ?>
-                <?php AdminPage::render_empty_state('chart-bar', 'Nog geen AI-auditgegevens', 'Er zijn nog geen berichten met AI-gegenereerde inhoud.'); ?>
+            <?php elseif (empty($posts)) : ?>
+                <?php AdminPage::render_empty_state('chart-bar', 'Geen AI-auditgegevens in deze maand', 'Er zijn in deze maand geen berichten met AI-gegenereerde inhoud gewijzigd.'); ?>
             <?php else : ?>
                 <div class="teksttv-table-scroll">
                 <table class="widefat teksttv-audit-table">
@@ -197,15 +198,23 @@ class AuditPage
     /**
      * Query posts with AI-generated content modified in one calendar month.
      *
-     * @return array{posts: list<array{id: int, title: string, title_status: string, body_status: string, date: string}>, has_more: bool}
+     * @return array{posts: list<array{id: int, title: string, title_status: string, body_status: string, date: string}>, error: bool}
      */
     private static function query_ai_posts(string $selected_month): array
     {
+        /** @var \wpdb $wpdb */
+        global $wpdb;
+
+        // WP_Query has no error channel: a failed query looks like an empty
+        // month. $wpdb->last_error is the only way to tell them apart, but it
+        // can hold a stale error from an earlier query when WP_Query is served
+        // entirely from cache — only trust it if new queries actually ran.
+        $query_count = $wpdb->num_queries;
         $query = new \WP_Query(self::ai_post_query_args($selected_month));
-        $has_more = count($query->posts) > self::MAX_RESULTS;
+        $query_failed = $wpdb->num_queries > $query_count && $wpdb->last_error !== '';
 
         $results = [];
-        foreach (array_slice($query->posts, 0, self::MAX_RESULTS) as $post) {
+        foreach ($query->posts as $post) {
             $statuses = self::get_post_statuses($post->ID);
 
             $results[] = [
@@ -213,13 +222,13 @@ class AuditPage
                 'title' => $post->post_title,
                 'title_status' => $statuses['title_status'],
                 'body_status' => $statuses['body_status'],
-                'date' => get_the_modified_date('j M Y H:i', $post),
+                'date' => get_the_modified_date('j M Y H:i', $post) ?: '—',
             ];
         }
 
         return [
             'posts' => $results,
-            'has_more' => $has_more,
+            'error' => $query_failed,
         ];
     }
 
@@ -238,21 +247,26 @@ class AuditPage
 
     /**
      * Resolve a valid YYYY-MM selection, defaulting to the current WordPress
-     * month for missing or crafted query parameters.
+     * month and flagging a supplied value that had to be rejected.
+     *
+     * @return array{month: string, invalid: bool}
      */
-    private static function selected_month(): string
+    private static function selected_month(): array
     {
-        $requested_month = '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter, no action taken
-        if (isset($_GET['month']) && is_string($_GET['month'])) {
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- exact format is validated before the sanitized value is returned.
-            $requested_month = wp_unslash($_GET['month']);
-        }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- read-only filter; the exact format is validated below.
+        $raw_month = $_GET['month'] ?? null;
+        $requested_month = is_string($raw_month) ? wp_unslash($raw_month) : '';
+
+        // Reject year zero: WP_Date_Query silently drops a falsy 'year'
+        // clause from the SQL, so '0000-01' would match January of every year.
         if (preg_match('/\A(?!0000-)[0-9]{4}-(?:0[1-9]|1[0-2])\z/', $requested_month) === 1) {
-            return sanitize_text_field($requested_month);
+            return ['month' => $requested_month, 'invalid' => false];
         }
 
-        return current_datetime()->format('Y-m');
+        return [
+            'month' => current_datetime()->format('Y-m'),
+            'invalid' => $raw_month !== null && $raw_month !== '',
+        ];
     }
 
     /**
@@ -266,8 +280,7 @@ class AuditPage
 
         return [
             'post_type' => 'post',
-            'posts_per_page' => self::MAX_RESULTS + 1,
-            'no_found_rows' => true,
+            'posts_per_page' => -1,
             'update_post_term_cache' => false,
             'orderby' => 'modified',
             'order' => 'DESC',

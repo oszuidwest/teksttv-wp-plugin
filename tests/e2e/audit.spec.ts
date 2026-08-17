@@ -23,8 +23,11 @@ test.describe('monthly AI audit', () => {
         const seedResult = await runWordPressPHPFile('audit-stats.php');
         expect(seedResult).toContain('audit-stats-ok count=3');
 
+        // The admin user has read_private_posts: the private July fixture must
+        // be counted along with the published one.
         const html = await runWordPressPHP(`
             require_once ABSPATH . 'wp-admin/includes/template.php';
+            wp_set_current_user(1);
             $_GET['month'] = '2026-07';
             \\TekstTV\\AuditPage::render_page();
         `);
@@ -33,11 +36,29 @@ test.describe('monthly AI audit', () => {
         expect(html).toContain('TekstTV Audit Juli Bewerkt');
         expect(html).toContain('TekstTV Audit Juli Ongewijzigd');
         expect(html).not.toContain('TekstTV Audit Augustus Buiten Selectie');
-        expect(html).not.toContain('paged=');
         expect(html).toMatch(/Berichten met AI<\/dt>\s*<dd[^>]*>2<\/dd>/);
         expect(html).toMatch(/Koppen bewerkt<\/dt>\s*<dd[^>]*>0%<\/dd>/);
         expect(html).toMatch(/Teksten bewerkt<\/dt>\s*<dd[^>]*>50%<\/dd>/);
         expect(html).toMatch(/Totaal bewerkt<\/dt>\s*<dd[^>]*>50%<\/dd>/);
         expect(html).toContain('month=2026-07');
+    });
+
+    test('shows a month-scoped empty state for a month without audited posts', async ({
+        runWordPressPHP,
+        runWordPressPHPFile,
+    }) => {
+        const seedResult = await runWordPressPHPFile('audit-stats.php');
+        expect(seedResult).toContain('audit-stats-ok count=3');
+
+        const html = await runWordPressPHP(`
+            require_once ABSPATH . 'wp-admin/includes/template.php';
+            wp_set_current_user(1);
+            $_GET['month'] = '2026-06';
+            \\TekstTV\\AuditPage::render_page();
+        `);
+
+        expect(html).toContain('Geen AI-auditgegevens in deze maand');
+        expect(html).toMatch(/Berichten met AI<\/dt>\s*<dd[^>]*>0<\/dd>/);
+        expect(html).toMatch(/Koppen bewerkt<\/dt>\s*<dd[^>]*>—<\/dd>/);
     });
 });

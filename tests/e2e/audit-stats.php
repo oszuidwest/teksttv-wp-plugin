@@ -16,8 +16,11 @@ $teksttv_audit_fixtures = [
         ],
     ],
     [
+        // Private: the audit page must count this post for a viewer with
+        // read_private_posts, exactly like the WP_Query behind the table does.
         'title' => 'TekstTV Audit Juli Ongewijzigd',
         'slug' => 'teksttv-audit-july-unmodified',
+        'status' => 'private',
         'modified' => '2026-07-10 10:00:00',
         'meta' => [
             '_teksttv_ai_title' => 'Ongewijzigde kop',
@@ -56,7 +59,7 @@ try {
             'post_title' => $teksttv_fixture['title'],
             'post_name' => $teksttv_fixture['slug'],
             'post_content' => '<p>Bronartikel voor de auditstatistiek.</p>',
-            'post_status' => 'publish',
+            'post_status' => $teksttv_fixture['status'] ?? 'publish',
             'post_modified' => $teksttv_fixture['modified'],
             'post_modified_gmt' => get_gmt_from_date($teksttv_fixture['modified']),
         ];
@@ -66,7 +69,6 @@ try {
 
         $teksttv_post_id = wp_insert_post($teksttv_post_data, true);
         if (is_wp_error($teksttv_post_id)) {
-            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI-only fixture failure.
             throw new RuntimeException('Could not seed an audit statistics post: ' . $teksttv_post_id->get_error_message());
         }
 

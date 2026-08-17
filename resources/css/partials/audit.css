@@ -9,10 +9,6 @@
     font-weight: 600;
 }
 
-.teksttv-audit-month-filter .button {
-    margin: 0;
-}
-
 .teksttv-audit-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
