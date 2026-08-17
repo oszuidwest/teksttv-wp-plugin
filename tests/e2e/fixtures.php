@@ -1,15 +1,13 @@
 <?php
 /**
- * E2E fixtures, loaded inside WordPress Playground through its PHP API.
- *
- * Seeds a channel, all features, a loop + ticker config, a published TekstTV
- * post, campaign groups + campaigns, a media-library attachment (used by the
- * media picker specs), and a custom role/user with only the intended TekstTV
- * capabilities so the browser suite can exercise administrator and custom-role
- * save paths.
+ * Seed deterministic Playground fixtures for browser tests.
  */
 
 defined('ABSPATH') || exit;
+
+// Exercise the real migration on every reset.
+delete_option('teksttv_data_version');
+delete_option('teksttv_commercial_blocks');
 
 update_option('teksttv_channels', [['slug' => 'tv1', 'label' => 'TV 1']]);
 update_option('teksttv_preview_url', 'https://preview.example.test/');
@@ -39,11 +37,11 @@ update_option('teksttv_ticker_tv1', [
 ]);
 
 update_option('teksttv_campaign_groups', [
-    ['id' => 'e2e-group-alpha', 'label' => 'E2E Seed Group Alpha'],
-    ['id' => 'e2e-group-beta', 'label' => 'E2E Seed Group Beta'],
+    ['id' => 'e2e-group-alpha', 'label' => 'E2E Seed Commercial Block Alpha'],
+    ['id' => 'e2e-group-beta', 'label' => 'E2E Seed Commercial Block Beta'],
 ]);
 
-// Real media-library attachment used by the isolated picker interaction spec.
+// Real attachment for media-picker tests.
 $teksttv_attachments = get_posts([
     'post_type' => 'attachment',
     'post_status' => 'inherit',
@@ -92,8 +90,7 @@ if (!$teksttv_attachment_file || !is_file($teksttv_attachment_file)) {
     );
 }
 
-// Seeded after the attachment so campaign alpha can carry a real slide: the
-// campaign runtime spec needs a campaign that actually emits a commercial.
+// Campaign alpha needs a real slide for its runtime assertion.
 update_option('teksttv_campaigns', [
     [
         'id' => 'e2e-campaign-alpha',
@@ -113,7 +110,7 @@ update_option('teksttv_campaigns', [
     ],
 ]);
 
-// Custom role with exactly the intended TekstTV capabilities (no manage_options).
+// TekstTV-only role, without manage_options.
 remove_role('teksttv_smoke_role');
 add_role('teksttv_smoke_role', 'TekstTV Smoke Role', [
     'read' => true,
@@ -138,10 +135,10 @@ if ($teksttv_user) {
 }
 $teksttv_user->set_role('teksttv_smoke_role');
 
-// Disable the block-editor welcome guide via the persisted preference core
-// preloads into the editor, so the onboarding modal never mounts and cannot
-// race the specs. The post editor reads core/edit-post; `_modified` must be
-// current or a stale localStorage copy wins the client-side persistence merge.
+// Convert seeded legacy data through the production migration.
+\TekstTV\Migrations::run();
+
+// Disable onboarding with a fresh server preference so localStorage cannot win.
 $teksttv_prefs_key = $GLOBALS['wpdb']->get_blog_prefix() . 'persisted_preferences';
 foreach (['admin', 'teksttv_editor'] as $teksttv_login) {
     $teksttv_user = get_user_by('login', $teksttv_login);
@@ -158,9 +155,7 @@ foreach (['admin', 'teksttv_editor'] as $teksttv_login) {
 
 $teksttv_now = current_datetime();
 
-// Upsert a fixture post by slug: reset every per-post TekstTV meta to a
-// known-absent state (a reused Playground keeps meta from earlier runs), then
-// apply exactly the meta the fixture needs.
+// Upsert by slug and clear stale TekstTV meta from reused Playgrounds.
 $teksttv_seed_post = static function (array $post_data, array $meta): int {
     $existing = get_page_by_path($post_data['post_name'], OBJECT, 'post');
     if ($existing) {
@@ -193,8 +188,7 @@ $teksttv_seed_post = static function (array $post_data, array $meta): int {
     return $post_id;
 };
 
-// Published post that produces a text slide (active + content meta). Keep it
-// older than every ineligible fixture so the REST test must backfill to it.
+// Keep the valid slide older than every runtime-ineligible post.
 $teksttv_post_id = $teksttv_seed_post([
     'post_title' => 'TekstTV Smoke Post',
     'post_name' => 'teksttv-smoke-post',
@@ -219,11 +213,7 @@ $teksttv_scheduled_post_id = $teksttv_seed_post([
     '_teksttv_date_start' => $teksttv_now->modify('+1 day')->format('Y-m-d'),
 ]);
 
-// Ten filler posts, all newer than the smoke post, that pass the SQL-side
-// filters but are rejected at runtime (an empty weekday list, or no content
-// and no images). At loop count 1 the articles block queries batches of ten,
-// so these fill the first batch completely: serving the smoke post then
-// requires the backfill loop to issue a second query.
+// Fill the first SQL batch with ten runtime-ineligible posts to force backfill.
 $teksttv_seeded_post_ids = [$teksttv_post_id, $teksttv_scheduled_post_id];
 for ($teksttv_i = 1; $teksttv_i <= 10; $teksttv_i++) {
     $teksttv_filler_meta = ['_teksttv_active' => '1'];
@@ -240,10 +230,7 @@ for ($teksttv_i = 1; $teksttv_i <= 10; $teksttv_i++) {
     ], $teksttv_filler_meta);
 }
 
-// The suite assumes a fully known post table (the smoke post must stay on
-// page one of wp-admin/edit.php, and only seeded posts may reach the slides
-// feed), so drop everything this file did not seed - including leftovers
-// from older fixture versions in a reused Playground database.
+// Remove unseeded posts so admin order and slide feeds stay deterministic.
 $teksttv_all_post_ids = get_posts([
     'post_type' => 'post',
     'post_status' => 'any',

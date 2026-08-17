@@ -3,9 +3,7 @@
 namespace TekstTV;
 
 /**
- * AI content generation for TekstTV: prompt construction, WP AI Client calls,
- * output validation, rate limiting, audit-trail meta persistence
- * (_teksttv_ai_title / _teksttv_ai_body), and region prefixing.
+ * Generate and audit TekstTV content through the WordPress AI Client.
  *
  * @phpstan-import-type AiConfig from Helpers
  */
@@ -15,12 +13,7 @@ class AiGenerator
     private const MAX_TOKENS = 2048;
 
     /**
-     * Whether the current WordPress AI configuration can satisfy the same
-     * requirements used for TekstTV generation requests.
-     *
-     * wp_supports_ai() is only an environment-level switch and defaults to
-     * true even when no provider is configured. The prompt-level support
-     * check also verifies the registered providers, credentials, and models.
+     * Verify actual model support; wp_supports_ai() only checks the environment.
      *
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
      */
@@ -40,31 +33,24 @@ class AiGenerator
     }
 
     /**
-     * Count provider requests against the per-user, per-minute AI generation limit.
+     * Reserve requests against the per-user minute limit.
      *
-     * With a persistent object cache, wp_cache_incr() is atomic and avoids the
-     * read-then-write race where concurrent requests both pass the check before
-     * either writes back. Without one, fall back to a transient-backed counter
-     * (persistent but not atomic - acceptable for editor cost control).
-     *
-     * Counter persistence failures fail closed so uncounted requests cannot
-     * bypass the cost-control boundary.
+     * Object-cache increments are atomic; the transient fallback is not.
+     * Persistence failures fail closed.
      *
      * @param int $requests Number of provider requests to reserve.
      * @return bool True when the requests are allowed and have been counted.
      */
     public static function within_rate_limit(int $user_id, int $requests = 1): bool
     {
-        // Fixed calendar-minute buckets: rewrites can touch an entry's TTL but
-        // never the active window, because the next minute uses a new key.
-        // TTLs run to the end of the bucket's own minute.
+        // Fixed keys and end-of-minute TTLs prevent sliding windows.
         $now = time();
         $key = 'teksttv_ai_rate_' . $user_id . '_' . intdiv($now, MINUTE_IN_SECONDS);
         $ttl = MINUTE_IN_SECONDS - ($now % MINUTE_IN_SECONDS);
 
         if (wp_using_ext_object_cache()) {
             $group = 'teksttv_ai_rate';
-            // add() seeds the counter only if absent; incr() then bumps it atomically.
+            // Seed once, then increment atomically.
             wp_cache_add($key, 0, $group, $ttl);
             $count = wp_cache_incr($key, $requests, $group);
             if ($count === false) {
@@ -88,11 +74,9 @@ class AiGenerator
     }
 
     /**
-     * Generate the requested field(s) for a post, apply the region prefix to
-     * the body, and persist the audit-trail meta.
+     * Generate fields, apply the region prefix, and persist the audit baseline.
      *
-     * Validation errors and provider failures are returned as WP_Error with a
-     * `status` entry in the error data for HTTP mapping.
+     * Errors include an HTTP status for REST mapping.
      *
      * @param string $field 'title', 'body', or 'both'.
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
@@ -155,8 +139,7 @@ class AiGenerator
             }
         }
 
-        // Persist after all transforms: the audit baseline must match exactly
-        // what the editor received.
+        // Audit the exact text sent to the editor.
         foreach ($fields as $key => $value) {
             update_post_meta($post->ID, '_teksttv_ai_' . $key, wp_slash($value));
         }
@@ -165,7 +148,7 @@ class AiGenerator
     }
 
     /**
-     * Generate a single field (title or body) using the WP AI Client.
+     * Generate one field through the WordPress AI Client.
      *
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
      * @return array{content: string, warning: string}|\WP_Error
@@ -181,9 +164,7 @@ class AiGenerator
 
         $content = trim($result);
         if ($content === '') {
-            // Empty output (exhausted tokens, provider content filter) must
-            // never pass as success: validate_ai_output() accepts '' for
-            // titles and the editor would see nothing happen.
+            // Treat filtered or token-exhausted empty output as failure.
             return new \WP_Error(
                 'teksttv_empty_output',
                 'AI gaf een leeg antwoord terug. Probeer het opnieuw.'
@@ -239,8 +220,7 @@ class AiGenerator
     }
 
     /**
-     * Resolve the applicable word limit, using the photo-specific limit when a
-     * photo accompanies the text.
+     * Resolve the word limit for content with or without a photo.
      *
      * @param AiConfig $config
      */
@@ -261,8 +241,7 @@ class AiGenerator
     }
 
     /**
-     * Build the prompt builder with the generation requirements shared by
-     * capability checks and real requests.
+     * Apply identical requirements to probes and generation requests.
      *
      * @param AiConfig $config
      * @return object
@@ -320,13 +299,10 @@ class AiGenerator
         );
     }
 
-    /**
-     * Prepare post content for AI input by cleaning HTML structure.
-     */
+    /** Prepare clean, structurally separated AI input. */
     public static function prepare_content(string $html): string
     {
-        // wp_strip_all_tags() below drops script/style bodies but not noscript,
-        // whose fallback text would otherwise reach the model as article prose.
+        // wp_strip_all_tags() retains noscript fallback text.
         $text = preg_replace('/<(script|style|noscript)[^>]*>.*?<\/\1>/si', '', $html);
 
         // Keep block boundaries as newlines so paragraphs do not run together.
@@ -352,9 +328,7 @@ class AiGenerator
         }
 
         if (!taxonomy_exists($taxonomy)) {
-            // A configured but missing taxonomy is a config error (e.g. the
-            // plugin registering it was deactivated); without a log the prefix
-            // just silently stops appearing.
+            // Log missing configured taxonomies; otherwise prefixes fail silently.
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log(sprintf('TekstTV region prefix: configured taxonomy "%s" does not exist.', $taxonomy));
             return '';

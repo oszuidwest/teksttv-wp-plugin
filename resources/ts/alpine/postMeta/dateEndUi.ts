@@ -1,6 +1,6 @@
 import type { TeksttvPostConfig } from '../../modules/types';
 
-/** Toon/verberg “standaard einddatum”-knop bij handmatige wijziging. */
+/** Show reset only when a configured default differs from the field. */
 export function syncDateEndResetButton(config: TeksttvPostConfig | undefined): void {
     const defaultEndDate = config?.defaultEndDate ?? '';
     const dateEnd = document.querySelector<HTMLInputElement>('#teksttv-date-end');

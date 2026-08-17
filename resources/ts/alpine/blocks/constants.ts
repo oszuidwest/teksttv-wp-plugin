@@ -1,16 +1,14 @@
 import { prefersReducedMotion } from '../../modules/dom';
 
-/** Loop / campaigns block workbench (+ optional ticker Sortable). */
 export type WorkbenchOpts = {
     ticker: boolean;
-    groups: boolean;
+    commercialBlocks: boolean;
     campaignAdd: boolean;
 };
 
 export const BLOCK_SORTABLE_OPTS = {
     handle: '.teksttv-block-handle',
-    // The always-rendered (CSS-hidden) empty state lives inside the list root
-    // and must never count as a sortable item.
+    // Exclude the CSS-hidden empty state from sorting.
     draggable: '.teksttv-block',
     ghostClass: 'teksttv-sortable-ghost',
     dragClass: 'teksttv-sortable-drag',

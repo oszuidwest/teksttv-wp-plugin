@@ -1,4 +1,4 @@
-/** Zichtbare TinyMCE-instantie of de bijbehorende textarea; null als geen van beide bestaat. */
+/** Read visible TinyMCE content, falling back to its textarea. */
 function getEditorHtml(id: string): string | null {
     const editor = typeof tinymce !== 'undefined' ? tinymce?.get(id) : null;
     if (editor && !editor.isHidden()) {
@@ -7,7 +7,6 @@ function getEditorHtml(id: string): string | null {
     return document.querySelector<HTMLTextAreaElement>(`#${id}`)?.value ?? null;
 }
 
-/** Tekst-TV editor textarea of TinyMCE-instantie. */
 export function getTeksttvEditorHtml(): string {
     return getEditorHtml('teksttv_content') ?? '';
 }

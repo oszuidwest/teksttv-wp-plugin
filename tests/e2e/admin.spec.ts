@@ -28,7 +28,7 @@ test.describe('administrator admin screens', () => {
                     response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/options.php'),
             );
             await page.click('#submit');
-            // The Settings API reloads the page; the saved value must persist.
+            // The value must survive the Settings API reload.
             expect((await saveResponse).status()).toBeLessThan(400);
             await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
             await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
@@ -99,6 +99,12 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#teksttv-blocks')).toBeVisible();
     });
 
+    test('legacy campaign URL redirects to the commercials page', async ({ page }) => {
+        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await expect(page).toHaveURL(/admin\.php\?page=teksttv-commercials$/);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reclame');
+    });
+
     test('workbench screens share section, heading and action sizing', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
         await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kanaal: TV 1');
@@ -112,29 +118,30 @@ test.describe('administrator admin screens', () => {
         expect(loopActionWidths.length).toBeGreaterThan(0);
         expect(Math.max(...loopActionWidths)).toBeLessThan(190);
 
-        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await page.goto('/wp-admin/admin.php?page=teksttv-commercials');
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reclame');
         const campaignSections = page.locator('.teksttv-workbench-section');
         await expect(campaignSections).toHaveCount(2);
-        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Groepen', 'Campagnes']);
+        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Reclameblokken', 'Campagnes']);
         const campaignActionWidths = await page
-            .locator('#teksttv-add-group, #teksttv-add-campaign')
+            .locator('#teksttv-add-commercial-block, #teksttv-add-campaign')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
-        expect(campaignActionWidths.length).toBeGreaterThan(0);
+        expect(campaignActionWidths).toHaveLength(2);
         expect(Math.max(...campaignActionWidths)).toBeLessThan(190);
     });
 
     test('campaign layout uses one width contract and responsive field grid', async ({ page }) => {
-        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await page.goto('/wp-admin/admin.php?page=teksttv-commercials');
 
-        const groupPanel = page.locator('.teksttv-campaign-groups');
+        const commercialBlocksPanel = page.locator('.teksttv-commercial-blocks');
         const campaignPanel = page.locator('.teksttv-campaign-workbench');
         const campaignList = page.locator('#teksttv-campaigns');
-        await expect(groupPanel).toBeVisible();
+        await expect(commercialBlocksPanel).toBeVisible();
         await expect(campaignPanel).toBeVisible();
         await expect(campaignList).toBeVisible();
 
         const desktopWidths = await Promise.all([
-            groupPanel.evaluate((element) => element.getBoundingClientRect().width),
+            commercialBlocksPanel.evaluate((element) => element.getBoundingClientRect().width),
             campaignPanel.evaluate((element) => element.getBoundingClientRect().width),
         ]);
         expect(desktopWidths[0]).toBeLessThanOrEqual(800);
@@ -274,12 +281,11 @@ test.describe('administrator admin screens', () => {
         await page.waitForFunction(() => Boolean(window.tinymce?.get('teksttv_content')));
         await expect(wordCount).toHaveText(/^5(?: \/ \d+)? woorden$/);
 
-        // Let the initial 500 ms update and 400 ms debounce settle so only the
-        // keyup below can produce the next count.
+        // Settle initial timers so only keyup changes the count.
         await page.waitForTimeout(1_000);
 
         await page.evaluate(() => {
-            // Avoid input/change/SetContent so this specifically covers the keyup fallback.
+            // Exercise keyup without other editor events.
             const tinyMceEditor = window.tinymce?.get('teksttv_content');
             if (!tinyMceEditor) throw new Error('TinyMCE editor teksttv_content not found.');
             tinyMceEditor.setContent('<p>Twee woorden</p>', { no_events: true });

@@ -4,7 +4,6 @@ namespace TekstTV\Blocks\Common;
 
 use TekstTV\Helpers;
 
-/** The shared seconds-with-unit duration field used by every block type. */
 final class DurationField
 {
     /**

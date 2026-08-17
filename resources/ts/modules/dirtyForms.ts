@@ -1,6 +1,5 @@
 const dirtyForms = new Set<HTMLFormElement>();
 
-/** Mark the plugin form containing `source` as changed. */
 export function markFormDirty(source: Element): void {
     const form = source.closest<HTMLFormElement>('.teksttv-admin form');
     if (form) dirtyForms.add(form);

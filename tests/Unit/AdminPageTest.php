@@ -162,17 +162,15 @@ class AdminPageTest extends TestCase
         ];
         Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
 
-        // Partial submission: only the editorial prompt fields are present,
-        // as rendered for a role without the region/technical sections.
+        // Simulate the reduced form for an editorial role.
         $result = AdminPage::sanitize_ai_prompts([
             'system' => 'Nieuwe system prompt',
             'prompt_title' => 'Titel prompt',
             'prompt_body' => 'Body prompt',
         ]);
 
-        // Submitted field updates...
         $this->assertSame('Nieuwe system prompt', $result['system']);
-        // ...omitted technical/region fields keep their stored values.
+        // Omitted privileged fields keep their values.
         $this->assertSame('openai', $result['provider']);
         $this->assertSame('openai/gpt-5', $result['model']);
         $this->assertSame('regio', $result['region_taxonomy']);
@@ -250,9 +248,6 @@ class AdminPageTest extends TestCase
         $this->assertSame('tv2', $result[1]['slug']);
     }
 
-    // =========================================================================
-    // sanitize_channels()
-    // =========================================================================
 
     public function test_sanitize_channels_valid_input(): void
     {
@@ -296,7 +291,6 @@ class AdminPageTest extends TestCase
         $result = AdminPage::sanitize_channels($input);
 
         $this->assertCount(1, $result);
-        // sanitize_key lowercases and strips special chars
         $this->assertSame('tv-1test', $result[0]['slug']);
     }
 
@@ -312,9 +306,6 @@ class AdminPageTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    // =========================================================================
-    // Helpers::extract_scheduling_fields() — shared by loop and campaigns saves
-    // =========================================================================
 
     public function test_extract_scheduling_fields_with_dates(): void
     {
@@ -524,7 +515,6 @@ class AdminPageTest extends TestCase
         });
     }
 
-    /** Stub the WP escaping/checked helpers and capture the render output. */
     private function captureRender(callable $render): string
     {
         Functions\when('esc_attr')->alias(fn ($value) => $value);

@@ -1,8 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 /**
- * Browser + API smoke suite for the packaged plugin. A worker-scoped fixture
- * starts WordPress Playground from blueprint.json and tears it down again.
+ * Browser and API smoke tests against a packaged Playground instance.
  */
 export default defineConfig({
     testDir: './tests/e2e',
@@ -14,10 +13,8 @@ export default defineConfig({
     retries: process.env.CI ? 1 : 0,
     reporter: 'list',
     use: {
-        // baseURL comes from the worker's Playground server via a fixture in tests/e2e/test.ts.
         trace: 'on-first-retry',
-        // Real browsers allow clipboard writes on a user gesture; headless
-        // Chromium needs the permission granted explicitly.
+        // Headless Chromium needs explicit clipboard permission.
         permissions: ['clipboard-write'],
     },
     projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],

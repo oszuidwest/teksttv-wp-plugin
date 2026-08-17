@@ -1,4 +1,3 @@
-/** Sidebar-afbeeldingskiezer: alleen staat/actieve kaart en verborgen veld. Preview herbereken extern. */
 export function applySidebarCardState(state: string, refreshPreview: () => void): void {
     for (const c of document.querySelectorAll('.teksttv-image-card')) {
         const selected = c instanceof HTMLElement && c.dataset.state === state;

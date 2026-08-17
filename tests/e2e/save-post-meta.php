@@ -1,10 +1,6 @@
 <?php
 /**
- * Persist representative TekstTV post metadata through the production save callback.
- *
- * This runs inside WordPress Playground through its PHP API, so nonce validation,
- * capabilities, sanitization, metadata writes, and WP_Post are provided by
- * WordPress rather than by the PHPUnit bootstrap.
+ * Exercise the production save callback inside Playground.
  */
 
 defined('ABSPATH') || exit;

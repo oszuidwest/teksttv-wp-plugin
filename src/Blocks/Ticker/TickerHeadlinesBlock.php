@@ -83,8 +83,7 @@ final class TickerHeadlinesBlock
         $item_prefix = $item['prefix'] ?? '';
         $taxonomy_filters = $item['taxonomy_filters'] ?? [];
 
-        // Full post objects (not fields => ids) so get_the_title() reads from
-        // the primed cache instead of issuing one get_post() query per ID.
+        // Fetch objects so get_the_title() reuses the primed cache.
         $query = new WP_Query(RecentPostsQuery::args($count, $taxonomy_filters, [
             'update_post_meta_cache' => false,
             'update_post_term_cache' => false,

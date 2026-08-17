@@ -19,8 +19,7 @@ interface WorkerFixtures {
 }
 
 /**
- * Start one disposable Playground per Playwright worker, on a per-worker port
- * so workers never collide. Tests reach it through the overridden `baseURL`.
+ * Start one collision-free Playground per Playwright worker.
  */
 export const test = base.extend<TestFixtures, WorkerFixtures>({
     playgroundServer: [

@@ -6,14 +6,14 @@ use TekstTV\AdminPage;
 use TekstTV\BlockRegistry;
 use TekstTV\Helpers;
 
-final class CampaignLoopBlock
+final class CommercialLoopBlock
 {
     private const TRANSITION_DURATION = 5000;
 
     public static function register(): void
     {
-        BlockRegistry::register('campaign', [
-            'label' => 'Campagne',
+        BlockRegistry::register('commercial', [
+            'label' => 'Reclame',
             'icon' => 'megaphone',
             'color' => '#d63638',
             'context' => 'loop',
@@ -28,29 +28,29 @@ final class CampaignLoopBlock
      */
     public static function render_fields(int|string $index, array $block, string $prefix): void
     {
-        $selected_groups = (array) ($block['groups'] ?? []);
-        $available_groups = Helpers::get_campaign_groups();
+        $selected_commercial_blocks = (array) ($block['commercial_block_ids'] ?? []);
+        $available_commercial_blocks = Helpers::get_commercial_blocks();
         $intro_id = $block['intro_image_id'] ?? 0;
         $outro_id = $block['outro_image_id'] ?? 0;
         $intro_url = $intro_id ? wp_get_attachment_image_url((int) $intro_id, 'thumbnail') : '';
         $outro_url = $outro_id ? wp_get_attachment_image_url((int) $outro_id, 'thumbnail') : '';
         $limit = $block['limit'] ?? '';
-        $groups_id = Helpers::field_id($prefix, $index, 'groups');
+        $commercial_blocks_id = Helpers::field_id($prefix, $index, 'commercial_block_ids');
 
         ?>
-        <?php AdminPage::render_block_section_start('Inhoud', 'Welke campagnegroepen komen in de loop?', 'content'); ?>
-        <div class="teksttv-field-grid teksttv-field-grid--campaign-main">
+        <?php AdminPage::render_block_section_start('Inhoud', 'Welke reclameblokken komen in de loop?', 'content'); ?>
+        <div class="teksttv-field-grid teksttv-field-grid--commercial-main">
             <div class="teksttv-field teksttv-field--primary">
-                <?php if (!empty($available_groups)) : ?>
-                <label for="<?php echo esc_attr($groups_id); ?>"><?php echo esc_html('Groep(en)'); ?></label>
-                <select id="<?php echo esc_attr($groups_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][groups][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies groep(en)…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen groep'); ?>" multiple>
-                    <?php foreach ($available_groups as $group_option) : ?>
-                    <option value="<?php echo esc_attr($group_option['id']); ?>" <?php echo in_array($group_option['id'], $selected_groups, true) ? 'selected' : ''; ?>><?php echo esc_html($group_option['label']); ?></option>
+                <?php if (!empty($available_commercial_blocks)) : ?>
+                <label for="<?php echo esc_attr($commercial_blocks_id); ?>"><?php echo esc_html('Reclameblokken'); ?></label>
+                <select id="<?php echo esc_attr($commercial_blocks_id); ?>" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][commercial_block_ids][]" class="teksttv-tomselect" data-placeholder="<?php echo esc_attr('Kies reclameblokken…'); ?>" data-summary data-summary-empty="<?php echo esc_attr('Geen reclameblok'); ?>" multiple>
+                    <?php foreach ($available_commercial_blocks as $commercial_block) : ?>
+                    <option value="<?php echo esc_attr($commercial_block['id']); ?>" <?php echo in_array($commercial_block['id'], $selected_commercial_blocks, true) ? 'selected' : ''; ?>><?php echo esc_html($commercial_block['label']); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php else : ?>
-                <span class="teksttv-field-label"><?php echo esc_html('Groep(en)'); ?></span>
-                <p class="description"><?php echo wp_kses(sprintf('Geen groepen geconfigureerd. <a href="%s">Groepen beheren</a>', esc_url(admin_url('admin.php?page=teksttv-campaigns'))), ['a' => ['href' => []]]); ?></p>
+                <span class="teksttv-field-label"><?php echo esc_html('Reclameblokken'); ?></span>
+                <p class="description"><?php echo wp_kses(sprintf('Geen reclameblokken geconfigureerd. <a href="%s">Reclameblokken beheren</a>', esc_url(admin_url('admin.php?page=teksttv-commercials'))), ['a' => ['href' => []]]); ?></p>
                 <?php endif; ?>
             </div>
             <div class="teksttv-field teksttv-field--primary">
@@ -72,9 +72,7 @@ final class CampaignLoopBlock
     }
 
     /**
-     * Render one intro/outro image picker field. The class names are a contract
-     * with the image-select handler in the admin JS: `.teksttv-image-picker`
-     * wraps the id input, preview, and select/remove buttons.
+     * Render an image picker bound to the admin-JS class contract.
      */
     private static function render_transition_picker(string $label, string $field_name, int $image_id, string $image_url): void
     {
@@ -97,15 +95,15 @@ final class CampaignLoopBlock
      */
     public static function save(array $raw): array
     {
-        $groups = [];
-        if (!empty($raw['groups']) && is_array($raw['groups'])) {
-            // Groups are referenced by stable id, not by their mutable label.
-            $groups = array_map('sanitize_key', $raw['groups']);
-            $groups = array_filter($groups, fn ($g) => $g !== '');
+        $commercial_block_ids = [];
+        if (!empty($raw['commercial_block_ids']) && is_array($raw['commercial_block_ids'])) {
+            // Commercial blocks use stable IDs, not mutable labels.
+            $commercial_block_ids = array_map('sanitize_key', $raw['commercial_block_ids']);
+            $commercial_block_ids = array_filter($commercial_block_ids, fn ($id) => $id !== '');
         }
 
         $saved = [
-            'groups' => array_values($groups),
+            'commercial_block_ids' => array_values($commercial_block_ids),
             'intro_image_id' => absint($raw['intro_image_id'] ?? 0),
             'outro_image_id' => absint($raw['outro_image_id'] ?? 0),
         ];
@@ -124,8 +122,8 @@ final class CampaignLoopBlock
      */
     public static function build(array $block, string $channel = ''): array
     {
-        $groups = (array) ($block['groups'] ?? []);
-        if (empty($groups)) {
+        $commercial_block_ids = (array) ($block['commercial_block_ids'] ?? []);
+        if (empty($commercial_block_ids)) {
             return [];
         }
 
@@ -133,8 +131,8 @@ final class CampaignLoopBlock
         $slides = [];
 
         foreach ($campaigns as $campaign) {
-            $campaign_group = (string) ($campaign['group'] ?? '');
-            if (!in_array($campaign_group, $groups, true)) {
+            $campaign_commercial_block_id = (string) ($campaign['commercial_block_id'] ?? '');
+            if (!in_array($campaign_commercial_block_id, $commercial_block_ids, true)) {
                 continue;
             }
 

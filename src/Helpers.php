@@ -13,30 +13,22 @@ class Helpers
     /** @var list<array{name: string, label: string, terms: array<int, string>}>|null */
     private static ?array $post_taxonomies_cache = null;
 
-    /** Memoized provider capability probe; it runs model discovery, so at most once per request. */
+    /** Cache the expensive model-discovery result per request. */
     private static ?bool $ai_supported_cache = null;
 
-    /**
-     * Build a stable, reindexable id for a repeated admin form field. The
-     * prefix mirrors the list root's DOM id, and the scheme must match the
-     * JS reindexer (`${root.id}-${index}-${key}` in workbench.ts).
-     */
+    /** Build an ID that matches the workbench.ts reindexer. */
     public static function field_id(string $prefix, int|string $index, string $field): string
     {
         return str_replace('_', '-', $prefix . '-' . (string) $index . '-' . $field);
     }
 
-    /**
-     * Echo the escaped `for` attribute matching field_attrs() for the same
-     * field. `$field` is the form key (underscores allowed); the id variant
-     * is derived.
-     */
+    /** Echo the escaped `for` attribute matching field_attrs(). */
     public static function field_for(string $prefix, int|string $index, string $field): void
     {
         echo 'for="' . esc_attr(self::field_id($prefix, $index, $field)) . '"';
     }
 
-    /** Echo the escaped `id` + `name` attribute pair for a repeated admin form field. */
+    /** Echo escaped `id` and `name` attributes for a repeated field. */
     public static function field_attrs(string $prefix, int|string $index, string $field): void
     {
         echo 'id="' . esc_attr(self::field_id($prefix, $index, $field)) . '"'
@@ -44,10 +36,9 @@ class Helpers
     }
 
     /**
-     * Translated short labels for the ISO-8601 days of the week (1=Mon..7=Sun).
+     * Translated ISO-8601 weekday labels (1=Mon..7=Sun).
      *
-     * Keys are PHP-normalised to ints; callers that need string ISO day
-     * identifiers should cast with `(string) $num`.
+     * PHP normalizes the keys to integers.
      *
      * @return array<int, string>
      */
@@ -65,11 +56,9 @@ class Helpers
     }
 
     /**
-     * Sanitize a raw days-of-week input (typically from a $_POST checkbox array)
-     * into a list of valid ISO-8601 day strings.
+     * Sanitize weekday input to ISO-8601 day strings.
      *
-     * Returns null when no restriction should be saved (all 7 days checked or
-     * non-array input). An empty array means "no days selected".
+     * Null means unrestricted; an empty list means no days.
      *
      * @param mixed $raw
      * @return list<string>|null
@@ -85,9 +74,8 @@ class Helpers
     }
 
     /**
-     * Extract sanitized scheduling fields (date_start, date_end, days) from a
-     * raw POST payload. Empty date values are omitted; an empty days list is
-     * retained to represent "no days selected".
+     * Extract scheduling fields from a raw request payload.
+     * Empty dates are omitted; an empty days list is preserved.
      *
      * @param array<string, mixed> $raw
      * @return array<string, mixed>
@@ -105,7 +93,7 @@ class Helpers
             $fields['date_end'] = $de;
         }
 
-        // Missing checkbox groups mean "none selected"; explicit null remains unrestricted.
+        // A missing checkbox group means no days; null remains unrestricted.
         $raw_days = array_key_exists('days', $raw) ? $raw['days'] : [];
         $sanitized_days = self::sanitize_days_input($raw_days);
         if ($sanitized_days !== null) {
@@ -116,9 +104,7 @@ class Helpers
     }
 
     /**
-     * Normalize a stored days value to its tri-state form: null (or any
-     * non-array, e.g. the '' that get_post_meta returns for missing meta)
-     * means "all days"; an empty list means "no days"; a list restricts.
+     * Normalize days: null means all, an empty list means none.
      *
      * @return list<string>|null
      */
@@ -128,8 +114,6 @@ class Helpers
     }
 
     /**
-     * Check if content should be displayed on the given day.
-     *
      * @param list<string>|null $allowed_days ISO-8601 day numbers (1=Mon, 7=Sun); null means all days, [] means none.
      * @param DateTimeInterface|null $date Date to check, defaults to current date
      */
@@ -148,9 +132,7 @@ class Helpers
         return in_array((string) $current_day, array_map('strval', $allowed_days), true);
     }
 
-    /**
-     * Sanitize and strictly validate a Y-m-d date input.
-     */
+    /** Return a valid Y-m-d date or an empty string. */
     public static function sanitize_date_input(mixed $raw): string
     {
         $date = sanitize_text_field((string) $raw);
@@ -163,8 +145,7 @@ class Helpers
     }
 
     /**
-     * Check if current date falls within an optional date range.
-     * Empty values mean no restriction on that side.
+     * Check whether today falls within an optional date range.
      *
      * @param string|null $start_date Y-m-d format
      * @param string|null $end_date Y-m-d format
@@ -195,11 +176,7 @@ class Helpers
         return true;
     }
 
-    /**
-     * Get the stored channels list.
-     *
-     * @return list<array{slug: string, label: string}>
-     */
+    /** @return list<array{slug: string, label: string}> */
     public static function get_channels(): array
     {
         $channels = get_option('teksttv_channels', []);
@@ -210,8 +187,6 @@ class Helpers
     }
 
     /**
-     * Get the configured channel slugs.
-     *
      * @return list<string>
      */
     public static function channel_slugs(): array
@@ -220,8 +195,7 @@ class Helpers
     }
 
     /**
-     * Features enabled when the option has never been saved. Also the default
-     * for the registered setting — keep both reads on this single list.
+     * Default features for option registration and runtime reads.
      */
     public const DEFAULT_FEATURES = [
         'custom_title', 'sidebar_image', 'extra_images',
@@ -231,9 +205,7 @@ class Helpers
     ];
 
     /**
-     * Get the enabled features.
-     *
-     * @return list<string> Array of feature slugs
+     * @return list<string> Feature slugs.
      */
     public static function get_features(): array
     {
@@ -242,8 +214,7 @@ class Helpers
     }
 
     /**
-     * Whether AI generation is enabled and a provider supports the configured
-     * TekstTV text-generation requirements.
+     * Whether AI is enabled and the configured model is available.
      */
     public static function ai_supported(): bool
     {
@@ -254,22 +225,12 @@ class Helpers
         return self::$ai_supported_cache ??= AiGenerator::supports_text_generation(self::get_ai_prompts());
     }
 
-    /**
-     * Check if a feature is enabled.
-     */
     public static function has_feature(string $feature): bool
     {
         return in_array($feature, self::get_features(), true);
     }
 
-    /**
-     * Clamp a raw numeric input into an inclusive integer range.
-     *
-     * The UI enforces min/max via input attributes, but a crafted POST can
-     * bypass those; this is the authoritative server-side clamp.
-     *
-     * @param mixed $value
-     */
+    /** @param mixed $value */
     public static function clamp_int(mixed $value, int $min, int $max): int
     {
         return max($min, min($max, absint($value)));
@@ -279,9 +240,7 @@ class Helpers
     public const DURATION_MAX_SECONDS = 120;
 
     /**
-     * Default seconds for the per-type duration options. Single source for the
-     * registered setting defaults, the admin placeholders, and build-time
-     * fallbacks — keep all reads on this map.
+     * Duration defaults shared by settings, placeholders, and slide builds.
      */
     public const DURATION_DEFAULTS = [
         'teksttv_duration_text' => 20,
@@ -290,9 +249,7 @@ class Helpers
     ];
 
     /**
-     * Resolve a slide duration in milliseconds from an optional per-block
-     * override (in seconds), falling back to a duration option (in seconds)
-     * whose default comes from {@see self::DURATION_DEFAULTS}.
+     * Resolve a millisecond duration from a block override or type option.
      *
      * @param mixed $override_seconds Stored block value; empty means "use the option".
      * @param key-of<self::DURATION_DEFAULTS> $option_name Duration option to read.
@@ -307,8 +264,7 @@ class Helpers
     }
 
     /**
-     * Like {@see self::duration_ms()} for blocks without a duration option
-     * (weather): an optional per-block override with a fixed default.
+     * Resolve a millisecond duration from an override or fixed default.
      */
     public static function fixed_duration_ms(mixed $override_seconds, int $default_seconds): int
     {
@@ -317,11 +273,9 @@ class Helpers
     }
 
     /**
-     * Normalize the bounded numeric AI prompt settings used by both storage
-     * sanitization and runtime reads.
+     * Normalize bounded AI settings for storage and runtime reads.
      *
-     * A zero word_limit_photo remains the stored "inherit word_limit" marker;
-     * get_ai_prompts() resolves it to the effective word limit at read time.
+     * Zero means inherit word_limit at read time.
      *
      * @param array<string, mixed> $settings
      * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int}
@@ -342,8 +296,6 @@ class Helpers
     }
 
     /**
-     * Get the AI prompt configuration with defaults.
-     *
      * @return AiConfig
      */
     public static function get_ai_prompts(): array
@@ -351,7 +303,6 @@ class Helpers
         $saved = get_option('teksttv_ai_prompts', []);
         $saved = is_array($saved) ? $saved : [];
         $limits = self::normalize_ai_prompt_limits($saved);
-        // Resolve the stored "inherit word_limit" marker (0) at read time.
         if ($limits['word_limit_photo'] < 1) {
             $limits['word_limit_photo'] = $limits['word_limit'];
         }
@@ -373,8 +324,6 @@ class Helpers
     }
 
     /**
-     * Get available AI models grouped by provider.
-     *
      * @return array<string, array{label: string, models: array<string, string>}>
      */
     public static function get_ai_models(): array
@@ -412,9 +361,7 @@ class Helpers
     }
 
     /**
-     * Get the loop configuration for a channel.
-     *
-     * @return list<array<string, mixed>> Array of block definitions
+     * @return list<array<string, mixed>> Block definitions.
      */
     public static function get_loop_config(string $channel_slug): array
     {
@@ -422,9 +369,7 @@ class Helpers
     }
 
     /**
-     * Get the ticker configuration for a channel.
-     *
-     * @return list<array<string, mixed>> Array of ticker item definitions
+     * @return list<array<string, mixed>> Ticker items.
      */
     public static function get_ticker_config(string $channel_slug): array
     {
@@ -433,24 +378,22 @@ class Helpers
     }
 
     /**
-     * Get configured campaign groups as id/label pairs.
-     *
      * @return list<array{id: string, label: string}>
      */
-    public static function get_campaign_groups(): array
+    public static function get_commercial_blocks(): array
     {
-        $groups = get_option('teksttv_campaign_groups', []);
-        if (empty($groups) || !is_array($groups)) {
+        $commercial_blocks = get_option('teksttv_commercial_blocks', []);
+        if (empty($commercial_blocks) || !is_array($commercial_blocks)) {
             return [];
         }
 
         $normalized = [];
-        foreach ($groups as $group) {
-            if (!is_array($group)) {
+        foreach ($commercial_blocks as $commercial_block) {
+            if (!is_array($commercial_block)) {
                 continue;
             }
-            $label = (string) ($group['label'] ?? '');
-            $id = (string) ($group['id'] ?? '');
+            $label = (string) ($commercial_block['label'] ?? '');
+            $id = (string) ($commercial_block['id'] ?? '');
             if ($label === '' || $id === '') {
                 continue;
             }
@@ -461,17 +404,16 @@ class Helpers
     }
 
     /**
-     * Derive a stable id from a group label, used when a newly added group has
-     * no id yet.
+     * Derive a stable commercial-block ID from its label.
+     *
+     * Keep the historical grp_ formula stable: stored references depend on it.
      */
-    public static function campaign_group_id(string $label): string
+    public static function commercial_block_id(string $label): string
     {
         return 'grp_' . substr(md5($label), 0, 12);
     }
 
     /**
-     * Get all saved campaigns (sponsor slots, etc.).
-     *
      * @return list<array<string, mixed>>
      */
     public static function get_campaigns(): array
@@ -480,8 +422,6 @@ class Helpers
     }
 
     /**
-     * Get campaigns active for a specific channel (assignment + date range).
-     *
      * @return array<int, array<string, mixed>>
      */
     public static function get_active_campaigns(string $channel): array
@@ -489,27 +429,22 @@ class Helpers
         $campaigns = self::get_campaigns();
 
         return array_filter($campaigns, function ($campaign) use ($channel) {
-            // Must be assigned to this channel
             $channels = $campaign['channels'] ?? [];
             if (!in_array($channel, $channels, true)) {
                 return false;
             }
 
-            // Must pass date range + day-of-week scheduling
             return self::is_block_scheduled($campaign);
         });
     }
 
-    /**
-     * Get the preview base URL from settings.
-     */
     public static function get_preview_url(): string
     {
         return get_option('teksttv_preview_url', '');
     }
 
     /**
-     * Check if a block/item passes its scheduling constraints (date range + weekdays).
+     * Check a block's date and weekday constraints.
      *
      * @param array<string, mixed> $block Block or ticker item data.
      */
@@ -522,7 +457,7 @@ class Helpers
     }
 
     /**
-     * Get all public taxonomies that apply to posts. Cached per request.
+     * Get post taxonomies and term labels, cached per request.
      *
      * @return list<array{name: string, label: string, terms: array<int, string>}>
      */
@@ -538,8 +473,7 @@ class Helpers
                 continue;
             }
 
-            // Only id => name is needed; skips hydrating full WP_Term objects
-            // (post_tag alone can be thousands of terms on a news site).
+            // Avoid hydrating thousands of full WP_Term objects.
             $terms = get_terms([
                 'taxonomy' => $tax->name,
                 'hide_empty' => false,
@@ -561,8 +495,6 @@ class Helpers
     }
 
     /**
-     * Build a tax_query array from taxonomy filters.
-     *
      * @param array<string, mixed> $taxonomy_filters Keyed by taxonomy name, values are term ID arrays.
      * @return list<array{taxonomy: string, field: string, terms: list<int>}>
      */
@@ -584,17 +516,10 @@ class Helpers
     }
 
     /**
-     * Build image data for an attachment (url, caption, attribution).
+     * Build normalized image data for a semantic template slot.
      *
-     * When the caller passes a `$slot` identifying which template slot the
-     * image will fill, the `teksttv_image_url` filter is applied so the
-     * active theme can return a slot-appropriate (e.g. focal-point-aware,
-     * pre-cropped) variant. The plugin stays template-agnostic — pixel
-     * dimensions live in the theme that owns the layout.
-     *
-     * Known slots:
-     *   - `image_slide`   full-screen image slide
-     *   - `text_sidebar`  sidebar image on a text slide
+     * Themes can filter slot-specific URLs without coupling layout sizes to
+     * this plugin. Known slots: image_slide and text_sidebar.
      *
      * @param int         $attachment_id The attachment post ID.
      * @param string      $size          Fallback WP image size used when no theme handles the slot.
@@ -629,7 +554,7 @@ class Helpers
     }
 
     /**
-     * Count words in a string. More reliable than str_word_count() for Dutch and non-ASCII text.
+     * Count Unicode words, including Dutch text.
      */
     public static function count_words(string $text): int
     {
@@ -637,7 +562,7 @@ class Helpers
     }
 
     /**
-     * Script dependencies for admin.js (uses wp.media, which requires Underscore on `_`).
+     * Dependencies required by admin.js and wp.media.
      *
      * @return list<string>
      */
@@ -646,9 +571,6 @@ class Helpers
         return ['jquery', 'underscore', 'media-editor', 'wp-api-fetch'];
     }
 
-    /**
-     * Enqueue admin.js and its styles.
-     */
     public static function enqueue_admin_script(): void
     {
         wp_enqueue_media();
@@ -678,7 +600,7 @@ class Helpers
     }
 
     /**
-     * Restore Underscore on `_` after late-loading scripts (e.g. Yoast SEO) clobber it.
+     * Restore Underscore after late scripts overwrite `_`.
      */
     public static function print_underscore_restore(): void
     {
@@ -692,7 +614,7 @@ class Helpers
     }
 
     /**
-     * Build a meta_query fragment for posts whose optional date range includes today.
+     * Build a meta query for date ranges that include today.
      *
      * @return array<int|string, mixed>
      */

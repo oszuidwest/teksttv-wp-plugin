@@ -19,13 +19,13 @@
         "typecheck": "tsc && tsc -p tsconfig.tests.json",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
         "test": "vendor/bin/phpunit",
-        "test:js": "bun test tests/js",
+        "test:js": "bun test tests/js --isolate",
         "build:package": "bun run build && bash bin/package-plugin.sh",
         "env:start": "bun run build:package && bun tests/e2e/start-playground.ts",
         "test:e2e": "playwright test"
     },
     "dependencies": {
-        "alpinejs": "^3.15.12",
+        "alpinejs": "^3.16.1",
         "sortablejs": "^1.15.7",
         "tom-select": "^2.6.2"
     },
@@ -33,9 +33,9 @@
         "adm-zip": "0.6.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.5.7",
+        "@biomejs/biome": "2.5.8",
         "@playwright/test": "^1.62.1",
-        "@wp-playground/cli": "3.1.48",
+        "@wp-playground/cli": "3.1.49",
         "@types/bun": "1.3.14",
         "@types/sortablejs": "^1.15.9",
         "typescript": "7.0.2"

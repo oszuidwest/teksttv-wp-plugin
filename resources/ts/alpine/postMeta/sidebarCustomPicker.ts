@@ -3,8 +3,7 @@ import { pickSingleImage } from '../../modules/wpMedia';
 import { applySidebarCardState } from './sidebarCard';
 
 /**
- * Pick a custom sidebar image. The REST endpoint supplies the normalized slide metadata;
- * the attachment URL and caption are the fallback when that request fails.
+ * Pick a sidebar image, falling back to attachment data if REST fails.
  */
 export function createSidebarCustomPicker(
     config: TeksttvPostConfig | undefined,
@@ -32,9 +31,7 @@ export function createSidebarCustomPicker(
             placeholder?.classList.add('is-hidden');
 
             if (config?.imageDataUrl) {
-                // A newer pick or a sidebar-card switch rewrites the id field
-                // before this response can land, so comparing against it
-                // discards every stale response.
+                // A changed ID marks this response as stale.
                 const selectionIsCurrent = (): boolean =>
                     document.querySelector<HTMLInputElement>('#teksttv-sidebar-image-id')?.value === selectedId;
 

@@ -258,7 +258,7 @@
     outline-offset: 1px;
 }
 
-tbody:has(> .teksttv-group-row) > .teksttv-table-empty {
+tbody:has(> .teksttv-commercial-block-row) > .teksttv-table-empty {
     display: none;
 }
 
