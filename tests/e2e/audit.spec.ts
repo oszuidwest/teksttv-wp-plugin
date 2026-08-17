@@ -23,8 +23,7 @@ test.describe('monthly AI audit', () => {
         const seedResult = await runWordPressPHPFile('audit-stats.php');
         expect(seedResult).toContain('audit-stats-ok count=3');
 
-        // The admin user has read_private_posts: the private July fixture must
-        // be counted along with the published one.
+        // Admins should see both private and published audit rows.
         const html = await runWordPressPHP(`
             require_once ABSPATH . 'wp-admin/includes/template.php';
             wp_set_current_user(1);

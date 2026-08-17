@@ -131,7 +131,6 @@ $has_page_separator = Helpers::has_feature('page_separator');
                         <button type="button" class="teksttv-preview-enlarge-btn" id="teksttv-preview-enlarge" aria-label="<?php echo esc_attr('Preview vergroten'); ?>" title="<?php echo esc_attr('Preview vergroten'); ?>" @click.prevent="openPreviewOverlay()"><span class="dashicons dashicons-editor-expand" aria-hidden="true"></span></button>
                     </div>
                     <div class="teksttv-preview-thumbs" id="teksttv-preview-thumbs" @click="onPreviewThumbClick($event)">
-                        <!-- Filled by JS: mini slide thumbnails -->
                     </div>
                 <?php else : ?>
                     <div class="teksttv-no-preview">

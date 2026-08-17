@@ -25,8 +25,7 @@ async function selectFixtureImage(page: Page): Promise<string> {
     return attachmentId;
 }
 
-// No reseed hooks here: none of these tests submit a form or save the post,
-// and the fixture attachment is created idempotently, so nothing persists.
+// These tests persist nothing, so fixture reseeding is unnecessary.
 test.describe('media picker interactions', () => {
     test('ignores stale sidebar metadata after a newer card selection', async ({ page }) => {
         test.setTimeout(45_000);
@@ -104,7 +103,7 @@ test.describe('media picker interactions', () => {
         await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
         const commercialBlock = await addLoopBlock(page, 'commercial');
 
-        // First picker in the block is the intro transition image.
+        // The first picker controls the intro image.
         const introPicker = commercialBlock.locator('.teksttv-image-picker').first();
         const idInput = introPicker.locator('.teksttv-block-image-id');
         const preview = introPicker.locator('.teksttv-block-image-preview');

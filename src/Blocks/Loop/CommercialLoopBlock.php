@@ -72,9 +72,7 @@ final class CommercialLoopBlock
     }
 
     /**
-     * Render one intro/outro image picker field. The class names are a contract
-     * with the image-select handler in the admin JS: `.teksttv-image-picker`
-     * wraps the id input, preview, and select/remove buttons.
+     * Render an image picker bound to the admin-JS class contract.
      */
     private static function render_transition_picker(string $label, string $field_name, int $image_id, string $image_url): void
     {
@@ -99,7 +97,7 @@ final class CommercialLoopBlock
     {
         $commercial_block_ids = [];
         if (!empty($raw['commercial_block_ids']) && is_array($raw['commercial_block_ids'])) {
-            // Commercial blocks are referenced by stable id, not by their mutable label.
+            // Commercial blocks use stable IDs, not mutable labels.
             $commercial_block_ids = array_map('sanitize_key', $raw['commercial_block_ids']);
             $commercial_block_ids = array_filter($commercial_block_ids, fn ($id) => $id !== '');
         }

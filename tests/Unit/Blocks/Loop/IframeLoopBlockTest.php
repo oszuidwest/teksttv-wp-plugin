@@ -106,7 +106,7 @@ class IframeLoopBlockTest extends TestCase
         $this->assertSame('iframe', $result[0]['type']);
         $this->assertSame(45000, $result[0]['duration']);
         $this->assertSame('https://example.com/embed', $result[0]['url']);
-        // The admin-only name must never be broadcast in the slide payload.
+        // Keep admin-only names out of slide payloads.
         $this->assertArrayNotHasKey('name', $result[0]);
     }
 

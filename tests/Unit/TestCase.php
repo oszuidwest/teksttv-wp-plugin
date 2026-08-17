@@ -21,13 +21,9 @@ abstract class TestCase extends PHPUnitTestCase
         parent::setUp();
         $this->original_get = $_GET;
         Monkey\setUp();
-        // Once any test stubs TekstTV\time(), Brain Monkey's definition of it
-        // persists for the whole PHPUnit process and throws in tests that don't
-        // stub it. Default every test to the real clock; override per test with
-        // Functions\when() where the value matters.
+        // Brain Monkey function stubs persist for the PHPUnit process.
         Functions\when('TekstTV\\time')->alias('time');
-        // Same process-wide persistence hazard applies to wp_unslash(); default
-        // every test to a passthrough so superglobal readers need no stub.
+        // Keep the persistent wp_unslash stub safe by default.
         Functions\when('wp_unslash')->returnArg();
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
@@ -43,8 +39,6 @@ abstract class TestCase extends PHPUnitTestCase
     }
 
     /**
-     * Call a private/protected static method via reflection.
-     *
      * @param class-string $class
      * @param list<mixed> $args
      */
@@ -69,9 +63,7 @@ abstract class TestCase extends PHPUnitTestCase
     }
 
     /**
-     * Fluent builder stub with the expectations every AI request shares.
-     * 2048 is the literal wire value so the test does not depend on the
-     * private AiGenerator::MAX_TOKENS constant.
+     * Stub shared AI-builder expectations without reading private constants.
      */
     private static function mockBaseAiBuilder(): \Mockery\MockInterface
     {
@@ -83,7 +75,7 @@ abstract class TestCase extends PHPUnitTestCase
     }
 
     /**
-     * Build the fluent WordPress AI prompt mock with one response per call.
+     * Build an AI prompt mock with one response per call.
      */
     protected static function mockAiBuilder(string|\WP_Error ...$responses): \Mockery\MockInterface
     {
@@ -96,10 +88,6 @@ abstract class TestCase extends PHPUnitTestCase
         return $builder;
     }
 
-    /**
-     * Build the fluent WordPress AI prompt mock whose capability probe
-     * reports that no provider matches the configured requirements.
-     */
     protected static function mockUnsupportedAiBuilder(): \Mockery\MockInterface
     {
         $builder = self::mockBaseAiBuilder();

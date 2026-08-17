@@ -10,9 +10,6 @@ use TekstTV\Blocks\Loop\WeatherLoopBlock;
 use TekstTV\Blocks\Ticker\TickerHeadlinesBlock;
 use TekstTV\Blocks\Ticker\TickerTextBlock;
 
-/**
- * Registers built-in loop and ticker block types (TekstTV\Blocks\Loop and TekstTV\Blocks\Ticker).
- */
 class BuiltinBlocks
 {
     public static function init(): void

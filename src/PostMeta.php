@@ -57,10 +57,7 @@ class PostMeta
 
         $page_separator = Helpers::has_feature('page_separator');
         if ($page_separator && self::has_rich_text_features()) {
-            // mce_external_plugins is page-level: core applies it once, for the
-            // first TinyMCE editor initialized, and merges the result into every
-            // editor on the page. Per-editor scoping happens via the toolbar in
-            // render_meta_box, so don't gate on the filter's $editor_id here.
+            // Core applies external plugins page-wide; toolbars scope editors.
             add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
         }
 
@@ -69,7 +66,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $post_id = get_the_ID();
 
-        // Build fallback image data (post thumbnail with caption/attribution)
         $fallback_image = null;
         if ($post_id) {
             $thumb_id = get_post_thumbnail_id($post_id);
@@ -78,7 +74,6 @@ class PostMeta
             }
         }
 
-        // Build custom sidebar image data (for JS preview of already saved custom images)
         $custom_image = null;
         if ($post_id) {
             $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
@@ -87,7 +82,6 @@ class PostMeta
             }
         }
 
-        // Calculate default end date using the same start date shown in the form
         $saved_start = $post_id ? get_post_meta($post_id, '_teksttv_date_start', true) : '';
         if (empty($saved_start) && $post_id) {
             $saved_start = self::default_start_date(get_post($post_id));
@@ -119,8 +113,7 @@ class PostMeta
     }
 
     /**
-     * Default scheduling start date: the post's publish date, or today when
-     * the post has none yet.
+     * Use the publish date, or today for unpublished posts.
      */
     private static function default_start_date(?\WP_Post $post): string
     {
@@ -129,8 +122,7 @@ class PostMeta
     }
 
     /**
-     * Default scheduling end date derived from a start date and the
-     * teksttv_default_end_days setting ('' when that setting is 0).
+     * Add the configured default duration; zero leaves the end open.
      */
     private static function default_end_date(string $start_date): string
     {
@@ -176,7 +168,6 @@ class PostMeta
             $images = [];
         }
 
-        // Default dates for new/unsaved posts
         if (empty($date_start) && empty($date_end)) {
             $date_start = self::default_start_date($post);
             $date_end = self::default_end_date($date_start);
@@ -185,7 +176,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $ai_enabled = Helpers::ai_supported();
 
-        // Build TinyMCE toolbar and valid elements based on features
         $toolbar_items = [];
         if (Helpers::has_feature('bold')) {
             $toolbar_items[] = 'bold';
@@ -255,7 +245,7 @@ class PostMeta
             $raw_days = wp_unslash($_POST['teksttv_days']);
         }
 
-        // Collect POST data; process_save() performs the remaining field-specific sanitization.
+        // process_save() applies field-specific sanitization.
         $data = [
             'active' => isset($_POST['teksttv_active']),
             'title' => sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? '')),
@@ -278,15 +268,12 @@ class PostMeta
      */
     private static function process_save(int $post_id, array $data): void
     {
-        // Active toggle
         update_post_meta($post_id, '_teksttv_active', $data['active'] ? '1' : '0');
 
-        // Title override (only save if feature enabled)
         if (Helpers::has_feature('custom_title')) {
             update_post_meta($post_id, '_teksttv_title', $data['title'] ?? '');
         }
 
-        // Content — strip tags that are disabled by features.
         $allowed_tags = ['p' => [], 'br' => []];
         if (Helpers::has_feature('bold')) {
             $allowed_tags['strong'] = [];
@@ -307,14 +294,12 @@ class PostMeta
 
         $content = (string) ($data['content'] ?? '');
         if (!self::has_rich_text_features()) {
-            // Encode plain text into the HTML storage contract. Existing
-            // entities must be encoded again to make the round trip lossless.
+            // Double-encode entities for a lossless plain-text HTML round trip.
             $content = htmlspecialchars($content, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', true);
         }
         $content = wp_kses($content, $allowed_tags);
         update_post_meta($post_id, '_teksttv_content', $content);
 
-        // Scheduling (only save if feature enabled)
         if (Helpers::has_feature('scheduling')) {
             update_post_meta($post_id, '_teksttv_date_start', Helpers::sanitize_date_input($data['date_start'] ?? ''));
             update_post_meta($post_id, '_teksttv_date_end', Helpers::sanitize_date_input($data['date_end'] ?? ''));
@@ -328,13 +313,11 @@ class PostMeta
             }
         }
 
-        // Extra images (only save if feature enabled)
         if (Helpers::has_feature('extra_images')) {
             $images = array_filter($data['images'] ?? []);
             update_post_meta($post_id, '_teksttv_images', $images);
         }
 
-        // Sidebar image (only save if feature enabled)
         if (Helpers::has_feature('sidebar_image')) {
             $sidebar_raw = $data['sidebar_image'] ?? '';
             if ($sidebar_raw === '0') {

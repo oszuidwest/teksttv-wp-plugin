@@ -7,9 +7,6 @@ use TekstTV\OpenWeatherProvider;
 
 class OpenWeatherProviderTest extends TestCase
 {
-    // =========================================================================
-    // fetch() — cached result
-    // =========================================================================
 
     public function test_fetch_returns_cached_result(): void
     {
@@ -26,9 +23,6 @@ class OpenWeatherProviderTest extends TestCase
         $this->assertSame($cached_data, $result);
     }
 
-    // =========================================================================
-    // fetch() — geocode failure
-    // =========================================================================
 
     public function test_fetch_returns_null_when_geocode_fails(): void
     {
@@ -40,7 +34,7 @@ class OpenWeatherProviderTest extends TestCase
         Functions\when('error_log')->justReturn(true);
 
         Functions\when('get_transient')->alias(function (string $key) {
-            return false; // Both weather and geo cache miss
+            return false;
         });
 
         $provider = new OpenWeatherProvider('test-api-key');
@@ -49,9 +43,6 @@ class OpenWeatherProviderTest extends TestCase
         $this->assertNull($result);
     }
 
-    // =========================================================================
-    // fetch() — geocode succeeds but API fails
-    // =========================================================================
 
     public function test_fetch_returns_null_when_api_returns_error(): void
     {
@@ -75,9 +66,6 @@ class OpenWeatherProviderTest extends TestCase
         $this->assertNull($result);
     }
 
-    // =========================================================================
-    // fetch() — WP_Error from HTTP
-    // =========================================================================
 
     public function test_fetch_returns_null_on_http_error(): void
     {
@@ -104,9 +92,6 @@ class OpenWeatherProviderTest extends TestCase
         $this->assertNull($result);
     }
 
-    // =========================================================================
-    // fetch() — successful end-to-end with cached geocode
-    // =========================================================================
 
     public function test_fetch_returns_weather_data_on_success(): void
     {
@@ -133,7 +118,7 @@ class OpenWeatherProviderTest extends TestCase
         Functions\when('set_transient')->justReturn(true);
         Functions\when('error_log')->justReturn(true);
 
-        // Weather cache miss, geocode from cache
+        // Reuse cached geocoding after a weather miss.
         Functions\when('get_transient')->alias(function (string $key) {
             if ($key === 'teksttv_geo_bredanl') {
                 return ['lat' => 51.59, 'lon' => 4.78, 'name' => 'Breda'];

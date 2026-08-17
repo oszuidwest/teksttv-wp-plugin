@@ -5,7 +5,7 @@ namespace TekstTV;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 /**
- * Provides automatic updates from GitHub Releases.
+ * Update the plugin from GitHub Releases.
  */
 class Updater
 {
@@ -14,9 +14,7 @@ class Updater
 
     public static function init(string $plugin_file): void
     {
-        // WordPress only performs plugin-update checks from admin, cron, and
-        // WP-CLI contexts; skip constructing the checker on frontend/REST
-        // requests (the continuously polled slides endpoint in particular).
+        // Update checks only run in admin, cron, and WP-CLI contexts.
         if (!is_admin() && !wp_doing_cron() && !(defined('WP_CLI') && WP_CLI)) {
             return;
         }
@@ -34,8 +32,7 @@ class Updater
         $api = $checker->getVcsApi();
         self::configure_release_assets($api);
 
-        // Without release assets there is nothing safe to offer: drop the
-        // tag/branch strategies so PUC never falls back to source archives.
+        // Never fall back to source archives when a release asset is absent.
         $checker->addFilter(
             'vcs_update_detection_strategies',
             static fn(array $strategies): array => array_intersect_key(

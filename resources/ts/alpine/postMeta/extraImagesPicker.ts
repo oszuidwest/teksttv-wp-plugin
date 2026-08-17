@@ -2,7 +2,7 @@ import type { WPMediaFrame } from '../../modules/types';
 import { appendImageItems } from '../../modules/utils';
 import { pickImages } from '../../modules/wpMedia';
 
-/** Per post-meta Alpine instance: één hergebruikt wp.media frame voor extra afbeeldingen. */
+/** Reuse one wp.media frame per post-meta component. */
 export function createExtraImagesOpener(onChanged?: () => void): (e: Event) => void {
     let mediaFrame: WPMediaFrame | null = null;
     return (e: Event) => {

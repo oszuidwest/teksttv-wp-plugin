@@ -2,13 +2,12 @@ import { markFormDirty } from '../modules/dirtyForms';
 import { cloneTemplate, reindexNames, siblingFocusTarget } from '../modules/dom';
 import { removeElementWithUndo } from '../modules/undo';
 
-/** Settings tab: repeatable channel rows. */
 export function createChannelsSettingsPage() {
     let channelsTbody: HTMLTableSectionElement | null = null;
     let apiBase = '';
     const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
 
-    // Only called after a user-driven add/remove, so marking dirty here is safe.
+    // Only user-driven mutations reach this helper.
     function reindexChannels(): void {
         if (!channelsTbody) return;
         reindexNames(channelsTbody, 'tr', /(teksttv_channels)\[\d+\]/);
@@ -27,8 +26,7 @@ export function createChannelsSettingsPage() {
             url.searchParams.set('channel', slug);
             endpoint = url.toString();
         }
-        // Skip the no-op keystrokes: the label is an aria-live region, so an
-        // unconditional write would re-announce it on every input event.
+        // Avoid re-announcing unchanged aria-live text.
         if (button.dataset.endpoint === endpoint) return;
 
         button.dataset.endpoint = endpoint;
@@ -42,7 +40,7 @@ export function createChannelsSettingsPage() {
         if (!endpoint || !label) return;
 
         try {
-            // Requires a secure context; wp-admin runs on HTTPS (or localhost).
+            // Clipboard access requires a secure context.
             await navigator.clipboard.writeText(endpoint);
             label.textContent = 'Gekopieerd!';
         } catch {

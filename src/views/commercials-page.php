@@ -16,9 +16,7 @@ echo '<h1>' . esc_html('Reclame') . '</h1>';
 settings_errors('teksttv_commercials');
 
 /**
- * One renderer for both the saved rows and the add-row template, so the row
- * markup exists in exactly one place. New rows render an empty id; the server
- * derives a stable id from the label on save.
+ * Shared row renderer; the server derives IDs for new rows.
  *
  * @var callable(int|string, array{id: string, label: string}): void $render_commercial_block_row
  */
@@ -38,7 +36,6 @@ $render_commercial_block_row = static function (int|string $block_index, array $
 <form method="post" class="teksttv-admin-column" x-data="teksttvCommercialsPage">
     <?php wp_nonce_field('teksttv_save_commercials', 'teksttv_commercials_nonce'); ?>
 
-    <!-- Commercial block management -->
     <section class="teksttv-card teksttv-commercial-blocks teksttv-workbench-section">
         <h2><?php echo esc_html('Reclameblokken'); ?></h2>
         <p class="description"><?php echo esc_html('Definieer reclameblokken om campagnes te organiseren. Met het looponderdeel Reclame kies je welke reclameblokken worden uitgezonden.'); ?></p>
@@ -68,7 +65,7 @@ $render_commercial_block_row = static function (int|string $block_index, array $
     <section class="teksttv-card teksttv-workbench-section teksttv-campaign-workbench">
         <h2><?php echo esc_html('Campagnes'); ?></h2>
         <div id="teksttv-campaigns" data-empty-focus="#teksttv-add-campaign" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
-            <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
+            <?php // Keep sortable blocks as contiguous siblings. ?>
             <?php AdminPage::render_empty_state('megaphone', 'Nog geen campagnes', 'Voeg een campagne toe en koppel daarna de gewenste slides.'); ?>
             <?php foreach ($campaigns as $i => $campaign) {
                 CommercialsPage::render_campaign($i, $campaign, $channels, $commercial_blocks);

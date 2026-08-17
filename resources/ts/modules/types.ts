@@ -1,11 +1,9 @@
-/** Image data with optional caption/attribution */
 export interface ImageData {
     url: string;
     caption?: string;
     attribution?: string;
 }
 
-/** Text slide for preview */
 export interface TextSlide {
     type: 'text';
     duration: number;
@@ -14,7 +12,6 @@ export interface TextSlide {
     image?: ImageData;
 }
 
-/** Image slide for preview */
 export interface ImageSlide {
     type: 'image';
     duration: number;
@@ -23,7 +20,7 @@ export interface ImageSlide {
 
 export type Slide = TextSlide | ImageSlide;
 
-/** Config passed from PHP via an inline script encoded with wp_json_encode. */
+/** PHP-provided runtime config. */
 export interface TeksttvPostConfig {
     previewUrl: string;
     imageDataUrl: string;
@@ -41,7 +38,6 @@ export interface TeksttvPostConfig {
     pageSeparator: boolean;
 }
 
-/** WordPress TinyMCE editor instance (partial) */
 export interface WPTinyMCEEditor {
     id: string;
     getContent(): string;
@@ -51,13 +47,11 @@ export interface WPTinyMCEEditor {
     fire(event: string): void;
 }
 
-/** WordPress TinyMCE global (partial) */
 export interface WPTinyMCE {
     get(id: string): WPTinyMCEEditor | null;
     on(event: string, callback: (e: { editor: WPTinyMCEEditor }) => void): void;
 }
 
-/** WordPress media frame (partial) */
 export interface WPMediaAttachment {
     id: number;
     url: string;
@@ -69,7 +63,6 @@ export interface WPMediaAttachment {
     };
 }
 
-/** WordPress media frame instance (partial) */
 export interface WPMediaFrame {
     open(): void;
     on(event: string, callback: () => void): void;
@@ -81,7 +74,6 @@ export interface WPMediaFrame {
     };
 }
 
-/** Options for creating a WordPress media frame */
 export interface WPMediaOptions {
     title?: string;
     button?: { text: string };
@@ -89,7 +81,6 @@ export interface WPMediaOptions {
     library?: { type: string };
 }
 
-/** WordPress global (partial — media library) */
 interface WPGlobal {
     media(options: WPMediaOptions): WPMediaFrame;
     apiFetch<T>(options: { url: string; method?: 'GET' | 'POST'; data?: Record<string, unknown> }): Promise<T>;
@@ -100,7 +91,6 @@ interface WPGlobal {
     };
 }
 
-/** Underscore.js subset used by wp.media */
 interface WPUnderscore {
     defaults(object: Record<string, unknown>, ...sources: Record<string, unknown>[]): Record<string, unknown>;
 }

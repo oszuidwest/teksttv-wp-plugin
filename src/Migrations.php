@@ -13,9 +13,7 @@ final class Migrations
             return;
         }
 
-        // Capabilities first: on upgrades this is the only path that grants
-        // the renamed capability, so a data-migration failure must not also
-        // leave the Reclame page inaccessible.
+        // Grant renamed capabilities even if data migration fails.
         self::migrate_capabilities();
 
         if (!self::migrate_commercial_blocks()) {
@@ -29,20 +27,16 @@ final class Migrations
             error_log('TekstTV: could not remove legacy campaign groups; retrying on next request.');
             return;
         }
-        // Autoloaded: this option gates every request, so it must ride along
-        // in the alloptions query instead of costing its own SELECT.
+        // Autoload the migration version checked on every request.
         update_option(self::DATA_VERSION_OPTION, self::CURRENT_DATA_VERSION, true);
     }
 
     private static function migrate_commercial_blocks(): bool
     {
-        // Block ids are opaque and survive the migration verbatim, so campaign
-        // and loop references keep resolving without any id rewriting.
+        // Preserve opaque IDs so stored references keep resolving.
         $legacy_blocks = get_option('teksttv_campaign_groups', null);
         $label_map = is_array($legacy_blocks) ? self::legacy_label_map($legacy_blocks) : [];
-        // Only derive blocks while the canonical option is absent: a retry
-        // after a partial failure must not clobber blocks the admin has since
-        // saved through the Reclame page.
+        // A retry must not overwrite newly saved canonical blocks.
         if (
             is_array($legacy_blocks)
             && get_option('teksttv_commercial_blocks', null) === null
@@ -67,10 +61,7 @@ final class Migrations
     }
 
     /**
-     * Pre-stable-id installs (before the one-time label-to-id migration that
-     * commit 7f5d5d2 removed) stored blocks as plain label strings and
-     * referenced them by label. Map those labels to the ids the sanitizer
-     * derives for them, so such references keep resolving after migration.
+     * Map legacy labels to the stable IDs derived by the current sanitizer.
      *
      * @param array<int|string, mixed> $legacy_blocks
      * @return array<string, string>
@@ -94,7 +85,7 @@ final class Migrations
 
     /**
      * @param array<int|string, mixed>  $campaigns
-     * @param array<string, string>     $label_map Legacy label to block id.
+     * @param array<string, string>     $label_map Legacy label to block ID.
      * @return list<array<string, mixed>>
      */
     public static function convert_campaigns(array $campaigns, array $label_map = []): array
@@ -105,8 +96,7 @@ final class Migrations
                 continue;
             }
 
-            // Canonical fields win over legacy ones so hand-imported or mixed
-            // records never lose already-converted data.
+            // Canonical fields win in mixed or imported records.
             if (array_key_exists('group', $campaign)) {
                 if (!array_key_exists('commercial_block_id', $campaign)) {
                     $group = $campaign['group'] ?? '';
@@ -123,7 +113,7 @@ final class Migrations
 
     /**
      * @param array<int|string, mixed> $loop
-     * @param array<string, string>    $label_map Legacy label to block id.
+     * @param array<string, string>    $label_map Legacy label to block ID.
      * @return list<array<string, mixed>>
      */
     public static function convert_loop(array $loop, array $label_map = []): array
@@ -134,8 +124,7 @@ final class Migrations
                 continue;
             }
 
-            // Canonical fields win over legacy ones so hand-imported or mixed
-            // records never lose already-converted data.
+            // Canonical fields win in mixed or imported records.
             $type = $item['type'] ?? '';
             if ($type === 'campaign' || $type === 'commercial') {
                 $item['type'] = 'commercial';
@@ -156,9 +145,7 @@ final class Migrations
     }
 
     /**
-     * Every stored loop option, including ones for channels no longer in the
-     * configuration - those must migrate too, or they resurface legacy-shaped
-     * when their channel is re-added.
+     * Include removed channels so legacy data cannot resurface when re-added.
      *
      * @return list<string>
      */
@@ -186,9 +173,7 @@ final class Migrations
 
     private static function store_option(string $name, mixed $value): bool
     {
-        // update_option() returns false for an unchanged value, so a re-run
-        // after a partial failure falls back to a read-back that counts the
-        // already-persisted value as success.
+        // update_option() returns false for unchanged data; verify by reading back.
         return update_option($name, $value) || get_option($name, null) === $value;
     }
 }

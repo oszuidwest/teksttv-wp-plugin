@@ -7,15 +7,13 @@ use TekstTV\AiGenerator;
 
 class AiGeneratorTest extends TestCase
 {
-    /** Pin the clock to 120s, putting user 7 in the literal key teksttv_ai_rate_7_2. */
+    /** Pin user 7 to rate-limit bucket teksttv_ai_rate_7_2. */
     private static function stubRateLimitTime(): void
     {
         Functions\when('TekstTV\\time')->justReturn(120);
     }
 
     /**
-     * Complete AI config as produced by Helpers::get_ai_prompts().
-     *
      * @param array<string, mixed> $overrides
      * @return array<string, mixed>
      */
@@ -72,7 +70,7 @@ class AiGeneratorTest extends TestCase
         self::stubRateLimitTime();
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\expect('wp_cache_add')->with('teksttv_ai_rate_7_2', 0, 'teksttv_ai_rate', 60)->andReturn(true);
-        // Counter lands on the limit exactly - still allowed.
+        // The limit itself remains allowed.
         Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7_2', 2, 'teksttv_ai_rate')->andReturn(AiGenerator::REQUESTS_PER_MINUTE);
 
         $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
@@ -92,7 +90,7 @@ class AiGeneratorTest extends TestCase
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
         Functions\when('wp_cache_add')->justReturn(true);
         Functions\expect('wp_cache_incr')->andReturn(false);
-        // Failing closed prevents an uncounted paid request.
+        // Fail closed before an uncounted paid request.
         Functions\expect('error_log')->once()->andReturn(true);
 
         $this->assertFalse(AiGenerator::within_rate_limit(7));
@@ -148,7 +146,7 @@ class AiGeneratorTest extends TestCase
             }
         );
 
-        // Seed the :60 bucket two below the limit so the calls below cross it.
+        // Start two below the limit, then cross it.
         $counts['teksttv_ai_rate_7_1'] = AiGenerator::REQUESTS_PER_MINUTE - 2;
 
         $this->assertTrue(AiGenerator::within_rate_limit(7));
@@ -159,7 +157,7 @@ class AiGeneratorTest extends TestCase
         $now = 120;
         $this->assertTrue(AiGenerator::within_rate_limit(7));
 
-        // TTLs run to the end of each minute bucket: 60 at :00, 1 at :59.
+        // Bucket TTLs are 60s at :00 and 1s at :59.
         $this->assertSame([
             ['teksttv_ai_rate_7_1', AiGenerator::REQUESTS_PER_MINUTE - 1, 60],
             ['teksttv_ai_rate_7_1', AiGenerator::REQUESTS_PER_MINUTE, 1],
@@ -185,16 +183,13 @@ class AiGeneratorTest extends TestCase
 
     public function test_validate_ai_output_body_under_minimum_returns_warning(): void
     {
-        // min = ceil(100 * 0.2) = 20.
         $result = AiGenerator::validate_ai_output('body', 'slechts drie woorden', self::aiConfig());
         $this->assertStringContainsString('3 woorden', $result);
     }
 
     public function test_prepare_content_strips_non_content_tags(): void
     {
-        // One alternation covers all three. noscript is in it because
-        // wp_strip_all_tags() keeps its fallback text, which would otherwise
-        // reach the model as article prose.
+        // noscript must join script/style because wp_strip_all_tags() retains it.
         $this->assertSame('Hello', AiGenerator::prepare_content('<p>Hello</p><script>alert("xss")</script>'));
         $this->assertSame('Visible', AiGenerator::prepare_content('<style>.red { color: red; }</style><p>Visible</p>'));
         $this->assertSame('Content', AiGenerator::prepare_content('<noscript>Zet JavaScript aan</noscript><p>Content</p>'));
@@ -248,7 +243,6 @@ class AiGeneratorTest extends TestCase
         $long_text = str_repeat('a', 5000);
         [$user_prompt] = AiGenerator::build_ai_prompt('title', 'Titel', $long_text, self::aiConfig());
 
-        // Title prompt truncates to 2000 chars.
         $this->assertLessThanOrEqual(2100, mb_strlen($user_prompt));
     }
 
@@ -257,7 +251,6 @@ class AiGeneratorTest extends TestCase
         $long_text = str_repeat('a', 8000);
         [$user_prompt] = AiGenerator::build_ai_prompt('body', 'Titel', $long_text, self::aiConfig());
 
-        // Body prompt truncates to 4000 chars.
         $this->assertLessThanOrEqual(4100, mb_strlen($user_prompt));
     }
 
@@ -272,7 +265,7 @@ class AiGeneratorTest extends TestCase
         Functions\expect('taxonomy_exists')
             ->with('regio')
             ->andReturn(false);
-        // A configured but missing taxonomy is a config error and is logged.
+        // Missing configured taxonomies must be logged.
         Functions\expect('error_log')->once()->andReturn(true);
 
         $result = AiGenerator::get_region_prefix(1, 'regio');
@@ -322,7 +315,7 @@ class AiGeneratorTest extends TestCase
         $error->shouldReceive('get_error_message')->andReturn('lookup failed');
         Functions\expect('wp_get_post_terms')->andReturn($error);
         Functions\expect('is_wp_error')->with($error)->andReturn(true);
-        // The failure is logged so a broken taxonomy config is discoverable.
+        // Keep broken taxonomy configuration discoverable.
         Functions\expect('error_log')->once()->andReturn(true);
 
         $result = AiGenerator::get_region_prefix(1, 'regio');
@@ -331,7 +324,7 @@ class AiGeneratorTest extends TestCase
 
     public function test_validate_ai_output_body_accepts_both_range_boundaries(): void
     {
-        // The range is inclusive: min = ceil(100 * 0.2) = 20, max = word_limit.
+        // Both length bounds are inclusive.
         $config = self::aiConfig();
 
         $this->assertSame('', AiGenerator::validate_ai_output('body', implode(' ', array_fill(0, 20, 'woord')), $config));
@@ -349,7 +342,7 @@ class AiGeneratorTest extends TestCase
     public function test_validate_ai_output_uses_photo_word_limit_when_has_photo(): void
     {
         $config = self::aiConfig(['word_limit' => 100, 'word_limit_photo' => 25]);
-        $content = str_repeat('woord ', 30); // 30 words: valid without photo, over the photo limit
+        $content = str_repeat('woord ', 30); // Valid without a photo; too long with one.
 
         $this->assertSame('', AiGenerator::validate_ai_output('body', $content, $config, false));
 

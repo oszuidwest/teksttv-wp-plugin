@@ -19,10 +19,7 @@ echo '<h1>' . esc_html($page_title) . '</h1>';
 settings_errors('teksttv');
 
 /**
- * One renderer for both add-menus (blocks and ticker), so the dropdown markup
- * and its ARIA wiring exist in exactly one place. `$key` derives the element
- * ids (`teksttv-add-{$key}-*`); `$method` is the Alpine handler that inserts
- * the type.
+ * Shared ARIA-wired add menu for blocks and ticker items.
  *
  * @var callable(string, string, array<string, array{icon: string, label: string}>, string): void $render_add_menu
  */
@@ -50,7 +47,7 @@ $render_add_menu = static function (string $key, string $label, array $types, st
         <section class="teksttv-card teksttv-workbench-section">
             <h2><?php echo esc_html('Loop'); ?></h2>
             <div id="teksttv-blocks" data-empty-focus="#teksttv-add-block-toggle" @click="blocksClick($event)" @change="blocksFieldChange($event)" @input="blocksFieldChange($event)">
-                <?php // The empty state renders first so the blocks stay contiguous siblings (keyboard reorder walks siblings). ?>
+                <?php // Keep sortable blocks as contiguous siblings. ?>
                 <?php AdminPage::render_empty_state('playlist-video', 'Nog geen blokken', 'Voeg een blok toe om de loop op te bouwen.'); ?>
                 <?php foreach ($blocks as $i => $block) {
                     AdminPage::render_block_generic($i, $block);
@@ -90,7 +87,6 @@ $render_add_menu = static function (string $key, string $label, array $types, st
         </section>
 
         <?php
-        // Ticker templates per type
         foreach ($ticker_types as $ticker_type => $ticker_meta) : ?>
         <template id="tmpl-teksttv-ticker-<?php echo esc_attr($ticker_type); ?>">
             <?php AdminPage::render_block_generic(0, ['type' => $ticker_type], 'teksttv_ticker'); ?>
@@ -100,7 +96,6 @@ $render_add_menu = static function (string $key, string $label, array $types, st
         <?php AdminPage::render_form_actions(); ?>
     </form>
 
-    <!-- Block templates (generated from registry) -->
     <?php foreach (BlockRegistry::all('loop') as $block_slug => $block_meta) : ?>
     <template id="tmpl-teksttv-block-<?php echo esc_attr($block_slug); ?>">
         <?php AdminPage::render_block_generic(0, ['type' => $block_slug]); ?>

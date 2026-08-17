@@ -5,7 +5,7 @@ import { expect, type Locator, type Page, test } from './test';
 const LOOP_URL = '/wp-admin/admin.php?page=teksttv-loop-tv1';
 
 async function expectSequentialNames(root: Locator, itemSelector: string, prefix: string): Promise<void> {
-    // One evaluate round-trip: every item's field names, in DOM order.
+    // Read ordered field names in one browser round trip.
     const itemNames = await root
         .locator(itemSelector)
         .evaluateAll((items) =>
@@ -27,8 +27,7 @@ async function expectSequentialNames(root: Locator, itemSelector: string, prefix
     });
 }
 
-// Manual mouse events instead of locator.dragTo(): SortableJS only reorders on
-// intermediate mousemove events, which dragTo does not emit.
+// SortableJS needs intermediate mousemoves that dragTo() omits.
 async function dragBlockToStart(page: Page, sourceBlock: Locator, targetBlock: Locator): Promise<void> {
     const source = await sourceBlock.locator('.teksttv-block-handle').boundingBox();
     const target = await targetBlock.boundingBox();
@@ -61,7 +60,7 @@ test.describe('admin interaction contracts', () => {
         const types = await page
             .locator('#teksttv-add-block-menu button[data-type]')
             .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('data-type')));
-        // The menu is registry-driven; assert the built-ins are present without pinning order or forbidding add-ons.
+        // Require built-ins without constraining add-ons or order.
         expect(types).toEqual(expect.arrayContaining(['articles', 'image', 'iframe', 'commercial', 'weather']));
 
         await addToggle.click();
@@ -114,8 +113,7 @@ test.describe('admin interaction contracts', () => {
         await expect(firstToggle).toHaveAttribute('aria-expanded', 'false');
         await expect(firstBlock.locator('.teksttv-block-body')).toBeHidden();
 
-        // A stale collapse completion must not hide a block that was reopened
-        // before the previous transition finished.
+        // A stale collapse must not hide a reopened block.
         await firstToggle.click();
         await page.waitForTimeout(175);
         await firstToggle.evaluate((toggle) => {
@@ -406,9 +404,7 @@ test.describe('admin interaction contracts', () => {
         await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === settingsUrl);
     });
 
-    // Only these tests submit forms and persist real option changes; the tests
-    // above are pure DOM work that a reload discards, so they skip the
-    // fixture reseed round-trip.
+    // Only stateful tests need fixture reseeding.
     test.describe('persisting saves', () => {
         test.afterEach(reseedFixtures);
 
@@ -469,12 +465,7 @@ test.describe('admin interaction contracts', () => {
             await expectSequentialNames(page.locator('#teksttv-blocks'), ':scope > .teksttv-block', 'teksttv_blocks');
         });
 
-        // The acceptance path of issue #76: single-channel rendering,
-        // multi-channel persistence of an empty selection, and runtime
-        // evaluation through the packaged REST route. The positive control
-        // first proves the campaign actually emits a commercial slide, so the
-        // final negative assertion cannot pass vacuously on an empty or
-        // campaign-less playlist.
+        // Prove emission first so suppression cannot pass vacuously.
         test('serves campaign slides for an assigned channel and none after unchecking every channel', async ({
             page,
         }) => {
@@ -484,8 +475,7 @@ test.describe('admin interaction contracts', () => {
                 return (await response.json()).slides;
             };
 
-            // A single-channel install renders the checkbox too (instead of
-            // the old hidden input), checked from storage rather than forced.
+            // Single-channel state must come from storage, not a hidden default.
             await page.goto('/wp-admin/admin.php?page=teksttv-commercials');
             let campaign = page.locator('#teksttv-campaigns > .teksttv-block').first();
             await campaign.locator('.teksttv-block-header').click();
@@ -512,7 +502,6 @@ test.describe('admin interaction contracts', () => {
                 'e2e-group-alpha',
             ]);
 
-            // Campaign alpha is seeded on tv1 with a real slide.
             let slides = await fetchSlides();
             expect(
                 slides.some((slide) => slide.type === 'commercial'),
@@ -565,7 +554,7 @@ test.describe('admin interaction contracts', () => {
             );
             await expect(addedCommercialBlock.locator('input[name$="[label]"]')).toBeFocused();
             await addedCommercialBlock.locator('input[name$="[label]"]').fill('E2E Added Commercial Block');
-            // New rows clone the template with an empty id; the server mints one on save.
+            // The server mints IDs for new template rows.
             await expect(addedCommercialBlock.locator('input[name$="[id]"]')).toHaveValue('');
             await commercialBlocks.nth(1).locator('.teksttv-remove-commercial-block').click();
             await expect(commercialBlocks).toHaveCount(2);

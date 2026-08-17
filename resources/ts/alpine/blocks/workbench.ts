@@ -10,7 +10,6 @@ import { applySchedulingToggle } from './scheduling';
 import { updateBlockSummaries } from './summaries';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
-/** Shared loop + commercials blocks UI (spread into Alpine `x-data`; call `init` via `.call(this)`). */
 export function createBlocksWorkbench(opts: WorkbenchOpts) {
     let blocksEl: HTMLElement | null = null;
     let tickerEl: HTMLElement | null = null;
@@ -41,7 +40,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         reindexNames(tickerEl, ':scope > .teksttv-block', /(teksttv_ticker)\[\d+\]/, reindexBlockUi);
     }
 
-    // Only called after a user-driven add/remove, so marking dirty here is safe.
+    // Only user-driven mutations reach this helper.
     function reindexCommercialBlocks(): void {
         if (!commercialBlocksTbody) return;
         reindexNames(commercialBlocksTbody, '.teksttv-commercial-block-row', /(teksttv_commercial_blocks)\[\d+\]/);
@@ -55,7 +54,6 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
     const scheduleSummaries = debounce(refreshSummaries, 150);
 
-    /** Insert a block from a template, expand it, and optionally focus its first text input. */
     function insertBlockFromTemplate(
         root: HTMLElement,
         templateId: string,
@@ -68,8 +66,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
         root.append(newBlock);
         reindex();
         setBlockOpen(newBlock, true, false);
-        // A no-op for templates without .teksttv-tomselect fields — the
-        // class on the rendered fields is the declaration.
+        // Templates opt in with .teksttv-tomselect.
         initTomSelectIn(newBlock);
         const focusTarget = options.focusText
             ? newBlock.querySelector<HTMLInputElement>('input[type="text"]')
@@ -179,8 +176,7 @@ export function createBlocksWorkbench(opts: WorkbenchOpts) {
 
         addCommercialBlockRow(): void {
             if (!commercialBlocksTbody) return;
-            // New rows have an empty id; the server derives a stable id from
-            // the label on save. Reindexing keeps the form keys unique.
+            // The server derives stable IDs; reindexing keeps form keys unique.
             const row = cloneTemplate('tmpl-teksttv-commercial-block-row');
             if (!row) return;
             commercialBlocksTbody.append(row);
