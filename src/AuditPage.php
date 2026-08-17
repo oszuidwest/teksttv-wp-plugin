@@ -235,7 +235,7 @@ class AuditPage
             $requested_month = sanitize_text_field(wp_unslash($_GET['month']));
         }
         $parsed = \DateTime::createFromFormat('!Y-m', $requested_month);
-        if ($parsed && $parsed->format('Y-m') === $requested_month) {
+        if ($parsed && (int) $parsed->format('Y') >= 1 && $parsed->format('Y-m') === $requested_month) {
             return $requested_month;
         }
 

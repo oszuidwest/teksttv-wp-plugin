@@ -1,3 +1,4 @@
+import { reseedFixtures } from './reseed-fixtures';
 import { expect, test } from './test';
 
 test.describe('unconfigured AI administration', () => {
@@ -13,6 +14,8 @@ test.describe('unconfigured AI administration', () => {
 });
 
 test.describe('monthly AI audit', () => {
+    test.afterEach(reseedFixtures);
+
     test('shows all and only the selected month in both the table and statistics', async ({
         runWordPressPHP,
         runWordPressPHPFile,

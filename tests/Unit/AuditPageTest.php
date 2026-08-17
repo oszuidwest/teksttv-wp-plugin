@@ -63,6 +63,18 @@ class AuditPageTest extends TestCase
         }
     }
 
+    public function test_selected_month_falls_back_for_year_zero(): void
+    {
+        Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
+        $_GET['month'] = '0000-01';
+
+        try {
+            $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
+        } finally {
+            unset($_GET['month']);
+        }
+    }
+
     public function test_month_query_selects_posts_modified_in_the_month(): void
     {
         $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
