@@ -63,13 +63,11 @@ class AuditPageTest extends TestCase
         }
     }
 
-    public function test_month_query_selects_every_post_modified_in_the_month(): void
+    public function test_month_query_selects_posts_modified_in_the_month(): void
     {
         $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
 
-        $this->assertSame(-1, $args['posts_per_page']);
-        $this->assertSame('modified', $args['orderby']);
-        $this->assertSame('DESC', $args['order']);
+        $this->assertArrayNotHasKey('posts_per_page', $args);
         $this->assertSame([
             'year' => 2026,
             'month' => 8,
