@@ -13,12 +13,12 @@ test.describe('unconfigured AI administration', () => {
 });
 
 test.describe('monthly AI audit', () => {
-    test('paginates the selected month and computes statistics across all its posts', async ({
+    test('shows all and only the selected month in both the table and statistics', async ({
         runWordPressPHP,
         runWordPressPHPFile,
     }) => {
         const seedResult = await runWordPressPHPFile('audit-stats.php');
-        expect(seedResult).toContain('audit-stats-ok count=52');
+        expect(seedResult).toContain('audit-stats-ok count=3');
 
         const html = await runWordPressPHP(`
             require_once ABSPATH . 'wp-admin/includes/template.php';
@@ -30,13 +30,11 @@ test.describe('monthly AI audit', () => {
         expect(html).toContain('TekstTV Audit Juli Bewerkt');
         expect(html).toContain('TekstTV Audit Juli Ongewijzigd');
         expect(html).not.toContain('TekstTV Audit Augustus Buiten Selectie');
-        expect(html).not.toContain('TekstTV Audit Juli Extra 1</strong>');
-        expect(html).toContain('51 items');
-        expect(html).toContain('paged=2');
-        expect(html).toMatch(/Berichten met AI<\/dt>\s*<dd[^>]*>51<\/dd>/);
+        expect(html).not.toContain('paged=');
+        expect(html).toMatch(/Berichten met AI<\/dt>\s*<dd[^>]*>2<\/dd>/);
         expect(html).toMatch(/Koppen bewerkt<\/dt>\s*<dd[^>]*>0%<\/dd>/);
-        expect(html).toMatch(/Teksten bewerkt<\/dt>\s*<dd[^>]*>2%<\/dd>/);
-        expect(html).toMatch(/Totaal bewerkt<\/dt>\s*<dd[^>]*>2%<\/dd>/);
+        expect(html).toMatch(/Teksten bewerkt<\/dt>\s*<dd[^>]*>50%<\/dd>/);
+        expect(html).toMatch(/Totaal bewerkt<\/dt>\s*<dd[^>]*>50%<\/dd>/);
         expect(html).toContain('month=2026-07');
     });
 });

@@ -67,7 +67,9 @@ class AuditPageTest extends TestCase
     {
         $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
 
-        $this->assertArrayNotHasKey('posts_per_page', $args);
+        $this->assertSame(500, $args['posts_per_page']);
+        $this->assertSame('modified', $args['orderby']);
+        $this->assertSame('DESC', $args['order']);
         $this->assertSame([
             'year' => 2026,
             'month' => 8,

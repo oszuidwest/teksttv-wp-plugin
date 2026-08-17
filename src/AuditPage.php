@@ -4,7 +4,7 @@ namespace TekstTV;
 
 class AuditPage
 {
-    private const PER_PAGE = 50;
+    private const MAX_RESULTS = 500;
 
     public static function init(): void
     {
@@ -39,14 +39,10 @@ class AuditPage
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination, no action taken
-        $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
-
-        $query_result = self::query_ai_posts($selected_month, $paged);
-        $posts = $query_result['posts'];
-        $total_posts = $query_result['total'];
-        $total_pages = (int) ceil($total_posts / self::PER_PAGE);
-        $stats = self::compute_stats(self::query_ai_post_statuses($selected_month));
+        $posts = self::query_ai_posts($selected_month);
+        $monthly_statuses = self::query_ai_post_statuses($selected_month);
+        $total_posts = count($monthly_statuses);
+        $stats = self::compute_stats($monthly_statuses);
 
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>' . esc_html('AI-audit') . '</h1>';
@@ -79,6 +75,11 @@ class AuditPage
 
             <section class="teksttv-card teksttv-workbench-section teksttv-audit-results">
                 <h2><?php echo esc_html('Berichten'); ?></h2>
+            <?php if ($total_posts > self::MAX_RESULTS) : ?>
+                <div class="notice notice-warning inline">
+                    <p><?php echo esc_html(sprintf('Deze maand bevat %d berichten. Alleen de %d meest recent gewijzigde berichten worden getoond; de statistieken gebruiken wel de volledige maand.', $total_posts, self::MAX_RESULTS)); ?></p>
+                </div>
+            <?php endif; ?>
             <?php if (empty($posts)) : ?>
                 <?php AdminPage::render_empty_state('chart-bar', 'Nog geen AI-auditgegevens', 'Er zijn nog geen berichten met AI-gegenereerde inhoud.'); ?>
             <?php else : ?>
@@ -106,23 +107,6 @@ class AuditPage
                     </tbody>
                 </table>
                 </div>
-                <?php if ($total_pages > 1) : ?>
-                <div class="tablenav bottom">
-                    <div class="tablenav-pages">
-                        <span class="displaying-num"><?php echo esc_html(sprintf('%d items', $total_posts)); ?></span>
-                        <?php
-                        echo wp_kses_post((string) paginate_links([
-                            'base' => add_query_arg('paged', '%#%'),
-                            'format' => '',
-                            'current' => $paged,
-                            'total' => $total_pages,
-                            'prev_text' => '&laquo;',
-                            'next_text' => '&raquo;',
-                        ]));
-                        ?>
-                    </div>
-                </div>
-                <?php endif; ?>
             <?php endif; ?>
             </section>
         </div>
@@ -210,18 +194,13 @@ class AuditPage
     }
 
     /**
-     * Query one page of posts with AI-generated content modified in one calendar month.
+     * Query posts with AI-generated content modified in one calendar month.
      *
-     * @return array{posts: list<array{id: int, title: string, title_status: string, body_status: string, date: string}>, total: int}
+     * @return list<array{id: int, title: string, title_status: string, body_status: string, date: string}>
      */
-    private static function query_ai_posts(string $selected_month, int $paged = 1): array
+    private static function query_ai_posts(string $selected_month): array
     {
-        $query = new \WP_Query(array_merge(self::ai_post_query_args($selected_month), [
-            'posts_per_page' => self::PER_PAGE,
-            'paged' => $paged,
-            'orderby' => 'modified',
-            'order' => 'DESC',
-        ]));
+        $query = new \WP_Query(self::ai_post_query_args($selected_month));
 
         $results = [];
         foreach ($query->posts as $post) {
@@ -236,10 +215,7 @@ class AuditPage
             ];
         }
 
-        return [
-            'posts' => $results,
-            'total' => $query->found_posts,
-        ];
+        return $results;
     }
 
     /**
@@ -305,7 +281,11 @@ class AuditPage
 
         return [
             'post_type' => 'post',
+            'posts_per_page' => self::MAX_RESULTS,
+            'no_found_rows' => true,
             'update_post_term_cache' => false,
+            'orderby' => 'modified',
+            'order' => 'DESC',
             'date_query' => [
                 [
                     'year' => $year,

@@ -37,19 +37,6 @@ $teksttv_audit_fixtures = [
     ],
 ];
 
-for ($teksttv_i = 1; $teksttv_i <= 49; $teksttv_i++) {
-    $teksttv_body = '<p>Ongewijzigde extra tekst ' . $teksttv_i . '</p>';
-    $teksttv_audit_fixtures[] = [
-        'title' => 'TekstTV Audit Juli Extra ' . $teksttv_i,
-        'slug' => 'teksttv-audit-july-extra-' . $teksttv_i,
-        'modified' => sprintf('2026-07-01 10:00:%02d', $teksttv_i),
-        'meta' => [
-            '_teksttv_ai_body' => $teksttv_body,
-            '_teksttv_content' => $teksttv_body,
-        ],
-    ];
-}
-
 foreach ($teksttv_audit_fixtures as $teksttv_fixture) {
     $teksttv_existing = get_page_by_path($teksttv_fixture['slug'], OBJECT, 'post');
     $teksttv_post_data = [
@@ -89,4 +76,4 @@ foreach ($teksttv_audit_fixtures as $teksttv_fixture) {
     }
 }
 
-echo "audit-stats-ok count=52\n";
+echo "audit-stats-ok count=3\n";
