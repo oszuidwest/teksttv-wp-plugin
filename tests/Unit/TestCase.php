@@ -13,15 +13,22 @@ abstract class TestCase extends PHPUnitTestCase
 {
     use MockeryPHPUnitIntegration;
 
+    /** @var array<string, mixed> */
+    private array $original_get;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->original_get = $_GET;
         Monkey\setUp();
         // Once any test stubs TekstTV\time(), Brain Monkey's definition of it
         // persists for the whole PHPUnit process and throws in tests that don't
         // stub it. Default every test to the real clock; override per test with
         // Functions\when() where the value matters.
         Functions\when('TekstTV\\time')->alias('time');
+        // Same process-wide persistence hazard applies to wp_unslash(); default
+        // every test to a passthrough so superglobal readers need no stub.
+        Functions\when('wp_unslash')->returnArg();
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
         $ai_cache = new \ReflectionProperty(Helpers::class, 'ai_supported_cache');
@@ -30,6 +37,7 @@ abstract class TestCase extends PHPUnitTestCase
 
     protected function tearDown(): void
     {
+        $_GET = $this->original_get;
         Monkey\tearDown();
         parent::tearDown();
     }

@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\AuditPage;
 
 class AuditPageTest extends TestCase
@@ -38,6 +39,70 @@ class AuditPageTest extends TestCase
         Functions\expect('add_submenu_page')->never();
 
         AuditPage::register_menu();
+    }
+
+    public function test_selected_month_accepts_valid_query_value(): void
+    {
+        $_GET['month'] = '2026-08';
+
+        $this->assertSame(
+            ['month' => '2026-08', 'invalid' => false],
+            self::callPrivate(AuditPage::class, 'selected_month')
+        );
+    }
+
+    public function test_selected_month_defaults_without_flagging_when_absent(): void
+    {
+        Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
+        unset($_GET['month']);
+
+        $this->assertSame(
+            ['month' => '2026-08', 'invalid' => false],
+            self::callPrivate(AuditPage::class, 'selected_month')
+        );
+    }
+
+    #[DataProvider('invalidMonths')]
+    public function test_selected_month_falls_back_and_flags_invalid_query_value(mixed $month): void
+    {
+        Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
+        $_GET['month'] = $month;
+
+        $this->assertSame(
+            ['month' => '2026-08', 'invalid' => true],
+            self::callPrivate(AuditPage::class, 'selected_month')
+        );
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function invalidMonths(): array
+    {
+        return [
+            'out-of-range month' => ['2026-13'],
+            'month zero' => ['2026-00'],
+            'year zero' => ['0000-01'],
+            'non-padded month' => ['2026-8'],
+            'wrong separator' => ['2026/08'],
+            'trailing content' => ['2026-08-extra'],
+            'array' => [['2026-08']],
+            'NUL byte' => ["2026-08\0"],
+        ];
+    }
+
+    public function test_month_query_selects_posts_modified_in_the_month(): void
+    {
+        $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
+
+        $this->assertSame(-1, $args['posts_per_page']);
+        $this->assertSame('modified', $args['orderby']);
+        $this->assertSame('DESC', $args['order']);
+        $this->assertSame([
+            'year' => 2026,
+            'month' => 8,
+            'column' => 'post_modified',
+        ], $args['date_query'][0]);
     }
 
     // =========================================================================
