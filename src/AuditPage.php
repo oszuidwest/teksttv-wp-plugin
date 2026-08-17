@@ -4,6 +4,8 @@ namespace TekstTV;
 
 class AuditPage
 {
+    private const MAX_RESULTS = 500;
+
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
@@ -37,16 +39,18 @@ class AuditPage
             return;
         }
 
-        $posts = self::query_ai_posts($selected_month);
-        $total_posts = count($posts);
+        $query_result = self::query_ai_posts($selected_month);
+        $posts = $query_result['posts'];
+        $has_more_posts = $query_result['has_more'];
+        $shown_posts = count($posts);
         $stats = self::compute_stats($posts);
 
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>' . esc_html('AI-audit') . '</h1>';
 
-        $format_pct = static fn(int|float $pct): string => $total_posts > 0 ? (string) $pct . '%' : '—';
+        $format_pct = static fn(int|float $pct): string => $shown_posts > 0 ? (string) $pct . '%' : '—';
         $stat_cards = [
-            'Berichten met AI' => (string) $total_posts,
+            'Berichten met AI' => (string) $shown_posts . ($has_more_posts ? '+' : ''),
             'Koppen bewerkt' => $format_pct($stats['title_modified_pct']),
             'Teksten bewerkt' => $format_pct($stats['body_modified_pct']),
             'Totaal bewerkt' => $format_pct($stats['any_modified_pct']),
@@ -72,6 +76,11 @@ class AuditPage
 
             <section class="teksttv-card teksttv-workbench-section teksttv-audit-results">
                 <h2><?php echo esc_html('Berichten'); ?></h2>
+            <?php if ($has_more_posts) : ?>
+                <div class="notice notice-warning inline">
+                    <p><?php echo esc_html(sprintf('Deze maand bevat meer dan %d berichten. Alleen de %d meest recent gewijzigde berichten worden getoond; de percentages zijn op deze selectie gebaseerd.', self::MAX_RESULTS, $shown_posts)); ?></p>
+                </div>
+            <?php endif; ?>
             <?php if (empty($posts)) : ?>
                 <?php AdminPage::render_empty_state('chart-bar', 'Nog geen AI-auditgegevens', 'Er zijn nog geen berichten met AI-gegenereerde inhoud.'); ?>
             <?php else : ?>
@@ -188,14 +197,15 @@ class AuditPage
     /**
      * Query posts with AI-generated content modified in one calendar month.
      *
-     * @return list<array{id: int, title: string, title_status: string, body_status: string, date: string}>
+     * @return array{posts: list<array{id: int, title: string, title_status: string, body_status: string, date: string}>, has_more: bool}
      */
     private static function query_ai_posts(string $selected_month): array
     {
         $query = new \WP_Query(self::ai_post_query_args($selected_month));
+        $has_more = count($query->posts) > self::MAX_RESULTS;
 
         $results = [];
-        foreach ($query->posts as $post) {
+        foreach (array_slice($query->posts, 0, self::MAX_RESULTS) as $post) {
             $statuses = self::get_post_statuses($post->ID);
 
             $results[] = [
@@ -207,7 +217,10 @@ class AuditPage
             ];
         }
 
-        return $results;
+        return [
+            'posts' => $results,
+            'has_more' => $has_more,
+        ];
     }
 
     /**
@@ -232,11 +245,11 @@ class AuditPage
         $requested_month = '';
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter, no action taken
         if (isset($_GET['month']) && is_string($_GET['month'])) {
-            $requested_month = sanitize_text_field(wp_unslash($_GET['month']));
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- exact format is validated before the sanitized value is returned.
+            $requested_month = wp_unslash($_GET['month']);
         }
-        $parsed = \DateTime::createFromFormat('!Y-m', $requested_month);
-        if ($parsed && (int) $parsed->format('Y') >= 1 && $parsed->format('Y-m') === $requested_month) {
-            return $requested_month;
+        if (preg_match('/\A(?!0000-)[0-9]{4}-(?:0[1-9]|1[0-2])\z/', $requested_month) === 1) {
+            return sanitize_text_field($requested_month);
         }
 
         return current_datetime()->format('Y-m');
@@ -253,7 +266,7 @@ class AuditPage
 
         return [
             'post_type' => 'post',
-            'posts_per_page' => -1,
+            'posts_per_page' => self::MAX_RESULTS + 1,
             'no_found_rows' => true,
             'update_post_term_cache' => false,
             'orderby' => 'modified',

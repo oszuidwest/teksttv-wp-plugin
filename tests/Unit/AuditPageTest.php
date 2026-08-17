@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\AuditPage;
 
 class AuditPageTest extends TestCase
@@ -44,42 +45,40 @@ class AuditPageTest extends TestCase
     {
         $_GET['month'] = '2026-08';
 
-        try {
-            $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
-        } finally {
-            unset($_GET['month']);
-        }
+        $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
     }
 
-    public function test_selected_month_falls_back_to_current_wordpress_month(): void
+    #[DataProvider('invalidMonths')]
+    public function test_selected_month_falls_back_for_invalid_query_value(mixed $month): void
     {
         Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
-        $_GET['month'] = '2026-13';
+        $_GET['month'] = $month;
 
-        try {
-            $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
-        } finally {
-            unset($_GET['month']);
-        }
+        $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
     }
 
-    public function test_selected_month_falls_back_for_year_zero(): void
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function invalidMonths(): array
     {
-        Functions\expect('current_datetime')->once()->andReturn(new \DateTimeImmutable('2026-08-16'));
-        $_GET['month'] = '0000-01';
-
-        try {
-            $this->assertSame('2026-08', self::callPrivate(AuditPage::class, 'selected_month'));
-        } finally {
-            unset($_GET['month']);
-        }
+        return [
+            'out-of-range month' => ['2026-13'],
+            'year zero' => ['0000-01'],
+            'non-padded month' => ['2026-8'],
+            'wrong separator' => ['2026/08'],
+            'trailing content' => ['2026-08-extra'],
+            'array' => [['2026-08']],
+            'NUL byte' => ["2026-08\0"],
+        ];
     }
 
     public function test_month_query_selects_posts_modified_in_the_month(): void
     {
         $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
 
-        $this->assertSame(-1, $args['posts_per_page']);
+        $this->assertSame(501, $args['posts_per_page']);
+        $this->assertTrue($args['no_found_rows']);
         $this->assertSame('modified', $args['orderby']);
         $this->assertSame('DESC', $args['order']);
         $this->assertSame([

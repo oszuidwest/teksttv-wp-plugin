@@ -13,9 +13,13 @@ abstract class TestCase extends PHPUnitTestCase
 {
     use MockeryPHPUnitIntegration;
 
+    /** @var array<string, mixed> */
+    private array $original_get;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->original_get = $_GET;
         Monkey\setUp();
         // Once any test stubs TekstTV\time(), Brain Monkey's definition of it
         // persists for the whole PHPUnit process and throws in tests that don't
@@ -33,6 +37,7 @@ abstract class TestCase extends PHPUnitTestCase
 
     protected function tearDown(): void
     {
+        $_GET = $this->original_get;
         Monkey\tearDown();
         parent::tearDown();
     }
