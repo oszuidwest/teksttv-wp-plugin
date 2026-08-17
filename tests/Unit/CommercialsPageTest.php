@@ -190,7 +190,6 @@ class CommercialsPageTest extends TestCase
             ],
         ];
 
-        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
         Functions\when('wp_verify_nonce')->justReturn(true);
         Functions\when('current_user_can')->justReturn(true);
         Functions\when('get_option')->alias(
@@ -220,7 +219,6 @@ class CommercialsPageTest extends TestCase
     {
         $previous_post = $_POST;
         $_POST = ['teksttv_commercials_nonce' => 'invalid'];
-        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
         Functions\expect('wp_verify_nonce')->once()->with('invalid', 'teksttv_save_commercials')->andReturn(false);
         Functions\expect('current_user_can')->never();
         Functions\expect('update_option')->never();
@@ -237,7 +235,6 @@ class CommercialsPageTest extends TestCase
     {
         $previous_post = $_POST;
         $_POST = ['teksttv_commercials_nonce' => 'valid'];
-        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
         Functions\expect('wp_verify_nonce')->once()->with('valid', 'teksttv_save_commercials')->andReturn(true);
         Functions\expect('current_user_can')->once()->with('manage_teksttv_commercials')->andReturn(false);
         Functions\expect('update_option')->never();

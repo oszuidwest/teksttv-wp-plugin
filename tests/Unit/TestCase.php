@@ -24,7 +24,7 @@ abstract class TestCase extends PHPUnitTestCase
         Functions\when('TekstTV\\time')->alias('time');
         // Same process-wide persistence hazard applies to wp_unslash(); default
         // every test to a passthrough so superglobal readers need no stub.
-        Functions\when('wp_unslash')->alias(static fn ($value) => $value);
+        Functions\when('wp_unslash')->returnArg();
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
         $ai_cache = new \ReflectionProperty(Helpers::class, 'ai_supported_cache');

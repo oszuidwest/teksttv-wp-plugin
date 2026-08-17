@@ -37,43 +37,45 @@ $teksttv_audit_fixtures = [
     ],
 ];
 
-foreach ($teksttv_audit_fixtures as $teksttv_fixture) {
-    $teksttv_existing = get_page_by_path($teksttv_fixture['slug'], OBJECT, 'post');
-    $teksttv_post_data = [
-        'post_title' => $teksttv_fixture['title'],
-        'post_name' => $teksttv_fixture['slug'],
-        'post_content' => '<p>Bronartikel voor de auditstatistiek.</p>',
-        'post_status' => 'publish',
-        'post_modified' => $teksttv_fixture['modified'],
-        'post_modified_gmt' => get_gmt_from_date($teksttv_fixture['modified']),
-    ];
-    if ($teksttv_existing) {
-        $teksttv_post_data['ID'] = $teksttv_existing->ID;
+// wp_insert_post() always overwrites post_modified with the current time on
+// updates, so an idempotent reseed needs this filter to keep the fixture dates.
+$teksttv_preserve_modified = static function (array $data, array $postarr): array {
+    if (isset($postarr['post_modified'], $postarr['post_modified_gmt'])) {
+        $data['post_modified'] = $postarr['post_modified'];
+        $data['post_modified_gmt'] = $postarr['post_modified_gmt'];
     }
 
-    $teksttv_preserve_modified = static function (array $data, array $postarr) use ($teksttv_fixture): array {
-        if (($postarr['post_name'] ?? '') === $teksttv_fixture['slug']) {
-            $data['post_modified'] = $postarr['post_modified'];
-            $data['post_modified_gmt'] = $postarr['post_modified_gmt'];
+    return $data;
+};
+
+add_filter('wp_insert_post_data', $teksttv_preserve_modified, PHP_INT_MAX, 2);
+try {
+    foreach ($teksttv_audit_fixtures as $teksttv_fixture) {
+        $teksttv_existing = get_page_by_path($teksttv_fixture['slug'], OBJECT, 'post');
+        $teksttv_post_data = [
+            'post_title' => $teksttv_fixture['title'],
+            'post_name' => $teksttv_fixture['slug'],
+            'post_content' => '<p>Bronartikel voor de auditstatistiek.</p>',
+            'post_status' => 'publish',
+            'post_modified' => $teksttv_fixture['modified'],
+            'post_modified_gmt' => get_gmt_from_date($teksttv_fixture['modified']),
+        ];
+        if ($teksttv_existing) {
+            $teksttv_post_data['ID'] = $teksttv_existing->ID;
         }
 
-        return $data;
-    };
-
-    add_filter('wp_insert_post_data', $teksttv_preserve_modified, PHP_INT_MAX, 2);
-    try {
         $teksttv_post_id = wp_insert_post($teksttv_post_data, true);
-    } finally {
-        remove_filter('wp_insert_post_data', $teksttv_preserve_modified, PHP_INT_MAX);
-    }
-    if (is_wp_error($teksttv_post_id)) {
-        // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI-only fixture failure.
-        throw new RuntimeException('Could not seed an audit statistics post: ' . $teksttv_post_id->get_error_message());
-    }
+        if (is_wp_error($teksttv_post_id)) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI-only fixture failure.
+            throw new RuntimeException('Could not seed an audit statistics post: ' . $teksttv_post_id->get_error_message());
+        }
 
-    foreach ($teksttv_fixture['meta'] as $teksttv_meta_key => $teksttv_meta_value) {
-        update_post_meta($teksttv_post_id, $teksttv_meta_key, $teksttv_meta_value);
+        foreach ($teksttv_fixture['meta'] as $teksttv_meta_key => $teksttv_meta_value) {
+            update_post_meta($teksttv_post_id, $teksttv_meta_key, $teksttv_meta_value);
+        }
     }
+} finally {
+    remove_filter('wp_insert_post_data', $teksttv_preserve_modified, PHP_INT_MAX);
 }
 
 echo "audit-stats-ok count=3\n";
