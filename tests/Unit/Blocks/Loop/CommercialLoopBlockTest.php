@@ -10,7 +10,7 @@ class CommercialLoopBlockTest extends TestCase
 {
     public function test_save_with_commercial_blocks(): void
     {
-        // Commercial blocks are stored by stable id, not by label.
+        // Runtime lookup uses stable IDs.
         $result = CommercialLoopBlock::save([
             'commercial_block_ids' => ['cblock_aaa111', 'cblock_bbb222'],
             'intro_image_id' => '10',

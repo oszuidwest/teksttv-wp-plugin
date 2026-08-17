@@ -1,9 +1,7 @@
 import type { RunWordPressPHPFile } from './test';
 
 /**
- * Restore the shared Playground database to the deterministic E2E fixture
- * state. Takes the fixture object so specs can pass it straight to
- * `test.afterEach(reseedFixtures)`.
+ * Restore deterministic fixtures after stateful E2E tests.
  */
 export async function reseedFixtures({
     runWordPressPHPFile,

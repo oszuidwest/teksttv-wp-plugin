@@ -7,11 +7,7 @@ export const PLAYGROUND_BASE_PORT = 8888;
 export const E2E_VFS_PATH = '/wordpress/wp-content/e2e';
 
 /**
- * Start a Playground server from blueprint.json. The Blueprint owns WordPress
- * configuration (including the PHP/WP version pins) and fixture setup; mounts
- * expose only the packaged plugin and E2E support files to the WebAssembly
- * filesystem. Both the Playwright worker fixture and `bun run env:start` go
- * through here so the test and debug environments cannot drift apart.
+ * Start the shared packaged-plugin Playground from blueprint.json.
  */
 export async function startPlayground(port = PLAYGROUND_BASE_PORT): Promise<RunCLIServer> {
     const blueprint = JSON.parse(await readFile(`${PROJECT_ROOT}/blueprint.json`, 'utf8'));

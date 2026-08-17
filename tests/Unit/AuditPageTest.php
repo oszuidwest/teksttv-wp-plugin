@@ -105,9 +105,6 @@ class AuditPageTest extends TestCase
         ], $args['date_query'][0]);
     }
 
-    // =========================================================================
-    // compare()
-    // =========================================================================
 
     public function test_compare_returns_no_ai_when_ai_version_empty(): void
     {
@@ -139,9 +136,6 @@ class AuditPageTest extends TestCase
         $this->assertSame('no_ai', $result);
     }
 
-    // =========================================================================
-    // compute_stats()
-    // =========================================================================
 
     public function test_compute_stats_returns_zeros_for_empty_array(): void
     {
@@ -173,11 +167,8 @@ class AuditPageTest extends TestCase
         ];
         $result = AuditPage::compute_stats($posts);
 
-        // 2 out of 4 titles modified = 50%
         $this->assertSame(50.0, $result['title_modified_pct']);
-        // 2 out of 4 bodies modified = 50%
         $this->assertSame(50.0, $result['body_modified_pct']);
-        // 3 out of 4 have any modification = 75%
         $this->assertSame(75.0, $result['any_modified_pct']);
     }
 

@@ -10,9 +10,7 @@ test.describe('slides REST endpoint', () => {
         expect(Array.isArray(data.slides)).toBe(true);
         expect(Array.isArray(data.ticker)).toBe(true);
 
-        // The fixtures seed ten newer runtime-ineligible posts (filling the
-        // first query batch) plus a scheduled-out post; the smoke post is only
-        // reachable when the articles block backfills into a second batch.
+        // The valid post is only reachable through a second query batch.
         const textSlide = data.slides.find((s: { type?: string }) => s.type === 'text');
         expect(textSlide, 'a text slide is present').toBeTruthy();
         expect(textSlide.title).toBe('TekstTV Smoke Post');

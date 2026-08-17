@@ -16,8 +16,7 @@ $teksttv_audit_fixtures = [
         ],
     ],
     [
-        // Private: the audit page must count this post for a viewer with
-        // read_private_posts, exactly like the WP_Query behind the table does.
+        // Verify that read_private_posts includes private audit rows.
         'title' => 'TekstTV Audit Juli Ongewijzigd',
         'slug' => 'teksttv-audit-july-unmodified',
         'status' => 'private',
@@ -40,8 +39,7 @@ $teksttv_audit_fixtures = [
     ],
 ];
 
-// wp_insert_post() always overwrites post_modified with the current time on
-// updates, so an idempotent reseed needs this filter to keep the fixture dates.
+// Preserve fixture dates across idempotent wp_insert_post() updates.
 $teksttv_preserve_modified = static function (array $data, array $postarr): array {
     if (isset($postarr['post_modified'], $postarr['post_modified_gmt'])) {
         $data['post_modified'] = $postarr['post_modified'];

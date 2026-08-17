@@ -6,7 +6,7 @@ use DateTime;
 
 class OpenWeatherProvider implements WeatherProvider
 {
-    private const WEATHER_CACHE_DURATION = 3600; // 1 hour
+    private const WEATHER_CACHE_DURATION = 3600;
     private string $api_key;
 
     public function __construct(string $api_key)

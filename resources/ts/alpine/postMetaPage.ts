@@ -64,7 +64,7 @@ export function createPostMetaPage() {
         }
 
         container?.classList.remove('is-empty');
-        // Skip the reload when the slide is unchanged — `keyup` also fires for non-mutating keys.
+        // keyup also fires for keys that do not change content.
         const newSrc = previewSlideUrl(previewUrl, slides[currentSlideIndex]);
         if (iframe.getAttribute('src') === newSrc) return;
 
@@ -117,8 +117,7 @@ export function createPostMetaPage() {
                 if (typeof tinymce === 'undefined') return false;
 
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
-                    // `updatePreview` debounces and also refreshes the word count.
-                    // `keyup` covers keystrokes TinyMCE handles without firing `input`.
+                    // keyup covers TinyMCE edits that omit input events.
                     editor.on('input change keyup SetContent', updatePreview);
                 };
                 const existing = tinymce.get('teksttv_content');
@@ -129,9 +128,7 @@ export function createPostMetaPage() {
                 return true;
             };
 
-            // Alpine may initialize before WordPress exposes TinyMCE. Retry
-            // briefly so the existing editor or its AddEditor event is never
-            // missed on a fast page load.
+            // Retry while WordPress exposes TinyMCE asynchronously.
             if (!bindTinyMceEvents()) {
                 let attempts = 0;
                 const retryTimer = window.setInterval(() => {

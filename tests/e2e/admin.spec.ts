@@ -28,7 +28,7 @@ test.describe('administrator admin screens', () => {
                     response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/options.php'),
             );
             await page.click('#submit');
-            // The Settings API reloads the page; the saved value must persist.
+            // The value must survive the Settings API reload.
             expect((await saveResponse).status()).toBeLessThan(400);
             await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
             await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
@@ -281,12 +281,11 @@ test.describe('administrator admin screens', () => {
         await page.waitForFunction(() => Boolean(window.tinymce?.get('teksttv_content')));
         await expect(wordCount).toHaveText(/^5(?: \/ \d+)? woorden$/);
 
-        // Let the initial 500 ms update and 400 ms debounce settle so only the
-        // keyup below can produce the next count.
+        // Settle initial timers so only keyup changes the count.
         await page.waitForTimeout(1_000);
 
         await page.evaluate(() => {
-            // Avoid input/change/SetContent so this specifically covers the keyup fallback.
+            // Exercise keyup without other editor events.
             const tinyMceEditor = window.tinymce?.get('teksttv_content');
             if (!tinyMceEditor) throw new Error('TinyMCE editor teksttv_content not found.');
             tinyMceEditor.setContent('<p>Twee woorden</p>', { no_events: true });

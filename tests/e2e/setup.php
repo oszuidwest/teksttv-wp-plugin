@@ -1,9 +1,6 @@
 <?php
 /**
- * Playground Blueprint setup, run once after plugin activation.
- *
- * Verifies the packaged plugin booted, enables pretty permalinks for the REST
- * specs, and seeds the E2E fixtures.
+ * Verify the packaged plugin and seed its Playground.
  */
 
 defined('ABSPATH') || exit;

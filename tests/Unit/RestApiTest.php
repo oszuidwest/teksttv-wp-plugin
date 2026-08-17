@@ -9,7 +9,7 @@ use TekstTV\RestApi;
 class RestApiTest extends TestCase
 {
     /**
-     * Request mock serving fixed params.
+     * Request double with fixed params.
      *
      * @param array<string, mixed> $params
      */
@@ -25,7 +25,7 @@ class RestApiTest extends TestCase
     }
 
     /**
-     * Serve get_option for the keys generate_content touches.
+     * Stub generation options.
      *
      * @param array<string, mixed> $overrides
      */
@@ -43,7 +43,7 @@ class RestApiTest extends TestCase
         });
     }
 
-    /** Rate limiter passes via the transient path. */
+    /** Pass rate limiting through transients. */
     private static function stubRateLimitOk(): void
     {
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
@@ -52,9 +52,7 @@ class RestApiTest extends TestCase
     }
 
     /**
-     * Stub every pre-generation check to pass (feature enabled, AI available,
-     * capability, existing post, rate limit ok). Tests override individual
-     * stubs after calling this.
+     * Pass every pre-generation check; tests override individual stubs.
      *
      * @param array<string, mixed> $option_overrides Passed to stubOptions().
      */
@@ -72,10 +70,6 @@ class RestApiTest extends TestCase
         Functions\when('wp_kses_post')->returnArg();
     }
 
-    /**
-     * Assert a WP_Error carrying the given HTTP status in its error data,
-     * the shape WP_REST_Server maps onto the response status.
-     */
     private function assertErrorStatus(int $status, mixed $response): void
     {
         $this->assertInstanceOf(\WP_Error::class, $response);
@@ -93,7 +87,6 @@ class RestApiTest extends TestCase
 
     public function test_generate_content_returns_403_when_ai_generate_disabled(): void
     {
-        // ai_generate is absent from the enabled features list.
         Functions\when('get_option')->justReturn(['custom_title', 'scheduling']);
 
         $request = \Mockery::mock('WP_REST_Request');
@@ -132,7 +125,7 @@ class RestApiTest extends TestCase
         Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder());
         Functions\when('get_post')->justReturn(self::makePost());
         Functions\when('current_user_can')->justReturn(false);
-        // Forbidden requests must not consume rate-limit quota.
+        // Reject before touching quota.
         Functions\expect('get_transient')->never();
         Functions\expect('wp_cache_incr')->never();
 
@@ -248,7 +241,6 @@ class RestApiTest extends TestCase
     {
         self::stubHappyPath();
 
-        // Empty post -> AiGenerator returns teksttv_no_content with status 422.
         Functions\when('get_post')->justReturn(self::makePost(['post_title' => '', 'post_content' => '']));
 
         $response = RestApi::generate_content(self::requestMock([
@@ -324,11 +316,6 @@ class RestApiTest extends TestCase
         $this->assertArrayNotHasKey('warning', $data);
     }
 
-    /**
-     * REST owns one thing here: reading has_photo off the request and handing
-     * it to the generator. Both directions are asserted - one call would leave
-     * a hardcoded `true` at the call site undetected.
-     */
     public function test_generate_content_forwards_has_photo_to_the_generator(): void
     {
         self::stubHappyPath(['teksttv_ai_prompts' => [
@@ -340,7 +327,7 @@ class RestApiTest extends TestCase
         Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
         Functions\when('update_post_meta')->justReturn(true);
 
-        // 50 words: inside the plain limit, over the photo limit.
+        // Valid without a photo; too long with one.
         $body_text = implode(' ', array_fill(0, 50, 'woord'));
         Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder($body_text, $body_text));
 

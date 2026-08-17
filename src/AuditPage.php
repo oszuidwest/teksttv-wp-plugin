@@ -11,7 +11,7 @@ class AuditPage
 
     public static function register_menu(): void
     {
-        // Avoid potentially remote provider discovery for users who cannot access this page.
+        // Model discovery may call remote providers.
         if (!current_user_can('manage_teksttv') || !Helpers::ai_supported()) {
             return;
         }
@@ -62,7 +62,7 @@ class AuditPage
             <form method="get" class="teksttv-audit-month-filter">
                 <input type="hidden" name="page" value="teksttv-audit" />
                 <label for="teksttv-audit-month"><?php echo esc_html('Maand van laatste wijziging'); ?></label>
-                <?php // Fallback guidance for browsers without a native month control (desktop Safari/Firefox): pattern and placeholder only apply to the degraded text field. ?>
+                <?php // Fallback for browsers without a native month input. ?>
                 <input type="month" id="teksttv-audit-month" name="month" value="<?php echo esc_attr($selected_month); ?>" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="JJJJ-MM" title="<?php echo esc_attr('Gebruik JJJJ-MM'); ?>" required />
                 <?php submit_button('Tonen', 'secondary', '', false); ?>
             </form>
@@ -205,10 +205,7 @@ class AuditPage
         /** @var \wpdb $wpdb */
         global $wpdb;
 
-        // WP_Query has no error channel: a failed query looks like an empty
-        // month. $wpdb->last_error is the only way to tell them apart, but it
-        // can hold a stale error from an earlier query when WP_Query is served
-        // entirely from cache — only trust it if new queries actually ran.
+        // WP_Query exposes failures only through a fresh $wpdb error.
         $query_count = $wpdb->num_queries;
         $query = new \WP_Query(self::ai_post_query_args($selected_month));
         $query_failed = $wpdb->num_queries > $query_count && $wpdb->last_error !== '';
@@ -246,8 +243,7 @@ class AuditPage
     }
 
     /**
-     * Resolve a valid YYYY-MM selection, defaulting to the current WordPress
-     * month and flagging a supplied value that had to be rejected.
+     * Resolve a valid YYYY-MM value and flag rejected input.
      *
      * @return array{month: string, invalid: bool}
      */
@@ -257,8 +253,7 @@ class AuditPage
         $raw_month = $_GET['month'] ?? null;
         $requested_month = is_string($raw_month) ? wp_unslash($raw_month) : '';
 
-        // Reject year zero: WP_Date_Query silently drops a falsy 'year'
-        // clause from the SQL, so '0000-01' would match January of every year.
+        // WP_Date_Query drops year zero and would match every January.
         if (preg_match('/\A(?!0000-)[0-9]{4}-(?:0[1-9]|1[0-2])\z/', $requested_month) === 1) {
             return ['month' => $requested_month, 'invalid' => false];
         }
@@ -270,7 +265,7 @@ class AuditPage
     }
 
     /**
-     * Which posts count as AI-audited in the selected month.
+     * Query constraints for AI-audited posts in one month.
      *
      * @return array<string, mixed>
      */
@@ -317,7 +312,7 @@ class AuditPage
     }
 
     /**
-     * Compute stats from an already-fetched post statuses array.
+     * Compute percentages from fetched audit statuses.
      *
      * @param list<array{title_status: string, body_status: string, ...}> $posts
      * @return array{title_modified_pct: int|float, body_modified_pct: int|float, any_modified_pct: int|float}

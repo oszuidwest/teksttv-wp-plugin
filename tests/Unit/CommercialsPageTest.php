@@ -38,13 +38,10 @@ class CommercialsPageTest extends TestCase
         CommercialsPage::register_menu();
     }
 
-    // =========================================================================
-    // sanitize_commercial_blocks() — stable ids survive renames
-    // =========================================================================
 
     public function test_sanitize_commercial_blocks_preserves_submitted_id_on_rename(): void
     {
-        // A rename keeps the hidden id, so references to the commercial block stay intact.
+        // Renames preserve referenced IDs.
         $result = CommercialsPage::sanitize_commercial_blocks([
             ['id' => 'cblock_existing', 'label' => 'Nieuwe naam'],
         ]);
@@ -54,7 +51,7 @@ class CommercialsPageTest extends TestCase
 
     public function test_sanitize_commercial_blocks_derives_id_for_new_row(): void
     {
-        // A newly added row submits an empty id; the server derives a stable one.
+        // New rows derive stable IDs.
         $result = CommercialsPage::sanitize_commercial_blocks([
             ['id' => '', 'label' => 'Sponsors'],
         ]);
@@ -76,8 +73,7 @@ class CommercialsPageTest extends TestCase
 
     public function test_sanitize_commercial_blocks_reassigns_colliding_id(): void
     {
-        // Two rows claiming the same id: keep the first, give the second a fresh
-        // derived id rather than silently dropping a commercial block the user defined.
+        // Preserve both rows when IDs collide.
         $result = CommercialsPage::sanitize_commercial_blocks([
             ['id' => 'cblock_a', 'label' => 'Sponsors'],
             ['id' => 'cblock_a', 'label' => 'Duplicaat'],
@@ -91,8 +87,7 @@ class CommercialsPageTest extends TestCase
 
     public function test_sanitize_commercial_blocks_drops_duplicate_new_rows_with_same_label(): void
     {
-        // Two new rows (empty id) with the same label derive the same id, so the
-        // second collapses into the first.
+        // Duplicate new labels collapse.
         $result = CommercialsPage::sanitize_commercial_blocks([
             ['id' => '', 'label' => 'Sponsors'],
             ['id' => '', 'label' => 'Sponsors'],
@@ -114,9 +109,7 @@ class CommercialsPageTest extends TestCase
 
     public function test_sanitize_commercial_blocks_keeps_new_block_when_derived_id_hits_renamed_block(): void
     {
-        // A block renamed away from 'Sponsors' keeps its label-derived id. A
-        // new block reusing that old label derives the same id; it must get a
-        // unique id instead of being silently dropped.
+        // Reused old labels must not collide with renamed blocks.
         $renamed_id = Helpers::commercial_block_id('Sponsors');
         $result = CommercialsPage::sanitize_commercial_blocks([
             ['id' => $renamed_id, 'label' => 'Oude sponsors'],
@@ -131,9 +124,7 @@ class CommercialsPageTest extends TestCase
 
     public function test_sanitize_commercial_blocks_collapses_repeated_label_behind_suffixed_id(): void
     {
-        // The renamed block holds the derived id, so new 'Sponsors' rows land
-        // on suffixed ids; a repeated label must still collapse into one block
-        // instead of claiming the next suffix.
+        // Repeated labels collapse even after suffixing a collision.
         $renamed_id = Helpers::commercial_block_id('Sponsors');
         $result = CommercialsPage::sanitize_commercial_blocks([
             ['id' => $renamed_id, 'label' => 'Oude sponsors'],

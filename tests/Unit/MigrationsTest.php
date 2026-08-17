@@ -16,7 +16,7 @@ class MigrationsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // The abort path logs via error_log(); keep it out of the test output.
+        // Silence the expected migration error log.
         $this->previous_error_log = ini_set('error_log', '/dev/null');
     }
 
@@ -33,8 +33,7 @@ class MigrationsTest extends TestCase
     }
 
     /**
-     * Route get_option() reads to the given store; pass by reference so a test
-     * can keep mutating the store through its own update_option stub.
+     * Route option reads to a mutable test store.
      *
      * @param array<string, mixed> $stored
      */
@@ -48,8 +47,7 @@ class MigrationsTest extends TestCase
     }
 
     /**
-     * Replace $GLOBALS['wpdb'] with a mock whose loop-option scan returns the
-     * given option names; tearDown() restores the original.
+     * Mock the database loop-option scan.
      *
      * @param list<string> $names
      */
@@ -97,7 +95,7 @@ class MigrationsTest extends TestCase
 
         Migrations::run();
 
-        // Ids survive the migration verbatim, so existing references keep resolving.
+        // Existing references require verbatim IDs.
         $this->assertSame([['id' => 'grp_sponsors', 'label' => 'Sponsors']], $updates['teksttv_commercial_blocks']);
         $this->assertSame('grp_sponsors', $updates['teksttv_campaigns'][0]['commercial_block_id']);
         $this->assertArrayNotHasKey('group', $updates['teksttv_campaigns'][0]);
@@ -108,8 +106,7 @@ class MigrationsTest extends TestCase
 
     public function test_run_maps_colliding_label_references_for_pre_id_data(): void
     {
-        // Installs that skipped the removed one-time label-to-id migration
-        // still store blocks as plain labels and reference them by label.
+        // Older installs may still reference plain labels.
         $first_label = 'TekstTV collision 12618785700807';
         $second_label = 'TekstTV collision 281271414805175';
         $stored = [
@@ -193,8 +190,7 @@ class MigrationsTest extends TestCase
         self::stubOptionReads($stored);
         Functions\expect('update_option')->once()->with('teksttv_commercial_blocks', Mockery::type('array'))->andReturn(false);
         Functions\expect('delete_option')->never();
-        // Capabilities migrate before the data step, so a data failure never
-        // also locks users out of the renamed capability.
+        // Capabilities must survive a data-step failure.
         Functions\when('wp_roles')->justReturn((object) ['role_objects' => []]);
 
         Migrations::run();
@@ -205,9 +201,7 @@ class MigrationsTest extends TestCase
 
     public function test_run_skips_everything_when_version_is_current(): void
     {
-        // The DB hands back the stored version as a string; the gate must
-        // treat it as current and touch nothing (no wpdb scan, no writes,
-        // no role walk).
+        // A string version must skip all migration work.
         $stored = ['teksttv_data_version' => '1'];
         self::stubOptionReads($stored);
         Functions\expect('update_option')->never();
@@ -274,8 +268,7 @@ class MigrationsTest extends TestCase
 
     public function test_run_retry_preserves_commercial_blocks_saved_by_the_admin(): void
     {
-        // A retry after a partial failure must not re-derive blocks from the
-        // retained legacy option over edits the admin has since saved.
+        // A retry must not overwrite canonical admin edits.
         $admin_blocks = [['id' => 'grp_sponsors', 'label' => 'Hernoemd door beheerder']];
         $stored = [
             'teksttv_data_version' => 0,
@@ -379,9 +372,7 @@ class MigrationsTest extends TestCase
 
     public function test_converters_prefer_canonical_fields_on_mixed_records(): void
     {
-        // Records mixing legacy and canonical keys never come from the plugin
-        // itself, but imports or hand-edited options can produce them; the
-        // canonical field must win and legacy keys must still be stripped.
+        // Canonical keys win in imported mixed records.
         $campaigns = Migrations::convert_campaigns([
             ['id' => 'camp_1', 'group' => 'grp_old', 'commercial_block_id' => 'grp_new'],
         ]);

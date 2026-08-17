@@ -5,7 +5,7 @@ import { createCategoryMediaPage } from './categoryMedia';
 import { createChannelsSettingsPage } from './channelsSettings';
 import { createPostMetaPage } from './postMetaPage';
 
-/** Wrap a component's `init` so TomSelect is initialized after it runs. */
+/** Run component initialization before TomSelect. */
 function withTomSelect<T extends { init(this: unknown): void }>(component: T): T {
     const originalInit = component.init;
     return {
@@ -18,8 +18,7 @@ function withTomSelect<T extends { init(this: unknown): void }>(component: T): T
 }
 
 /**
- * One `Alpine.data` per WP adminscherm houdt bootstrap simpel (geen geneste scopes die parent's
- * methods missen). Zware logika zit in losse TS-modules onder `alpine/blocks/` e.d.
+ * Keep one Alpine scope per admin screen; behavior lives in focused modules.
  */
 export function registerTeksttvAlpine(): void {
     Alpine.data('teksttvLoopPage', () =>

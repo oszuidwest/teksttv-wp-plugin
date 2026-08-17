@@ -4,20 +4,6 @@ namespace TekstTV;
 
 /**
  * Registry for loop and ticker block types.
- *
- * Block types are registered with a slug, label, icon, context (loop/ticker/both),
- * and callbacks for rendering admin fields, saving POST data, and building slides/messages.
- *
- * Usage:
- *   BlockRegistry::register('my_block', [
- *       'label'   => 'My Block',
- *       'icon'    => 'dashicons-admin-generic',
- *       'color'   => '#8c8f94',
- *       'context' => 'loop',         // 'loop', 'ticker', or 'both'
- *       'render'  => function (int|string $index, array $data, string $prefix): void { ... },
- *       'save'    => function (array $raw): ?array { ... },
- *       'build'   => function (array $data, string $channel): array { ... },
- *   ]);
  */
 class BlockRegistry
 {
@@ -25,8 +11,6 @@ class BlockRegistry
     private static array $types = [];
 
     /**
-     * Register a block type.
-     *
      * @param string                $slug  Unique block type identifier.
      * @param array<string, mixed>  $args  {
      *     @type string   $label   Display label.
@@ -55,19 +39,13 @@ class BlockRegistry
         self::$types[$slug] = $args;
     }
 
-    /**
-     * Get a registered block type.
-     *
-     * @return array<string, mixed>|null
-     */
+    /** @return array<string, mixed>|null */
     public static function get(string $slug): ?array
     {
         return self::$types[$slug] ?? null;
     }
 
     /**
-     * Get all registered block types, optionally filtered by context.
-     *
      * @param string|null $context 'loop', 'ticker', or null for all.
      * @return array<string, array<string, mixed>>
      */
@@ -82,11 +60,7 @@ class BlockRegistry
         });
     }
 
-    /**
-     * Render the admin form fields for a block.
-     *
-     * @param array<string, mixed> $data
-     */
+    /** @param array<string, mixed> $data */
     public static function render(string $slug, int|string $index, array $data, string $prefix = 'teksttv_blocks'): void
     {
         $type = self::get($slug);
@@ -98,8 +72,6 @@ class BlockRegistry
     }
 
     /**
-     * Sanitize and save a block's POST data.
-     *
      * @param array<string, mixed> $raw_data
      * @return array<string, mixed>|null Sanitized block data, or null to skip.
      */
@@ -120,8 +92,6 @@ class BlockRegistry
     }
 
     /**
-     * Build slides or ticker messages from a block.
-     *
      * @param array<string, mixed> $data
      * @return list<array<string, mixed>> Array of slides (loop context) or ticker messages (ticker context).
      */

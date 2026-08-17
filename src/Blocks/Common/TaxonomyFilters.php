@@ -5,12 +5,12 @@ namespace TekstTV\Blocks\Common;
 use TekstTV\Helpers;
 
 /**
- * Shared render + sanitization for taxonomy_filters in block admin forms.
+ * Render and sanitize block taxonomy filters.
  */
 final class TaxonomyFilters
 {
     /**
-     * Render one multi-select per enabled taxonomy for a block's admin form.
+     * Render one multi-select per enabled taxonomy.
      *
      * @param array<string, mixed> $filters Stored taxonomy_filters (taxonomy => term IDs).
      */

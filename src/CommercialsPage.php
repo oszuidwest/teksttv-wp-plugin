@@ -28,9 +28,7 @@ class CommercialsPage
             [self::class, 'render_page']
         );
 
-        // Register a hidden compatibility page so WordPress authorizes old
-        // bookmarks long enough to redirect before rendering the admin header.
-        // The load- hook always exits, so the render callback never runs.
+        // Authorize legacy bookmarks before redirecting them.
         $legacy_hook = add_submenu_page(
             '',
             'Reclame',
@@ -65,8 +63,7 @@ class CommercialsPage
      */
     public static function render_campaign(int|string $index, array $campaign, array $channels, array $commercial_blocks): void
     {
-        // Template rows render an empty id. A unique id is minted for each
-        // submitted row so multiple additions never share the template's id.
+        // New template rows receive server-side IDs on save.
         $id = $campaign['id'] ?? '';
         $name = $campaign['name'] ?? '';
         $campaign_channels = $campaign['channels'] ?? [];
@@ -154,14 +151,12 @@ class CommercialsPage
             return;
         }
 
-        // Save commercial blocks.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_commercial_blocks()
         $raw_commercial_blocks = isset($_POST['teksttv_commercial_blocks']) ? wp_unslash($_POST['teksttv_commercial_blocks']) : [];
         $commercial_blocks = self::sanitize_commercial_blocks($raw_commercial_blocks);
         update_option('teksttv_commercial_blocks', $commercial_blocks);
         $valid_block_ids = array_fill_keys(array_column($commercial_blocks, 'id'), true);
 
-        // Save campaigns.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in sanitize_campaigns()
         $raw = isset($_POST['teksttv_campaigns']) ? wp_unslash($_POST['teksttv_campaigns']) : [];
         update_option('teksttv_campaigns', self::sanitize_campaigns($raw, Helpers::channel_slugs(), $valid_block_ids));
@@ -172,7 +167,7 @@ class CommercialsPage
     /**
      * @param mixed               $raw             Unslashed submitted campaigns.
      * @param list<string>        $valid_slugs     Configured channel slugs.
-     * @param array<string, true> $valid_block_ids Available commercial block ids.
+     * @param array<string, true> $valid_block_ids Available commercial block IDs.
      * @return list<array<string, mixed>>
      */
     private static function sanitize_campaigns(mixed $raw, array $valid_slugs, array $valid_block_ids): array
@@ -201,7 +196,6 @@ class CommercialsPage
                 'commercial_block_id' => isset($valid_block_ids[$commercial_block_id]) ? $commercial_block_id : '',
             ];
 
-            // Channels
             $saved_channels = [];
             if (!empty($item['channels']) && is_array($item['channels'])) {
                 $saved_channels = array_map('sanitize_key', $item['channels']);
@@ -209,7 +203,6 @@ class CommercialsPage
             }
             $saved['channels'] = $saved_channels;
 
-            // Duration
             $dur = $item['duration'] ?? '';
             if ($dur !== '') {
                 $saved['duration'] = Helpers::clamp_int($dur, Helpers::DURATION_MIN_SECONDS, Helpers::DURATION_MAX_SECONDS);
@@ -217,7 +210,6 @@ class CommercialsPage
 
             $saved = array_merge($saved, Helpers::extract_scheduling_fields($item));
 
-            // Slides (attachment IDs)
             $saved_slides = [];
             if (!empty($item['slides']) && is_array($item['slides'])) {
                 $saved_slides = array_filter(array_map('absint', $item['slides']));
@@ -230,24 +222,13 @@ class CommercialsPage
         return $campaigns;
     }
 
-    /**
-     * Fallback id for a campaign row that reaches the server without an id,
-     * or with one that duplicates an earlier row's.
-     */
     private static function new_campaign_id(): string
     {
         return 'camp_' . wp_generate_uuid4();
     }
 
     /**
-     * Sanitize submitted commercial blocks into stable id/label pairs.
-     *
-     * Each row carries a hidden id so a rename preserves the id (and therefore
-     * every campaign/loop reference to it). Rows without an id (newly added in
-     * the browser) or with a duplicate id get a stable id derived from the
-     * label. Empty labels are dropped, new rows repeating the same label
-     * collapse into one, and a derived id that still collides with a
-     * differently-labeled block gets a suffixed unique id.
+     * Preserve stable IDs across renames; drop empty labels and resolve duplicates.
      *
      * @param mixed $raw
      * @return list<array{id: string, label: string}>
@@ -272,9 +253,7 @@ class CommercialsPage
             if ($id === '' || isset($seen[$id])) {
                 $id = Helpers::commercial_block_id($label);
             }
-            // A colliding id either belongs to a block with this same label
-            // (a duplicate row: collapse into it) or to a block renamed away
-            // from this label (suffix until unique instead of dropping).
+            // Collapse duplicate labels; suffix collisions after renames.
             $base = $id;
             for ($suffix = 2; isset($seen[$id]); $suffix++) {
                 if ($seen[$id] === $label) {
