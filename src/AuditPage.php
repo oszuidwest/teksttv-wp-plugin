@@ -4,8 +4,6 @@ namespace TekstTV;
 
 class AuditPage
 {
-    private const MAX_RESULTS = 500;
-
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'register_menu']);
@@ -40,9 +38,8 @@ class AuditPage
         }
 
         $posts = self::query_ai_posts($selected_month);
-        $monthly_statuses = self::query_ai_post_statuses($selected_month);
-        $total_posts = count($monthly_statuses);
-        $stats = self::compute_stats($monthly_statuses);
+        $total_posts = count($posts);
+        $stats = self::compute_stats($posts);
 
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>' . esc_html('AI-audit') . '</h1>';
@@ -75,11 +72,6 @@ class AuditPage
 
             <section class="teksttv-card teksttv-workbench-section teksttv-audit-results">
                 <h2><?php echo esc_html('Berichten'); ?></h2>
-            <?php if ($total_posts > self::MAX_RESULTS) : ?>
-                <div class="notice notice-warning inline">
-                    <p><?php echo esc_html(sprintf('Deze maand bevat %d berichten. Alleen de %d meest recent gewijzigde berichten worden getoond; de statistieken gebruiken wel de volledige maand.', $total_posts, self::MAX_RESULTS)); ?></p>
-                </div>
-            <?php endif; ?>
             <?php if (empty($posts)) : ?>
                 <?php AdminPage::render_empty_state('chart-bar', 'Nog geen AI-auditgegevens', 'Er zijn nog geen berichten met AI-gegenereerde inhoud.'); ?>
             <?php else : ?>
@@ -219,26 +211,6 @@ class AuditPage
     }
 
     /**
-     * Fetch audit statuses for every matching post in the selected month
-     * without loading post objects or writing the ID result to the query cache.
-     *
-     * @return list<array{title_status: string, body_status: string}>
-     */
-    private static function query_ai_post_statuses(string $selected_month): array
-    {
-        $query = new \WP_Query(array_merge(self::ai_post_query_args($selected_month), [
-            'fields' => 'ids',
-            'posts_per_page' => -1,
-            'no_found_rows' => true,
-            'cache_results' => false,
-            'orderby' => 'none',
-        ]));
-        update_meta_cache('post', $query->posts);
-
-        return array_map([self::class, 'get_post_statuses'], $query->posts);
-    }
-
-    /**
      * Build an audit-page URL that carries the month selection along.
      *
      * @param array<string, int|string> $args
@@ -281,7 +253,7 @@ class AuditPage
 
         return [
             'post_type' => 'post',
-            'posts_per_page' => self::MAX_RESULTS,
+            'posts_per_page' => -1,
             'no_found_rows' => true,
             'update_post_term_cache' => false,
             'orderby' => 'modified',

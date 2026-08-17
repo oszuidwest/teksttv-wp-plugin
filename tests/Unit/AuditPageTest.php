@@ -67,7 +67,7 @@ class AuditPageTest extends TestCase
     {
         $args = self::callPrivate(AuditPage::class, 'ai_post_query_args', ['2026-08']);
 
-        $this->assertSame(500, $args['posts_per_page']);
+        $this->assertSame(-1, $args['posts_per_page']);
         $this->assertSame('modified', $args['orderby']);
         $this->assertSame('DESC', $args['order']);
         $this->assertSame([
