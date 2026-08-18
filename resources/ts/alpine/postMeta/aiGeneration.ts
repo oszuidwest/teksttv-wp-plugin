@@ -71,6 +71,7 @@ export function requestAiGeneration(
     }
 
     const originalHtml = btn.innerHTML;
+    const originalWidth = btn.style.width;
     const loadingMessages = [
         'Even nadenken…',
         'Artikel aan het lezen…',
@@ -80,14 +81,29 @@ export function requestAiGeneration(
         'Tekst aan het polijsten…',
     ];
     let msgIndex = 0;
-    const spinnerHtml =
-        '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon" aria-hidden="true"></span> ';
+    const spinner = document.createElement('span');
+    spinner.className = 'dashicons dashicons-update teksttv-spin teksttv-button-icon';
+    spinner.setAttribute('aria-hidden', 'true');
+    const loadingLabel = document.createElement('span');
+    loadingLabel.className = 'teksttv-generate-label';
+
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
-    btn.innerHTML = spinnerHtml + loadingMessages[0];
+    btn.replaceChildren(spinner, loadingLabel);
+
+    // Reserve one stable button width before the browser paints. This keeps the
+    // spinner anchored while the loading message changes.
+    let loadingWidth = 0;
+    for (const message of loadingMessages) {
+        loadingLabel.textContent = message;
+        loadingWidth = Math.max(loadingWidth, btn.getBoundingClientRect().width);
+    }
+    if (loadingWidth > 0) btn.style.width = `${Math.ceil(loadingWidth)}px`;
+    loadingLabel.textContent = loadingMessages[0];
+
     const msgInterval = window.setInterval(() => {
         msgIndex = (msgIndex + 1) % loadingMessages.length;
-        btn.innerHTML = spinnerHtml + loadingMessages[msgIndex];
+        loadingLabel.textContent = loadingMessages[msgIndex];
     }, 2500);
     statusEl?.classList.remove('is-error', 'is-warning');
     if (statusEl) statusEl.textContent = 'AI-inhoud wordt gegenereerd…';
@@ -128,5 +144,6 @@ export function requestAiGeneration(
             btn.disabled = false;
             btn.removeAttribute('aria-busy');
             btn.innerHTML = originalHtml;
+            btn.style.width = originalWidth;
         });
 }
