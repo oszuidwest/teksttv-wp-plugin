@@ -151,6 +151,14 @@ class PostMeta
         return preg_replace("/\n{3,}/", "\n\n", $content) ?? $content;
     }
 
+    /**
+     * Match generated or stored content to the editor currently in use.
+     */
+    public static function prepare_editor_content(string $content): string
+    {
+        return self::has_rich_text_features() ? $content : self::plain_editor_content($content);
+    }
+
     public static function render_meta_box(\WP_Post $post): void
     {
         wp_nonce_field('teksttv_save_meta', 'teksttv_meta_nonce');
@@ -196,7 +204,7 @@ class PostMeta
             $toolbar_items[] = 'teksttv_separator';
         }
 
-        $plain_content = $use_tinymce ? '' : self::plain_editor_content((string) $content);
+        $plain_content = $use_tinymce ? '' : self::prepare_editor_content((string) $content);
 
         $valid_elements = ['br', 'p'];
         if (Helpers::has_feature('bold')) {

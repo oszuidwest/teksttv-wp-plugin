@@ -137,6 +137,8 @@ class AiGenerator
             if (!empty($region_prefix)) {
                 $fields['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $fields['body']));
             }
+
+            $fields['body'] = PostMeta::prepare_editor_content($fields['body']);
         }
 
         // Audit the exact text sent to the editor.
