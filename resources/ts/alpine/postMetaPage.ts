@@ -29,17 +29,26 @@ export function createPostMetaPage() {
     function updatePreviewNav(): void {
         const total = slides.length;
         const current = total > 0 ? currentSlideIndex + 1 : 0;
+        const isMultiSlide = total > 1;
 
         const counter = document.querySelector('#teksttv-preview-counter');
         if (counter) counter.textContent = `${current} / ${total}`;
+        const nav = document.querySelector<HTMLElement>('#teksttv-preview-nav');
+        nav?.classList.toggle('is-hidden', !isMultiSlide);
         const prevBtn = document.querySelector<HTMLButtonElement>('#teksttv-preview-prev');
         const nextBtn = document.querySelector<HTMLButtonElement>('#teksttv-preview-next');
         if (prevBtn) prevBtn.disabled = currentSlideIndex <= 0;
         if (nextBtn) nextBtn.disabled = currentSlideIndex >= total - 1;
 
         const thumbs = document.querySelector('#teksttv-preview-thumbs');
-        if (thumbs instanceof HTMLElement && previewUrl) {
-            updatePreviewThumbnails(thumbs, slides, currentSlideIndex, previewUrl);
+        if (thumbs instanceof HTMLElement) {
+            thumbs.classList.toggle('is-hidden', !isMultiSlide);
+            if (isMultiSlide && previewUrl) {
+                updatePreviewThumbnails(thumbs, slides, currentSlideIndex, previewUrl);
+            } else {
+                // Clearing stops the hidden thumbnail iframes; is-hidden alone keeps them alive.
+                thumbs.replaceChildren();
+            }
         }
     }
 
