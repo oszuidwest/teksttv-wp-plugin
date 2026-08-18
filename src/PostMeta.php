@@ -204,7 +204,7 @@ class PostMeta
             $toolbar_items[] = 'teksttv_separator';
         }
 
-        $plain_content = $use_tinymce ? '' : self::prepare_editor_content((string) $content);
+        $plain_content = $use_tinymce ? '' : self::plain_editor_content((string) $content);
 
         $valid_elements = ['br', 'p'];
         if (Helpers::has_feature('bold')) {

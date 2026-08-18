@@ -141,7 +141,8 @@ class AiGenerator
             $fields['body'] = PostMeta::prepare_editor_content($fields['body']);
         }
 
-        // Audit the exact text sent to the editor.
+        // Audit the exact text sent to the editor; the stored baseline
+        // format intentionally follows the active editor mode.
         foreach ($fields as $key => $value) {
             update_post_meta($post->ID, '_teksttv_ai_' . $key, wp_slash($value));
         }
