@@ -22,6 +22,12 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
         '<iframe title="Tekst TV-preview" sandbox="allow-scripts allow-same-origin"></iframe>';
     overlay.querySelector('iframe')?.setAttribute('src', getOverlaySrc(overlayIndex));
 
+    if (slides.length <= 1) {
+        for (const el of overlay.querySelectorAll('.teksttv-overlay-nav-btn, .teksttv-overlay-counter')) {
+            el.classList.add('is-hidden');
+        }
+    }
+
     function updateOverlayNav(): void {
         const ctr = overlay.querySelector('.teksttv-overlay-counter');
         if (ctr) ctr.textContent = `${overlayIndex + 1} / ${slides.length}`;

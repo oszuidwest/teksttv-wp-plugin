@@ -132,11 +132,13 @@ test.describe('media picker interactions', () => {
         const list = page.locator('#teksttv-images-list');
         const items = list.locator(':scope > .teksttv-image-item');
         const previewCounter = page.locator('#teksttv-preview-counter');
+        const previewNav = page.locator('#teksttv-preview-nav');
+        const previewThumbs = page.locator('#teksttv-preview-thumbs');
         const existingItem = items.first();
 
         await expect(items).toHaveCount(1);
         await expect(previewCounter).toHaveText('1 / 2');
-        const thumbnailFrames = page.locator('#teksttv-preview-thumbs iframe');
+        const thumbnailFrames = previewThumbs.locator('iframe');
         await expect(thumbnailFrames).toHaveCount(2);
         for (const frame of await thumbnailFrames.all()) {
             await expect(frame).toHaveAttribute('tabindex', '-1');
@@ -146,16 +148,16 @@ test.describe('media picker interactions', () => {
         await existingItem.locator('.teksttv-remove-image').click();
         await expect(existingItem).toHaveCount(0);
         await expect(previewCounter).toHaveText('1 / 1');
-        await expect(page.locator('#teksttv-preview-nav')).toBeHidden();
-        await expect(page.locator('#teksttv-preview-thumbs')).toBeHidden();
+        await expect(previewNav).toBeHidden();
+        await expect(previewThumbs).toBeHidden();
         await expect(thumbnailFrames).toHaveCount(0);
         await expect(page.locator('#teksttv-snackbar')).toContainText('Afbeelding verwijderd.');
 
         await page.locator('.teksttv-snackbar-action').click();
         await expect(existingItem).toHaveCount(1);
         await expect(previewCounter).toHaveText('1 / 2');
-        await expect(page.locator('#teksttv-preview-nav')).toBeVisible();
-        await expect(page.locator('#teksttv-preview-thumbs')).toBeVisible();
+        await expect(previewNav).toBeVisible();
+        await expect(previewThumbs).toBeVisible();
         await expect(thumbnailFrames).toHaveCount(2);
 
         await existingItem.locator('.teksttv-remove-image').click();
