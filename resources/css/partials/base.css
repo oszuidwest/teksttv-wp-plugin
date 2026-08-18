@@ -136,11 +136,6 @@
     cursor: pointer;
 }
 
-.teksttv-button-icon {
-    vertical-align: text-bottom;
-    margin-right: 2px;
-}
-
 .teksttv-cat-image-preview {
     max-width: 200px;
 }

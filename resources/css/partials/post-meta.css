@@ -165,27 +165,6 @@
     gap: 6px;
 }
 
-.teksttv-generate-btn[aria-busy="true"] {
-    justify-content: flex-start;
-}
-
-.teksttv-generate-btn[aria-busy="true"] .teksttv-button-icon {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
-    margin: 0;
-    line-height: 20px;
-    transform-origin: center;
-}
-
-.teksttv-generate-label {
-    min-width: 0;
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .teksttv-generate-status {
     color: var(--teksttv-color-content-subtle);
     font-size: 12px;
@@ -223,19 +202,6 @@
 
 .teksttv-charcount-over {
     font-weight: 600;
-}
-
-.teksttv-spin {
-    animation: teksttv-spin 1s linear infinite;
-}
-
-@keyframes teksttv-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 .teksttv-content-wrap .wp-editor-wrap {
