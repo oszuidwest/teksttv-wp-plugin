@@ -204,19 +204,6 @@
     font-weight: 600;
 }
 
-.teksttv-spin {
-    animation: teksttv-spin 1s linear infinite;
-}
-
-@keyframes teksttv-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
 .teksttv-content-wrap .wp-editor-wrap {
     overflow: hidden;
     border-radius: var(--teksttv-radius-control);

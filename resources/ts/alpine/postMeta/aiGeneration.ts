@@ -31,6 +31,15 @@ export function applyTeksttvBody(content: string): void {
 
 export type AiField = 'title' | 'body' | 'both';
 
+const loadingMessages = [
+    'Even nadenken…',
+    'Artikel aan het lezen…',
+    'De essentie aan het vinden…',
+    'Aan het samenvatten…',
+    'Tekst TV klaarmaken…',
+    'Tekst aan het polijsten…',
+];
+
 interface GenerateResponse {
     title?: string;
     body?: string;
@@ -70,24 +79,28 @@ export function requestAiGeneration(
         return;
     }
 
-    const originalHtml = btn.innerHTML;
-    const loadingMessages = [
-        'Even nadenken…',
-        'Artikel aan het lezen…',
-        'De essentie aan het vinden…',
-        'Aan het samenvatten…',
-        'Tekst TV klaarmaken…',
-        'Tekst aan het polijsten…',
-    ];
+    const originalChildren = [...btn.childNodes];
     let msgIndex = 0;
-    const spinnerHtml =
-        '<span class="dashicons dashicons-update teksttv-spin teksttv-button-icon" aria-hidden="true"></span> ';
+    const loadingLabel = document.createTextNode('');
+
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
-    btn.innerHTML = spinnerHtml + loadingMessages[0];
+    btn.replaceChildren(loadingLabel);
+
+    // Reserve one stable button width before the browser paints, so the button
+    // keeps its size while the loading message changes. Pinned as min-width so
+    // flex shrink in a narrow header row cannot undo it.
+    let loadingWidth = 0;
+    for (const message of loadingMessages) {
+        loadingLabel.data = message;
+        loadingWidth = Math.max(loadingWidth, btn.getBoundingClientRect().width);
+    }
+    if (loadingWidth > 0) btn.style.minWidth = `${Math.ceil(loadingWidth)}px`;
+    loadingLabel.data = loadingMessages[0];
+
     const msgInterval = window.setInterval(() => {
         msgIndex = (msgIndex + 1) % loadingMessages.length;
-        btn.innerHTML = spinnerHtml + loadingMessages[msgIndex];
+        loadingLabel.data = loadingMessages[msgIndex];
     }, 2500);
     statusEl?.classList.remove('is-error', 'is-warning');
     if (statusEl) statusEl.textContent = 'AI-inhoud wordt gegenereerd…';
@@ -127,6 +140,7 @@ export function requestAiGeneration(
             window.clearInterval(msgInterval);
             btn.disabled = false;
             btn.removeAttribute('aria-busy');
-            btn.innerHTML = originalHtml;
+            btn.replaceChildren(...originalChildren);
+            btn.style.removeProperty('min-width');
         });
 }
