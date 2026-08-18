@@ -79,6 +79,9 @@ test.describe('administrator admin screens', () => {
 
             await expect(page.locator('#teksttv-wordcount')).toHaveText(/^5(?: \/ \d+)? woorden$/);
             await expect(page.locator('#teksttv-preview-counter')).toHaveText('1 / 1');
+            await expect(page.locator('#teksttv-preview-nav')).toBeHidden();
+            await expect(page.locator('#teksttv-preview-thumbs')).toBeHidden();
+            await expect(page.locator('#teksttv-preview-thumbs iframe')).toHaveCount(0);
         });
 
         test('post editor contains the empty preview at narrow widths', async ({ page, runWordPressPHP }) => {

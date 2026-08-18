@@ -119,7 +119,7 @@ $has_page_separator = Helpers::has_feature('page_separator');
             <aside class="teksttv-editor-preview" id="teksttv-preview-wrap" aria-labelledby="teksttv-preview-title">
                 <div class="teksttv-preview-header">
                     <h3 id="teksttv-preview-title"><?php echo esc_html('Preview'); ?></h3>
-                    <div class="teksttv-preview-nav" id="teksttv-preview-nav">
+                    <div class="teksttv-preview-nav is-hidden" id="teksttv-preview-nav">
                         <button type="button" class="button button-small" id="teksttv-preview-prev" aria-label="<?php echo esc_attr('Vorige previewslide'); ?>" disabled @click.prevent="previewPrev()"><span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span></button>
                         <span class="teksttv-preview-counter" id="teksttv-preview-counter">1 / 1</span>
                         <button type="button" class="button button-small" id="teksttv-preview-next" aria-label="<?php echo esc_attr('Volgende previewslide'); ?>" disabled @click.prevent="previewNext()"><span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span></button>
@@ -130,7 +130,7 @@ $has_page_separator = Helpers::has_feature('page_separator');
                         <iframe id="teksttv-preview-iframe" class="teksttv-preview-iframe" title="<?php echo esc_attr('Tekst TV-preview'); ?>" sandbox="allow-scripts allow-same-origin"></iframe>
                         <button type="button" class="teksttv-preview-enlarge-btn" id="teksttv-preview-enlarge" aria-label="<?php echo esc_attr('Preview vergroten'); ?>" title="<?php echo esc_attr('Preview vergroten'); ?>" @click.prevent="openPreviewOverlay()"><span class="dashicons dashicons-editor-expand" aria-hidden="true"></span></button>
                     </div>
-                    <div class="teksttv-preview-thumbs" id="teksttv-preview-thumbs" @click="onPreviewThumbClick($event)">
+                    <div class="teksttv-preview-thumbs is-hidden" id="teksttv-preview-thumbs" @click="onPreviewThumbClick($event)">
                     </div>
                 <?php else : ?>
                     <div class="teksttv-no-preview">

@@ -32,6 +32,8 @@ export function createPostMetaPage() {
 
         const counter = document.querySelector('#teksttv-preview-counter');
         if (counter) counter.textContent = `${current} / ${total}`;
+        const nav = document.querySelector<HTMLElement>('#teksttv-preview-nav');
+        nav?.classList.toggle('is-hidden', total <= 1);
         const prevBtn = document.querySelector<HTMLButtonElement>('#teksttv-preview-prev');
         const nextBtn = document.querySelector<HTMLButtonElement>('#teksttv-preview-next');
         if (prevBtn) prevBtn.disabled = currentSlideIndex <= 0;

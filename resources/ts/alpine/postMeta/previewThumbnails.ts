@@ -7,6 +7,14 @@ export function updatePreviewThumbnails(
     activeIndex: number,
     baseUrl: string,
 ): void {
+    const hasMultipleSlides = slides.length > 1;
+    thumbs.classList.toggle('is-hidden', !hasMultipleSlides);
+
+    if (!hasMultipleSlides) {
+        thumbs.replaceChildren();
+        return;
+    }
+
     const thumbCount = thumbs.children.length;
     const needsRebuild = thumbCount !== slides.length;
 
