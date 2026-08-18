@@ -57,6 +57,7 @@ class PostMetaViewTest extends TestCase
             $view
         );
         $this->assertStringContainsString('data-field="title"', $view);
+        $this->assertSame(3, substr_count($view, 'teksttv-generate-btn'));
     }
 
     public function test_combined_ai_action_is_body_only_when_custom_titles_are_disabled(): void
@@ -70,6 +71,7 @@ class PostMetaViewTest extends TestCase
         $this->assertStringNotContainsString('data-field="both"', $view);
         $this->assertStringNotContainsString('data-field="title"', $view);
         $this->assertStringNotContainsString('Genereer kop &amp; tekst', $view);
+        $this->assertSame(1, substr_count($view, 'teksttv-generate-btn'));
     }
 
     public function test_plain_editor_replaces_tinymce_when_rich_text_is_disabled(): void

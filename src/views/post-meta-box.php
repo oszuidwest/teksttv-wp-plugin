@@ -70,7 +70,7 @@ $has_page_separator = Helpers::has_feature('page_separator');
                     <div class="teksttv-field-group teksttv-content-wrap">
                         <div class="teksttv-section-header">
                             <label for="teksttv_content" class="teksttv-section-label"><?php echo esc_html('Tekst'); ?></label>
-                            <?php if ($ai_enabled) : ?>
+                            <?php if ($ai_enabled && $has_custom_title) : ?>
                             <button type="button" class="button button-small teksttv-generate-btn" data-field="body" @click.prevent="onGenerateClick($event)"><?php echo esc_html('Genereer'); ?></button>
                             <?php endif; ?>
                         </div>
