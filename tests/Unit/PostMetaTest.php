@@ -160,6 +160,17 @@ class PostMetaTest extends TestCase
         $this->assertSame($content, PostMeta::prepare_editor_content($content));
     }
 
+    public function test_prepare_editor_content_removes_markup_when_user_disabled_visual_editor(): void
+    {
+        Functions\when('get_option')->justReturn(['bold']);
+        Functions\when('user_can_richedit')->justReturn(false);
+
+        $this->assertSame(
+            "Eerste alinea\nTweede regel",
+            PostMeta::prepare_editor_content('<p>Eerste alinea</p><p>Tweede regel</p>')
+        );
+    }
+
     public function test_rich_text_content_still_uses_the_feature_allowlist(): void
     {
         $features = ['bold'];
