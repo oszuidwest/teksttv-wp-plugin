@@ -48,6 +48,31 @@ async function openBlockActions(block: Locator): Promise<void> {
 }
 
 test.describe('admin interaction contracts', () => {
+    test('keeps the add-block menu above the following workbench section', async ({ page }) => {
+        await page.goto(LOOP_URL);
+
+        const menu = page.locator('#teksttv-add-block-menu');
+        const disclosure = page.locator('#teksttv-add-block-toggle').locator('..');
+        const nextSection = page.locator('.teksttv-workbench-section').nth(1);
+        await page.locator('#teksttv-add-block-toggle').click();
+
+        await expect(disclosure).toHaveCSS('z-index', '20');
+
+        const [menuBox, nextSectionBox] = await Promise.all([menu.boundingBox(), nextSection.boundingBox()]);
+        if (!menuBox || !nextSectionBox) throw new Error('The menu and following section must be visible.');
+
+        const overlapX = Math.max(menuBox.x, nextSectionBox.x) + 8;
+        const overlapY = Math.max(menuBox.y, nextSectionBox.y) + 8;
+        expect(overlapX).toBeLessThan(Math.min(menuBox.x + menuBox.width, nextSectionBox.x + nextSectionBox.width));
+        expect(overlapY).toBeLessThan(Math.min(menuBox.y + menuBox.height, nextSectionBox.y + nextSectionBox.height));
+
+        const menuIsOnTop = await menu.evaluate(
+            (element, point) => element.contains(document.elementFromPoint(point.x, point.y)),
+            { x: overlapX, y: overlapY },
+        );
+        expect(menuIsOnTop).toBe(true);
+    });
+
     test('keeps the block name visible when its summary is long', async ({ page }) => {
         await page.setViewportSize({ width: 800, height: 844 });
         await page.goto(LOOP_URL);
