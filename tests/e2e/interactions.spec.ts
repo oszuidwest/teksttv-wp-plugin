@@ -73,6 +73,39 @@ test.describe('admin interaction contracts', () => {
         expect(menuIsOnTop).toBe(true);
     });
 
+    test('keeps the block name visible when its summary is long', async ({ page }) => {
+        await page.setViewportSize({ width: 800, height: 844 });
+        await page.goto(LOOP_URL);
+
+        const articleBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
+        const title = articleBlock.locator('.teksttv-block-title');
+        const summary = articleBlock.locator('.teksttv-block-summary');
+        await summary.evaluate((element) => {
+            element.textContent =
+                '15x · Breda, Essen, Etten-Leur, Halderberge, Kalmthout, Moerdijk, Rucphen, West-Brabant, Zundert';
+        });
+
+        await expect(title).toHaveText('Artikelen');
+        expect(await title.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+        expect(await summary.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+    });
+
+    test('closes the add-block menu when an outside control stops click propagation', async ({ page }) => {
+        await page.goto(LOOP_URL);
+
+        const addToggle = page.locator('#teksttv-add-block-toggle');
+        const disclosure = addToggle.locator('..');
+        const outsideControl = page.locator('.teksttv-workbench-section').first().locator('h2');
+        await outsideControl.evaluate((element) => {
+            element.addEventListener('click', (event) => event.stopPropagation());
+        });
+
+        await addToggle.click();
+        await expect(disclosure).toHaveAttribute('open', '');
+        await outsideControl.click();
+        await expect(disclosure).not.toHaveAttribute('open', '');
+    });
+
     test('adds every registered loop block expanded at the next free index', async ({ page }) => {
         await page.goto(LOOP_URL);
 
