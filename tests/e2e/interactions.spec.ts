@@ -48,6 +48,22 @@ async function openBlockActions(block: Locator): Promise<void> {
 }
 
 test.describe('admin interaction contracts', () => {
+    test('closes the add-block menu when an outside control stops click propagation', async ({ page }) => {
+        await page.goto(LOOP_URL);
+
+        const addToggle = page.locator('#teksttv-add-block-toggle');
+        const disclosure = addToggle.locator('..');
+        const outsideControl = page.locator('.teksttv-workbench-section').first().locator('h2');
+        await outsideControl.evaluate((element) => {
+            element.addEventListener('click', (event) => event.stopPropagation());
+        });
+
+        await addToggle.click();
+        await expect(disclosure).toHaveAttribute('open', '');
+        await outsideControl.click();
+        await expect(disclosure).not.toHaveAttribute('open', '');
+    });
+
     test('adds every registered loop block expanded at the next free index', async ({ page }) => {
         await page.goto(LOOP_URL);
 
