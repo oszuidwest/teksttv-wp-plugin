@@ -25,6 +25,7 @@ abstract class TestCase extends PHPUnitTestCase
         Functions\when('TekstTV\\time')->alias('time');
         // Keep the persistent wp_unslash stub safe by default.
         Functions\when('wp_unslash')->returnArg();
+        Functions\when('user_can_richedit')->justReturn(true);
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
         $ai_cache = new \ReflectionProperty(Helpers::class, 'ai_supported_cache');

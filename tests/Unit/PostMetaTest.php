@@ -142,6 +142,35 @@ class PostMetaTest extends TestCase
         }
     }
 
+    public function test_prepare_editor_content_removes_markup_when_rich_text_is_disabled(): void
+    {
+        Functions\when('get_option')->justReturn(['ai_generate']);
+
+        $this->assertSame(
+            "Eerste alinea\nTweede\nregel",
+            PostMeta::prepare_editor_content('<p>Eerste alinea</p><p>Tweede<br>regel</p>')
+        );
+    }
+
+    public function test_prepare_editor_content_keeps_markup_for_tinymce(): void
+    {
+        Functions\when('get_option')->justReturn(['bold']);
+        $content = '<p><strong>Opgemaakte tekst</strong></p>';
+
+        $this->assertSame($content, PostMeta::prepare_editor_content($content));
+    }
+
+    public function test_prepare_editor_content_removes_markup_when_user_disabled_visual_editor(): void
+    {
+        Functions\when('get_option')->justReturn(['bold']);
+        Functions\when('user_can_richedit')->justReturn(false);
+
+        $this->assertSame(
+            "Eerste alinea\nTweede regel",
+            PostMeta::prepare_editor_content('<p>Eerste alinea</p><p>Tweede regel</p>')
+        );
+    }
+
     public function test_rich_text_content_still_uses_the_feature_allowlist(): void
     {
         $features = ['bold'];

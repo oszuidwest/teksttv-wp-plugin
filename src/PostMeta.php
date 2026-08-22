@@ -137,7 +137,8 @@ class PostMeta
 
     private static function has_rich_text_features(): bool
     {
-        return array_intersect(self::RICH_TEXT_FEATURES, Helpers::get_features()) !== [];
+        return user_can_richedit()
+            && array_intersect(self::RICH_TEXT_FEATURES, Helpers::get_features()) !== [];
     }
 
     private static function plain_editor_content(string $content): string
@@ -149,6 +150,14 @@ class PostMeta
         $content = preg_replace("/\r\n?/", "\n", $content) ?? $content;
 
         return preg_replace("/\n{3,}/", "\n\n", $content) ?? $content;
+    }
+
+    /**
+     * Match generated or stored content to the editor currently in use.
+     */
+    public static function prepare_editor_content(string $content): string
+    {
+        return self::has_rich_text_features() ? $content : self::plain_editor_content($content);
     }
 
     public static function render_meta_box(\WP_Post $post): void

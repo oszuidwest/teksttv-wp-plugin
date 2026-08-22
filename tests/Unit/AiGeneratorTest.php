@@ -472,6 +472,7 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_for_post_refreshes_slash_safe_prefixed_audit_baseline(): void
     {
+        Functions\when('get_option')->justReturn(['bold']);
         $body_text = implode(' ', array_fill(0, 49, 'woord')) . ' C:\\Nieuws';
         $builder = self::mockAiBuilder($body_text, $body_text);
 
@@ -509,6 +510,7 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_for_post_generates_both_fields(): void
     {
+        Functions\when('get_option')->justReturn(['bold']);
         $builder = self::mockAiBuilder('Korte kop', implode(' ', array_fill(0, 50, 'woord')));
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
