@@ -137,7 +137,8 @@ class PostMeta
 
     private static function has_rich_text_features(): bool
     {
-        return array_intersect(self::RICH_TEXT_FEATURES, Helpers::get_features()) !== [];
+        return user_can_richedit()
+            && array_intersect(self::RICH_TEXT_FEATURES, Helpers::get_features()) !== [];
     }
 
     private static function plain_editor_content(string $content): string
