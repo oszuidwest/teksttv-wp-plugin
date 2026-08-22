@@ -10,6 +10,7 @@ test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-settings');
         await expect(page.locator('input[name="teksttv_duration_text"]')).toBeVisible();
+        await expect(page.locator('#teksttv_openweather_api_key')).toHaveAttribute('type', 'password');
         await expect(page.locator('#submit')).toBeVisible();
     });
 

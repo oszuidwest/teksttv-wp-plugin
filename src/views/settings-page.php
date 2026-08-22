@@ -191,7 +191,7 @@ $render_feature_option = static function (string $value, string $label) use ($fe
                 <tr>
                     <th scope="row"><label for="teksttv_openweather_api_key"><?php echo esc_html('API-sleutel'); ?></label></th>
                     <td>
-                        <input type="text" id="teksttv_openweather_api_key" name="teksttv_openweather_api_key" value="<?php echo esc_attr(get_option('teksttv_openweather_api_key', '')); ?>" class="regular-text" autocomplete="off" spellcheck="false" />
+                        <input type="password" id="teksttv_openweather_api_key" name="teksttv_openweather_api_key" value="<?php echo esc_attr(get_option('teksttv_openweather_api_key', '')); ?>" class="regular-text" autocomplete="off" spellcheck="false" />
                         <p class="description"><?php echo wp_kses('OneCall API 3.0 key van <a href="https://openweathermap.org/api" target="_blank" rel="noopener">openweathermap.org</a>.', ['a' => ['href' => [], 'target' => [], 'rel' => []]]); ?></p>
                     </td>
                 </tr>

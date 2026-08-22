@@ -48,6 +48,23 @@ async function openBlockActions(block: Locator): Promise<void> {
 }
 
 test.describe('admin interaction contracts', () => {
+    test('keeps the block name visible when its summary is long', async ({ page }) => {
+        await page.setViewportSize({ width: 800, height: 844 });
+        await page.goto(LOOP_URL);
+
+        const articleBlock = page.locator('#teksttv-blocks > .teksttv-block[data-type="articles"]').first();
+        const title = articleBlock.locator('.teksttv-block-title');
+        const summary = articleBlock.locator('.teksttv-block-summary');
+        await summary.evaluate((element) => {
+            element.textContent =
+                '15x · Breda, Essen, Etten-Leur, Halderberge, Kalmthout, Moerdijk, Rucphen, West-Brabant, Zundert';
+        });
+
+        await expect(title).toHaveText('Artikelen');
+        expect(await title.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+        expect(await summary.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+    });
+
     test('closes the add-block menu when an outside control stops click propagation', async ({ page }) => {
         await page.goto(LOOP_URL);
 
