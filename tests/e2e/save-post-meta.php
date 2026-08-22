@@ -11,6 +11,8 @@ if (!$post instanceof WP_Post) {
 }
 
 wp_set_current_user(1);
+// This fixture submits the HTML shape produced by the visual editor.
+add_filter('user_can_richedit', '__return_true');
 $_POST = [
     'teksttv_meta_nonce' => wp_create_nonce('teksttv_save_meta'),
     'teksttv_active' => '1',
