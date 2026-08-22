@@ -68,7 +68,7 @@
 }
 
 .teksttv-block-title {
-    flex: 1;
+    flex: 1 0 auto;
     min-width: 0;
     overflow: hidden;
     font-weight: 600;
