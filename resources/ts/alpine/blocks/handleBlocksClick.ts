@@ -85,13 +85,17 @@ export function initDisclosureMenus(root: HTMLElement): void {
         actions.querySelector<HTMLElement>(':scope > summary')?.focus();
     });
 
-    document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (!(target instanceof Node)) return;
-        root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
-            if (!actions.contains(target)) actions.removeAttribute('open');
-        });
-    });
+    document.addEventListener(
+        'click',
+        (e) => {
+            const target = e.target;
+            if (!(target instanceof Node)) return;
+            root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
+                if (!actions.contains(target)) actions.removeAttribute('open');
+            });
+        },
+        true,
+    );
 
     document.addEventListener('focusin', (e) => {
         const target = e.target;
