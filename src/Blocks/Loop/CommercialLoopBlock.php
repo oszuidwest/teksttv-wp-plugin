@@ -79,7 +79,7 @@ final class CommercialLoopBlock
         ?>
         <div class="teksttv-field teksttv-field--primary teksttv-image-picker">
             <span class="teksttv-field-label"><?php echo esc_html($label); ?></span>
-            <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr($image_id ? (string) $image_id : ''); ?>" class="teksttv-block-image-id" data-summary data-summary-label="<?php echo esc_attr($label); ?>" />
+            <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr($image_id ? (string) $image_id : ''); ?>" class="teksttv-block-image-id" />
             <div class="teksttv-block-image-preview <?php echo $image_url ? '' : 'is-hidden'; ?>">
                 <img src="<?php echo esc_url($image_url); ?>" alt="" class="teksttv-block-image-thumb" width="80" height="50" loading="lazy" />
             </div>

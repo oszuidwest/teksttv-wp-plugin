@@ -116,7 +116,7 @@ test.describe('media picker interactions', () => {
         await expect(preview).toBeVisible();
         await expect(introPicker.locator('.teksttv-block-image-thumb')).toHaveAttribute('src', /.+/);
         await expect(removeButton).toBeVisible();
-        await expect(commercialBlock.locator('.teksttv-block-summary')).toContainText('Introafbeelding');
+        await expect(commercialBlock.locator('.teksttv-block-summary')).not.toContainText('Introafbeelding');
 
         await removeButton.click();
         await expect(idInput).toHaveValue('');
