@@ -48,6 +48,29 @@ async function openBlockActions(block: Locator): Promise<void> {
 }
 
 test.describe('admin interaction contracts', () => {
+    test('keeps the add-block menu above the following workbench section', async ({ page }) => {
+        await page.goto(LOOP_URL);
+
+        const menu = page.locator('#teksttv-add-block-menu');
+        const disclosure = page.locator('#teksttv-add-block-toggle').locator('..');
+        const nextSection = page.locator('.teksttv-workbench-section').nth(1);
+        await page.locator('#teksttv-add-block-toggle').click();
+
+        await expect(disclosure).toHaveCSS('z-index', '20');
+
+        const [menuBox, nextSectionBox] = await Promise.all([menu.boundingBox(), nextSection.boundingBox()]);
+        if (!menuBox || !nextSectionBox) throw new Error('The menu and following section must be visible.');
+
+        const overlapY = Math.max(menuBox.y, nextSectionBox.y) + 8;
+        expect(overlapY).toBeLessThan(Math.min(menuBox.y + menuBox.height, nextSectionBox.y + nextSectionBox.height));
+
+        const menuIsOnTop = await menu.evaluate(
+            (element, point) => element.contains(document.elementFromPoint(point.x, point.y)),
+            { x: menuBox.x + 8, y: overlapY },
+        );
+        expect(menuIsOnTop).toBe(true);
+    });
+
     test('adds every registered loop block expanded at the next free index', async ({ page }) => {
         await page.goto(LOOP_URL);
 

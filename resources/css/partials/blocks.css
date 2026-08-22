@@ -588,6 +588,10 @@
     display: block;
 }
 
+.teksttv-dropdown-button[open] {
+    z-index: 20;
+}
+
 .teksttv-dropdown-menu button {
     display: flex;
     align-items: center;
