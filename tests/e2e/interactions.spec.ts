@@ -61,12 +61,14 @@ test.describe('admin interaction contracts', () => {
         const [menuBox, nextSectionBox] = await Promise.all([menu.boundingBox(), nextSection.boundingBox()]);
         if (!menuBox || !nextSectionBox) throw new Error('The menu and following section must be visible.');
 
+        const overlapX = Math.max(menuBox.x, nextSectionBox.x) + 8;
         const overlapY = Math.max(menuBox.y, nextSectionBox.y) + 8;
+        expect(overlapX).toBeLessThan(Math.min(menuBox.x + menuBox.width, nextSectionBox.x + nextSectionBox.width));
         expect(overlapY).toBeLessThan(Math.min(menuBox.y + menuBox.height, nextSectionBox.y + nextSectionBox.height));
 
         const menuIsOnTop = await menu.evaluate(
             (element, point) => element.contains(document.elementFromPoint(point.x, point.y)),
-            { x: menuBox.x + 8, y: overlapY },
+            { x: overlapX, y: overlapY },
         );
         expect(menuIsOnTop).toBe(true);
     });
