@@ -2,14 +2,13 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Build and test the release artifact without publishing it
-        type: boolean
-        default: false
+  push:
+    tags:
+      - '*'
 
-concurrency: release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -22,81 +21,45 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
-      - uses: actions/setup-node@v7
-        with:
-          # Reads engines.node so package.json stays the single source of truth.
-          node-version-file: package.json
+      - name: Validate release tag
+        id: version
+        run: |
+          VERSION="$(bash bin/plugin-version.sh)"
+          if [[ "$GITHUB_REF_NAME" != "$VERSION" ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match" \
+              "plugin version '$VERSION'."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
           coverage: none
           tools: composer:v2
 
-      - name: Extract and validate version
-        id: version
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="$(bash bin/plugin-version.sh)"
-          LATEST_VERSION="$(gh release list --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName // empty')"
-          # The single-quoted snippet is evaluated by PHP.
-          # shellcheck disable=SC2016
-          if [[ -n "$LATEST_VERSION" ]] &&
-            ! php -r 'exit(version_compare($argv[1], $argv[2], ">") ? 0 : 1);' "$VERSION" "${LATEST_VERSION#v}"; then
-            echo "::error::Plugin version $VERSION is not newer than latest release $LATEST_VERSION."
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
 
       - name: Install JS dependencies
         run: bun install --frozen-lockfile
 
-      # The packager writes its zip= output to GITHUB_OUTPUT itself, so the
-      # artifact naming convention lives only in bin/package-plugin.sh.
       - name: Build and validate canonical plugin artifact
         id: package
         run: bun run build:package
 
-      - name: Stage the published ZIP for smoke testing
-        env:
-          ZIP: ${{ steps.package.outputs.zip }}
-        run: |
-          rm -rf release/teksttv
-          unzip -q "$ZIP" -d release
-
-      - name: Install Playwright browser
-        run: bunx playwright install --with-deps chromium
-
-      - name: Test the release artifact in WordPress Playground
-        run: bun run test:e2e
-
       - name: Publish immutable GitHub release
-        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
-          TAG_COMMIT="$(git rev-parse -q --verify "refs/tags/$VERSION^{commit}" || true)"
-          if [[ -n "$TAG_COMMIT" && "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
-            echo "::error::Tag $VERSION already points to $TAG_COMMIT; bump the plugin version."
-            exit 1
-          fi
-
-          # GitHub CLI creates a draft, uploads the ZIP, and then publishes it.
-          # Repository-native immutability locks the resulting tag and asset.
           ARGS=(
             "$VERSION"
             "$ZIP"
-            --target "$GITHUB_SHA"
-            --fail-on-no-commits
+            --verify-tag
             --title "$VERSION"
             --generate-notes
           )

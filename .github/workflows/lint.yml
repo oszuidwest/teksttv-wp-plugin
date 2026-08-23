@@ -15,6 +15,7 @@ on:
       - 'phpunit.xml'
       - 'patchwork.json'
       - 'tests/**'
+      - '.github/workflows/lint.yml'
   pull_request:
     paths:
       - '**/*.php'
@@ -27,17 +28,82 @@ on:
       - 'phpunit.xml'
       - 'patchwork.json'
       - 'tests/**'
+      - '.github/workflows/lint.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  lint:
+  quality:
+    # Preserve the required check name previously emitted by wp-ci.yml@v2.
+    name: lint / PHP 8.3
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
-    uses: oszuidwest/.github-templates/.github/workflows/wp-ci.yml@v2
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+          tools: composer:v2, cs2pr
+
+      - name: Validate PHP syntax
+        run: find . -maxdepth 1 -name '*.php' -exec php --syntax-check {} +
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: PHP_CodeSniffer
+        run: |
+          vendor/bin/phpcs -q --report=checkstyle \
+            --runtime-set ignore_warnings_on_exit 1 \
+            | cs2pr --graceful-warnings
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --error-format=checkstyle | cs2pr
+
+  plugin-check:
+    # Preserve the required check name while running Plugin Check only once.
+    name: lint / PHP 8.4
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+          tools: composer:v2
+
+      - name: Install production dependencies
+        run: >-
+          composer install --no-dev --no-progress --prefer-dist
+          --optimize-autoloader
+
+      - name: WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          exclude-checks: |
+            late_escaping
+            plugin_review_phpcs
+            file_type
+            plugin_readme
+            plugin_updater
+
+  translations:
+    # This project has no translation catalog. Preserve the required check name
+    # until branch protection can drop the legacy reusable-workflow context.
+    name: lint / Translations
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No translation catalog to validate."
 
   test:
     name: PHPUnit ${{ matrix.php }}

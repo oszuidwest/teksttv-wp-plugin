@@ -17,8 +17,12 @@ on:
       - 'teksttv.php'
       - 'src/**'
       - 'resources/**'
+      - 'tests/e2e/**'
       - 'tests/*.sh'
+      - 'blueprint.json'
+      - 'playwright.config.ts'
       - '.github/workflows/build-plugin.yml'
+      - '.github/workflows/release.yml'
   pull_request:
     paths:
       - '**/*.php'
@@ -33,8 +37,12 @@ on:
       - 'teksttv.php'
       - 'src/**'
       - 'resources/**'
+      - 'tests/e2e/**'
       - 'tests/*.sh'
+      - 'blueprint.json'
+      - 'playwright.config.ts'
       - '.github/workflows/build-plugin.yml'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
 
 permissions:
@@ -78,3 +86,49 @@ jobs:
           for CANARY in PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js; do
             test ! -e "release/teksttv/$CANARY"
           done
+
+      - name: Upload validated plugin artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: teksttv-plugin
+          path: release/teksttv/
+          if-no-files-found: error
+          retention-days: 1
+
+  e2e:
+    name: WordPress smoke (build + activate + REST + browser)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # Reads engines.node so package.json stays the single source of truth.
+          node-version-file: package.json
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download validated plugin artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: teksttv-plugin
+          path: release/teksttv
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run e2e suite in WordPress Playground
+        run: bun run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

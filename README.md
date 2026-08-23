@@ -18,17 +18,17 @@ The Playground E2E suite additionally uses Node.js 24 LTS.
 
 ### Pre-built zip (recommended)
 
-The manual Release workflow publishes `teksttv-<version>.zip`. It uses the
+Pushing a version tag starts the Release workflow and publishes
+`teksttv-<version>.zip`. It uses the
 same canonical packager as the E2E suite: tracked production source, the exact
 built asset set, and a fresh `composer install --no-dev` inside the staged
 plugin. Upload the ZIP under Plugins → Add New → Upload Plugin and activate.
 
-The workflow reads the release version from the plugin header, which is also the
-runtime source for `TEKSTTV_VERSION`. The version must be newer than the latest
-published release. GitHub creates the version tag and publishes the ZIP using
-repository-native immutable releases, so published tags and assets cannot be
-replaced. An existing unpublished tag is accepted only when it points to the
-commit being released.
+The tag must exactly match the version in the plugin header, which is also the
+runtime source for `TEKSTTV_VERSION`. For example, release version `0.5.0` with
+`git tag 0.5.0 && git push origin 0.5.0`. The workflow validates and packages
+that tagged commit, then publishes the ZIP using repository-native immutable
+releases, so published tags and assets cannot be replaced.
 
 ### Build from source
 
