@@ -2,7 +2,8 @@
 /**
  * Inhoud & AI settings page template.
  *
- * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, ensure_terminal_period: bool, region_taxonomy: string, provider: string, model: string} $prompts
+ * @phpstan-import-type AiConfig from \TekstTV\Helpers
+ * @var AiConfig $prompts
  * @var list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
  * @var array<string, array{label: string, models: array<string, string>}> $ai_models
  */

@@ -291,9 +291,9 @@ class HelpersTest extends TestCase
             'colon before quote becomes period' => ['Hij zei "ja:"', 'Hij zei "ja."'],
             'comma before bracket becomes period' => ['De weg gaat dicht (A58,)', 'De weg gaat dicht (A58).'],
             'comma after bracket becomes period' => ['De weg gaat dicht (A58),', 'De weg gaat dicht (A58).'],
+            'comma between quote and bracket becomes period' => ['Hij zei ("ja,")', 'Hij zei ("ja").'],
         ];
     }
-
 
     public function test_get_date_range_meta_query_structure(): void
     {
@@ -539,9 +539,9 @@ class HelpersTest extends TestCase
         $this->assertSame(500, $result['min_input_words']);
     }
 
-    public function test_normalize_ai_prompt_limits_preserves_photo_inheritance_marker(): void
+    public function test_normalize_ai_prompt_settings_preserves_photo_inheritance_marker(): void
     {
-        $limits = Helpers::normalize_ai_prompt_limits([
+        $limits = Helpers::normalize_ai_prompt_settings([
             'word_limit' => 250,
             'word_limit_photo' => 0,
         ]);
@@ -550,10 +550,10 @@ class HelpersTest extends TestCase
         $this->assertSame(0, $limits['word_limit_photo']);
     }
 
-    public function test_normalize_ai_prompt_limits_clamps_positive_photo_word_limit(): void
+    public function test_normalize_ai_prompt_settings_clamps_positive_photo_word_limit(): void
     {
         foreach ([1 => 10, 9 => 10, 10 => 10, 500 => 500, 501 => 500] as $input => $expected) {
-            $limits = Helpers::normalize_ai_prompt_limits(['word_limit_photo' => $input]);
+            $limits = Helpers::normalize_ai_prompt_settings(['word_limit_photo' => $input]);
 
             $this->assertSame($expected, $limits['word_limit_photo'], 'Input ' . $input);
         }

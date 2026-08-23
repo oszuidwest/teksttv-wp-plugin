@@ -273,14 +273,15 @@ class Helpers
     }
 
     /**
-     * Normalize bounded AI settings for storage and runtime reads.
+     * Normalize bounded AI settings and flags for storage and runtime reads.
      *
-     * Zero means inherit word_limit at read time.
+     * Zero means inherit word_limit at read time. An absent
+     * ensure_terminal_period key means enabled (pre-upgrade options).
      *
      * @param array<string, mixed> $settings
-     * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int}
+     * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, ensure_terminal_period: bool}
      */
-    public static function normalize_ai_prompt_limits(array $settings): array
+    public static function normalize_ai_prompt_settings(array $settings): array
     {
         $photo_word_limit = self::clamp_int($settings['word_limit_photo'] ?? 0, 0, 500);
         if ($photo_word_limit > 0) {
@@ -292,6 +293,7 @@ class Helpers
             'word_limit_photo' => $photo_word_limit,
             'title_char_limit' => self::clamp_int($settings['title_char_limit'] ?? 40, 10, 100),
             'min_input_words' => self::clamp_int($settings['min_input_words'] ?? 50, 0, 500),
+            'ensure_terminal_period' => !array_key_exists('ensure_terminal_period', $settings) || !empty($settings['ensure_terminal_period']),
         ];
     }
 
@@ -302,7 +304,7 @@ class Helpers
     {
         $saved = get_option('teksttv_ai_prompts', []);
         $saved = is_array($saved) ? $saved : [];
-        $limits = self::normalize_ai_prompt_limits($saved);
+        $limits = self::normalize_ai_prompt_settings($saved);
         if ($limits['word_limit_photo'] < 1) {
             $limits['word_limit_photo'] = $limits['word_limit'];
         }
@@ -317,7 +319,6 @@ class Helpers
             'system' => !empty($saved['system']) ? $saved['system'] : $defaults['system'],
             'prompt_title' => !empty($saved['prompt_title']) ? $saved['prompt_title'] : $defaults['prompt_title'],
             'prompt_body' => !empty($saved['prompt_body']) ? $saved['prompt_body'] : $defaults['prompt_body'],
-            'ensure_terminal_period' => !array_key_exists('ensure_terminal_period', $saved) || !empty($saved['ensure_terminal_period']),
             'region_taxonomy' => $saved['region_taxonomy'] ?? '',
             'provider' => $saved['provider'] ?? '',
             'model' => $saved['model'] ?? '',
@@ -568,30 +569,15 @@ class Helpers
     public static function ensure_terminal_period(string $text): string
     {
         $text = trim($text);
-        if ($text === '') {
+        if ($text === '' || preg_match('/[.!?…][\'"”’»)\]\}]*$/u', $text) === 1) {
             return $text;
         }
 
-        if (preg_match('/[.!?…][\'"”’»)\]\}]*$/u', $text) === 1) {
-            return $text;
-        }
+        // Strip weak punctuation from the trailing closer run, then place
+        // the period inside closing quotes but after closing brackets.
+        $text = preg_replace('/[,;:]+(?=[\'"”’»)\]\}]*$)/u', '', $text) ?? $text;
 
-        $replacements = [
-            '/[,;:]+([\'"”’»]+)$/u' => '.$1',
-            '/([\'"”’»]+)[,;:]+$/u' => '.$1',
-            '/[,;:]+([)\]\}]+)$/u' => '$1.',
-            '/([)\]\}]+)[,;:]+$/u' => '$1.',
-            '/[,;:]+$/u' => '.',
-        ];
-
-        foreach ($replacements as $pattern => $replacement) {
-            $normalized = preg_replace($pattern, $replacement, $text);
-            if ($normalized !== null && $normalized !== $text) {
-                return $normalized;
-            }
-        }
-
-        return $text . '.';
+        return preg_replace('/([\'"”’»]*)$/u', '.$1', $text, 1) ?? $text . '.';
     }
 
     /**
