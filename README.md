@@ -27,7 +27,8 @@ plugin. Upload the ZIP under Plugins → Add New → Upload Plugin and activate.
 The tag must exactly match the version in the plugin header, which is also the
 runtime source for `TEKSTTV_VERSION`. For example, release version `0.5.0` with
 `git tag 0.5.0 && git push origin 0.5.0`. The workflow validates and packages
-that tagged commit, then publishes the ZIP using repository-native immutable
+that tagged commit, smoke-tests the ZIP in WordPress Playground, and then
+publishes it using repository-native immutable
 releases, so published tags and assets cannot be replaced.
 
 ### Build from source
