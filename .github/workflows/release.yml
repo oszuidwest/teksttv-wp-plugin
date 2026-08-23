@@ -4,11 +4,10 @@ name: Release
 on:
   push:
     tags:
-      - '*'
+      # Version shape only; the exact-match check below is the real gate.
+      - '[0-9]+.[0-9]+.[0-9]+*'
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+concurrency: release-${{ github.ref }}
 
 permissions:
   contents: read
@@ -21,9 +20,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Validate release tag
-        id: version
         run: |
           VERSION="$(bash bin/plugin-version.sh)"
           if [[ "$GITHUB_REF_NAME" != "$VERSION" ]]; then
@@ -31,7 +31,6 @@ jobs:
               "plugin version '$VERSION'."
             exit 1
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -53,7 +52,8 @@ jobs:
       - name: Publish immutable GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
+          # The tag equals the plugin version; the validation step enforced it.
+          VERSION: ${{ github.ref_name }}
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
           ARGS=(

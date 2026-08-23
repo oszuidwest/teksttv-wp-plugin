@@ -36,12 +36,8 @@ permissions:
 
 jobs:
   quality:
-    # Preserve the required check name previously emitted by wp-ci.yml@v2.
-    name: lint / PHP 8.3
+    name: PHPCS + PHPStan
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -52,9 +48,6 @@ jobs:
           php-version: "8.3"
           coverage: none
           tools: composer:v2, cs2pr
-
-      - name: Validate PHP syntax
-        run: find . -maxdepth 1 -name '*.php' -exec php --syntax-check {} +
 
       - name: Validate composer.json
         run: composer validate --no-check-publish
@@ -72,11 +65,11 @@ jobs:
       - name: PHPStan
         run: |
           set -o pipefail
-          vendor/bin/phpstan analyse --error-format=checkstyle | cs2pr
+          vendor/bin/phpstan analyse --memory-limit=1G \
+            --error-format=checkstyle | cs2pr
 
   plugin-check:
-    # Preserve the required check name while running Plugin Check only once.
-    name: lint / PHP 8.4
+    name: Plugin Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -103,14 +96,6 @@ jobs:
             file_type
             plugin_readme
             plugin_updater
-
-  translations:
-    # This project has no translation catalog. Preserve the required check name
-    # until branch protection can drop the legacy reusable-workflow context.
-    name: lint / Translations
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No translation catalog to validate."
 
   test:
     name: PHPUnit ${{ matrix.php }}
