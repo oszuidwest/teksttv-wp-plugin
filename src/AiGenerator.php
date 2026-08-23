@@ -174,7 +174,7 @@ class AiGenerator
             );
         }
 
-        if ($field === 'body') {
+        if ($field === 'body' && $config['ensure_terminal_period']) {
             $content = Helpers::ensure_terminal_period($content);
         }
 

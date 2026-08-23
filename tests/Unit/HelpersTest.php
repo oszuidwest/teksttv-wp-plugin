@@ -493,6 +493,7 @@ class HelpersTest extends TestCase
         $this->assertSame(100, $result['word_limit']);
         $this->assertSame(40, $result['title_char_limit']);
         $this->assertSame(50, $result['min_input_words']);
+        $this->assertTrue($result['ensure_terminal_period']);
         $this->assertNotEmpty($result['system']);
         $this->assertNotEmpty($result['prompt_title']);
         $this->assertNotEmpty($result['prompt_body']);
@@ -507,6 +508,7 @@ class HelpersTest extends TestCase
                 'word_limit' => 200,
                 'title_char_limit' => 50,
                 'model' => 'anthropic/claude-3',
+                'ensure_terminal_period' => false,
             ]);
 
         $result = Helpers::get_ai_prompts();
@@ -515,6 +517,7 @@ class HelpersTest extends TestCase
         $this->assertSame(200, $result['word_limit']);
         $this->assertSame(50, $result['title_char_limit']);
         $this->assertSame('anthropic/claude-3', $result['model']);
+        $this->assertFalse($result['ensure_terminal_period']);
     }
 
     public function test_get_ai_prompts_clamps_out_of_range_limits(): void

@@ -278,6 +278,7 @@ class AdminPage
             'system' => sanitize_textarea_field($merged['system'] ?? ''),
             'prompt_title' => sanitize_textarea_field($merged['prompt_title'] ?? ''),
             'prompt_body' => sanitize_textarea_field($merged['prompt_body'] ?? ''),
+            'ensure_terminal_period' => !array_key_exists('ensure_terminal_period', $merged) || !empty($merged['ensure_terminal_period']),
             'region_taxonomy' => sanitize_key($merged['region_taxonomy'] ?? ''),
             'provider' => sanitize_key($merged['provider'] ?? ''),
             'model' => sanitize_text_field($merged['model'] ?? ''),

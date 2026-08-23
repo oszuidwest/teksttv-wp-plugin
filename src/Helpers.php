@@ -6,7 +6,7 @@ use DateTime;
 use DateTimeInterface;
 
 /**
- * @phpstan-type AiConfig array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, region_taxonomy: string, provider: string, model: string}
+ * @phpstan-type AiConfig array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, ensure_terminal_period: bool, region_taxonomy: string, provider: string, model: string}
  */
 class Helpers
 {
@@ -317,6 +317,7 @@ class Helpers
             'system' => !empty($saved['system']) ? $saved['system'] : $defaults['system'],
             'prompt_title' => !empty($saved['prompt_title']) ? $saved['prompt_title'] : $defaults['prompt_title'],
             'prompt_body' => !empty($saved['prompt_body']) ? $saved['prompt_body'] : $defaults['prompt_body'],
+            'ensure_terminal_period' => !array_key_exists('ensure_terminal_period', $saved) || !empty($saved['ensure_terminal_period']),
             'region_taxonomy' => $saved['region_taxonomy'] ?? '',
             'provider' => $saved['provider'] ?? '',
             'model' => $saved['model'] ?? '',

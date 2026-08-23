@@ -27,6 +27,7 @@ class AiGeneratorTest extends TestCase
             'word_limit_photo' => 100,
             'title_char_limit' => 40,
             'min_input_words' => 0,
+            'ensure_terminal_period' => true,
             'region_taxonomy' => '',
             'provider' => '',
             'model' => '',
@@ -387,6 +388,24 @@ class AiGeneratorTest extends TestCase
 
         $this->assertSame('<p>' . $body . '.</p>', $result['content']);
         $this->assertSame('', $result['warning']);
+    }
+
+    public function test_generate_single_field_can_leave_body_without_terminal_punctuation(): void
+    {
+        $body = implode(' ', array_fill(0, 50, 'woord'));
+        $builder = self::mockAiBuilder($body);
+
+        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
+        Functions\expect('wpautop')->andReturnUsing(fn($text) => '<p>' . $text . '</p>');
+
+        $result = AiGenerator::generate_single_field(
+            'body',
+            'Titel',
+            'Tekst hier',
+            self::aiConfig(['ensure_terminal_period' => false])
+        );
+
+        $this->assertSame('<p>' . $body . '</p>', $result['content']);
     }
 
     public function test_generate_single_field_returns_title_without_wpautop(): void

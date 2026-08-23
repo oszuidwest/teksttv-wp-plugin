@@ -2,7 +2,7 @@
 /**
  * Inhoud & AI settings page template.
  *
- * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, region_taxonomy: string, provider: string, model: string} $prompts
+ * @var array{system: string, prompt_title: string, prompt_body: string, word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, ensure_terminal_period: bool, region_taxonomy: string, provider: string, model: string} $prompts
  * @var list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
  * @var array<string, array{label: string, models: array<string, string>}> $ai_models
  */
@@ -74,6 +74,16 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
                     <td>
                         <input type="number" id="teksttv_ai_word_limit_photo" name="teksttv_ai_prompts[word_limit_photo]" value="<?php echo esc_attr((string) $prompts['word_limit_photo']); ?>" min="10" max="500" class="small-text" /> <?php echo esc_html('woorden'); ?>
                         <p class="description"><?php echo esc_html('Aantal woorden wanneer er een foto naast de tekst staat. De juiste limiet vult automatisch de {{words}}-placeholder.'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php echo esc_html('Afsluitende punt'); ?></th>
+                    <td>
+                        <input type="hidden" name="teksttv_ai_prompts[ensure_terminal_period]" value="0" />
+                        <label for="teksttv_ai_ensure_terminal_period">
+                            <input type="checkbox" id="teksttv_ai_ensure_terminal_period" name="teksttv_ai_prompts[ensure_terminal_period]" value="1" <?php checked($prompts['ensure_terminal_period']); ?> />
+                            <?php echo esc_html('Voeg automatisch een punt toe als de gegenereerde tekst geen afsluitend leesteken heeft.'); ?>
+                        </label>
                     </td>
                 </tr>
             </table>
