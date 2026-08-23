@@ -44,6 +44,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -62,12 +64,15 @@ jobs:
 
       - name: PHP_CodeSniffer
         run: |
+          set -o pipefail
           vendor/bin/phpcs -q --report=checkstyle \
             --runtime-set ignore_warnings_on_exit 1 \
             | cs2pr --graceful-warnings
 
       - name: PHPStan
-        run: vendor/bin/phpstan analyse --error-format=checkstyle | cs2pr
+        run: |
+          set -o pipefail
+          vendor/bin/phpstan analyse --error-format=checkstyle | cs2pr
 
   plugin-check:
     # Preserve the required check name while running Plugin Check only once.
@@ -75,6 +80,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -114,6 +121,8 @@ jobs:
         php: ["8.3", "8.4"]
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: shivammathur/setup-php@v2
         with:
