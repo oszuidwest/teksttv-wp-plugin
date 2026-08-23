@@ -573,7 +573,7 @@ class HelpersTest extends TestCase
         $this->assertSame(250, $result['word_limit_photo']);
     }
 
-    public function test_get_ai_prompts_clamps_legacy_low_photo_word_limit(): void
+    public function test_get_ai_prompts_clamps_photo_word_limit_below_minimum(): void
     {
         Functions\expect('get_option')
             ->with('teksttv_ai_prompts', [])
@@ -602,9 +602,8 @@ class HelpersTest extends TestCase
         );
     }
 
-    public function test_commercial_block_id_uses_frozen_grp_derivation(): void
+    public function test_commercial_block_id_matches_stored_reference_format(): void
     {
-        // Pin the ID formula used by stored references.
         $this->assertSame(
             'grp_e881053494ad',
             Helpers::commercial_block_id('Sponsors')

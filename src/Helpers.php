@@ -273,10 +273,10 @@ class Helpers
     }
 
     /**
-     * Normalize bounded AI settings and flags for storage and runtime reads.
+     * Normalize AI prompt settings.
      *
-     * Zero means inherit word_limit at read time. An absent
-     * ensure_terminal_period key means enabled (pre-upgrade options).
+     * A zero photo limit inherits the general limit at runtime. Terminal
+     * punctuation defaults to enabled.
      *
      * @param array<string, mixed> $settings
      * @return array{word_limit: int, word_limit_photo: int, title_char_limit: int, min_input_words: int, ensure_terminal_period: bool}
@@ -406,9 +406,7 @@ class Helpers
     }
 
     /**
-     * Derive a stable commercial-block ID from its label.
-     *
-     * Keep the historical grp_ formula stable: stored references depend on it.
+     * Derive the stable commercial-block ID used by stored references.
      */
     public static function commercial_block_id(string $label): string
     {
@@ -573,8 +571,7 @@ class Helpers
             return $text;
         }
 
-        // Strip weak punctuation from the trailing closer run, then place
-        // the period inside closing quotes but after closing brackets.
+        // Normalize weak punctuation, keeping the period inside quotes and outside brackets.
         $text = preg_replace('/[,;:]+(?=[\'"”’»)\]\}]*$)/u', '', $text) ?? $text;
 
         return preg_replace('/([\'"”’»]*)$/u', '.$1', $text, 1) ?? $text . '.';
