@@ -4,7 +4,7 @@ name: JS Lint
 on:
   push:
     branches: [main]
-    paths:
+    paths: &ci-paths
       - '**/*.js'
       - '**/*.ts'
       - '**/*.css'
@@ -14,15 +14,7 @@ on:
       - 'tsconfig*.json'
       - '.github/workflows/js-lint.yml'
   pull_request:
-    paths:
-      - '**/*.js'
-      - '**/*.ts'
-      - '**/*.css'
-      - 'package.json'
-      - 'bun.lock'
-      - 'biome.json'
-      - 'tsconfig*.json'
-      - '.github/workflows/js-lint.yml'
+    paths: *ci-paths
   workflow_dispatch:
 
 permissions:

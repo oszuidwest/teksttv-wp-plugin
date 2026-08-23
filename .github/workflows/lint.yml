@@ -4,29 +4,17 @@ name: Lint
 on:
   push:
     branches: [main]
-    paths:
+    paths: &ci-paths
       - '**/*.php'
-      - 'composer.json'
-      - 'composer.lock'
+      - 'composer.*'
       - 'phpcs.xml'
-      - 'phpstan.neon'
-      - 'phpstan-bootstrap.php'
+      - 'phpstan*'
       - 'phpunit.xml'
       - 'patchwork.json'
       - 'tests/**'
       - '.github/workflows/lint.yml'
   pull_request:
-    paths:
-      - '**/*.php'
-      - 'composer.json'
-      - 'composer.lock'
-      - 'phpcs.xml'
-      - 'phpstan.neon'
-      - 'phpstan-bootstrap.php'
-      - 'phpunit.xml'
-      - 'patchwork.json'
-      - 'tests/**'
-      - '.github/workflows/lint.yml'
+    paths: *ci-paths
   workflow_dispatch:
 
 permissions:

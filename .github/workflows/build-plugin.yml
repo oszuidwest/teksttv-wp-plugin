@@ -4,41 +4,21 @@ name: Build Plugin
 on:
   push:
     branches: [main]
-    paths:
+    paths: &ci-paths
       - '**/*.php'
       - '**/*.js'
       - '**/*.ts'
       - '**/*.css'
-      - 'composer.json'
-      - 'composer.lock'
+      - 'composer.*'
       - 'package.json'
       - 'bun.lock'
       - 'bin/**'
-      - 'teksttv.php'
-      - 'src/**'
-      - 'resources/**'
       - 'tests/e2e/**'
       - 'tests/*.sh'
       - 'blueprint.json'
       - '.github/workflows/build-plugin.yml'
   pull_request:
-    paths:
-      - '**/*.php'
-      - '**/*.js'
-      - '**/*.ts'
-      - '**/*.css'
-      - 'composer.json'
-      - 'composer.lock'
-      - 'package.json'
-      - 'bun.lock'
-      - 'bin/**'
-      - 'teksttv.php'
-      - 'src/**'
-      - 'resources/**'
-      - 'tests/e2e/**'
-      - 'tests/*.sh'
-      - 'blueprint.json'
-      - '.github/workflows/build-plugin.yml'
+    paths: *ci-paths
   workflow_dispatch:
 
 permissions:
