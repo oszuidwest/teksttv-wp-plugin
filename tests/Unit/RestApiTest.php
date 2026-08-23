@@ -285,15 +285,16 @@ class RestApiTest extends TestCase
     {
         self::stubHappyPath(['teksttv_features' => ['ai_generate']]);
         $body_text = implode(' ', array_fill(0, 50, 'woord'));
+        $normalized_body = $body_text . '.';
 
         Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
-        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_body', $body_text);
+        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_body', $normalized_body);
         Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder($body_text));
 
         $response = RestApi::generate_content(self::requestMock(['post_id' => 42, 'field' => 'body']));
 
         $this->assertSame(200, $response->get_status());
-        $this->assertSame(['content' => $body_text], $response->get_data());
+        $this->assertSame(['content' => $normalized_body], $response->get_data());
     }
 
     public function test_generate_content_both_returns_title_and_body_shape(): void
@@ -311,7 +312,7 @@ class RestApiTest extends TestCase
         $this->assertSame(200, $response->get_status());
         $data = $response->get_data();
         $this->assertSame('Korte kop', $data['title']);
-        $this->assertSame($body_text, $data['body']);
+        $this->assertSame($body_text . '.', $data['body']);
         $this->assertArrayNotHasKey('warning', $data);
     }
 

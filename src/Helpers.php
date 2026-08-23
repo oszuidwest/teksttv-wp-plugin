@@ -562,6 +562,38 @@ class Helpers
     }
 
     /**
+     * Ensure generated body text ends with sentence-ending punctuation.
+     */
+    public static function ensure_terminal_period(string $text): string
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return $text;
+        }
+
+        if (preg_match('/[.!?…][\'"”’»)\]\}]*$/u', $text) === 1) {
+            return $text;
+        }
+
+        $replacements = [
+            '/[,;:]+([\'"”’»]+)$/u' => '.$1',
+            '/([\'"”’»]+)[,;:]+$/u' => '.$1',
+            '/[,;:]+([)\]\}]+)$/u' => '$1.',
+            '/([)\]\}]+)[,;:]+$/u' => '$1.',
+            '/[,;:]+$/u' => '.',
+        ];
+
+        foreach ($replacements as $pattern => $replacement) {
+            $normalized = preg_replace($pattern, $replacement, $text);
+            if ($normalized !== null && $normalized !== $text) {
+                return $normalized;
+            }
+        }
+
+        return $text . '.';
+    }
+
+    /**
      * Dependencies required by admin.js and wp.media.
      *
      * @return list<string>

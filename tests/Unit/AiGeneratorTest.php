@@ -377,15 +377,15 @@ class AiGeneratorTest extends TestCase
 
     public function test_generate_single_field_returns_body_with_wpautop(): void
     {
-        $builder = self::mockAiBuilder(implode(' ', array_fill(0, 50, 'woord')));
+        $body = implode(' ', array_fill(0, 50, 'woord'));
+        $builder = self::mockAiBuilder($body);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
         Functions\expect('wpautop')->andReturnUsing(fn($t) => '<p>' . $t . '</p>');
 
         $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst hier', self::aiConfig());
 
-        $this->assertArrayHasKey('content', $result);
-        $this->assertStringStartsWith('<p>', $result['content']);
+        $this->assertSame('<p>' . $body . '.</p>', $result['content']);
         $this->assertSame('', $result['warning']);
     }
 

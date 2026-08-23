@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\Helpers;
 
 class HelpersTest extends TestCase
@@ -261,6 +262,36 @@ class HelpersTest extends TestCase
     public function test_count_words_dutch_text_with_special_chars(): void
     {
         $this->assertSame(4, Helpers::count_words('café résumé über straße'));
+    }
+
+    #[DataProvider('terminalPeriodProvider')]
+    public function test_ensure_terminal_period(string $input, string $expected): void
+    {
+        $this->assertSame($expected, Helpers::ensure_terminal_period($input));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function terminalPeriodProvider(): array
+    {
+        return [
+            'empty string stays empty' => [" \t\n", ''],
+            'missing punctuation gets period' => ['Het bericht stopt hier', 'Het bericht stopt hier.'],
+            'text is trimmed before period is added' => ['  Het bericht stopt hier  ', 'Het bericht stopt hier.'],
+            'existing period is preserved' => ['Het bericht is klaar.', 'Het bericht is klaar.'],
+            'existing question mark is preserved' => ['Komt er extra toezicht?', 'Komt er extra toezicht?'],
+            'existing exclamation mark is preserved' => ['De weg is weer open!', 'De weg is weer open!'],
+            'existing ellipsis is preserved' => ['Het onderzoek loopt…', 'Het onderzoek loopt…'],
+            'closing quote after punctuation is kept' => ['"Het besluit is genomen."', '"Het besluit is genomen."'],
+            'period is added after closing bracket' => ['De weg gaat dicht (A58)', 'De weg gaat dicht (A58).'],
+            'trailing comma becomes period' => ['De vergadering start morgen,', 'De vergadering start morgen.'],
+            'comma before quote becomes period' => ['Hij zei "ja,"', 'Hij zei "ja."'],
+            'comma after quote becomes period' => ['Hij zei "ja",', 'Hij zei "ja."'],
+            'colon before quote becomes period' => ['Hij zei "ja:"', 'Hij zei "ja."'],
+            'comma before bracket becomes period' => ['De weg gaat dicht (A58,)', 'De weg gaat dicht (A58).'],
+            'comma after bracket becomes period' => ['De weg gaat dicht (A58),', 'De weg gaat dicht (A58).'],
+        ];
     }
 
 
