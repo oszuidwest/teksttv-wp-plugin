@@ -48,29 +48,23 @@ jobs:
           # Reads engines.node so package.json stays the single source of truth.
           node-version-file: package.json
 
-      - name: Install JS dependencies
-        run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
-      - name: Build and validate canonical plugin artifact
-        id: package
+      - id: package
         run: bun run build:package
 
       # Smoke the exact ZIP being published, not the packager's staging dir.
-      - name: Stage the published ZIP for smoke testing
-        env:
+      - env:
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
           rm -rf release/teksttv
           unzip -q "$ZIP" -d release
 
-      - name: Install Playwright browser
-        run: bunx playwright install --with-deps chromium
+      - run: bunx playwright install --with-deps chromium
 
-      - name: Test the release artifact in WordPress Playground
-        run: bun run test:e2e
+      - run: bun run test:e2e
 
-      - name: Upload Playwright report on failure
-        if: failure()
+      - if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report

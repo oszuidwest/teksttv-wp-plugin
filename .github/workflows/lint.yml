@@ -20,6 +20,11 @@ on:
 permissions:
   contents: read
 
+# An explicit bash shell also turns on pipefail for every run step.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   quality:
     name: PHPCS + PHPStan
@@ -35,22 +40,15 @@ jobs:
           coverage: none
           tools: composer:v2, cs2pr
 
-      - name: Validate composer.json
-        run: composer validate --no-check-publish
+      - run: composer validate --no-check-publish
 
-      - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
+      - run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: PHP_CodeSniffer
-        run: |
-          set -o pipefail
+      - run: |
           vendor/bin/phpcs -q --report=checkstyle \
-            --runtime-set ignore_warnings_on_exit 1 \
-            | cs2pr --graceful-warnings
+            --runtime-set ignore_warnings_on_exit 1 | cs2pr --graceful-warnings
 
-      - name: PHPStan
-        run: |
-          set -o pipefail
+      - run: |
           vendor/bin/phpstan analyse --memory-limit=1G \
             --error-format=checkstyle | cs2pr
 
@@ -68,13 +66,11 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Install production dependencies
-        run: >-
+      - run: >-
           composer install --no-dev --no-progress --prefer-dist
           --optimize-autoloader
 
-      - name: WordPress Plugin Check
-        uses: wordpress/plugin-check-action@v1
+      - uses: wordpress/plugin-check-action@v1
         with:
           exclude-checks: |
             late_escaping
@@ -101,8 +97,6 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
+      - run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: PHPUnit
-        run: vendor/bin/phpunit
+      - run: vendor/bin/phpunit

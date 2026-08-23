@@ -1,5 +1,5 @@
 ---
-name: Build Plugin
+name: CI
 
 on:
   push:
@@ -12,11 +12,13 @@ on:
       - 'composer.*'
       - 'package.json'
       - 'bun.lock'
+      - 'biome.json'
+      - 'tsconfig*.json'
       - 'bin/**'
       - 'tests/e2e/**'
       - 'tests/*.sh'
       - 'blueprint.json'
-      - '.github/workflows/build-plugin.yml'
+      - '.github/workflows/ci.yml'
   pull_request:
     paths: *ci-paths
   workflow_dispatch:
@@ -25,6 +27,22 @@ permissions:
   contents: read
 
 jobs:
+  frontend:
+    name: Biome + TypeScript + Bun tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run check:frontend
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -72,8 +90,7 @@ jobs:
             test ! -e "release/teksttv/$CANARY"
           done
 
-      - name: Upload validated plugin ZIP
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
           name: teksttv-plugin
           path: ${{ steps.package.outputs.zip }}
@@ -99,30 +116,24 @@ jobs:
         with:
           bun-version-file: package.json
 
-      - name: Install JS dependencies
-        run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
-      - name: Download validated plugin ZIP
-        uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v8
         with:
           name: teksttv-plugin
           path: release
 
       # Unzipping the shippable ZIP preserves the byte-identity and file modes
       # that verify-package.sh proved; a directory artifact round trip does not.
-      - name: Stage the validated ZIP for smoke testing
-        env:
+      - env:
           ZIP: ${{ needs.build.outputs.zip }}
         run: unzip -q "$ZIP" -d release
 
-      - name: Install Playwright browser
-        run: bunx playwright install --with-deps chromium
+      - run: bunx playwright install --with-deps chromium
 
-      - name: Run e2e suite in WordPress Playground
-        run: bun run test:e2e
+      - run: bun run test:e2e
 
-      - name: Upload Playwright report on failure
-        if: failure()
+      - if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
