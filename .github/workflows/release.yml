@@ -84,6 +84,14 @@ jobs:
           VERSION: ${{ github.ref_name }}
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
+          # Tags are only locked after publication, so re-check that the tag
+          # still points at the commit this run built before releasing.
+          TAG_SHA="$(gh api "repos/$GITHUB_REPOSITORY/commits/$VERSION" --jq .sha)"
+          if [[ "$TAG_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::Tag $VERSION moved to $TAG_SHA during the build;" \
+              "this run built $GITHUB_SHA."
+            exit 1
+          fi
           ARGS=(
             "$VERSION"
             "$ZIP"
