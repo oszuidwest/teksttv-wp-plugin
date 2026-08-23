@@ -1,7 +1,6 @@
 <?php
 
-// Bootstrap file is loaded by PHPUnit from the CLI; synthesize ABSPATH
-// so the direct-access guard below stays satisfied during test runs.
+// Satisfy the direct-access guard during CLI tests.
 if (PHP_SAPI === 'cli' && !defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__) . '/');
 }
@@ -9,7 +8,7 @@ defined('ABSPATH') || exit;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Define WP constants used throughout the plugin
+// WordPress constants used by the plugin.
 if (!defined('TEKSTTV_PLUGIN_DIR')) {
     define('TEKSTTV_PLUGIN_DIR', dirname(__DIR__) . '/');
 }
@@ -20,7 +19,7 @@ if (!defined('TEKSTTV_VERSION')) {
     define('TEKSTTV_VERSION', '1.0.0-test');
 }
 
-// Common WordPress time constants used across the plugin.
+// WordPress time constants.
 if (!defined('MINUTE_IN_SECONDS')) {
     define('MINUTE_IN_SECONDS', 60);
 }
@@ -28,8 +27,7 @@ if (!defined('WEEK_IN_SECONDS')) {
     define('WEEK_IN_SECONDS', 604800);
 }
 
-// Provide global stubs for common WP functions that Brain\Monkey cannot
-// intercept when called via array_map() or similar PHP internals.
+// Global stubs for calls that bypass Brain Monkey through PHP internals.
 if (!function_exists('sanitize_text_field')) {
     function sanitize_text_field(string $str): string
     {
@@ -72,7 +70,7 @@ if (!function_exists('wp_strip_all_tags')) {
     }
 }
 
-// Minimal WP_Error stub so domain code can construct errors in unit tests.
+// Minimal WP_Error test double.
 if (!class_exists('WP_Error')) {
     class WP_Error
     {
@@ -104,7 +102,7 @@ if (!class_exists('WP_Error')) {
     }
 }
 
-// Minimal WP_Post stub for passing typed posts into domain methods.
+// Minimal WP_Post test double.
 if (!class_exists('WP_Post')) {
     #[\AllowDynamicProperties]
     class WP_Post
@@ -115,8 +113,7 @@ if (!class_exists('WP_Post')) {
     }
 }
 
-// Minimal WP_REST_Response stub so REST callbacks can be unit tested without
-// pulling in WordPress. Captures data and status for assertions.
+// Minimal WP_REST_Response test double.
 if (!class_exists('WP_REST_Response')) {
     class WP_REST_Response
     {

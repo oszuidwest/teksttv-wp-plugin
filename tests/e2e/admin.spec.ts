@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
 import { getBrowserErrors, openFixturePostEditor } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
+import { expect, test } from './test';
 
 test.afterEach(async ({ page }) => {
     expect(await getBrowserErrors(page)).toEqual([]);
@@ -10,13 +10,12 @@ test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-settings');
         await expect(page.locator('input[name="teksttv_duration_text"]')).toBeVisible();
+        await expect(page.locator('#teksttv_openweather_api_key')).toHaveAttribute('type', 'password');
         await expect(page.locator('#submit')).toBeVisible();
     });
 
-    test.describe('settings mutation', () => {
-        test.afterEach(() => {
-            reseedFixtures();
-        });
+    test.describe('option mutation', () => {
+        test.afterEach(reseedFixtures);
 
         test('administrator can save settings', async ({ page }) => {
             await page.goto('/wp-admin/admin.php?page=teksttv-settings');
@@ -30,16 +29,84 @@ test.describe('administrator admin screens', () => {
                     response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/options.php'),
             );
             await page.click('#submit');
-            // The Settings API reloads the page; the saved value must persist.
+            // The value must survive the Settings API reload.
             expect((await saveResponse).status()).toBeLessThan(400);
             await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
             await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
+        });
+
+        test('post editor uses a plain textarea when rich text options are disabled', async ({
+            page,
+            runWordPressPHP,
+        }) => {
+            await runWordPressPHP("update_option('teksttv_features', ['custom_title', 'page_separator']);");
+
+            await openFixturePostEditor(page);
+
+            const editor = page.locator('#teksttv_content');
+            await expect(editor).toBeVisible();
+            await expect(page.locator('#teksttv_content_ifr')).toHaveCount(0);
+            await expect(page.locator('#wp-teksttv_content-editor-container')).toHaveCount(0);
+            await expect(page.locator('#teksttv-title')).toHaveAttribute(
+                'placeholder',
+                'Laat leeg om de titel van het artikel te gebruiken.',
+            );
+
+            await editor.fill('Eerste slide');
+            await page.locator('.teksttv-plain-separator').click();
+            await expect(editor).toHaveValue('Eerste slide\n---\n');
+            await editor.pressSequentially('Tweede slide');
+            await expect(editor).toHaveValue('Eerste slide\n---\nTweede slide');
+
+            await editor.fill('Eerste slide\nTweede slide');
+            await editor.evaluate((element) => {
+                const textarea = element as HTMLTextAreaElement;
+                const separatorPosition = 'Eerste slide'.length;
+                textarea.setSelectionRange(separatorPosition, separatorPosition);
+            });
+            await page.locator('.teksttv-plain-separator').click();
+            await editor.pressSequentially('Nieuwe ');
+            await expect(editor).toHaveValue('Eerste slide\n---\nNieuwe Tweede slide');
+        });
+
+        test('post editor keeps the counter and preview on one slide when separators are disabled', async ({
+            page,
+            runWordPressPHP,
+        }) => {
+            await runWordPressPHP("update_option('teksttv_features', ['custom_title']);");
+
+            await openFixturePostEditor(page);
+            await page.locator('#teksttv_content').fill('Eerste slide\n---\nTweede slide');
+
+            await expect(page.locator('#teksttv-wordcount')).toHaveText(/^5(?: \/ \d+)? woorden$/);
+            await expect(page.locator('#teksttv-preview-counter')).toHaveText('1 / 1');
+            await expect(page.locator('#teksttv-preview-nav')).toBeHidden();
+            await expect(page.locator('#teksttv-preview-thumbs')).toBeHidden();
+            await expect(page.locator('#teksttv-preview-thumbs iframe')).toHaveCount(0);
+        });
+
+        test('post editor contains the empty preview at narrow widths', async ({ page, runWordPressPHP }) => {
+            await runWordPressPHP("delete_option('teksttv_preview_url');");
+            await page.setViewportSize({ width: 390, height: 844 });
+            await openFixturePostEditor(page);
+
+            const emptyPreview = page.locator('.teksttv-no-preview');
+            await expect(emptyPreview).toBeVisible();
+            const overflow = await emptyPreview.evaluate((element) => element.scrollHeight - element.clientHeight);
+
+            expect(overflow).toBeLessThanOrEqual(1);
         });
     });
 
     test('loop page renders the blocks workbench', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
         await expect(page.locator('#teksttv-blocks')).toBeVisible();
+    });
+
+    test('legacy campaign URL redirects to the commercials page', async ({ page }) => {
+        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await expect(page).toHaveURL(/admin\.php\?page=teksttv-commercials$/);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reclame');
     });
 
     test('workbench screens share section, heading and action sizing', async ({ page }) => {
@@ -55,29 +122,30 @@ test.describe('administrator admin screens', () => {
         expect(loopActionWidths.length).toBeGreaterThan(0);
         expect(Math.max(...loopActionWidths)).toBeLessThan(190);
 
-        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await page.goto('/wp-admin/admin.php?page=teksttv-commercials');
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Reclame');
         const campaignSections = page.locator('.teksttv-workbench-section');
         await expect(campaignSections).toHaveCount(2);
-        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Groepen', 'Campagnes']);
+        await expect(campaignSections.locator(':scope > h2')).toHaveText(['Reclameblokken', 'Campagnes']);
         const campaignActionWidths = await page
-            .locator('#teksttv-add-group, #teksttv-add-campaign')
+            .locator('#teksttv-add-commercial-block, #teksttv-add-campaign')
             .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().width));
-        expect(campaignActionWidths.length).toBeGreaterThan(0);
+        expect(campaignActionWidths).toHaveLength(2);
         expect(Math.max(...campaignActionWidths)).toBeLessThan(190);
     });
 
     test('campaign layout uses one width contract and responsive field grid', async ({ page }) => {
-        await page.goto('/wp-admin/admin.php?page=teksttv-campaigns');
+        await page.goto('/wp-admin/admin.php?page=teksttv-commercials');
 
-        const groupPanel = page.locator('.teksttv-campaign-groups');
+        const commercialBlocksPanel = page.locator('.teksttv-commercial-blocks');
         const campaignPanel = page.locator('.teksttv-campaign-workbench');
         const campaignList = page.locator('#teksttv-campaigns');
-        await expect(groupPanel).toBeVisible();
+        await expect(commercialBlocksPanel).toBeVisible();
         await expect(campaignPanel).toBeVisible();
         await expect(campaignList).toBeVisible();
 
         const desktopWidths = await Promise.all([
-            groupPanel.evaluate((element) => element.getBoundingClientRect().width),
+            commercialBlocksPanel.evaluate((element) => element.getBoundingClientRect().width),
             campaignPanel.evaluate((element) => element.getBoundingClientRect().width),
         ]);
         expect(desktopWidths[0]).toBeLessThanOrEqual(800);
@@ -148,17 +216,86 @@ test.describe('administrator admin screens', () => {
         expect(Math.abs(layoutWidth - mainWidth)).toBeLessThan(1);
     });
 
+    test('post editor uses an equal split studio on desktop', async ({ page }) => {
+        await page.setViewportSize({ width: 1600, height: 1000 });
+        await openFixturePostEditor(page);
+
+        const layout = page.locator('.teksttv-editor-layout');
+        const main = layout.locator('.teksttv-editor-main');
+        const preview = layout.locator('.teksttv-editor-preview');
+        const [mainBox, previewBox] = await Promise.all([
+            main.evaluate((element) => element.getBoundingClientRect().toJSON()),
+            preview.evaluate((element) => element.getBoundingClientRect().toJSON()),
+        ]);
+
+        expect(Math.abs(mainBox.width - previewBox.width)).toBeLessThan(1);
+        expect(Math.abs(previewBox.left - mainBox.right)).toBeLessThanOrEqual(1);
+        await expect(main).toHaveCSS('border-right-style', 'solid');
+        await expect(page.getByRole('heading', { name: 'Schrijven', exact: true })).toBeVisible();
+    });
+
+    test('post editor sections and controls stay within the mobile viewport', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await openFixturePostEditor(page);
+
+        const metaBox = page.locator('.teksttv-meta-box');
+        const [overflow, bounds, panelBounds] = await Promise.all([
+            metaBox.evaluate((element) => element.scrollWidth - element.clientWidth),
+            metaBox.evaluate((element) => element.getBoundingClientRect().toJSON()),
+            metaBox
+                .locator(
+                    '.teksttv-content-section, .teksttv-editor-preview, .teksttv-media-section, .teksttv-collapsible',
+                )
+                .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().toJSON())),
+        ]);
+        expect(overflow).toBeLessThanOrEqual(1);
+        expect(panelBounds.every((panel) => panel.left >= bounds.left && panel.right <= bounds.right + 1)).toBe(true);
+
+        const imageCards = page.locator('.teksttv-image-card');
+        await expect(imageCards).toHaveCount(3);
+        const cardWidths = await imageCards.evaluateAll((cards) =>
+            cards.map((card) => card.getBoundingClientRect().width),
+        );
+        expect(cardWidths.every((width) => width >= 80)).toBe(true);
+
+        await expect(page.locator('#teksttv-active')).toHaveAccessibleName(/Toon op Tekst TV/);
+        await expect(page.locator('#teksttv-add-images .dashicons')).toHaveCount(0);
+        await expect(page.locator('#teksttv_content-html')).toHaveCount(0);
+        await expect(page.getByText('Nieuwe slide', { exact: true })).toBeVisible();
+        const editorToolbarHeight = await page
+            .locator('#wp-teksttv_content-editor-container .mce-toolbar-grp')
+            .evaluate((element) => element.getBoundingClientRect().height);
+        expect(editorToolbarHeight).toBeLessThanOrEqual(60);
+        const controlHeights = await Promise.all([
+            page.locator('#teksttv-title').evaluate((element) => element.getBoundingClientRect().height),
+            page.locator('#teksttv-add-images').evaluate((element) => element.getBoundingClientRect().height),
+        ]);
+        expect(controlHeights.every((height) => height >= 40)).toBe(true);
+
+        const titleFooter = page.locator('.teksttv-title-footer');
+        await expect(titleFooter).toBeHidden();
+        await page.locator('#teksttv-title').fill('Korte kop');
+        await expect(titleFooter).toBeVisible();
+    });
+
     test('post editor updates the word count from TinyMCE keyup', async ({ page }) => {
         await openFixturePostEditor(page);
-        const editor = page.frameLocator('#teksttv_content_ifr').locator('body');
-        await editor.evaluate((body) => {
-            // Avoid input/change/SetContent so this specifically covers the keyup fallback.
-            body.innerHTML = '<p>Twee woorden</p>';
-            const tinyMceEditor = window.parent.tinymce?.get('teksttv_content');
+        const wordCount = page.locator('#teksttv-wordcount');
+
+        await page.waitForFunction(() => Boolean(window.tinymce?.get('teksttv_content')));
+        await expect(wordCount).toHaveText(/^5(?: \/ \d+)? woorden$/);
+
+        // Settle initial timers so only keyup changes the count.
+        await page.waitForTimeout(1_000);
+
+        await page.evaluate(() => {
+            // Exercise keyup without other editor events.
+            const tinyMceEditor = window.tinymce?.get('teksttv_content');
             if (!tinyMceEditor) throw new Error('TinyMCE editor teksttv_content not found.');
+            tinyMceEditor.setContent('<p>Twee woorden</p>', { no_events: true });
             tinyMceEditor.fire('keyup');
         });
-        await expect(page.locator('#teksttv-wordcount')).toHaveText(/^2(?: \/ \d+)? woorden$/);
+        await expect(wordCount).toHaveText(/^2(?: \/ \d+)? woorden$/);
     });
 
     test('post editor exposes the preview enlargement control on keyboard focus', async ({ page }) => {

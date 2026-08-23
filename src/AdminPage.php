@@ -18,11 +18,7 @@ class AdminPage
     }
 
     /**
-     * Whether the preview URL shares the site's HTTP(S) origin.
-     *
-     * The preview iframes run with sandbox="allow-scripts allow-same-origin",
-     * which is safe for a preview app on a separate origin but effectively
-     * disables the sandbox when the preview is same-origin as WordPress.
+     * Whether the preview URL weakens its sandbox by sharing the site origin.
      */
     public static function preview_url_shares_site_origin(string $preview_url, string $site_url): bool
     {
@@ -36,9 +32,7 @@ class AdminPage
      */
     private static function parse_http_origin(string $url): ?array
     {
-        // parse_url() replaces bytes 0x80-0x9F and 0xAD in hosts with "_",
-        // corrupting raw UTF-8 (e.g. the 0x9F in "ß"), so percent-encode
-        // high bytes first and decode the host after parsing.
+        // Preserve UTF-8 hosts: parse_url() corrupts some raw high bytes.
         $encoded_url = preg_replace_callback(
             '/[\x80-\xFF]/',
             static fn (array $matches): string => rawurlencode($matches[0]),
@@ -76,8 +70,7 @@ class AdminPage
     }
 
     /**
-     * Warn admins when the configured preview URL is same-origin as the site,
-     * which weakens the preview iframe sandbox.
+     * Warn when a same-origin preview weakens the iframe sandbox.
      */
     public static function render_preview_origin_notice(): void
     {
@@ -97,7 +90,6 @@ class AdminPage
 
     public static function register_menu(): void
     {
-        // Main menu item — first loop channel or settings if no channels
         $channels = Helpers::get_channels();
         $first_channel = $channels[0]['slug'] ?? '';
 
@@ -111,7 +103,6 @@ class AdminPage
             30
         );
 
-        // Submenu per channel loop
         foreach ($channels as $ch) {
             $loop_label = count($channels) > 1 ? sprintf('Loop: %s', $ch['label']) : 'Loop';
             add_submenu_page(
@@ -124,7 +115,6 @@ class AdminPage
             );
         }
 
-        // Settings submenu
         add_submenu_page(
             'teksttv',
             'Instellingen',
@@ -134,7 +124,7 @@ class AdminPage
             [self::class, 'render_settings_page']
         );
 
-        // Avoid potentially remote provider discovery for users who cannot access this page.
+        // Model discovery may call remote providers.
         if (current_user_can('manage_teksttv_content') && Helpers::ai_supported()) {
             add_submenu_page(
                 'teksttv',
@@ -146,13 +136,12 @@ class AdminPage
             );
         }
 
-        // Remove the auto-generated duplicate submenu
         remove_submenu_page('teksttv', 'teksttv');
     }
 
     public static function register_settings(): void
     {
-        // Align the save capability (checked by options.php) with the view capability of each page
+        // options.php must use the page's view capability.
         add_filter('option_page_capability_teksttv_settings', static fn() => 'manage_teksttv');
         add_filter('option_page_capability_teksttv_content', static fn() => 'manage_teksttv_content');
 
@@ -238,8 +227,7 @@ class AdminPage
             if (empty($slug) || empty($label)) {
                 continue;
             }
-            // Loop/ticker option names are keyed by slug, so a duplicate slug
-            // would make two channels share storage. Keep the first, reject the rest.
+            // Duplicate slugs would share loop and ticker options.
             if (isset($seen[$slug])) {
                 add_settings_error(
                     'teksttv-wp-plugin',
@@ -261,9 +249,7 @@ class AdminPage
     /**
      * Sanitize the AI prompts option.
      *
-     * Merges permitted submitted values over the stored option so a partial form
-     * cannot clear fields it never displayed. Region and technical fields are
-     * also protected here because hiding them in the UI is not authorization.
+     * Preserve hidden fields on partial forms; authorize privileged fields here.
      *
      * @param mixed $input
      * @return array<string, mixed>
@@ -283,9 +269,6 @@ class AdminPage
                 'region_taxonomy',
                 'provider',
                 'model',
-                'temperature',
-                'top_p',
-                'max_tokens',
             ]));
         }
 
@@ -303,7 +286,6 @@ class AdminPage
 
     public static function enqueue_assets(string $hook): void
     {
-        // Load on any Tekst TV admin page
         if (!str_contains($hook, 'teksttv')) {
             return;
         }
@@ -311,9 +293,6 @@ class AdminPage
         Helpers::enqueue_admin_script();
     }
 
-    /**
-     * Get the channel slug from the current admin page.
-     */
     private static function get_current_channel(): string
     {
         $page = sanitize_key($_GET['page'] ?? '');
@@ -322,14 +301,9 @@ class AdminPage
             return substr($page, strlen('teksttv-loop-'));
         }
 
-        // Fallback: first channel (for the main teksttv page)
         $channels = Helpers::get_channels();
         return $channels[0]['slug'] ?? '';
     }
-
-    // =========================================================================
-    // Loop page
-    // =========================================================================
 
     public static function render_loop_page(): void
     {
@@ -341,7 +315,6 @@ class AdminPage
             return;
         }
 
-        // Handle loop save via POST
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce is verified in handle_loop_save()
         if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['teksttv_loop_nonce'])) {
             self::handle_loop_save();
@@ -357,10 +330,6 @@ class AdminPage
         include TEKSTTV_PLUGIN_DIR . 'src/views/loop-page.php';
     }
 
-    // =========================================================================
-    // Settings page (channels + preview URL)
-    // =========================================================================
-
     public static function render_settings_page(): void
     {
         $channels = Helpers::get_channels();
@@ -371,10 +340,6 @@ class AdminPage
 
         include TEKSTTV_PLUGIN_DIR . 'src/views/settings-page.php';
     }
-
-    // =========================================================================
-    // AI Settings page
-    // =========================================================================
 
     public static function render_prompts_page(): void
     {
@@ -412,8 +377,7 @@ class AdminPage
     }
 
     /**
-     * Render the shared empty-state placeholder. Repeatable lists render it
-     * always and CSS hides it while items exist (`:has(> .teksttv-block)`).
+     * Render the CSS-hidden empty state kept inside repeatable lists.
      */
     public static function render_empty_state(
         string $icon,
@@ -431,7 +395,6 @@ class AdminPage
         <?php
     }
 
-    /** Start a consistently styled field group inside a loop or campaign block. */
     public static function render_block_section_start(string $title, string $description = '', string $modifier = ''): void
     {
         $classes = 'teksttv-block-section';
@@ -450,23 +413,18 @@ class AdminPage
         <?php
     }
 
-    /** Close a field group opened by render_block_section_start(). */
     public static function render_block_section_end(): void
     {
         echo '</section>';
     }
 
-    /** Render the shared save bar that closes every admin form. */
     public static function render_form_actions(): void
     {
         submit_button('Wijzigingen opslaan');
     }
 
     /**
-     * Render the shared block header: drag handle, accordion toggle wired to
-     * the body via `$body_id`, and the remove button. The classes and ARIA
-     * wiring are a contract with the workbench JS; keep every accordion
-     * (loop, ticker, campaigns) on this one renderer.
+     * Render the block header shared with the workbench JS.
      */
     public static function render_block_header(
         string $body_id,
@@ -498,10 +456,7 @@ class AdminPage
     }
 
     /**
-     * Render the collapsible scheduling section for a loop/ticker block: the
-     * enable checkbox plus the date+days inputs, hidden until scheduling is
-     * set. The checkbox and --scheduling class are a contract with the
-     * scheduling toggle in the admin JS.
+     * Render scheduling controls bound to the admin-JS toggle.
      *
      * @param array<string, mixed> $block
      */
@@ -527,9 +482,7 @@ class AdminPage
     }
 
     /**
-     * Render the bare date-range + weekday inputs for a block-shaped item,
-     * without the toggle chrome. Callers provide their own container (the
-     * campaigns page renders these always-visible).
+     * Render date and weekday fields without a scheduling toggle.
      *
      * @param array<string, mixed> $block
      */
@@ -555,8 +508,7 @@ class AdminPage
     }
 
     /**
-     * Render the weekday checkbox row. Null means "all days"; an empty list
-     * means no days are selected.
+     * Render weekdays; null means all and an empty list means none.
      *
      * @param list<string>|null $days Selected ISO day numbers ('1'..'7').
      */
@@ -566,17 +518,13 @@ class AdminPage
         <div class="teksttv-days-row">
             <?php foreach (Helpers::get_day_labels() as $num => $label) : ?>
             <label class="teksttv-day-toggle">
-                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" <?php checked($days === null || in_array((string) $num, $days, true)); ?> />
+                <input type="checkbox" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr((string) $num); ?>" class="teksttv-visually-hidden" <?php checked($days === null || in_array((string) $num, $days, true)); ?> />
                 <span><?php echo esc_html($label); ?></span>
             </label>
             <?php endforeach; ?>
         </div>
         <?php
     }
-
-    // =========================================================================
-    // Save handler
-    // =========================================================================
 
     private static function validate_loop_save_request(): ?string
     {
@@ -624,9 +572,7 @@ class AdminPage
     }
 
     /**
-     * Sanitize submitted registry items and restore stored items whose type is
-     * no longer registered (for example because an add-on was deactivated) at
-     * their prior positions.
+     * Sanitize registry items while preserving rows from disabled add-ons.
      *
      * @param array<int|string, mixed> $raw_items Unslashed POST items.
      * @param string                   $option_name Stored option name to read preserved rows from.

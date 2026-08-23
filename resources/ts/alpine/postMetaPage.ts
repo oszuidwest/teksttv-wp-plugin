@@ -6,6 +6,7 @@ import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postM
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
+import { getTeksttvEditorHtml } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
 import { updatePreviewThumbnails } from './postMeta/previewThumbnails';
@@ -21,34 +22,44 @@ export function createPostMetaPage() {
 
     const previewUrl = config?.previewUrl ?? '';
 
-    function getSlides(): Slide[] {
-        return buildSlidesFromDom(config, customImageData);
+    function getSlides(content?: string): Slide[] {
+        return buildSlidesFromDom(config, customImageData, content);
     }
 
     function updatePreviewNav(): void {
         const total = slides.length;
         const current = total > 0 ? currentSlideIndex + 1 : 0;
+        const isMultiSlide = total > 1;
 
         const counter = document.querySelector('#teksttv-preview-counter');
         if (counter) counter.textContent = `${current} / ${total}`;
+        const nav = document.querySelector<HTMLElement>('#teksttv-preview-nav');
+        nav?.classList.toggle('is-hidden', !isMultiSlide);
         const prevBtn = document.querySelector<HTMLButtonElement>('#teksttv-preview-prev');
         const nextBtn = document.querySelector<HTMLButtonElement>('#teksttv-preview-next');
         if (prevBtn) prevBtn.disabled = currentSlideIndex <= 0;
         if (nextBtn) nextBtn.disabled = currentSlideIndex >= total - 1;
 
         const thumbs = document.querySelector('#teksttv-preview-thumbs');
-        if (thumbs instanceof HTMLElement && previewUrl) {
-            updatePreviewThumbnails(thumbs, slides, currentSlideIndex, previewUrl);
+        if (thumbs instanceof HTMLElement) {
+            thumbs.classList.toggle('is-hidden', !isMultiSlide);
+            if (isMultiSlide && previewUrl) {
+                updatePreviewThumbnails(thumbs, slides, currentSlideIndex, previewUrl);
+            } else {
+                // Clearing stops the hidden thumbnail iframes; is-hidden alone keeps them alive.
+                thumbs.replaceChildren();
+            }
         }
     }
 
     const updatePreview = debounce(() => {
-        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData));
+        const content = getTeksttvEditorHtml();
+        updateTeksttvWordCount(config, hasSidebarPhoto(config, customImageData), content);
 
         const iframe = document.querySelector<HTMLIFrameElement>('#teksttv-preview-iframe');
         if (!(previewUrl && iframe)) return;
 
-        slides = getSlides();
+        slides = getSlides(content);
         if (currentSlideIndex >= slides.length) currentSlideIndex = slides.length - 1;
         if (currentSlideIndex < 0) currentSlideIndex = 0;
         updatePreviewNav();
@@ -62,7 +73,7 @@ export function createPostMetaPage() {
         }
 
         container?.classList.remove('is-empty');
-        // Skip the reload when the slide is unchanged — `keyup` also fires for non-mutating keys.
+        // keyup also fires for keys that do not change content.
         const newSrc = previewSlideUrl(previewUrl, slides[currentSlideIndex]);
         if (iframe.getAttribute('src') === newSrc) return;
 
@@ -111,10 +122,11 @@ export function createPostMetaPage() {
 
             updateTeksttvCharCount(config);
 
-            if (typeof tinymce !== 'undefined') {
+            const bindTinyMceEvents = (): boolean => {
+                if (typeof tinymce === 'undefined') return false;
+
                 const bindEditor = (editor: WPTinyMCEEditor): void => {
-                    // `updatePreview` debounces and also refreshes the word count.
-                    // `keyup` covers keystrokes TinyMCE handles without firing `input`.
+                    // keyup covers TinyMCE edits that omit input events.
                     editor.on('input change keyup SetContent', updatePreview);
                 };
                 const existing = tinymce.get('teksttv_content');
@@ -122,6 +134,17 @@ export function createPostMetaPage() {
                 tinymce.on('AddEditor', (e) => {
                     if (e.editor.id === 'teksttv_content') bindEditor(e.editor);
                 });
+                return true;
+            };
+
+            // Retry while WordPress exposes TinyMCE asynchronously.
+            if (!bindTinyMceEvents()) {
+                let attempts = 0;
+                const retryTimer = window.setInterval(() => {
+                    if (bindTinyMceEvents() || ++attempts >= 50) {
+                        window.clearInterval(retryTimer);
+                    }
+                }, 100);
             }
 
             document.addEventListener('input', (e) => {
@@ -266,6 +289,24 @@ export function createPostMetaPage() {
         onTitleInputMeta(): void {
             updateTeksttvCharCount(config);
             updatePreview();
+        },
+
+        insertPlainSeparator(): void {
+            const textarea = document.querySelector<HTMLTextAreaElement>('#teksttv_content');
+            if (!textarea) return;
+
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const needsLeadingBreak = start > 0 && textarea.value[start - 1] !== '\n';
+            const hasTrailingBreak = textarea.value[end] === '\n';
+            const separator = `${needsLeadingBreak ? '\n' : ''}---${hasTrailingBreak ? '' : '\n'}`;
+            textarea.setRangeText(separator, start, end, 'end');
+            if (hasTrailingBreak) {
+                const caret = textarea.selectionEnd + 1;
+                textarea.setSelectionRange(caret, caret);
+            }
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.focus();
         },
     };
 }

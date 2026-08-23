@@ -14,7 +14,7 @@
     min-width: 620px;
 }
 
-#teksttv-groups {
+#teksttv-commercial-blocks {
     min-width: 360px;
 }
 
@@ -134,7 +134,7 @@
 
     #teksttv-channels td:nth-child(1),
     #teksttv-channels td:nth-child(2),
-    #teksttv-groups td:first-child {
+    #teksttv-commercial-blocks td:first-child {
         grid-column: 1 / -1;
     }
 
@@ -146,7 +146,7 @@
         width: auto;
     }
 
-    #teksttv-groups .teksttv-table-actions {
+    #teksttv-commercial-blocks .teksttv-table-actions {
         grid-column: 2;
     }
 

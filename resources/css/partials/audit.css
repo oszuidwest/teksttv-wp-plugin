@@ -1,3 +1,14 @@
+.teksttv-audit-month-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.teksttv-audit-month-filter label {
+    font-weight: 600;
+}
+
 .teksttv-audit-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -34,6 +45,11 @@
 }
 
 @media (max-width: 782px) {
+    .teksttv-audit-month-filter {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
     .teksttv-audit-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

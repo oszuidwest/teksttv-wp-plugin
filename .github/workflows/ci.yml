@@ -1,0 +1,148 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths: &ci-paths
+      - '**/*.php'
+      - '**/*.js'
+      - '**/*.ts'
+      - '**/*.css'
+      - 'composer.*'
+      - 'package.json'
+      - 'bun.lock'
+      - 'biome.json'
+      - 'tsconfig*.json'
+      - 'bin/**'
+      - 'tests/e2e/**'
+      - 'tests/*.sh'
+      - 'blueprint.json'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths: *ci-paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Biome + TypeScript + Bun tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run check:frontend
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      # The packager writes its zip= output to GITHUB_OUTPUT itself, so the
+      # artifact naming convention lives only in bin/package-plugin.sh.
+      zip: ${{ steps.package.outputs.zip }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+          tools: composer:v2
+
+      - name: Test production version validation
+        run: bash tests/package-version.sh
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+
+      - name: Assert packaging rejects missing build output
+        run: |
+          if OUTPUT=$(bash bin/package-plugin.sh 2>&1); then
+            echo "::error::Packager accepted a checkout without built assets."
+            exit 1
+          fi
+          printf '%s\n' "$OUTPUT"
+          grep -Fq "Required built asset 'assets/admin.css' is missing" <<< "$OUTPUT"
+
+      - name: Build, validate, and audit canonical plugin artifact
+        id: package
+        run: |
+          trap 'rm -f PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js' EXIT
+          mkdir -p assets
+          touch PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js
+          bun run build:package
+          for CANARY in PACKAGE_AUDIT_CANARY.md src/package-audit-canary.php assets/package-audit-canary.js; do
+            test ! -e "release/teksttv/$CANARY"
+          done
+
+      - name: Upload validated plugin ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: teksttv-plugin
+          path: ${{ steps.package.outputs.zip }}
+          if-no-files-found: error
+          retention-days: 1
+
+  e2e:
+    name: WordPress smoke (activate + REST + browser)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          # Reads engines.node so package.json stays the single source of truth.
+          node-version-file: package.json
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download validated plugin ZIP
+        uses: actions/download-artifact@v8
+        with:
+          name: teksttv-plugin
+          path: release
+
+      # Unzipping the shippable ZIP preserves the byte-identity and file modes
+      # that verify-package.sh proved; a directory artifact round trip does not.
+      - name: Stage the validated ZIP for smoke testing
+        env:
+          ZIP: ${{ needs.build.outputs.zip }}
+        run: unzip -q "$ZIP" -d release
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run e2e suite in WordPress Playground
+        run: bun run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

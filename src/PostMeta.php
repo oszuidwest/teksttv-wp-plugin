@@ -4,6 +4,9 @@ namespace TekstTV;
 
 class PostMeta
 {
+    /** @var list<string> */
+    private const RICH_TEXT_FEATURES = ['bold', 'italic', 'underline', 'lists'];
+
     public static function init(): void
     {
         add_action('add_meta_boxes', [self::class, 'register_meta_box']);
@@ -53,11 +56,8 @@ class PostMeta
         }
 
         $page_separator = Helpers::has_feature('page_separator');
-        if ($page_separator) {
-            // mce_external_plugins is page-level: core applies it once, for the
-            // first TinyMCE editor initialized, and merges the result into every
-            // editor on the page. Per-editor scoping happens via the toolbar in
-            // render_meta_box, so don't gate on the filter's $editor_id here.
+        if ($page_separator && self::has_rich_text_features()) {
+            // Core applies external plugins page-wide; toolbars scope editors.
             add_filter('mce_external_plugins', [self::class, 'register_tinymce_plugin']);
         }
 
@@ -66,7 +66,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $post_id = get_the_ID();
 
-        // Build fallback image data (post thumbnail with caption/attribution)
         $fallback_image = null;
         if ($post_id) {
             $thumb_id = get_post_thumbnail_id($post_id);
@@ -75,7 +74,6 @@ class PostMeta
             }
         }
 
-        // Build custom sidebar image data (for JS preview of already saved custom images)
         $custom_image = null;
         if ($post_id) {
             $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
@@ -84,7 +82,6 @@ class PostMeta
             }
         }
 
-        // Calculate default end date using the same start date shown in the form
         $saved_start = $post_id ? get_post_meta($post_id, '_teksttv_date_start', true) : '';
         if (empty($saved_start) && $post_id) {
             $saved_start = self::default_start_date(get_post($post_id));
@@ -93,6 +90,8 @@ class PostMeta
 
         $prompts = Helpers::get_ai_prompts();
         $ai_supported = Helpers::ai_supported();
+        $is_new_post = !$post_id || get_post_status($post_id) === 'auto-draft';
+        $fallback_title = $is_new_post ? '' : get_the_title($post_id);
 
         $config = [
             'previewUrl' => $preview_url,
@@ -103,7 +102,8 @@ class PostMeta
             'generateUrl' => rest_url('teksttv/v1/generate'),
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
-            'isNewPost' => !$post_id || get_post_status($post_id) === 'auto-draft',
+            'isNewPost' => $is_new_post,
+            'fallbackTitle' => $fallback_title,
             'titleCharLimit' => $prompts['title_char_limit'],
             'wordLimit' => $prompts['word_limit'],
             'wordLimitPhoto' => $prompts['word_limit_photo'],
@@ -113,8 +113,7 @@ class PostMeta
     }
 
     /**
-     * Default scheduling start date: the post's publish date, or today when
-     * the post has none yet.
+     * Use the publish date, or today for unpublished posts.
      */
     private static function default_start_date(?\WP_Post $post): string
     {
@@ -123,8 +122,7 @@ class PostMeta
     }
 
     /**
-     * Default scheduling end date derived from a start date and the
-     * teksttv_default_end_days setting ('' when that setting is 0).
+     * Add the configured default duration; zero leaves the end open.
      */
     private static function default_end_date(string $start_date): string
     {
@@ -135,6 +133,31 @@ class PostMeta
         }
 
         return (new \DateTimeImmutable($start_date))->modify('+' . $default_days . ' days')->format('Y-m-d');
+    }
+
+    private static function has_rich_text_features(): bool
+    {
+        return user_can_richedit()
+            && array_intersect(self::RICH_TEXT_FEATURES, Helpers::get_features()) !== [];
+    }
+
+    private static function plain_editor_content(string $content): string
+    {
+        $content = preg_replace('/<br\s*\/?>/i', "\n", $content) ?? $content;
+        $content = preg_replace('/<\/(?:p|li|div)>/i', "\n", $content) ?? $content;
+        $content = wp_strip_all_tags($content);
+        $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $content = preg_replace("/\r\n?/", "\n", $content) ?? $content;
+
+        return preg_replace("/\n{3,}/", "\n\n", $content) ?? $content;
+    }
+
+    /**
+     * Match generated or stored content to the editor currently in use.
+     */
+    public static function prepare_editor_content(string $content): string
+    {
+        return self::has_rich_text_features() ? $content : self::plain_editor_content($content);
     }
 
     public static function render_meta_box(\WP_Post $post): void
@@ -154,7 +177,6 @@ class PostMeta
             $images = [];
         }
 
-        // Default dates for new/unsaved posts
         if (empty($date_start) && empty($date_end)) {
             $date_start = self::default_start_date($post);
             $date_end = self::default_end_date($date_start);
@@ -163,7 +185,6 @@ class PostMeta
         $preview_url = Helpers::get_preview_url();
         $ai_enabled = Helpers::ai_supported();
 
-        // Build TinyMCE toolbar and valid elements based on features
         $toolbar_items = [];
         if (Helpers::has_feature('bold')) {
             $toolbar_items[] = 'bold';
@@ -174,21 +195,17 @@ class PostMeta
         if (Helpers::has_feature('underline')) {
             $toolbar_items[] = 'underline';
         }
-        if (!empty($toolbar_items)) {
-            $toolbar_items[] = '|';
-        }
         if (Helpers::has_feature('lists')) {
             $toolbar_items[] = 'bullist';
             $toolbar_items[] = 'numlist';
-            $toolbar_items[] = '|';
         }
-        if (Helpers::has_feature('page_separator')) {
+        $has_page_separator = Helpers::has_feature('page_separator');
+        $use_tinymce = self::has_rich_text_features();
+        if ($has_page_separator && $use_tinymce) {
             $toolbar_items[] = 'teksttv_separator';
-            $toolbar_items[] = '|';
         }
-        $toolbar_items[] = 'removeformat';
-        $toolbar_items[] = 'undo';
-        $toolbar_items[] = 'redo';
+
+        $plain_content = $use_tinymce ? '' : self::plain_editor_content((string) $content);
 
         $valid_elements = ['br', 'p'];
         if (Helpers::has_feature('bold')) {
@@ -237,11 +254,11 @@ class PostMeta
             $raw_days = wp_unslash($_POST['teksttv_days']);
         }
 
-        // Collect POST data; process_save() performs the remaining field-specific sanitization.
+        // process_save() applies field-specific sanitization.
         $data = [
             'active' => isset($_POST['teksttv_active']),
             'title' => sanitize_text_field(wp_unslash($_POST['teksttv_title'] ?? '')),
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via wp_kses in process_save()
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- encoded as text or sanitized via wp_kses in process_save()
             'content' => wp_unslash($_POST['teksttv_content'] ?? ''),
             'date_start' => sanitize_text_field(wp_unslash($_POST['teksttv_date_start'] ?? '')),
             'date_end' => sanitize_text_field(wp_unslash($_POST['teksttv_date_end'] ?? '')),
@@ -260,15 +277,12 @@ class PostMeta
      */
     private static function process_save(int $post_id, array $data): void
     {
-        // Active toggle
         update_post_meta($post_id, '_teksttv_active', $data['active'] ? '1' : '0');
 
-        // Title override (only save if feature enabled)
         if (Helpers::has_feature('custom_title')) {
             update_post_meta($post_id, '_teksttv_title', $data['title'] ?? '');
         }
 
-        // Content — strip tags that are disabled by features
         $allowed_tags = ['p' => [], 'br' => []];
         if (Helpers::has_feature('bold')) {
             $allowed_tags['strong'] = [];
@@ -286,10 +300,15 @@ class PostMeta
             $allowed_tags['ol'] = [];
             $allowed_tags['li'] = [];
         }
-        $content = wp_kses($data['content'] ?? '', $allowed_tags);
+
+        $content = (string) ($data['content'] ?? '');
+        if (!self::has_rich_text_features()) {
+            // Double-encode entities for a lossless plain-text HTML round trip.
+            $content = htmlspecialchars($content, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', true);
+        }
+        $content = wp_kses($content, $allowed_tags);
         update_post_meta($post_id, '_teksttv_content', $content);
 
-        // Scheduling (only save if feature enabled)
         if (Helpers::has_feature('scheduling')) {
             update_post_meta($post_id, '_teksttv_date_start', Helpers::sanitize_date_input($data['date_start'] ?? ''));
             update_post_meta($post_id, '_teksttv_date_end', Helpers::sanitize_date_input($data['date_end'] ?? ''));
@@ -303,13 +322,11 @@ class PostMeta
             }
         }
 
-        // Extra images (only save if feature enabled)
         if (Helpers::has_feature('extra_images')) {
             $images = array_filter($data['images'] ?? []);
             update_post_meta($post_id, '_teksttv_images', $images);
         }
 
-        // Sidebar image (only save if feature enabled)
         if (Helpers::has_feature('sidebar_image')) {
             $sidebar_raw = $data['sidebar_image'] ?? '';
             if ($sidebar_raw === '0') {

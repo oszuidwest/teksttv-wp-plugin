@@ -1,13 +1,9 @@
-/** Helpers to replace lightweight jQuery-style patterns in WP admin scripts. */
-
 const slideTimers = new WeakMap<HTMLElement, number>();
 
-/** Respect the user's OS/browser motion preference in scripted animations. */
 export function prefersReducedMotion(): boolean {
     return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** Cancel a pending slide completion and remove its temporary inline styles. */
 export function cancelSlideAnimation(el: HTMLElement): void {
     const timer = slideTimers.get(el);
     if (timer !== undefined) {
@@ -76,11 +72,6 @@ export function slideUp(el: HTMLElement, durationMs = 150, onComplete?: () => vo
     });
 }
 
-/**
- * Focus target for after removing a list item: the same control in the next
- * sibling, else the previous sibling, else `fallback`. Resolve it before the
- * item is removed (or animated out) so the siblings still exist.
- */
 export function siblingFocusTarget(item: Element, selector: string, fallback: HTMLElement | null): HTMLElement | null {
     return (
         item.nextElementSibling?.querySelector<HTMLElement>(selector) ??
@@ -93,7 +84,6 @@ export function dispatchInput(el: Element): void {
     el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-/** Clone the first element of a `<template>` by id; null when absent. */
 export function cloneTemplate(templateId: string): HTMLElement | null {
     const template = document.getElementById(templateId);
     if (!(template instanceof HTMLTemplateElement)) return null;
@@ -102,8 +92,7 @@ export function cloneTemplate(templateId: string): HTMLElement | null {
 }
 
 /**
- * Rewrite indexed names, ids, label targets, and data-name values after a
- * repeated item is moved or removed.
+ * Reindex form names, IDs, labels, and data-name values.
  */
 export function reindexNames(
     container: HTMLElement,

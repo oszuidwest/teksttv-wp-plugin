@@ -12,9 +12,6 @@ class HelpersTest extends TestCase
         $this->assertSame('teksttv-blocks-3-duration-text', Helpers::field_id('teksttv_blocks', 3, 'duration_text'));
     }
 
-    // =========================================================================
-    // clamp_int()
-    // =========================================================================
 
     public function test_clamp_int_returns_value_within_range(): void
     {
@@ -33,13 +30,10 @@ class HelpersTest extends TestCase
 
     public function test_clamp_int_handles_negative_via_absint(): void
     {
-        // absint() takes the absolute value first, then the range is applied.
+        // absint() runs before clamping.
         $this->assertSame(120, Helpers::clamp_int('-9999', 1, 120));
     }
 
-    // =========================================================================
-    // duration_ms()
-    // =========================================================================
 
     public function test_duration_ms_clamps_legacy_override(): void
     {
@@ -67,9 +61,6 @@ class HelpersTest extends TestCase
         $this->assertSame(120000, Helpers::fixed_duration_ms(null, 9999));
     }
 
-    // =========================================================================
-    // is_allowed_on_day()
-    // =========================================================================
 
     public function test_is_allowed_on_day_returns_false_for_empty_array(): void
     {
@@ -83,8 +74,7 @@ class HelpersTest extends TestCase
 
     public function test_is_allowed_on_day_returns_true_when_day_matches(): void
     {
-        // Wednesday = N=3
-        $wednesday = new \DateTimeImmutable('2026-04-08'); // a Wednesday
+        $wednesday = new \DateTimeImmutable('2026-04-08');
         $this->assertTrue(Helpers::is_allowed_on_day(['3'], $wednesday));
     }
 
@@ -102,7 +92,6 @@ class HelpersTest extends TestCase
 
     public function test_is_allowed_on_day_uses_current_datetime_when_no_date_given(): void
     {
-        // Mock WP's current_datetime to return a known Monday
         $monday = new \DateTimeImmutable('2026-04-06');
         Functions\expect('current_datetime')->once()->andReturn($monday);
 
@@ -112,13 +101,9 @@ class HelpersTest extends TestCase
     public function test_is_allowed_on_day_handles_integer_day_values(): void
     {
         $monday = new \DateTimeImmutable('2026-04-06');
-        // Even if array contains ints, they should be cast to string
         $this->assertTrue(Helpers::is_allowed_on_day([1, 2], $monday));
     }
 
-    // =========================================================================
-    // sanitize_date_input()
-    // =========================================================================
 
     public function test_sanitize_date_input_accepts_strict_calendar_date(): void
     {
@@ -131,9 +116,6 @@ class HelpersTest extends TestCase
         $this->assertSame('', Helpers::sanitize_date_input('not-a-date'));
     }
 
-    // =========================================================================
-    // is_within_date_range()
-    // =========================================================================
 
     public function test_is_within_date_range_returns_true_for_empty_strings(): void
     {
@@ -193,9 +175,6 @@ class HelpersTest extends TestCase
         $this->assertTrue(Helpers::is_within_date_range('', '2026-04-07'));
     }
 
-    // =========================================================================
-    // is_block_scheduled()
-    // =========================================================================
 
     public function test_is_block_scheduled_returns_false_for_explicit_empty_days(): void
     {
@@ -214,15 +193,12 @@ class HelpersTest extends TestCase
         $block = [
             'date_start' => '2026-04-01',
             'date_end' => '2026-04-30',
-            'days' => ['2'], // Tuesday
+            'days' => ['2'],
         ];
 
         $this->assertTrue(Helpers::is_block_scheduled($block));
     }
 
-    // =========================================================================
-    // build_tax_query()
-    // =========================================================================
 
     public function test_build_tax_query_returns_empty_for_empty_filters(): void
     {
@@ -271,9 +247,6 @@ class HelpersTest extends TestCase
         $this->assertSame([5, 10], $result[0]['terms']);
     }
 
-    // =========================================================================
-    // count_words()
-    // =========================================================================
 
     public function test_count_words_regular_text(): void
     {
@@ -290,9 +263,6 @@ class HelpersTest extends TestCase
         $this->assertSame(4, Helpers::count_words('café résumé über straße'));
     }
 
-    // =========================================================================
-    // get_date_range_meta_query()
-    // =========================================================================
 
     public function test_get_date_range_meta_query_structure(): void
     {
@@ -326,9 +296,6 @@ class HelpersTest extends TestCase
         ], Helpers::get_date_range_meta_query());
     }
 
-    // =========================================================================
-    // get_active_campaigns()
-    // =========================================================================
 
     public function test_get_active_campaigns_filters_by_channel(): void
     {
@@ -372,7 +339,6 @@ class HelpersTest extends TestCase
 
     public function test_get_active_campaigns_filters_by_days_of_week(): void
     {
-        // 2026-04-07 is a Tuesday (ISO day 2).
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
@@ -391,9 +357,6 @@ class HelpersTest extends TestCase
         $this->assertNotContains('WeekendOnly', $names);
     }
 
-    // =========================================================================
-    // get_image_data()
-    // =========================================================================
 
     public function test_get_image_data_returns_null_when_no_url(): void
     {
@@ -448,9 +411,6 @@ class HelpersTest extends TestCase
         $this->assertSame('https://example.com/thumb.jpg', $result['url']);
     }
 
-    // =========================================================================
-    // ai_supported() / get_ai_prompts()
-    // =========================================================================
 
     public function test_ai_supported_returns_false_when_environment_allows_ai_but_no_provider_matches(): void
     {
@@ -502,9 +462,6 @@ class HelpersTest extends TestCase
         $this->assertSame(100, $result['word_limit']);
         $this->assertSame(40, $result['title_char_limit']);
         $this->assertSame(50, $result['min_input_words']);
-        $this->assertSame(3, $result['max_retries']);
-        $this->assertSame(10, $result['rate_limit']);
-        $this->assertSame(2048, $result['max_tokens']);
         $this->assertNotEmpty($result['system']);
         $this->assertNotEmpty($result['prompt_title']);
         $this->assertNotEmpty($result['prompt_body']);
@@ -518,8 +475,6 @@ class HelpersTest extends TestCase
                 'system' => 'Custom system prompt',
                 'word_limit' => 200,
                 'title_char_limit' => 50,
-                'max_retries' => 5,
-                'temperature' => 0.7,
                 'model' => 'anthropic/claude-3',
             ]);
 
@@ -528,12 +483,10 @@ class HelpersTest extends TestCase
         $this->assertSame('Custom system prompt', $result['system']);
         $this->assertSame(200, $result['word_limit']);
         $this->assertSame(50, $result['title_char_limit']);
-        $this->assertSame(5, $result['max_retries']);
-        $this->assertSame(0.7, $result['temperature']);
         $this->assertSame('anthropic/claude-3', $result['model']);
     }
 
-    public function test_get_ai_prompts_clamps_legacy_generation_limits(): void
+    public function test_get_ai_prompts_clamps_out_of_range_limits(): void
     {
         Functions\expect('get_option')
             ->with('teksttv_ai_prompts', [])
@@ -542,9 +495,6 @@ class HelpersTest extends TestCase
                 'word_limit_photo' => 9999,
                 'title_char_limit' => 9999,
                 'min_input_words' => 9999,
-                'temperature' => 99,
-                'top_p' => 99,
-                'max_tokens' => 99999,
             ]);
 
         $result = Helpers::get_ai_prompts();
@@ -553,9 +503,6 @@ class HelpersTest extends TestCase
         $this->assertSame(500, $result['word_limit_photo']);
         $this->assertSame(100, $result['title_char_limit']);
         $this->assertSame(500, $result['min_input_words']);
-        $this->assertSame(2, $result['temperature']);
-        $this->assertSame(1, $result['top_p']);
-        $this->assertSame(8192, $result['max_tokens']);
     }
 
     public function test_normalize_ai_prompt_limits_preserves_photo_inheritance_marker(): void
@@ -603,49 +550,43 @@ class HelpersTest extends TestCase
         $this->assertSame(10, $result['word_limit_photo']);
     }
 
-    // =========================================================================
-    // get_campaign_groups()
-    // =========================================================================
 
-    public function test_get_campaign_groups_skips_malformed_entries(): void
+    public function test_get_commercial_blocks_skips_malformed_entries(): void
     {
         Functions\expect('get_option')
-            ->with('teksttv_campaign_groups', [])
+            ->with('teksttv_commercial_blocks', [])
             ->andReturn([
-                ['id' => 'grp_aaa', 'label' => 'Sponsors'],
+                ['id' => 'cblock_aaa', 'label' => 'Sponsors'],
                 ['id' => '', 'label' => 'Geen id'],
-                ['id' => 'grp_ccc', 'label' => ''],
+                ['id' => 'cblock_ccc', 'label' => ''],
                 'legacy-string',
             ]);
 
         $this->assertSame(
-            [['id' => 'grp_aaa', 'label' => 'Sponsors']],
-            Helpers::get_campaign_groups()
+            [['id' => 'cblock_aaa', 'label' => 'Sponsors']],
+            Helpers::get_commercial_blocks()
         );
     }
 
-    public function test_campaign_group_id_is_stable_for_label(): void
+    public function test_commercial_block_id_uses_frozen_grp_derivation(): void
     {
+        // Pin the ID formula used by stored references.
         $this->assertSame(
-            Helpers::campaign_group_id('Sponsors'),
-            Helpers::campaign_group_id('Sponsors')
+            'grp_e881053494ad',
+            Helpers::commercial_block_id('Sponsors')
         );
         $this->assertNotSame(
-            Helpers::campaign_group_id('Sponsors'),
-            Helpers::campaign_group_id('Partners')
+            Helpers::commercial_block_id('Sponsors'),
+            Helpers::commercial_block_id('Partners')
         );
     }
 
-    // =========================================================================
-    // is_within_date_range() — edge case: invalid date format
-    // =========================================================================
 
     public function test_is_within_date_range_ignores_invalid_start_format(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
 
-        // Invalid format should not block
         $this->assertTrue(Helpers::is_within_date_range('not-a-date', ''));
     }
 }

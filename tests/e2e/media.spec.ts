@@ -1,5 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
 import { addLoopBlock, openFixturePostEditor } from './helpers';
+import { expect, type Page, test } from './test';
 
 async function selectFixtureImage(page: Page): Promise<string> {
     const modal = page.locator('.media-modal:visible');
@@ -25,8 +25,7 @@ async function selectFixtureImage(page: Page): Promise<string> {
     return attachmentId;
 }
 
-// No reseed hooks here: none of these tests submit a form or save the post,
-// and the fixture attachment is created idempotently, so nothing persists.
+// These tests persist nothing, so fixture reseeding is unnecessary.
 test.describe('media picker interactions', () => {
     test('ignores stale sidebar metadata after a newer card selection', async ({ page }) => {
         test.setTimeout(45_000);
@@ -100,12 +99,12 @@ test.describe('media picker interactions', () => {
         await expect(removeButton).toBeHidden();
     });
 
-    test('sets and clears a campaign intro image through the shared picker contract', async ({ page }) => {
+    test('sets and clears a commercial intro image through the shared picker contract', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-loop-tv1');
-        const campaignBlock = await addLoopBlock(page, 'campaign');
+        const commercialBlock = await addLoopBlock(page, 'commercial');
 
-        // First picker in the block is the intro transition image.
-        const introPicker = campaignBlock.locator('.teksttv-image-picker').first();
+        // The first picker controls the intro image.
+        const introPicker = commercialBlock.locator('.teksttv-image-picker').first();
         const idInput = introPicker.locator('.teksttv-block-image-id');
         const preview = introPicker.locator('.teksttv-block-image-preview');
         const removeButton = introPicker.locator('.teksttv-block-image-remove');
@@ -117,13 +116,13 @@ test.describe('media picker interactions', () => {
         await expect(preview).toBeVisible();
         await expect(introPicker.locator('.teksttv-block-image-thumb')).toHaveAttribute('src', /.+/);
         await expect(removeButton).toBeVisible();
-        await expect(campaignBlock.locator('.teksttv-block-summary')).toContainText('Introafbeelding');
+        await expect(commercialBlock.locator('.teksttv-block-summary')).not.toContainText('Introafbeelding');
 
         await removeButton.click();
         await expect(idInput).toHaveValue('');
         await expect(preview).toBeHidden();
         await expect(removeButton).toBeHidden();
-        await expect(campaignBlock.locator('.teksttv-block-summary')).not.toContainText('Intro afbeelding');
+        await expect(commercialBlock.locator('.teksttv-block-summary')).not.toContainText('Introafbeelding');
     });
 
     test('keeps extra-image removal in sync with the form and preview', async ({ page }) => {
@@ -133,11 +132,13 @@ test.describe('media picker interactions', () => {
         const list = page.locator('#teksttv-images-list');
         const items = list.locator(':scope > .teksttv-image-item');
         const previewCounter = page.locator('#teksttv-preview-counter');
+        const previewNav = page.locator('#teksttv-preview-nav');
+        const previewThumbs = page.locator('#teksttv-preview-thumbs');
         const existingItem = items.first();
 
         await expect(items).toHaveCount(1);
         await expect(previewCounter).toHaveText('1 / 2');
-        const thumbnailFrames = page.locator('#teksttv-preview-thumbs iframe');
+        const thumbnailFrames = previewThumbs.locator('iframe');
         await expect(thumbnailFrames).toHaveCount(2);
         for (const frame of await thumbnailFrames.all()) {
             await expect(frame).toHaveAttribute('tabindex', '-1');
@@ -147,11 +148,17 @@ test.describe('media picker interactions', () => {
         await existingItem.locator('.teksttv-remove-image').click();
         await expect(existingItem).toHaveCount(0);
         await expect(previewCounter).toHaveText('1 / 1');
+        await expect(previewNav).toBeHidden();
+        await expect(previewThumbs).toBeHidden();
+        await expect(thumbnailFrames).toHaveCount(0);
         await expect(page.locator('#teksttv-snackbar')).toContainText('Afbeelding verwijderd.');
 
         await page.locator('.teksttv-snackbar-action').click();
         await expect(existingItem).toHaveCount(1);
         await expect(previewCounter).toHaveText('1 / 2');
+        await expect(previewNav).toBeVisible();
+        await expect(previewThumbs).toBeVisible();
+        await expect(thumbnailFrames).toHaveCount(2);
 
         await existingItem.locator('.teksttv-remove-image').click();
         await expect(existingItem).toHaveCount(0);

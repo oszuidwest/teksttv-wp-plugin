@@ -5,7 +5,6 @@ import { appendImageItems, removeImageItem } from '../../modules/utils';
 import { pickImages, pickSingleImage } from '../../modules/wpMedia';
 import type { BlocksWorkbenchContext } from './workbenchContext';
 
-/** Set one block accordion state and keep its disclosure button in sync. */
 export function setBlockOpen(block: HTMLElement, expanded: boolean, animate = true): void {
     const wasExpanded = block.classList.contains('is-expanded');
     block.classList.toggle('is-expanded', expanded);
@@ -26,26 +25,23 @@ export function setBlockOpen(block: HTMLElement, expanded: boolean, animate = tr
     else slideUp(body, 150);
 }
 
-/** Toggle the accordion body of the block owning `trigger`. */
 function toggleBlockOpen(trigger: Element): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
     setBlockOpen(block, !block.classList.contains('is-expanded'));
 }
 
-/** Remove the block owning `trigger` and offer a persistent undo action. */
 function removeClosestBlock(trigger: Element, onRemoved: () => void, focusUndo: boolean): void {
     const block = trigger.closest('.teksttv-block');
     if (!(block instanceof HTMLElement)) return;
-    // The list root declares where focus goes when its last block is removed.
+    // The list declares focus fallback after its last removal.
     const emptyFocus = block.parentElement?.dataset.emptyFocus;
     const focusTarget = siblingFocusTarget(
         block,
         '.teksttv-block-toggle-control',
         emptyFocus ? document.querySelector<HTMLElement>(emptyFocus) : null,
     );
-    // Fire while the block is still connected so the event reaches the form,
-    // including when this is the last block in the list.
+    // Fire before removal so the event still reaches the form.
     markFormDirty(block);
 
     const title = block.querySelector<HTMLElement>('.teksttv-block-title')?.textContent?.trim() || 'Onderdeel';
@@ -58,7 +54,6 @@ function removeClosestBlock(trigger: Element, onRemoved: () => void, focusUndo: 
     });
 }
 
-/** Move a block one position for keyboard and switch-control users. */
 function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => void): void {
     const block = trigger.closest<HTMLElement>('.teksttv-block');
     const root = block?.parentElement;
@@ -78,7 +73,6 @@ function moveClosestBlock(trigger: Element, direction: -1 | 1, onMoved: () => vo
     focusTarget?.focus();
 }
 
-/** Close native disclosure menus on Escape or when focus moves elsewhere. */
 export function initDisclosureMenus(root: HTMLElement): void {
     const openMenuSelector = '.teksttv-block-actions[open], .teksttv-dropdown-button[open]';
 
@@ -91,13 +85,17 @@ export function initDisclosureMenus(root: HTMLElement): void {
         actions.querySelector<HTMLElement>(':scope > summary')?.focus();
     });
 
-    document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (!(target instanceof Node)) return;
-        root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
-            if (!actions.contains(target)) actions.removeAttribute('open');
-        });
-    });
+    document.addEventListener(
+        'click',
+        (e) => {
+            const target = e.target;
+            if (!(target instanceof Node)) return;
+            root.querySelectorAll<HTMLDetailsElement>(openMenuSelector).forEach((actions) => {
+                if (!actions.contains(target)) actions.removeAttribute('open');
+            });
+        },
+        true,
+    );
 
     document.addEventListener('focusin', (e) => {
         const target = e.target;
@@ -108,11 +106,7 @@ export function initDisclosureMenus(root: HTMLElement): void {
     });
 }
 
-/**
- * Shared block-header controls: keyboard reorder, remove, accordion toggle.
- * Returns true when the click was one of them. Summaries are derived from a
- * block's own fields, so reordering or removing never changes them.
- */
+/** Return whether a shared block-header control handled the click. */
 export function handleBlockControlsClick(e: MouseEvent, root: HTMLElement, reindex: () => void): boolean {
     if (!(e.target instanceof Element)) return false;
 
@@ -138,10 +132,6 @@ export function handleBlockControlsClick(e: MouseEvent, root: HTMLElement, reind
     return false;
 }
 
-/**
- * Delegated `#teksttv-blocks` / `#teksttv-campaigns` clicks: remove, accordion, campaign slides, image pickers.
- * Keeps `workbench.ts` readable; context holds DOM roots and refresh helpers.
- */
 export function handleBlocksClick(e: MouseEvent, ctx: BlocksWorkbenchContext): void {
     if (!(e.target instanceof Element) || !ctx.blocksEl) return;
     const blocksRoot = ctx.blocksEl;

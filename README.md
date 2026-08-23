@@ -1,6 +1,6 @@
 # TekstTV (WordPress plugin)
 
-WordPress plugin to manage text-TV slides and serve them as JSON to the [TekstTV playout app](https://github.com/oszuidwest/teksttv-frontend). In the Tekst TV admin menu you set up channels, build the broadcast loop from blocks (posts, images, iframes, campaigns, weather, ticker items), and manage settings, campaigns and optional AI-assisted content.
+WordPress plugin to manage text-TV slides and serve them as JSON to the [TekstTV playout app](https://github.com/oszuidwest/teksttv-frontend). In the Tekst TV admin menu you set up channels, build the broadcast loop from blocks (posts, images, iframes, commercials, weather, ticker items), and manage settings, commercials and optional AI-assisted content.
 
 ## How it fits with the frontend
 
@@ -12,22 +12,24 @@ The playout in [oszuidwest/teksttv-frontend](https://github.com/oszuidwest/tekst
 - PHP 8.3 or newer
 
 For development from a Git checkout you also need [Composer](https://getcomposer.org/) and [Bun](https://bun.sh/).
+The Playground E2E suite additionally uses Node.js 24 LTS.
 
 ## Installation
 
 ### Pre-built zip (recommended)
 
-The manual Release workflow publishes `teksttv-<version>.zip`. It uses the
+Pushing a version tag starts the Release workflow and publishes
+`teksttv-<version>.zip`. It uses the
 same canonical packager as the E2E suite: tracked production source, the exact
 built asset set, and a fresh `composer install --no-dev` inside the staged
 plugin. Upload the ZIP under Plugins → Add New → Upload Plugin and activate.
 
-The workflow reads the release version from the plugin header, which is also the
-runtime source for `TEKSTTV_VERSION`. The version must be newer than the latest
-published release. GitHub creates the version tag and publishes the ZIP using
-repository-native immutable releases, so published tags and assets cannot be
-replaced. An existing unpublished tag is accepted only when it points to the
-commit being released.
+The tag must exactly match the version in the plugin header, which is also the
+runtime source for `TEKSTTV_VERSION`. For example, release version `0.5.0` with
+`git tag 0.5.0 && git push origin 0.5.0`. The workflow validates and packages
+that tagged commit, smoke-tests the ZIP in WordPress Playground, and then
+publishes it using repository-native immutable
+releases, so published tags and assets cannot be replaced.
 
 ### Build from source
 
@@ -53,16 +55,16 @@ Without `vendor/` and a built `assets/` the plugin won't load: `vendor/autoload.
 
 | Role          | Capabilities |
 |---------------|--------------|
-| Administrator | `manage_teksttv`, `manage_teksttv_campaigns`, `manage_teksttv_content`, `edit_teksttv` |
+| Administrator | `manage_teksttv`, `manage_teksttv_commercials`, `manage_teksttv_content`, `edit_teksttv` |
 | Editor        | `edit_teksttv` (TekstTV fields on posts) |
 
 If you need a different distribution, use a capability plugin.
 
 ## Usage
 
-- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, campaign and weather. The ticker is configured separately.
+- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, commercial and weather. The ticker is configured separately.
 - Settings: channel slugs (`tv1`, `tv2`, …), display duration for text and images, OpenWeather API key, feature toggles (TinyMCE, AI, scheduling), preview URL.
-- Campaigns: campaign blocks and groups used in the loop.
+- Commercials (`Reclame`): commercial blocks and their campaigns used in the loop.
 - Content & AI / AI Audit, when AI generation is enabled and a configured provider supports TekstTV's text-generation requirements: prompts and audit log.
 
 If no channels are stored, `tv1` is assumed.
@@ -95,21 +97,25 @@ From [`package.json`](package.json):
 | `bun run typecheck`| TypeScript type checking without emitting files |
 | `bun run analyse`  | PHPStan |
 | `bun run test`     | PHPUnit (unit) |
-| `bun run env:start`| Build + package the artifact and boot WordPress via [`wp-env`](https://www.npmjs.com/package/@wordpress/env) (needs Docker) |
-| `bun run test:e2e:fixtures` | Seed the running site with channels, a post, a loop/ticker config and a custom-role user |
-| `bun run test:e2e` | Playwright smoke suite against the running site |
+| `bun run env:start`| Build + package the artifact and boot an interactive [WordPress Playground](https://wordpress.github.io/wordpress-playground/) on port 8888 |
+| `bun run test:e2e` | Start a disposable Blueprint-configured Playground and run the Playwright smoke suite |
 
 ### End-to-end smoke suite
 
-The e2e suite installs the **built plugin artifact** (not the raw checkout)
-into a real WordPress and checks activation, administrator and custom-role
-settings saves, admin screen rendering, and the `/slides` REST shape. Locally:
+The e2e suite mounts the **built plugin artifact** (not the raw checkout) into
+a disposable WordPress Playground and checks activation, administrator and
+custom-role settings saves, admin screen rendering, and the `/slides` REST
+shape. [`blueprint.json`](blueprint.json) pins WordPress and PHP, activates and
+validates the artifact, and loads the deterministic fixtures. Locally:
 
 ```bash
-bun run env:start            # Docker required
-bun run test:e2e:fixtures
+bun run build:package
 bun run test:e2e
-bun run env:stop
 ```
+
+For interactive inspection, run `bun run env:start` and sign in with
+`admin` / `password`. Stop the ephemeral server with Ctrl-C. Playground uses
+SQLite, while the plugin itself relies on WordPress database APIs rather than
+database-specific queries.
 
 CI runs lint, the plugin artifact build, and the e2e suite; see [`.github/workflows/`](.github/workflows/).

@@ -1,0 +1,26 @@
+{
+    "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+    "preferredVersions": {
+        "php": "8.3",
+        "wp": "7.0"
+    },
+    "features": {
+        "networking": false
+    },
+    "constants": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_DISPLAY": false,
+        "SCRIPT_DEBUG": false,
+        "WP_ENVIRONMENT_TYPE": "local"
+    },
+    "steps": [
+        {
+            "step": "activatePlugin",
+            "pluginPath": "teksttv/teksttv.php"
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/e2e/setup.php';"
+        }
+    ]
+}

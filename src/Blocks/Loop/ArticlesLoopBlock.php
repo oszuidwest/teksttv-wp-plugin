@@ -13,7 +13,7 @@ use WP_Query;
 
 final class ArticlesLoopBlock
 {
-    /** Cap backfill re-queries when runtime filters (weekdays, empty content) keep rejecting candidates. */
+    /** Cap backfill queries when runtime filters reject candidates. */
     private const MAX_QUERY_BATCHES = 10;
 
     public static function register(): void
@@ -89,13 +89,11 @@ final class ArticlesLoopBlock
     public static function build(array $block, string $channel = ''): array
     {
         $slides = [];
-        // Clamp at runtime too: values stored before the save-time clamp existed
-        // could still be unbounded and would otherwise size the WP_Query.
+        // Clamp legacy values that predate save-time validation.
         $count = Helpers::clamp_int($block['count'] ?? 3, 1, 50);
         $taxonomy_filters = $block['taxonomy_filters'] ?? [];
 
-        // Features are runtime-authoritative: disabling one must stop its stored
-        // meta from acting, even though the values remain in the database.
+        // Disabled features ignore their retained post meta.
         $scheduling = Helpers::has_feature('scheduling');
         $custom_title = Helpers::has_feature('custom_title');
         $extra_images = Helpers::has_feature('extra_images');
@@ -111,9 +109,7 @@ final class ArticlesLoopBlock
         $text_duration = Helpers::duration_ms($block['duration_text'] ?? null, 'teksttv_duration_text');
         $image_duration = Helpers::duration_ms($block['duration_image'] ?? null, 'teksttv_duration_image');
         $batch_size = max(10, $count);
-        // Keep the cross-block exclusion fixed while paging through this block's
-        // candidate set. Adding every rejected candidate to post__not_in would
-        // make both the SQL clause and its query-cache key grow per batch.
+        // Keep post__not_in fixed so pagination does not grow SQL/cache keys.
         $seen_post_ids = BuildContext::get_seen_post_ids();
         $emitted_post_count = 0;
 
@@ -193,8 +189,7 @@ final class ArticlesLoopBlock
     }
 
     /**
-     * Split content into pages using the page separator pattern.
-     * Returns non-empty trimmed page strings.
+     * Split content into non-empty pages.
      *
      * @return list<string>
      */
@@ -223,9 +218,7 @@ final class ArticlesLoopBlock
      */
     public static function get_sidebar_image_data(int $post_id): ?array
     {
-        // The sidebar_image feature owns the per-post override (including the
-        // '0' suppression). When it is disabled, ignore the stored override and
-        // fall through to the automatic category/thumbnail resolution.
+        // A disabled feature ignores its stored override, including '0'.
         if (Helpers::has_feature('sidebar_image')) {
             $override_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
             if ($override_id === '0' || $override_id === 0) {
@@ -248,8 +241,7 @@ final class ArticlesLoopBlock
             }
         }
 
-        // get_the_terms() reads the object-term cache primed by the articles
-        // WP_Query; wp_get_post_categories() would issue a fresh query per post.
+        // Reuse the object-term cache primed by the articles query.
         $categories = get_the_terms($post_id, 'category');
         foreach (is_array($categories) ? $categories : [] as $cat) {
             $data = self::get_category_image_data((int) $cat->term_id);

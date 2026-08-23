@@ -105,9 +105,7 @@ class RestApi
     }
 
     /**
-     * Errors are returned as WP_Error so core serializes every failure - ours
-     * and its own (expired nonce, invalid param) - into the one {code, message}
-     * shape that resources/ts/alpine/postMeta/aiGeneration.ts consumes.
+     * Return WP_Error so every failure uses the client's {code, message} shape.
      */
     public static function generate_content(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
@@ -130,9 +128,7 @@ class RestApi
         $post_id = $request->get_param('post_id');
         $field = $request->get_param('field');
 
-        // The view only offers body-only generation then, but stale editor tabs
-        // can still send title/both; without this gate that would persist an
-        // orphaned _teksttv_ai_title that skews the AI-audit page.
+        // Reject title requests from stale tabs when custom titles are disabled.
         if ($field !== 'body' && !Helpers::has_feature('custom_title')) {
             return new WP_Error(
                 'teksttv_custom_title_disabled',
@@ -164,13 +160,12 @@ class RestApi
         $source_post->post_title = sanitize_text_field($source_title);
         $source_post->post_content = wp_kses_post($source_content);
 
-        $config = Helpers::get_ai_prompts();
-
-        // Counted last so requests that can only 403/404 do not consume quota.
-        if (!AiGenerator::within_rate_limit(get_current_user_id(), $config['rate_limit'])) {
+        // Reject invalid requests before consuming quota.
+        $provider_requests = $field === 'both' ? 2 : 1;
+        if (!AiGenerator::within_rate_limit(get_current_user_id(), $provider_requests)) {
             return new WP_Error(
                 'teksttv_rate_limited',
-                'Te veel verzoeken. Probeer het over een minuut opnieuw.',
+                sprintf('Te veel verzoeken (maximaal %d per minuut). Probeer het over een minuut opnieuw.', AiGenerator::REQUESTS_PER_MINUTE),
                 ['status' => 429]
             );
         }
@@ -178,15 +173,14 @@ class RestApi
         $result = AiGenerator::generate_for_post(
             $source_post,
             $field,
-            $config,
+            Helpers::get_ai_prompts(),
             (bool) $request->get_param('has_photo')
         );
         if (is_wp_error($result)) {
             return $result;
         }
 
-        // Single-field requests return {content}; 'both' returns {title, body}.
-        // Shape consumed by resources/ts/alpine/postMeta/aiGeneration.ts.
+        // The client expects {content} or {title, body}.
         $response = $field !== 'both' ? ['content' => $result['fields'][$field]] : $result['fields'];
 
         if ($result['warning'] !== '') {

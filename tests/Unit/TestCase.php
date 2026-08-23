@@ -13,15 +13,19 @@ abstract class TestCase extends PHPUnitTestCase
 {
     use MockeryPHPUnitIntegration;
 
+    /** @var array<string, mixed> */
+    private array $original_get;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->original_get = $_GET;
         Monkey\setUp();
-        // Once any test stubs TekstTV\time(), Brain Monkey's definition of it
-        // persists for the whole PHPUnit process and throws in tests that don't
-        // stub it. Default every test to the real clock; override per test with
-        // Functions\when() where the value matters.
+        // Brain Monkey function stubs persist for the PHPUnit process.
         Functions\when('TekstTV\\time')->alias('time');
+        // Keep the persistent wp_unslash stub safe by default.
+        Functions\when('wp_unslash')->returnArg();
+        Functions\when('user_can_richedit')->justReturn(true);
         $registry_types = new \ReflectionProperty(BlockRegistry::class, 'types');
         $registry_types->setValue(null, []);
         $ai_cache = new \ReflectionProperty(Helpers::class, 'ai_supported_cache');
@@ -30,13 +34,12 @@ abstract class TestCase extends PHPUnitTestCase
 
     protected function tearDown(): void
     {
+        $_GET = $this->original_get;
         Monkey\tearDown();
         parent::tearDown();
     }
 
     /**
-     * Call a private/protected static method via reflection.
-     *
      * @param class-string $class
      * @param list<mixed> $args
      */
@@ -61,13 +64,23 @@ abstract class TestCase extends PHPUnitTestCase
     }
 
     /**
-     * Build the fluent WordPress AI prompt mock with one response per call.
+     * Stub shared AI-builder expectations without reading private constants.
      */
-    protected static function mockAiBuilder(string|\WP_Error ...$responses): \Mockery\MockInterface
+    private static function mockBaseAiBuilder(): \Mockery\MockInterface
     {
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder->shouldReceive('using_max_tokens')->with(2048)->andReturnSelf();
+
+        return $builder;
+    }
+
+    /**
+     * Build an AI prompt mock with one response per call.
+     */
+    protected static function mockAiBuilder(string|\WP_Error ...$responses): \Mockery\MockInterface
+    {
+        $builder = self::mockBaseAiBuilder();
         $builder->shouldReceive('is_supported_for_text_generation')->zeroOrMoreTimes()->andReturn(true);
         $builder->shouldReceive('generate_text')
             ->times(count($responses))
@@ -76,15 +89,9 @@ abstract class TestCase extends PHPUnitTestCase
         return $builder;
     }
 
-    /**
-     * Build the fluent WordPress AI prompt mock whose capability probe
-     * reports that no provider matches the configured requirements.
-     */
     protected static function mockUnsupportedAiBuilder(): \Mockery\MockInterface
     {
-        $builder = \Mockery::mock();
-        $builder->shouldReceive('using_system_instruction')->andReturnSelf();
-        $builder->shouldReceive('using_max_tokens')->andReturnSelf();
+        $builder = self::mockBaseAiBuilder();
         $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturn(false);
 
         return $builder;

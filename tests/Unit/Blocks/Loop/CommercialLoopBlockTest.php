@@ -3,38 +3,38 @@
 namespace TekstTV\Tests\Unit\Blocks\Loop;
 
 use Brain\Monkey\Functions;
-use TekstTV\Blocks\Loop\CampaignLoopBlock;
+use TekstTV\Blocks\Loop\CommercialLoopBlock;
 use TekstTV\Tests\Unit\TestCase;
 
-class CampaignLoopBlockTest extends TestCase
+class CommercialLoopBlockTest extends TestCase
 {
-    public function test_save_with_groups(): void
+    public function test_save_with_commercial_blocks(): void
     {
-        // Groups are stored by stable id, not by label.
-        $result = CampaignLoopBlock::save([
-            'groups' => ['grp_aaa111', 'grp_bbb222'],
+        // Runtime lookup uses stable IDs.
+        $result = CommercialLoopBlock::save([
+            'commercial_block_ids' => ['cblock_aaa111', 'cblock_bbb222'],
             'intro_image_id' => '10',
             'outro_image_id' => '20',
         ]);
 
-        $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
+        $this->assertSame(['cblock_aaa111', 'cblock_bbb222'], $result['commercial_block_ids']);
         $this->assertSame(10, $result['intro_image_id']);
         $this->assertSame(20, $result['outro_image_id']);
     }
 
-    public function test_save_filters_empty_groups(): void
+    public function test_save_filters_empty_commercial_blocks(): void
     {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['grp_aaa111', '', 'grp_bbb222'],
+        $result = CommercialLoopBlock::save([
+            'commercial_block_ids' => ['cblock_aaa111', '', 'cblock_bbb222'],
         ]);
 
-        $this->assertSame(['grp_aaa111', 'grp_bbb222'], $result['groups']);
+        $this->assertSame(['cblock_aaa111', 'cblock_bbb222'], $result['commercial_block_ids']);
     }
 
     public function test_save_with_limit(): void
     {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
+        $result = CommercialLoopBlock::save([
+            'commercial_block_ids' => ['A'],
             'limit' => '5',
         ]);
 
@@ -43,8 +43,8 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_save_omits_empty_limit(): void
     {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
+        $result = CommercialLoopBlock::save([
+            'commercial_block_ids' => ['A'],
             'limit' => '',
         ]);
 
@@ -53,37 +53,37 @@ class CampaignLoopBlockTest extends TestCase
 
     public function test_save_clamps_limit_to_ui_max(): void
     {
-        $result = CampaignLoopBlock::save([
-            'groups' => ['A'],
+        $result = CommercialLoopBlock::save([
+            'commercial_block_ids' => ['A'],
             'limit' => '9999',
         ]);
 
         $this->assertSame(100, $result['limit']);
     }
 
-    public function test_save_empty_groups_defaults(): void
+    public function test_save_empty_commercial_blocks_defaults(): void
     {
-        $result = CampaignLoopBlock::save([]);
+        $result = CommercialLoopBlock::save([]);
 
-        $this->assertSame([], $result['groups']);
+        $this->assertSame([], $result['commercial_block_ids']);
         $this->assertSame(0, $result['intro_image_id']);
         $this->assertSame(0, $result['outro_image_id']);
     }
 
-    public function test_save_non_array_groups(): void
+    public function test_save_non_array_commercial_blocks(): void
     {
-        $result = CampaignLoopBlock::save(['groups' => 'single']);
+        $result = CommercialLoopBlock::save(['commercial_block_ids' => 'single']);
 
-        $this->assertSame([], $result['groups']);
+        $this->assertSame([], $result['commercial_block_ids']);
     }
 
-    public function test_build_returns_empty_when_no_groups(): void
+    public function test_build_returns_empty_when_no_commercial_blocks(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
 
-        $block = ['groups' => []];
-        $this->assertSame([], CampaignLoopBlock::build($block, 'tv1'));
+        $block = ['commercial_block_ids' => []];
+        $this->assertSame([], CommercialLoopBlock::build($block, 'tv1'));
     }
 
 
@@ -96,7 +96,7 @@ class CampaignLoopBlockTest extends TestCase
             ->andReturn([
                 [
                     'channels' => ['tv1'],
-                    'group' => 'sponsors',
+                    'commercial_block_id' => 'sponsors',
                     'date_start' => '2026-04-01',
                     'date_end' => '2026-04-30',
                     'duration' => 5,
@@ -106,8 +106,8 @@ class CampaignLoopBlockTest extends TestCase
         Functions\expect('wp_get_attachment_url')
             ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
 
-        $block = ['groups' => ['sponsors']];
-        $result = CampaignLoopBlock::build($block, 'tv1');
+        $block = ['commercial_block_ids' => ['sponsors']];
+        $result = CommercialLoopBlock::build($block, 'tv1');
 
         $this->assertCount(2, $result);
         $this->assertSame('commercial', $result[0]['type']);
@@ -125,13 +125,13 @@ class CampaignLoopBlockTest extends TestCase
             ->andReturn([
                 [
                     'channels' => ['tv2'],
-                    'group' => 'sponsors',
+                    'commercial_block_id' => 'sponsors',
                     'slides' => [100],
                 ],
             ]);
 
-        $block = ['groups' => ['sponsors']];
-        $result = CampaignLoopBlock::build($block, 'tv1');
+        $block = ['commercial_block_ids' => ['sponsors']];
+        $result = CommercialLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
     }
@@ -145,7 +145,7 @@ class CampaignLoopBlockTest extends TestCase
             ->andReturn([
                 [
                     'channels' => ['tv1'],
-                    'group' => 'sponsors',
+                    'commercial_block_id' => 'sponsors',
                     'slides' => [1, 2, 3, 4, 5],
                 ],
             ]);
@@ -155,8 +155,8 @@ class CampaignLoopBlockTest extends TestCase
         Functions\expect('wp_get_attachment_url')
             ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
 
-        $block = ['groups' => ['sponsors'], 'limit' => 2];
-        $result = CampaignLoopBlock::build($block, 'tv1');
+        $block = ['commercial_block_ids' => ['sponsors'], 'limit' => 2];
+        $result = CommercialLoopBlock::build($block, 'tv1');
 
         $this->assertCount(2, $result);
     }
@@ -170,7 +170,7 @@ class CampaignLoopBlockTest extends TestCase
             ->andReturn([
                 [
                     'channels' => ['tv1'],
-                    'group' => 'sponsors',
+                    'commercial_block_id' => 'sponsors',
                     'slides' => [100],
                     'duration' => 5,
                 ],
@@ -179,11 +179,11 @@ class CampaignLoopBlockTest extends TestCase
             ->andReturnUsing(fn ($id) => 'https://example.com/img-' . $id . '.jpg');
 
         $block = [
-            'groups' => ['sponsors'],
+            'commercial_block_ids' => ['sponsors'],
             'intro_image_id' => 50,
             'outro_image_id' => 51,
         ];
-        $result = CampaignLoopBlock::build($block, 'tv1');
+        $result = CommercialLoopBlock::build($block, 'tv1');
 
         $this->assertCount(3, $result);
         $this->assertSame('commercial_transition', $result[0]['type']);
@@ -201,11 +201,11 @@ class CampaignLoopBlockTest extends TestCase
             ->andReturn([]);
 
         $block = [
-            'groups' => ['sponsors'],
+            'commercial_block_ids' => ['sponsors'],
             'intro_image_id' => 50,
             'outro_image_id' => 51,
         ];
-        $result = CampaignLoopBlock::build($block, 'tv1');
+        $result = CommercialLoopBlock::build($block, 'tv1');
 
         $this->assertSame([], $result);
     }
@@ -219,7 +219,7 @@ class CampaignLoopBlockTest extends TestCase
                 return [
                     [
                         'channels' => ['tv1'],
-                        'group' => 'sponsors',
+                        'commercial_block_id' => 'sponsors',
                         'slides' => [100],
                     ],
                 ];
@@ -231,8 +231,8 @@ class CampaignLoopBlockTest extends TestCase
         });
         Functions\expect('wp_get_attachment_url')->andReturn('https://example.com/img.jpg');
 
-        $block = ['groups' => ['sponsors']];
-        $result = CampaignLoopBlock::build($block, 'tv1');
+        $block = ['commercial_block_ids' => ['sponsors']];
+        $result = CommercialLoopBlock::build($block, 'tv1');
 
         $this->assertSame(7000, $result[0]['duration']);
     }

@@ -6,11 +6,7 @@ use TekstTV\Blocks\BuildContext;
 use TekstTV\Helpers;
 
 /**
- * Shared WP_Query argument builder for "recent published posts" blocks.
- *
- * Encapsulates the policy shared by every post-querying block: exclude posts
- * already emitted this build pass ({@see BuildContext}), respect the
- * `teksttv_max_post_age` setting, and apply optional taxonomy filters.
+ * Build recent-post queries with shared age, taxonomy, and deduplication rules.
  */
 final class RecentPostsQuery
 {

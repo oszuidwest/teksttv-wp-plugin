@@ -51,9 +51,7 @@ function dismissSnackbar(root: HTMLElement): void {
 }
 
 /**
- * Remove a local form item and offer a persistent undo action. Keyboard-
- * initiated removals focus the action immediately; pointer removals preserve
- * focus near the changed list. Starting a new removal commits the previous one.
+ * Remove a form item with one-level undo and input-aware focus handling.
  */
 export function removeElementWithUndo(element: HTMLElement, options: UndoRemovalOptions): void {
     const parent = element.parentNode;

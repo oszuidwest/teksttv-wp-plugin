@@ -68,7 +68,7 @@
 }
 
 .teksttv-block-title {
-    flex: 1;
+    flex: 1 0 auto;
     min-width: 0;
     overflow: hidden;
     font-weight: 600;
@@ -221,7 +221,7 @@
     line-height: 1.4;
 }
 
-.teksttv-field-grid--campaign-main {
+.teksttv-field-grid--commercial-main {
     align-items: start;
 }
 
@@ -586,6 +586,10 @@
 
 .teksttv-dropdown-button[open] .teksttv-dropdown-menu {
     display: block;
+}
+
+.teksttv-dropdown-button[open] {
+    z-index: 20;
 }
 
 .teksttv-dropdown-menu button {

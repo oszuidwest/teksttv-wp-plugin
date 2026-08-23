@@ -1,7 +1,6 @@
 import type { Slide } from '../../modules/types';
 import { previewSlideUrl } from '../../modules/utils';
 
-/** Volledige scherm-overlay voor preview navigeren met pijlen/Escape. */
 export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, initialIndex: number): void {
     if (!slides.length) return;
     let overlayIndex = initialIndex;
@@ -9,8 +8,7 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
 
     const getOverlaySrc = (idx: number) => previewSlideUrl(previewUrl, slides[idx]);
 
-    // Native <dialog> + showModal(): focus trap, Escape-to-close, and an
-    // inert background come from the platform.
+    // Native dialog supplies focus trapping, Escape, and inert background.
     const overlay = document.createElement('dialog');
     overlay.className = 'teksttv-preview-overlay';
     overlay.setAttribute('aria-label', 'Preview');
@@ -23,6 +21,12 @@ export function mountTeksttvPreviewOverlay(slides: Slide[], previewUrl: string, 
         '</div>' +
         '<iframe title="Tekst TV-preview" sandbox="allow-scripts allow-same-origin"></iframe>';
     overlay.querySelector('iframe')?.setAttribute('src', getOverlaySrc(overlayIndex));
+
+    if (slides.length <= 1) {
+        for (const el of overlay.querySelectorAll('.teksttv-overlay-nav-btn, .teksttv-overlay-counter')) {
+            el.classList.add('is-hidden');
+        }
+    }
 
     function updateOverlayNav(): void {
         const ctr = overlay.querySelector('.teksttv-overlay-counter');
