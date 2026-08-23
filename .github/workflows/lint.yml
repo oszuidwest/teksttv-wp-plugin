@@ -40,15 +40,19 @@ jobs:
           coverage: none
           tools: composer:v2, cs2pr
 
-      - run: composer validate --no-check-publish
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
 
-      - run: composer install --no-progress --prefer-dist --optimize-autoloader
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - run: |
+      - name: PHP_CodeSniffer
+        run: |
           vendor/bin/phpcs -q --report=checkstyle \
             --runtime-set ignore_warnings_on_exit 1 | cs2pr --graceful-warnings
 
-      - run: |
+      - name: PHPStan
+        run: |
           vendor/bin/phpstan analyse --memory-limit=1G \
             --error-format=checkstyle | cs2pr
 
@@ -66,11 +70,13 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - run: >-
+      - name: Install production dependencies
+        run: >-
           composer install --no-dev --no-progress --prefer-dist
           --optimize-autoloader
 
-      - uses: wordpress/plugin-check-action@v1
+      - name: WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
         with:
           exclude-checks: |
             late_escaping
@@ -97,6 +103,8 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - run: composer install --no-progress --prefer-dist --optimize-autoloader
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - run: vendor/bin/phpunit
+      - name: PHPUnit
+        run: vendor/bin/phpunit

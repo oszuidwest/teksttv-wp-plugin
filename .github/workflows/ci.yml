@@ -90,7 +90,8 @@ jobs:
             test ! -e "release/teksttv/$CANARY"
           done
 
-      - uses: actions/upload-artifact@v7
+      - name: Upload validated plugin ZIP
+        uses: actions/upload-artifact@v7
         with:
           name: teksttv-plugin
           path: ${{ steps.package.outputs.zip }}
@@ -116,24 +117,30 @@ jobs:
         with:
           bun-version-file: package.json
 
-      - run: bun install --frozen-lockfile
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
 
-      - uses: actions/download-artifact@v8
+      - name: Download validated plugin ZIP
+        uses: actions/download-artifact@v8
         with:
           name: teksttv-plugin
           path: release
 
       # Unzipping the shippable ZIP preserves the byte-identity and file modes
       # that verify-package.sh proved; a directory artifact round trip does not.
-      - env:
+      - name: Stage the validated ZIP for smoke testing
+        env:
           ZIP: ${{ needs.build.outputs.zip }}
         run: unzip -q "$ZIP" -d release
 
-      - run: bunx playwright install --with-deps chromium
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
 
-      - run: bun run test:e2e
+      - name: Run e2e suite in WordPress Playground
+        run: bun run test:e2e
 
-      - if: failure()
+      - name: Upload Playwright report on failure
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
