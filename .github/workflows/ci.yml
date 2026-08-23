@@ -21,6 +21,8 @@ on:
       - '.github/workflows/ci.yml'
   pull_request:
     paths: *ci-paths
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
