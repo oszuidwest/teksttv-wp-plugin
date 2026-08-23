@@ -230,6 +230,19 @@ class AdminPageTest extends TestCase
         $this->assertSame($stored, AdminPage::sanitize_ai_prompts('not an array'));
     }
 
+    public function test_sanitize_ai_prompts_normalizes_terminal_period_toggle(): void
+    {
+        Functions\when('sanitize_textarea_field')->returnArg();
+        Functions\when('current_user_can')->justReturn(false);
+        Functions\when('get_option')->justReturn([]);
+
+        $enabled = AdminPage::sanitize_ai_prompts(['ensure_terminal_period' => '1']);
+        $disabled = AdminPage::sanitize_ai_prompts(['ensure_terminal_period' => '0']);
+
+        $this->assertTrue($enabled['ensure_terminal_period']);
+        $this->assertFalse($disabled['ensure_terminal_period']);
+    }
+
     public function test_sanitize_channels_deduplicates_slug_keeping_first(): void
     {
         Functions\when('add_settings_error')->justReturn(null);

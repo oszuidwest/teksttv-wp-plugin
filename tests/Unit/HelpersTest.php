@@ -3,6 +3,7 @@
 namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\Helpers;
 
 class HelpersTest extends TestCase
@@ -263,6 +264,36 @@ class HelpersTest extends TestCase
         $this->assertSame(4, Helpers::count_words('café résumé über straße'));
     }
 
+    #[DataProvider('terminalPeriodProvider')]
+    public function test_ensure_terminal_period(string $input, string $expected): void
+    {
+        $this->assertSame($expected, Helpers::ensure_terminal_period($input));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function terminalPeriodProvider(): array
+    {
+        return [
+            'empty string stays empty' => [" \t\n", ''],
+            'missing punctuation gets period' => ['Het bericht stopt hier', 'Het bericht stopt hier.'],
+            'text is trimmed before period is added' => ['  Het bericht stopt hier  ', 'Het bericht stopt hier.'],
+            'existing period is preserved' => ['Het bericht is klaar.', 'Het bericht is klaar.'],
+            'existing question mark is preserved' => ['Komt er extra toezicht?', 'Komt er extra toezicht?'],
+            'existing exclamation mark is preserved' => ['De weg is weer open!', 'De weg is weer open!'],
+            'existing ellipsis is preserved' => ['Het onderzoek loopt…', 'Het onderzoek loopt…'],
+            'closing quote after punctuation is kept' => ['"Het besluit is genomen."', '"Het besluit is genomen."'],
+            'period is added after closing bracket' => ['De weg gaat dicht (A58)', 'De weg gaat dicht (A58).'],
+            'trailing comma becomes period' => ['De vergadering start morgen,', 'De vergadering start morgen.'],
+            'comma before quote becomes period' => ['Hij zei "ja,"', 'Hij zei "ja."'],
+            'comma after quote becomes period' => ['Hij zei "ja",', 'Hij zei "ja."'],
+            'colon before quote becomes period' => ['Hij zei "ja:"', 'Hij zei "ja."'],
+            'comma before bracket becomes period' => ['De weg gaat dicht (A58,)', 'De weg gaat dicht (A58).'],
+            'comma after bracket becomes period' => ['De weg gaat dicht (A58),', 'De weg gaat dicht (A58).'],
+            'comma between quote and bracket becomes period' => ['Hij zei ("ja,")', 'Hij zei ("ja").'],
+        ];
+    }
 
     public function test_get_date_range_meta_query_structure(): void
     {
@@ -462,6 +493,7 @@ class HelpersTest extends TestCase
         $this->assertSame(100, $result['word_limit']);
         $this->assertSame(40, $result['title_char_limit']);
         $this->assertSame(50, $result['min_input_words']);
+        $this->assertTrue($result['ensure_terminal_period']);
         $this->assertNotEmpty($result['system']);
         $this->assertNotEmpty($result['prompt_title']);
         $this->assertNotEmpty($result['prompt_body']);
@@ -476,6 +508,7 @@ class HelpersTest extends TestCase
                 'word_limit' => 200,
                 'title_char_limit' => 50,
                 'model' => 'anthropic/claude-3',
+                'ensure_terminal_period' => false,
             ]);
 
         $result = Helpers::get_ai_prompts();
@@ -484,6 +517,7 @@ class HelpersTest extends TestCase
         $this->assertSame(200, $result['word_limit']);
         $this->assertSame(50, $result['title_char_limit']);
         $this->assertSame('anthropic/claude-3', $result['model']);
+        $this->assertFalse($result['ensure_terminal_period']);
     }
 
     public function test_get_ai_prompts_clamps_out_of_range_limits(): void
@@ -505,9 +539,9 @@ class HelpersTest extends TestCase
         $this->assertSame(500, $result['min_input_words']);
     }
 
-    public function test_normalize_ai_prompt_limits_preserves_photo_inheritance_marker(): void
+    public function test_normalize_ai_prompt_settings_preserves_photo_inheritance_marker(): void
     {
-        $limits = Helpers::normalize_ai_prompt_limits([
+        $limits = Helpers::normalize_ai_prompt_settings([
             'word_limit' => 250,
             'word_limit_photo' => 0,
         ]);
@@ -516,10 +550,10 @@ class HelpersTest extends TestCase
         $this->assertSame(0, $limits['word_limit_photo']);
     }
 
-    public function test_normalize_ai_prompt_limits_clamps_positive_photo_word_limit(): void
+    public function test_normalize_ai_prompt_settings_clamps_positive_photo_word_limit(): void
     {
         foreach ([1 => 10, 9 => 10, 10 => 10, 500 => 500, 501 => 500] as $input => $expected) {
-            $limits = Helpers::normalize_ai_prompt_limits(['word_limit_photo' => $input]);
+            $limits = Helpers::normalize_ai_prompt_settings(['word_limit_photo' => $input]);
 
             $this->assertSame($expected, $limits['word_limit_photo'], 'Input ' . $input);
         }
@@ -539,7 +573,7 @@ class HelpersTest extends TestCase
         $this->assertSame(250, $result['word_limit_photo']);
     }
 
-    public function test_get_ai_prompts_clamps_legacy_low_photo_word_limit(): void
+    public function test_get_ai_prompts_clamps_photo_word_limit_below_minimum(): void
     {
         Functions\expect('get_option')
             ->with('teksttv_ai_prompts', [])
@@ -568,9 +602,8 @@ class HelpersTest extends TestCase
         );
     }
 
-    public function test_commercial_block_id_uses_frozen_grp_derivation(): void
+    public function test_commercial_block_id_matches_stored_reference_format(): void
     {
-        // Pin the ID formula used by stored references.
         $this->assertSame(
             'grp_e881053494ad',
             Helpers::commercial_block_id('Sponsors')
