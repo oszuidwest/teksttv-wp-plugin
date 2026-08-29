@@ -4,7 +4,7 @@ name: CI
 on:
   push:
     branches: [main]
-    paths: &ci-paths
+    paths:
       - '**/*.php'
       - '**/*.js'
       - '**/*.ts'
@@ -20,7 +20,8 @@ on:
       - 'blueprint.json'
       - '.github/workflows/ci.yml'
   pull_request:
-    paths: *ci-paths
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:

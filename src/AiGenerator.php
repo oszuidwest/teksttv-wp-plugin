@@ -174,6 +174,10 @@ class AiGenerator
             );
         }
 
+        if ($field === 'body' && $config['ensure_terminal_period']) {
+            $content = Helpers::ensure_terminal_period($content);
+        }
+
         $warning = self::validate_ai_output($field, $content, $config, $has_photo);
 
         if ($field === 'body') {

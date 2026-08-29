@@ -4,7 +4,7 @@ name: Lint
 on:
   push:
     branches: [main]
-    paths: &ci-paths
+    paths:
       - '**/*.php'
       - 'composer.*'
       - 'phpcs.xml'
@@ -14,7 +14,8 @@ on:
       - 'tests/**'
       - '.github/workflows/lint.yml'
   pull_request:
-    paths: *ci-paths
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
