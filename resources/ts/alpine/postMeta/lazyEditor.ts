@@ -1,17 +1,10 @@
 const EDITOR_ID = 'teksttv_content';
 
 /**
- * Initialize the Tekst TV TinyMCE editor from JS, reusing the config WordPress
- * already generated in `tinyMCEPreInit.mceInit`. Returns true once the editor
- * exists (or already existed).
- *
- * The editor is rendered with `wp_skip_init`, so WordPress does not initialize
- * it on page load. Letting wp_editor() auto-initialize inside a metabox is
- * unsafe: the block editor renders metaboxes hidden and moves them into place
- * after it mounts, and per the wp_editor() docs "the TinyMCE editor cannot be
- * safely moved in the DOM" once initialized — the result is an editor with no
- * caret that cannot be typed in. Initializing only once the container is
- * rendered (not display:none) avoids that entirely.
+ * Initialize the editor from the config WordPress already generated in
+ * `tinyMCEPreInit.mceInit` (the view sets `wp_skip_init`, so WordPress does not
+ * do this itself). Returns true once the editor exists, or false when TinyMCE
+ * or the config is not available yet so the caller can retry.
  */
 export function initEditor(): boolean {
     if (typeof tinymce === 'undefined' || !tinymce) return false;
@@ -30,12 +23,11 @@ export function initEditor(): boolean {
 }
 
 /**
- * Initialize the editor once its container is rendered. "Rendered" means it has
- * a layout box (not display:none) — deliberately not "scrolled into view": an
- * off-screen editor still lays out correctly, and TinyMCE only breaks when it
- * initializes inside a display:none subtree. This covers both ways the field
- * starts hidden: the block editor revealing metaboxes after mount, and the
- * "Toon op Tekst TV" toggle collapsing the fields.
+ * Initialize the editor once its container is rendered — has a layout box, not
+ * display:none. Deliberately not "scrolled into view": an off-screen editor
+ * lays out correctly, and TinyMCE only breaks inside a display:none subtree.
+ * Covers both ways the field starts hidden: the block editor revealing
+ * metaboxes after mount, and the "Toon op Tekst TV" toggle.
  */
 export function initTeksttvEditorWhenDisplayed(): void {
     const wrap = document.getElementById(`wp-${EDITOR_ID}-wrap`);

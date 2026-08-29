@@ -148,10 +148,8 @@ export function createPostMetaPage() {
                 }, 100);
             }
 
-            // The editor is rendered with wp_skip_init; initialize it from JS
-            // once its container is displayed (TinyMCE breaks if initialized
-            // while display:none and then moved, which is what the block editor
-            // does with metaboxes).
+            // The editor is rendered with wp_skip_init and initialized from JS
+            // once its metabox is displayed (see lazyEditor.ts).
             initTeksttvEditorWhenDisplayed();
 
             document.addEventListener('input', (e) => {

@@ -97,7 +97,7 @@ $has_page_separator = Helpers::has_feature('page_separator');
                                     // Skip WordPress' automatic init: TinyMCE cannot be moved in the
                                     // DOM once initialized, and the block editor renders metaboxes
                                     // hidden and moves them into place after mount. JS initializes the
-                                    // editor once it is visible (see lazyEditor.ts).
+                                    // editor once it is displayed (see lazyEditor.ts).
                                     'wp_skip_init' => true,
                                     'plugins' => 'lists,paste,wpautoresize',
                                     'wp_autoresize_on' => true,
