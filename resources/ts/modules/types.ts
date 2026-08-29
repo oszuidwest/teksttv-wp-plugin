@@ -50,6 +50,7 @@ export interface WPTinyMCEEditor {
 export interface WPTinyMCE {
     get(id: string): WPTinyMCEEditor | null;
     on(event: string, callback: (e: { editor: WPTinyMCEEditor }) => void): void;
+    execCommand(command: string, ui?: boolean, value?: unknown): void;
 }
 
 export interface WPMediaAttachment {

@@ -8,6 +8,7 @@ import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/count
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
 import { getTeksttvEditorHtml } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
+import { initTeksttvEditorWhenDisplayed } from './postMeta/lazyEditor';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
 import { updatePreviewThumbnails } from './postMeta/previewThumbnails';
 import { applySidebarCardState } from './postMeta/sidebarCard';
@@ -146,6 +147,12 @@ export function createPostMetaPage() {
                     }
                 }, 100);
             }
+
+            // The editor is rendered with wp_skip_init; initialize it from JS
+            // once its container is displayed (TinyMCE breaks if initialized
+            // while display:none and then moved, which is what the block editor
+            // does with metaboxes).
+            initTeksttvEditorWhenDisplayed();
 
             document.addEventListener('input', (e) => {
                 const t = e.target;
