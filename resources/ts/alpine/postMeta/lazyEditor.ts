@@ -15,10 +15,17 @@ const EDITOR_ID = 'teksttv_content';
  */
 export function initEditor(): boolean {
     if (typeof tinymce === 'undefined' || !tinymce) return false;
-    if (!tinymce.get(EDITOR_ID)) {
-        // mceAddEditor runs tinymce.init() with the stored mceInit config.
-        tinymce.execCommand('mceAddEditor', false, EDITOR_ID);
-    }
+    if (tinymce.get(EDITOR_ID)) return true;
+
+    // Init from WordPress' own stored config, exactly like core's editor init
+    // loop. (Do not use execCommand('mceAddEditor'): that builds the editor from
+    // EditorManager's last-used settings, so with wp_skip_init it would miss our
+    // toolbar and the external "Nieuwe slide" plugin.)
+    const preInit = typeof tinyMCEPreInit !== 'undefined' ? tinyMCEPreInit : undefined;
+    const config = preInit?.mceInit?.[EDITOR_ID];
+    if (!config) return false;
+
+    tinymce.init(config);
     return !!tinymce.get(EDITOR_ID);
 }
 
