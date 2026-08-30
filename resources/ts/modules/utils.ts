@@ -32,6 +32,15 @@ export function splitPages(html: string, enabled = true): string[] {
     return html.split(/<p[^>]*>\s*-{3,}\s*<\/p>|(?:^|\r?\n)[ \t]*-{3,}[ \t]*(?=\r?\n|$)/i);
 }
 
+/** Run `task` now, then retry every 100ms (max 50 attempts) until it reports success. */
+export function retryUntil(task: () => boolean): void {
+    if (task()) return;
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+        if (task() || ++attempts >= 50) window.clearInterval(timer);
+    }, 100);
+}
+
 export function debounce(fn: () => void, ms: number): () => void {
     let timer: number | undefined;
     return () => {

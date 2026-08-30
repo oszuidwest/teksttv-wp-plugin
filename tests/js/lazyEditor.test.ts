@@ -32,13 +32,12 @@ describe('initEditor', () => {
     test('initializes from the stored WordPress config when the editor is absent', () => {
         const config = { selector: '#teksttv_content', toolbar1: 'bold,teksttv_separator' };
         const calls: unknown[] = [];
-        let editor: { id: string } | null = null;
+        // tinymce.get() keeps returning null: TinyMCE may register the editor
+        // after init(). Success must mean "init started", not "editor
+        // registered", or the caller's retry loop would re-invoke init().
         setGlobal('tinymce', {
-            get: () => editor,
-            init: (c: unknown) => {
-                calls.push(c);
-                editor = { id: 'teksttv_content' };
-            },
+            get: () => null,
+            init: (c: unknown) => calls.push(c),
         });
         setGlobal('tinyMCEPreInit', { mceInit: { teksttv_content: config } });
         expect(initEditor()).toBe(true);

@@ -1,7 +1,7 @@
 import Sortable from 'sortablejs';
 import { hide, prefersReducedMotion, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
-import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
+import { debounce, previewSlideUrl, removeImageItem, retryUntil } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
@@ -139,17 +139,9 @@ export function createPostMetaPage() {
             };
 
             // Retry while WordPress exposes TinyMCE asynchronously.
-            if (!bindTinyMceEvents()) {
-                let attempts = 0;
-                const retryTimer = window.setInterval(() => {
-                    if (bindTinyMceEvents() || ++attempts >= 50) {
-                        window.clearInterval(retryTimer);
-                    }
-                }, 100);
-            }
+            retryUntil(bindTinyMceEvents);
 
-            // The editor is rendered with wp_skip_init and initialized from JS
-            // once its metabox is displayed (see lazyEditor.ts).
+            // The editor is rendered with wp_skip_init (see lazyEditor.ts).
             initTeksttvEditorWhenDisplayed();
 
             document.addEventListener('input', (e) => {
