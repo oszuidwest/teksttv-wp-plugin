@@ -1,13 +1,14 @@
 import Sortable from 'sortablejs';
 import { hide, prefersReducedMotion, show, slideDown, slideUp } from '../modules/dom';
 import type { ImageData, Slide, TeksttvPostConfig, WPTinyMCEEditor } from '../modules/types';
-import { debounce, previewSlideUrl, removeImageItem } from '../modules/utils';
+import { debounce, previewSlideUrl, removeImageItem, retryUntil } from '../modules/utils';
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
 import { getTeksttvEditorHtml } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
+import { initTeksttvEditorWhenDisplayed } from './postMeta/lazyEditor';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
 import { updatePreviewThumbnails } from './postMeta/previewThumbnails';
 import { applySidebarCardState } from './postMeta/sidebarCard';
@@ -138,14 +139,10 @@ export function createPostMetaPage() {
             };
 
             // Retry while WordPress exposes TinyMCE asynchronously.
-            if (!bindTinyMceEvents()) {
-                let attempts = 0;
-                const retryTimer = window.setInterval(() => {
-                    if (bindTinyMceEvents() || ++attempts >= 50) {
-                        window.clearInterval(retryTimer);
-                    }
-                }, 100);
-            }
+            retryUntil(bindTinyMceEvents);
+
+            // The editor is rendered with wp_skip_init (see lazyEditor.ts).
+            initTeksttvEditorWhenDisplayed();
 
             document.addEventListener('input', (e) => {
                 const t = e.target;

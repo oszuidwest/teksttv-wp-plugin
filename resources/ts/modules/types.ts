@@ -50,6 +50,12 @@ export interface WPTinyMCEEditor {
 export interface WPTinyMCE {
     get(id: string): WPTinyMCEEditor | null;
     on(event: string, callback: (e: { editor: WPTinyMCEEditor }) => void): void;
+    init(settings: Record<string, unknown>): void;
+}
+
+/** WordPress' pre-init editor configuration, keyed by editor id. */
+export interface WPTinyMCEPreInit {
+    mceInit: Record<string, Record<string, unknown>>;
 }
 
 export interface WPMediaAttachment {
@@ -100,6 +106,7 @@ declare global {
     interface Window {
         teksttvPost?: TeksttvPostConfig;
         tinymce?: WPTinyMCE;
+        tinyMCEPreInit?: WPTinyMCEPreInit;
         /** Set by PHP inline script on the `underscore` handle. */
         wpUnderscore?: WPUnderscore;
         _: WPUnderscore;
@@ -107,4 +114,5 @@ declare global {
 
     const teksttvPost: TeksttvPostConfig | undefined;
     const tinymce: WPTinyMCE | undefined;
+    const tinyMCEPreInit: WPTinyMCEPreInit | undefined;
 }
