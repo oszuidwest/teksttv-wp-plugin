@@ -33,9 +33,9 @@
         "adm-zip": "0.6.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.5.9",
+        "@biomejs/biome": "2.5.11",
         "@playwright/test": "^1.62.1",
-        "@wp-playground/cli": "3.1.50",
+        "@wp-playground/cli": "3.1.51",
         "@types/bun": "1.4.0",
         "@types/sortablejs": "^1.15.9",
         "typescript": "7.0.2"
