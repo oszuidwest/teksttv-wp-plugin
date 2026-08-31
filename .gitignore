@@ -12,5 +12,6 @@ playwright-report/
 *.md
 !README.md
 !EXTENDING.md
+!ENGINEERING_PLAN.md
 .DS_Store
 /.playwright
