@@ -11,10 +11,10 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.5.15",
-        "@playwright/test": "^1.63.0",
+        "@playwright/test": "^1.64.0",
         "@types/bun": "1.4.2",
         "@types/sortablejs": "^1.15.9",
-        "@wp-playground/cli": "3.1.56",
+        "@wp-playground/cli": "3.1.57",
         "typescript": "7.0.2",
       },
     },
@@ -97,43 +97,43 @@
 
     "@orchidjs/unicode-variants": ["@orchidjs/unicode-variants@1.1.2", "", {}, "sha512-5DobW1CHgnBROOEpFlEXytED5OosEWESFvg/VYmH0143oXcijYTprRYJTs+55HzGM4IqxiLFSuqEzu9mPNwVsA=="],
 
-    "@php-wasm/cli-util": ["@php-wasm/cli-util@3.1.56", "", { "dependencies": { "@php-wasm/util": "3.1.56", "fast-xml-parser": "^5.8.0", "jsonc-parser": "3.3.1" } }, "sha512-fG0++QgoBsJl4/KYyAJmajMI2NHRM17ew41W373pF/sMVS/sZuiB+fB8lZ/Grofihljkq5BWdmPh0oFXwUR2Ow=="],
+    "@php-wasm/cli-util": ["@php-wasm/cli-util@3.1.57", "", { "dependencies": { "@php-wasm/util": "3.1.57", "fast-xml-parser": "^5.8.0", "jsonc-parser": "3.3.1" } }, "sha512-dElRMcQnigq3GXL5BitaykJUl9XcLBwizOcIVKEUIqbXQ89qnOZod50SLm86/+RzkLR9ggmncQsUF4gMwDetfA=="],
 
-    "@php-wasm/logger": ["@php-wasm/logger@3.1.56", "", {}, "sha512-CaKsiO0OGaS07s+of2ZS486La5JhsT/V1yn96/BJ9BKDSQKVQERJDsXIQ2XIdV0/4C6owKBtKn7e7DGhOqPg5Q=="],
+    "@php-wasm/logger": ["@php-wasm/logger@3.1.57", "", {}, "sha512-ZIl1AWwunuxB5KsKpKHtEpgIEnxfVYmmYixF5kMnChGdNaS5RJxYXwa2qXC8WJPNgWDIEvRgXPAdgttIZY+RjA=="],
 
-    "@php-wasm/node": ["@php-wasm/node@3.1.56", "", { "dependencies": { "@php-wasm/cli-util": "3.1.56", "@php-wasm/logger": "3.1.56", "@php-wasm/node-5-2": "3.1.56", "@php-wasm/node-7-4": "3.1.56", "@php-wasm/node-8-0": "3.1.56", "@php-wasm/node-8-1": "3.1.56", "@php-wasm/node-8-2": "3.1.56", "@php-wasm/node-8-3": "3.1.56", "@php-wasm/node-8-4": "3.1.56", "@php-wasm/node-8-5": "3.1.56", "@php-wasm/universal": "3.1.56", "@php-wasm/util": "3.1.56", "fs-ext-extra-prebuilt": "2.2.7", "wasm-feature-detect": "1.8.0", "ws": "8.21.0" } }, "sha512-zpxaoHY8pRNC7qt0kLHim5XUVwLv6nWChis6LbDWVnEF7Gv4Ls7+zTRk+ukQUNfDvRuF11vUzgcMdN7I63Sa/w=="],
+    "@php-wasm/node": ["@php-wasm/node@3.1.57", "", { "dependencies": { "@php-wasm/cli-util": "3.1.57", "@php-wasm/logger": "3.1.57", "@php-wasm/node-5-2": "3.1.57", "@php-wasm/node-7-4": "3.1.57", "@php-wasm/node-8-0": "3.1.57", "@php-wasm/node-8-1": "3.1.57", "@php-wasm/node-8-2": "3.1.57", "@php-wasm/node-8-3": "3.1.57", "@php-wasm/node-8-4": "3.1.57", "@php-wasm/node-8-5": "3.1.57", "@php-wasm/universal": "3.1.57", "@php-wasm/util": "3.1.57", "fs-ext-extra-prebuilt": "2.2.7", "wasm-feature-detect": "1.8.0", "ws": "8.21.0" } }, "sha512-if5o6dAJGaFqocvqxrYS6zANkpVFtXT5tp5IJw7o77SkkQ9UWvsesCMq5q6V4Y2VXFfwc3nV/A2GirYXbGz51g=="],
 
-    "@php-wasm/node-5-2": ["@php-wasm/node-5-2@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-IqbxJC6yWwmFGce8BPgrDBMl/FNq64ugFc7z6e+/753WTsjWTM4gSrir13xx8DHWRa1huUvhuxujiww45VJqhA=="],
+    "@php-wasm/node-5-2": ["@php-wasm/node-5-2@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-F7apeUp4ZQOsqHYmjWRHZ1ms0SlBweMV1O0mi4xXLM3YBIFgCMLgaQov6Er6qhvLGGxCfuR4ix8nJoqlwKLm8w=="],
 
-    "@php-wasm/node-7-4": ["@php-wasm/node-7-4@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-Zj5aHoY2c43kcO6BhM+JWz+06nq7WcHkp3R428Ij6QqxFFFp0VlF5NbrqtWmppK8xY2ZoV+f0NQsnYsBBEjM7A=="],
+    "@php-wasm/node-7-4": ["@php-wasm/node-7-4@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-gVI4owqzLWtAT09VtF2Zxg2JOImz44/lY1aIjYj6f7xdXdUb0bg4tmf1bCVHTn5apGouY4Z5k4i4xbGvMY12Gw=="],
 
-    "@php-wasm/node-8-0": ["@php-wasm/node-8-0@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-KWThNeQGRMhk1sWCfsS89vyBuhOtoK83hWLgdiaPZoG8Gcv6G6xeALTReCUkAxWLPHaBKwdUK93gQoxpt867Iw=="],
+    "@php-wasm/node-8-0": ["@php-wasm/node-8-0@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-S9UGGIwVMDolZmIPJi2/yQU+kRDtz+I41E7H6a6Sc5RSF1PeGKz33K49nYJLLGk9Z4fyaE77fbed1UIIlLlc1g=="],
 
-    "@php-wasm/node-8-1": ["@php-wasm/node-8-1@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-q98eZevp4+apYNjyeJvTh6ymuPxnDtwe84u8xw/Jui5xQTnbKIWEdUsZptGlnVXM6eSOzjC7Kyto2lF7UEBEJg=="],
+    "@php-wasm/node-8-1": ["@php-wasm/node-8-1@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-E8Z1K/SbwuKlK93HLavKGQ1rTXMkcr6G6LteFXHsuNAuRuPSYqJfVt91EBtvv6gs47Pwyzt8mwV/cwR4Ta+6IQ=="],
 
-    "@php-wasm/node-8-2": ["@php-wasm/node-8-2@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-A2n+6GYN/Qq58JTWcpq44gGb+zKtT5CYDf6rJlnVsrClvOToUL/DTcGTvkT4HHjkC9cPBLnDVZ6ns91ugq6n1g=="],
+    "@php-wasm/node-8-2": ["@php-wasm/node-8-2@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-qcbjWnxeCo0MclSeXev2zmf7BlivcImPlBSI3hKeo8HzoInXiYMTrdgrwQbNrx79meZL1na0meARx1K7kW8Bdg=="],
 
-    "@php-wasm/node-8-3": ["@php-wasm/node-8-3@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-FGj6HK9zlh+3Zoh/qOSP7WS1zPWvWMW1oBVojRzedW1j5XxlbXydcypUYpAcsdlQdrVFJ3VzSqytXK4QmQwaFQ=="],
+    "@php-wasm/node-8-3": ["@php-wasm/node-8-3@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-n2GwAQ7Nor2nVtIkBVL61XLaTH3OIS7l1amuiKKJgRvETIsNt0LnmwLKaL+rlX6pyLa4yyWo7IJvDltsNfostg=="],
 
-    "@php-wasm/node-8-4": ["@php-wasm/node-8-4@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-fam1tyIcDqyJrgUvm3gW37FZhE02YOL2nYUJpLwq0B9QA4WxQo2wx0W1Tg9LBoIeD7JtvEOHk1soyg6awLPMDQ=="],
+    "@php-wasm/node-8-4": ["@php-wasm/node-8-4@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-ZkmHHFmFQsyVxdtQBIS2bGrJJkCXOif5fnv3onwxMWI+VpUMZzT4IoVScVOFQFLHi6nzHvHTKfJ2ocSXR75WxQ=="],
 
-    "@php-wasm/node-8-5": ["@php-wasm/node-8-5@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "wasm-feature-detect": "1.8.0" } }, "sha512-dCalDHUAcX+/VgQbioj0HpzPb+cgTT6kpV12JBegtE0GgOXN2SJnZDi+8LGyVY8DH6APX9MqSYsppKRc+dACBQ=="],
+    "@php-wasm/node-8-5": ["@php-wasm/node-8-5@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "wasm-feature-detect": "1.8.0" } }, "sha512-funInY7DHXHwa38xL6VC75reANKTU2qVaTyZtU8mDxlvm2QuMAy4yHlhbUSxDIUSdYpukXE5h3ZOd/GFtUhE9Q=="],
 
-    "@php-wasm/progress": ["@php-wasm/progress@3.1.56", "", { "dependencies": { "@php-wasm/logger": "3.1.56" } }, "sha512-vj0wMLaIz1Ct+oKalMhsLpwXslqXRk8HnmPljlU4oeKVtIuus4+lPY7AbJbrKLPu/mjtTUTe6ckhAvvKh2/MJQ=="],
+    "@php-wasm/progress": ["@php-wasm/progress@3.1.57", "", { "dependencies": { "@php-wasm/logger": "3.1.57" } }, "sha512-cOkPqXzDQJNcd+KuiG/pqJz8djdIRSXWY5OuKyKwfCI6i3FL/gYquPhDQHEsjgPSkbylXyjC6T7ZW1YTaYwcog=="],
 
-    "@php-wasm/scopes": ["@php-wasm/scopes@3.1.56", "", {}, "sha512-t0dVVio0AX4QfcFe6u8pVHes76MN2cfLRBwm5OjR0K5HSvEG42Yv1gpAz+ALqgDFUAohVRy0NJd/yMZ7vuDypg=="],
+    "@php-wasm/scopes": ["@php-wasm/scopes@3.1.57", "", {}, "sha512-euV/r6TlC/C5OTNS+EDwUzH9lA/sGhpM8V8GS+aNl/VTUgkyog/c/1lqAWqCclxlWMjtN+e/APlZzfqM7YD0fA=="],
 
-    "@php-wasm/stream-compression": ["@php-wasm/stream-compression@3.1.56", "", { "dependencies": { "@php-wasm/util": "3.1.56" } }, "sha512-fM6HkAFJ8+oIi4RE5ohkyMD5i504cHkKvs3YVDaRuT437T0L/w7v3IPQ0Un9OaLkamzExKPlnfMxyekkvJqH6Q=="],
+    "@php-wasm/stream-compression": ["@php-wasm/stream-compression@3.1.57", "", { "dependencies": { "@php-wasm/util": "3.1.57" } }, "sha512-3U3rR3Z81YyoL+WhmnRn0+cXmXO7x8RpF4LFzBzpg5UDI/8EFRa3AiBJfWBUN2Qf5cIKXzX30WO+NXHZMzIMHg=="],
 
-    "@php-wasm/universal": ["@php-wasm/universal@3.1.56", "", { "dependencies": { "@php-wasm/logger": "3.1.56", "@php-wasm/progress": "3.1.56", "@php-wasm/stream-compression": "3.1.56", "@php-wasm/util": "3.1.56", "ini": "4.1.2" } }, "sha512-TTus/ztQk6jI7duyKGOCO5FJqDhtCYYtdjdL9uxCaAwjWc535yj9110uegqhKKNvKgnc/B+ZbWROnTC8KFnl3A=="],
+    "@php-wasm/universal": ["@php-wasm/universal@3.1.57", "", { "dependencies": { "@php-wasm/logger": "3.1.57", "@php-wasm/progress": "3.1.57", "@php-wasm/stream-compression": "3.1.57", "@php-wasm/util": "3.1.57", "ini": "4.1.2" } }, "sha512-Ub/dRUQfoDihuo0vC0mWtA2ePU6Qd8x2FB25mExZs0ZCLAKDaqpVoGFcpFpwsPSO8KrfP8UABMsVclS2QJoeEQ=="],
 
-    "@php-wasm/util": ["@php-wasm/util@3.1.56", "", {}, "sha512-jRL3vqVrKQYx9p91O9xC5KZbVwWpMQ6ZFtTWO6Z4GtqcNoBsUunsPR82y/9k84EnKSj+ZTLLD6cEgLWYRUOoBw=="],
+    "@php-wasm/util": ["@php-wasm/util@3.1.57", "", {}, "sha512-EkMnVD9mb7L56he/Nt+lpqlWcoRE5OJf1w9sSv9wrzCxGm09ZJWEBE0VxrK5MYgasbojJjMWsZ7Zgv7rTnXMMA=="],
 
-    "@php-wasm/web-service-worker": ["@php-wasm/web-service-worker@3.1.56", "", { "dependencies": { "@php-wasm/scopes": "3.1.56", "@php-wasm/universal": "3.1.56" } }, "sha512-lqW7+OnJ+iHjGgVt82hjeqifA1e9MYyhN4fxya4t9ISREu6fzeUOeqHnC8ndBOe6iM8+APakoqnz5qck4iwpvQ=="],
+    "@php-wasm/web-service-worker": ["@php-wasm/web-service-worker@3.1.57", "", { "dependencies": { "@php-wasm/scopes": "3.1.57", "@php-wasm/universal": "3.1.57" } }, "sha512-UhN0qumziYs1u6uTRYgG9xVt0kC/0zX3BUXFP+WUSnG8BxW3OVCwIHaz7j36HCCAYS3QMg20vNVfXMqTBlV/Eg=="],
 
-    "@php-wasm/xdebug-bridge": ["@php-wasm/xdebug-bridge@3.1.56", "", { "dependencies": { "@php-wasm/logger": "3.1.56", "@php-wasm/universal": "3.1.56", "ws": "8.21.0", "xml2js": "0.6.2", "yargs": "17.7.2" }, "bin": { "xdebug-bridge": "xdebug-bridge.js" } }, "sha512-z01EDxhT2aRAbXfyIQyBR+K0mWfphnNPhHwWl0+yVd/OxTIeWHgG/aC/7bGcL1o9o+j+jAAecw8koKBY3f63Dg=="],
+    "@php-wasm/xdebug-bridge": ["@php-wasm/xdebug-bridge@3.1.57", "", { "dependencies": { "@php-wasm/logger": "3.1.57", "@php-wasm/universal": "3.1.57", "ws": "8.21.0", "xml2js": "0.6.2", "yargs": "17.7.2" }, "bin": { "xdebug-bridge": "xdebug-bridge.js" } }, "sha512-PyUyUXdY/t/V2Z9shLJB/DbkYk5MbDA0bfUKgzo2exH/XXepng1Mje4qlM1SovdA7xfn/gL8Gagf2cxG5jKKFA=="],
 
-    "@playwright/test": ["@playwright/test@1.63.0", "", { "dependencies": { "playwright": "1.63.0" }, "bin": { "playwright": "cli.js" } }, "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ=="],
+    "@playwright/test": ["@playwright/test@1.64.0", "", { "dependencies": { "playwright": "1.64.0" }, "bin": { "playwright": "cli.js" } }, "sha512-oTN9FNYuN6bqQMwiho6jJKLCG2/QOYCixGXuCjRmzOq23eODeukuY2XiAVoVpAECbuezMt1MHQjAiQxK8F+Y+g=="],
 
     "@types/aws-lambda": ["@types/aws-lambda@8.10.162", "", {}, "sha512-Fn658grtLOci1oxi1391vvDWJRKNGWRSqfxRkmN/Iy3c0tQH1USMKEXcPYHLvope+ZgTFocx9FRQJx1muBL6qw=="],
 
@@ -193,17 +193,17 @@
 
     "@vue/shared": ["@vue/shared@3.5.41", "", {}, "sha512-IOnwSCma8j+9xJT6b8H0dEYidC80NsYmNMlZxRsukYcSoGaDBohog5hDxzeUXdFeGWFA++vWvxqOmrr96VlqMA=="],
 
-    "@wp-playground/blueprints": ["@wp-playground/blueprints@3.1.56", "", { "dependencies": { "@php-wasm/logger": "3.1.56", "@php-wasm/progress": "3.1.56", "@php-wasm/stream-compression": "3.1.56", "@php-wasm/universal": "3.1.56", "@php-wasm/util": "3.1.56", "@php-wasm/web-service-worker": "3.1.56", "@wp-playground/common": "3.1.56", "@wp-playground/storage": "3.1.56", "@wp-playground/wordpress": "3.1.56", "ajv": "8.18.0" } }, "sha512-mn1S5r6sQFvMEcDXGnHwKTaHwwkyBTf89kwMfIB73nGNhLYdA1OtDGoi+wVt2YhMc7nxNi4s7g+LdPxS/tyksA=="],
+    "@wp-playground/blueprints": ["@wp-playground/blueprints@3.1.57", "", { "dependencies": { "@php-wasm/logger": "3.1.57", "@php-wasm/progress": "3.1.57", "@php-wasm/stream-compression": "3.1.57", "@php-wasm/universal": "3.1.57", "@php-wasm/util": "3.1.57", "@php-wasm/web-service-worker": "3.1.57", "@wp-playground/common": "3.1.57", "@wp-playground/storage": "3.1.57", "@wp-playground/wordpress": "3.1.57", "ajv": "8.18.0" } }, "sha512-ARgl1BMlqUqsiwdMI+TjQ49U5W4i0FqRD7MMNwH5AKE08XEyFCTk695sE1dELY1moaEo2sbfFraOiaATgQwrZA=="],
 
-    "@wp-playground/cli": ["@wp-playground/cli@3.1.56", "", { "dependencies": { "@php-wasm/cli-util": "3.1.56", "@php-wasm/logger": "3.1.56", "@php-wasm/node": "3.1.56", "@php-wasm/progress": "3.1.56", "@php-wasm/universal": "3.1.56", "@php-wasm/util": "3.1.56", "@php-wasm/xdebug-bridge": "3.1.56", "@wp-playground/blueprints": "3.1.56", "@wp-playground/common": "3.1.56", "@wp-playground/storage": "3.1.56", "@wp-playground/tools": "3.1.56", "@wp-playground/wordpress": "3.1.56", "express": "4.22.2", "fs-extra": "11.1.1", "tmp-promise": "3.0.3", "wasm-feature-detect": "1.8.0", "yargs": "17.7.2" }, "bin": { "wp-playground-cli": "wp-playground.js" } }, "sha512-JTxl6djPEM2YRYz/w+BUoyoCvhSGHIjqMi4fMV1b8o1UPNvZatLaS7opo57UsrVElXrfdZwvi6IuyS4LswUx9Q=="],
+    "@wp-playground/cli": ["@wp-playground/cli@3.1.57", "", { "dependencies": { "@php-wasm/cli-util": "3.1.57", "@php-wasm/logger": "3.1.57", "@php-wasm/node": "3.1.57", "@php-wasm/progress": "3.1.57", "@php-wasm/universal": "3.1.57", "@php-wasm/util": "3.1.57", "@php-wasm/xdebug-bridge": "3.1.57", "@wp-playground/blueprints": "3.1.57", "@wp-playground/common": "3.1.57", "@wp-playground/storage": "3.1.57", "@wp-playground/tools": "3.1.57", "@wp-playground/wordpress": "3.1.57", "express": "4.22.2", "fs-extra": "11.1.1", "tmp-promise": "3.0.3", "wasm-feature-detect": "1.8.0", "yargs": "17.7.2" }, "bin": { "wp-playground-cli": "wp-playground.js" } }, "sha512-RGy0TjOtGNjVXlVUmnd19Hkf4mrhJtJFnM/Wr2r2moYZ2yefEIv1haESB/4qEgLkuB1rboky8epnKuAwFBotbw=="],
 
-    "@wp-playground/common": ["@wp-playground/common@3.1.56", "", { "dependencies": { "@php-wasm/universal": "3.1.56", "@php-wasm/util": "3.1.56" } }, "sha512-jLbJoZDTY0LCneWazwh2PLIoALCQ8z2wlz5fBUPu05ObLMnxy5nnwl5RQFVtfOeLAYgGyU7D6WJcKFzom9+7Qg=="],
+    "@wp-playground/common": ["@wp-playground/common@3.1.57", "", { "dependencies": { "@php-wasm/universal": "3.1.57", "@php-wasm/util": "3.1.57" } }, "sha512-4oJF/lihKscoRi790Xv21YPr/94rRG55x1eJPP48J5NEMR+j6WghHuS9X0gGzBR7zUtgeF9TM+yd1QOYFcEiDg=="],
 
-    "@wp-playground/storage": ["@wp-playground/storage@3.1.56", "", { "dependencies": { "@php-wasm/stream-compression": "3.1.56", "@php-wasm/universal": "3.1.56", "@php-wasm/util": "3.1.56", "@zip.js/zip.js": "2.7.57", "isomorphic-git": "1.37.6", "octokit": "3.1.2", "pako": "^1.0.10", "sha.js": "2.4.12" } }, "sha512-UWTYwABObZvvJFD/3nlgGBR513YaE1nZkv2dtF+TAWBLdvzCEnsEyIx09mtyZJFCxMY7+O9V3i9YNdzeMQ2BtA=="],
+    "@wp-playground/storage": ["@wp-playground/storage@3.1.57", "", { "dependencies": { "@php-wasm/stream-compression": "3.1.57", "@php-wasm/universal": "3.1.57", "@php-wasm/util": "3.1.57", "@zip.js/zip.js": "2.7.57", "isomorphic-git": "1.37.6", "octokit": "3.1.2", "pako": "^1.0.10", "sha.js": "2.4.12" } }, "sha512-BXDM4p9Xsz6/EUA2NW8BvQYFu1LCRaKJ3mkeJ16zIwG0XdjbluYGGmnj6CXTmfJjfkgytG2nj9gnor687q1tZw=="],
 
-    "@wp-playground/tools": ["@wp-playground/tools@3.1.56", "", { "dependencies": { "@php-wasm/node": "3.1.56", "@php-wasm/universal": "3.1.56", "@php-wasm/util": "3.1.56", "@wp-playground/blueprints": "3.1.56", "@wp-playground/common": "3.1.56", "@wp-playground/wordpress": "3.1.56" } }, "sha512-3BLJaDrZoeVzvjCoFwhjz3LLo/cZj6scIZwdbSsmRiQdJZbmMRriJNL3MrM2cfBvHNyhYjGj9lhy/lPhAYIxyw=="],
+    "@wp-playground/tools": ["@wp-playground/tools@3.1.57", "", { "dependencies": { "@php-wasm/node": "3.1.57", "@php-wasm/universal": "3.1.57", "@php-wasm/util": "3.1.57", "@wp-playground/blueprints": "3.1.57", "@wp-playground/common": "3.1.57", "@wp-playground/wordpress": "3.1.57" } }, "sha512-9uoqygDaY4qy3iXzWXVr0qM1qklkD91r2G3nh0Fdu6Mrq5Ok4OADKwrm4snZda3WhXaqiwzVg14c2lMsRDavlA=="],
 
-    "@wp-playground/wordpress": ["@wp-playground/wordpress@3.1.56", "", { "dependencies": { "@php-wasm/logger": "3.1.56", "@php-wasm/universal": "3.1.56", "@php-wasm/util": "3.1.56", "@wp-playground/common": "3.1.56", "zstddec": "^0.2.0" } }, "sha512-oIkRqo7NyDfaMi1L699IRNKZAuY//uBzzHyZk4bu93kdnYxRgQrkPMfSKmJSUARjzGZ/QteJCu+DpD6U1DViXQ=="],
+    "@wp-playground/wordpress": ["@wp-playground/wordpress@3.1.57", "", { "dependencies": { "@php-wasm/logger": "3.1.57", "@php-wasm/universal": "3.1.57", "@php-wasm/util": "3.1.57", "@wp-playground/common": "3.1.57", "zstddec": "^0.2.0" } }, "sha512-8+XSDCWqq9Md8NsTC4QfIM9++IiBX7Ht62TScV7LAEeWn66YO5o4fH+60x2+u43cr65sp/3AblB9b2gljZMuIA=="],
 
     "@zip.js/zip.js": ["@zip.js/zip.js@2.7.57", "", {}, "sha512-BtonQ1/jDnGiMed6OkV6rZYW78gLmLswkHOzyMrMb+CAR7CZO8phOHO6c2qw6qb1g1betN7kwEHhhZk30dv+NA=="],
 
@@ -455,9 +455,9 @@
 
     "pify": ["pify@4.0.1", "", {}, "sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g=="],
 
-    "playwright": ["playwright@1.63.0", "", { "dependencies": { "playwright-core": "1.63.0" }, "bin": { "playwright": "cli.js" } }, "sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg=="],
+    "playwright": ["playwright@1.64.0", "", { "dependencies": { "playwright-core": "1.64.0" }, "bin": { "playwright": "cli.js" } }, "sha512-kVzTnYFYEyQ9RGzBjNCd2+yEqWmVbxl3AHPynv3qQ6JTjv4a+kwRcnqQwIpuP3NnrnIrE/Q6wWAIAvMfIE2/Yg=="],
 
-    "playwright-core": ["playwright-core@1.63.0", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg=="],
+    "playwright-core": ["playwright-core@1.64.0", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-T9r+MZkTECl2+oUcZ26YgZzTrYidTsIhYYkJix+6iDOymOb1FB2RLLSOxRGnZGv5DStt+aduIVbt+E8WygXYpg=="],
 
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
 
