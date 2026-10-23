@@ -84,7 +84,8 @@ final class ImageLoopBlock
         }
 
         $image_data = Helpers::get_image_data($image_id, 'large', 'image_slide');
-        if (!$image_data) {
+        // A URL filter can intentionally suppress an image, as in articles.
+        if (empty($image_data['url'])) {
             return [];
         }
 
