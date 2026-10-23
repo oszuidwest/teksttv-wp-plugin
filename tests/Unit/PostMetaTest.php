@@ -109,6 +109,22 @@ class PostMetaTest extends TestCase
         PostMeta::enqueue_assets('post-new.php');
     }
 
+    public function test_enqueue_assets_ignores_corrupt_preview_image_ids(): void
+    {
+        $this->stubSuccessfulAssetEnqueue(['sidebar_image'], true);
+        Functions\when('get_post_meta')->alias(fn($id, $key) => match ($key) {
+            '_teksttv_sidebar_image' => ['5'],
+            '_thumbnail_id' => '1oops',
+            '_teksttv_date_start' => ['2026-08-04'],
+            default => '',
+        });
+        // Core casts the corrupt array to attachment 1.
+        Functions\when('get_post_thumbnail_id')->justReturn(1);
+        Functions\expect('wp_get_attachment_image_url')->never();
+
+        PostMeta::enqueue_assets('post-new.php');
+    }
+
     public function test_plain_text_content_survives_repeated_save_and_render_cycles(): void
     {
         $stored_meta = [

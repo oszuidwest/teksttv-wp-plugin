@@ -106,6 +106,17 @@ class AuditPageTest extends TestCase
     }
 
 
+    public function test_corrupt_meta_counts_as_empty_text(): void
+    {
+        $meta = ['_teksttv_ai_title' => ['kop'], '_teksttv_title' => 'kop', '_teksttv_ai_body' => 'tekst', '_teksttv_content' => new \stdClass()];
+        Functions\when('get_post_meta')->alias(fn($id, $key) => $meta[$key]);
+
+        $this->assertSame(
+            ['title_status' => 'no_ai', 'body_status' => 'modified'],
+            self::callPrivate(AuditPage::class, 'get_post_statuses', [42])
+        );
+    }
+
     public function test_compare_returns_no_ai_when_ai_version_empty(): void
     {
         $result = AuditPage::compare('', 'current text');

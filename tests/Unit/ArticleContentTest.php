@@ -314,6 +314,8 @@ class ArticleContentTest extends TestCase
     public function test_sidebar_image_fallback_order(mixed $override, mixed $primary, array $category_images, int $thumbnail, ?int $expected): void
     {
         $this->meta['_teksttv_sidebar_image'] = $override;
+        // The thumbnail stub stands in for a post_thumbnail_id filter fallback.
+        $this->meta['_thumbnail_id'] = '0';
         $terms = array_map(fn($id) => (object) ['term_id' => $id], array_keys($category_images));
         Functions\when('get_the_terms')->justReturn($primary === '' ? $terms : array_slice($terms, 1));
         Functions\when('get_term_meta')->alias(fn($term_id) => $category_images[$term_id] ?? '');

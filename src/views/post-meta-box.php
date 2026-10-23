@@ -4,11 +4,13 @@
  *
  * @var \WP_Post $post
  * @var string $active
+ * @var string $title
  * @var string $content
  * @var string $date_start
  * @var string $date_end
  * @var list<string>|null $days
  * @var list<int> $images
+ * @var bool $schedule_invalid
  * @var string $preview_url
  * @var bool $ai_enabled
  * @var list<string> $toolbar_items
@@ -37,6 +39,12 @@ $has_page_separator = Helpers::has_feature('page_separator');
         </label>
     </div>
 
+    <?php if ($schedule_invalid) : ?>
+    <div class="notice notice-warning inline">
+        <p><?php echo esc_html('De opgeslagen planning is ongeldig, daarom staat dit bericht niet op Tekst TV. Controleer de planning en sla het bericht opnieuw op.'); ?></p>
+    </div>
+    <?php endif; ?>
+
     <div class="teksttv-fields" id="teksttv-fields">
         <div class="teksttv-editor-layout">
             <div class="teksttv-editor-main">
@@ -59,8 +67,7 @@ $has_page_separator = Helpers::has_feature('page_separator');
                             <button type="button" class="button button-small teksttv-generate-btn" data-field="title" @click.prevent="onGenerateClick($event)"><?php echo esc_html('Genereer'); ?></button>
                             <?php endif; ?>
                         </div>
-                        <?php $custom_title = get_post_meta($post->ID, '_teksttv_title', true); ?>
-                        <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($custom_title); ?>" class="large-text" placeholder="<?php echo esc_attr('Laat leeg om de titel van het artikel te gebruiken.'); ?>" aria-describedby="teksttv-charcount" @input="onTitleInputMeta()" />
+                        <input type="text" name="teksttv_title" id="teksttv-title" value="<?php echo esc_attr($title); ?>" class="large-text" placeholder="<?php echo esc_attr('Laat leeg om de titel van het artikel te gebruiken.'); ?>" aria-describedby="teksttv-charcount" @input="onTitleInputMeta()" />
                         <div class="teksttv-title-footer">
                             <span class="teksttv-charcount" id="teksttv-charcount"></span>
                         </div>
@@ -152,11 +159,14 @@ $has_page_separator = Helpers::has_feature('page_separator');
             <div class="teksttv-media-group teksttv-sidebar-image-section" aria-labelledby="teksttv-sidebar-image-title">
                 <h4 id="teksttv-sidebar-image-title"><?php echo esc_html('Sidebarafbeelding'); ?></h4>
                     <?php
-                    $sidebar_image_id = get_post_meta($post->ID, '_teksttv_sidebar_image', true);
-                    $is_none = $sidebar_image_id === '0';
-                    $is_custom = $sidebar_image_id !== '' && $sidebar_image_id !== false && !$is_none;
-                    $custom_url = $is_custom ? wp_get_attachment_image_url((int) $sidebar_image_id, 'medium') : '';
-                    $fallback_url = get_the_post_thumbnail_url($post->ID, 'medium') ?: '';
+                    // Corrupt IDs fall back to the default, as in playout.
+                    $sidebar_raw = get_post_meta($post->ID, '_teksttv_sidebar_image', true);
+                    $custom_id = ArticleContent::attachment_id($sidebar_raw);
+                    $is_none = $sidebar_raw === '0' || $sidebar_raw === 0;
+                    $is_custom = $custom_id > 0;
+                    $sidebar_image_id = $is_none ? '0' : ($is_custom ? (string) $custom_id : '');
+                    $custom_url = $is_custom ? wp_get_attachment_image_url($custom_id, 'medium') : '';
+                    $fallback_url = ArticleContent::thumbnail_id($post->ID) ? (get_the_post_thumbnail_url($post->ID, 'medium') ?: '') : '';
                     $active_state = $is_none ? 'none' : ($is_custom ? 'custom' : 'default');
                     ?>
                     <input type="hidden" name="teksttv_sidebar_image" id="teksttv-sidebar-image-id" value="<?php echo esc_attr($sidebar_image_id); ?>" />
