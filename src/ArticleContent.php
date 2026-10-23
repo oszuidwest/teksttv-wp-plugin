@@ -136,6 +136,7 @@ final class ArticleContent
         if (
             !self::valid_date($start) || !self::valid_date($end)
             || (is_array($days) ? array_filter($days, 'is_scalar') !== $days : $days !== '')
+            || (is_array($days) && array_diff(array_map('strval', $days), ['1', '2', '3', '4', '5', '6', '7']) !== [])
         ) {
             return null;
         }

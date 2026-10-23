@@ -103,6 +103,12 @@ class PostMetaViewTest extends TestCase
         $view = (string) ob_get_clean();
         $this->assertStringNotContainsString('De opgeslagen planning is ongeldig', $view);
         $this->assertStringContainsString('https://cdn.example.com/7.jpg', $view);
+
+        $meta['_teksttv_days'] = ['99'];
+        ob_start();
+        PostMeta::render_meta_box(self::makePost());
+        $view = (string) ob_get_clean();
+        $this->assertStringContainsString('De opgeslagen planning is ongeldig', $view);
     }
 
     public function test_combined_ai_action_includes_title_when_custom_titles_are_enabled(): void

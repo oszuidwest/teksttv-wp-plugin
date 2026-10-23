@@ -97,6 +97,19 @@ class ArticleContentTest extends TestCase
         $this->assertNotNull(ArticleContent::prepare($this->post));
     }
 
+    public function test_schedule_meta_validates_weekday_values(): void
+    {
+        foreach (['', [], [1, 3], ['1', '7']] as $days) {
+            $this->meta['_teksttv_days'] = $days;
+            $this->assertNotNull(ArticleContent::schedule_meta($this->post->ID));
+        }
+
+        foreach ([['99'], [0], [8], ['invalid'], ['1', '99']] as $days) {
+            $this->meta['_teksttv_days'] = $days;
+            $this->assertNull(ArticleContent::schedule_meta($this->post->ID));
+        }
+    }
+
     public function test_disabled_features_ignore_retained_even_corrupt_meta(): void
     {
         $this->features = [];
