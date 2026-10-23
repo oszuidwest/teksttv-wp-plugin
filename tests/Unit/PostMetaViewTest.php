@@ -63,7 +63,7 @@ class PostMetaViewTest extends TestCase
             '_teksttv_title' => ['kop'],
             '_teksttv_content' => new \stdClass(),
             '_teksttv_date_start' => '2025-1-5',
-            '_teksttv_days' => [1, 3],
+            '_teksttv_days' => [1, ['2'], 3, new \stdClass()],
             '_teksttv_images' => [[12], 11],
             '_teksttv_sidebar_image' => ['5'],
             '_thumbnail_id' => ['7'],
@@ -94,6 +94,7 @@ class PostMetaViewTest extends TestCase
         $this->assertSame(['1', '3'], $checked_days[1]);
 
         $meta['_teksttv_date_start'] = '2025-01-05';
+        $meta['_teksttv_days'] = [1, 3];
         $meta['_thumbnail_id'] = '7';
         Functions\when('get_post_thumbnail_id')->justReturn(7);
         Functions\when('get_the_post_thumbnail_url')->justReturn('https://cdn.example.com/7.jpg');
