@@ -72,7 +72,6 @@ class ImageLoopBlockTest extends TestCase
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/image.jpg');
         Functions\expect('wp_get_attachment_caption')->andReturn('');
-        Functions\expect('apply_filters')->andReturnUsing(fn($tag, $value) => $tag === 'teksttv_image_url' ? $value : '');
         Functions\expect('get_option')->with('teksttv_duration_image', 7)->andReturn(7);
 
         $block = ['image_id' => 42];
@@ -106,7 +105,6 @@ class ImageLoopBlockTest extends TestCase
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/photo.jpg');
         Functions\expect('wp_get_attachment_caption')->andReturn('Een mooie foto');
-        Functions\expect('apply_filters')->andReturnUsing(fn($tag, $value) => $tag === 'teksttv_image_url' ? $value : '');
         Functions\expect('get_option')->with('teksttv_duration_image', 7)->andReturn(7);
 
         $result = ImageLoopBlock::build(['image_id' => 42]);
