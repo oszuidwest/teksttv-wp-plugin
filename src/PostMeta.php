@@ -70,16 +70,8 @@ class PostMeta
         $custom_image = null;
         $saved_start = '';
         if ($post_id) {
-            $thumb_id = ArticleContent::thumbnail_id($post_id);
-            if ($thumb_id) {
-                $fallback_image = Helpers::get_image_data($thumb_id, 'large', 'text_sidebar');
-            }
-
-            $sidebar_id = ArticleContent::attachment_id(get_post_meta($post_id, '_teksttv_sidebar_image', true));
-            if ($sidebar_id) {
-                $custom_image = Helpers::get_image_data($sidebar_id, 'large', 'text_sidebar');
-            }
-
+            $fallback_image = ArticleContent::image_data(ArticleContent::thumbnail_id($post_id), 'text_sidebar');
+            $custom_image = ArticleContent::image_data(ArticleContent::sidebar_override($post_id), 'text_sidebar');
             $saved_start = ArticleContent::string_meta($post_id, '_teksttv_date_start') ?: self::default_start_date(get_post($post_id));
         }
         $default_end = self::default_end_date($saved_start);
@@ -170,8 +162,8 @@ class PostMeta
         // Playout skips the post; the editor should see why.
         $schedule_invalid = Helpers::has_feature('scheduling') && ArticleContent::schedule_meta($post->ID) === null;
 
-        // Missing meta means "all days"; a stored empty array means "no days". Playout also accepts integer days.
-        $days = is_array($days) ? array_map('strval', array_filter($days, 'is_scalar')) : null;
+        // Missing meta means "all days"; a stored empty array means "no days".
+        $days = Helpers::normalize_days($days);
         $images = is_array($images) ? array_values(array_filter(array_map(ArticleContent::attachment_id(...), $images))) : [];
 
         if (empty($date_start) && empty($date_end)) {

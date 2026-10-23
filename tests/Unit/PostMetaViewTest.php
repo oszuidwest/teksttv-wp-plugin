@@ -13,15 +13,21 @@ class PostMetaViewTest extends TestCase
     /**
      * @param list<string> $features
      */
-    private static function renderView(array $features): string
+    private static function stubView(array $features): void
     {
         Functions\when('get_option')->alias(
             fn ($key, $default = false) => $key === 'teksttv_features' ? $features : $default
         );
+        Functions\stubEscapeFunctions();
+    }
+
+    /**
+     * @param list<string> $features
+     */
+    private static function renderView(array $features): string
+    {
+        self::stubView($features);
         Functions\when('checked')->justReturn('');
-        Functions\when('esc_html')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
-        Functions\when('esc_attr')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
-        Functions\when('esc_textarea')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
         Functions\when('get_post_meta')->justReturn('');
         Functions\when('wp_json_encode')->alias('json_encode');
         Functions\when('wp_editor')->alias(static function (string $content, string $editor_id): void {
@@ -62,20 +68,12 @@ class PostMetaViewTest extends TestCase
             '_teksttv_sidebar_image' => ['5'],
             '_thumbnail_id' => ['7'],
         ];
-        Functions\when('get_option')->alias(
-            fn ($key, $default = false) => $key === 'teksttv_features' ? ['custom_title', 'sidebar_image', 'extra_images', 'scheduling'] : $default
-        );
-        Functions\when('get_post_meta')->alias(static function (int $id, string $key) use (&$meta): mixed {
-            return $meta[$key] ?? '';
-        });
+        self::stubView(['custom_title', 'sidebar_image', 'extra_images', 'scheduling']);
+        Functions\when('get_post_meta')->alias(function ($id, $key) use (&$meta) { return $meta[$key] ?? ''; });
         Functions\when('wp_nonce_field')->justReturn('');
         Functions\when('checked')->alias(static function (mixed $checked, mixed $current = true): void {
             echo $checked === $current ? ' checked' : '';
         });
-        Functions\when('esc_html')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
-        Functions\when('esc_attr')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
-        Functions\when('esc_textarea')->alias(fn ($text) => htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
-        Functions\when('esc_url')->returnArg();
         Functions\when('admin_url')->returnArg();
         Functions\when('wp_kses')->returnArg();
         // Core casts a corrupt array ID to attachment 1.

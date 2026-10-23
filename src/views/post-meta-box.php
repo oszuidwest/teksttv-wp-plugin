@@ -160,14 +160,11 @@ $has_page_separator = Helpers::has_feature('page_separator');
                 <h4 id="teksttv-sidebar-image-title"><?php echo esc_html('Sidebarafbeelding'); ?></h4>
                     <?php
                     // Corrupt IDs fall back to the default, as in playout.
-                    $sidebar_raw = get_post_meta($post->ID, '_teksttv_sidebar_image', true);
-                    $custom_id = ArticleContent::attachment_id($sidebar_raw);
-                    $is_none = $sidebar_raw === '0' || $sidebar_raw === 0;
-                    $is_custom = $custom_id > 0;
-                    $sidebar_image_id = $is_none ? '0' : ($is_custom ? (string) $custom_id : '');
-                    $custom_url = $is_custom ? wp_get_attachment_image_url($custom_id, 'medium') : '';
-                    $fallback_url = ArticleContent::thumbnail_id($post->ID) ? (get_the_post_thumbnail_url($post->ID, 'medium') ?: '') : '';
-                    $active_state = $is_none ? 'none' : ($is_custom ? 'custom' : 'default');
+                    $override_id = ArticleContent::sidebar_override($post->ID);
+                    $active_state = $override_id === null ? 'none' : ($override_id ? 'custom' : 'default');
+                    $sidebar_image_id = $active_state === 'default' ? '' : (string) ($override_id ?? 0);
+                    $custom_url = $override_id ? wp_get_attachment_image_url($override_id, 'medium') : '';
+                    $fallback_url = ArticleContent::thumbnail_id($post->ID) ? get_the_post_thumbnail_url($post->ID, 'medium') : '';
                     ?>
                     <input type="hidden" name="teksttv_sidebar_image" id="teksttv-sidebar-image-id" value="<?php echo esc_attr($sidebar_image_id); ?>" />
                     <div class="teksttv-image-cards" data-active="<?php echo esc_attr($active_state); ?>" role="group" aria-label="<?php echo esc_attr('Sidebarafbeelding kiezen'); ?>">

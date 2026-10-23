@@ -118,7 +118,7 @@ class PostMetaTest extends TestCase
             '_teksttv_date_start' => ['2026-08-04'],
             default => '',
         });
-        // Core casts the corrupt array to attachment 1.
+        // Core casts '1oops' to attachment 1.
         Functions\when('get_post_thumbnail_id')->justReturn(1);
         Functions\expect('wp_get_attachment_image_url')->never();
 

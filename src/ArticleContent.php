@@ -5,7 +5,7 @@ namespace TekstTV;
 use TekstTV\Blocks\Common\RecentPostsQuery;
 
 /**
- * Prepares per-post content for playout and RSS.
+ * Prepares per-post content for playout and RSS, and reads TekstTV post meta the same way for the admin screens.
  * Callers handle post type, status, password, and query selection.
  */
 final class ArticleContent
@@ -172,8 +172,8 @@ final class ArticleContent
     public static function get_sidebar_image_data(int $post_id): ?array
     {
         if (Helpers::has_feature('sidebar_image')) {
-            $override_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
-            if ($override_id === '0' || $override_id === 0) {
+            $override_id = self::sidebar_override($post_id);
+            if ($override_id === null) {
                 return null;
             }
             $data = self::image_data($override_id, 'text_sidebar');
@@ -190,6 +190,13 @@ final class ArticleContent
         }
 
         return self::image_data(self::thumbnail_id($post_id), 'text_sidebar');
+    }
+
+    /** Null suppresses the sidebar image, 0 uses the fallback chain, otherwise an attachment ID. */
+    public static function sidebar_override(int $post_id): ?int
+    {
+        $raw = get_post_meta($post_id, '_teksttv_sidebar_image', true);
+        return $raw === '0' || $raw === 0 ? null : self::attachment_id($raw);
     }
 
     /** @return \Generator<int, int> Primary category first; lazy, so a primary image skips get_the_terms(). */
@@ -219,7 +226,7 @@ final class ArticleContent
      *
      * @return array<string, string>|null
      */
-    private static function image_data(mixed $raw, string $slot): ?array
+    public static function image_data(mixed $raw, string $slot): ?array
     {
         $id = self::attachment_id($raw);
         if ($id === 0) {
