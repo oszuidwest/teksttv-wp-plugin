@@ -67,26 +67,14 @@ class PostMeta
         $post_id = get_the_ID();
 
         $fallback_image = null;
-        if ($post_id) {
-            $thumb_id = get_post_thumbnail_id($post_id);
-            if ($thumb_id) {
-                $fallback_image = Helpers::get_image_data((int) $thumb_id, 'large', 'text_sidebar');
-            }
-        }
-
         $custom_image = null;
+        $saved_start = '';
         if ($post_id) {
-            $sidebar_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
-            if ($sidebar_id) {
-                $custom_image = Helpers::get_image_data((int) $sidebar_id, 'large', 'text_sidebar');
-            }
+            $fallback_image = ArticleContent::image_data(ArticleContent::thumbnail_id($post_id), 'text_sidebar');
+            $custom_image = ArticleContent::image_data(ArticleContent::sidebar_override($post_id), 'text_sidebar');
+            $saved_start = ArticleContent::string_meta($post_id, '_teksttv_date_start') ?: self::default_start_date(get_post($post_id));
         }
-
-        $saved_start = $post_id ? get_post_meta($post_id, '_teksttv_date_start', true) : '';
-        if (empty($saved_start) && $post_id) {
-            $saved_start = self::default_start_date(get_post($post_id));
-        }
-        $default_end = self::default_end_date((string) $saved_start);
+        $default_end = self::default_end_date($saved_start);
 
         $prompts = Helpers::get_ai_prompts();
         $ai_supported = Helpers::ai_supported();
@@ -164,18 +152,19 @@ class PostMeta
     {
         wp_nonce_field('teksttv_save_meta', 'teksttv_meta_nonce');
 
-        $active = get_post_meta($post->ID, '_teksttv_active', true);
-        $content = get_post_meta($post->ID, '_teksttv_content', true);
-        $date_start = get_post_meta($post->ID, '_teksttv_date_start', true);
-        $date_end = get_post_meta($post->ID, '_teksttv_date_end', true);
+        $active = ArticleContent::string_meta($post->ID, '_teksttv_active') ?? '';
+        $title = ArticleContent::string_meta($post->ID, '_teksttv_title') ?? '';
+        $content = ArticleContent::string_meta($post->ID, '_teksttv_content') ?? '';
+        $date_start = ArticleContent::string_meta($post->ID, '_teksttv_date_start') ?? '';
+        $date_end = ArticleContent::string_meta($post->ID, '_teksttv_date_end') ?? '';
         $days = get_post_meta($post->ID, '_teksttv_days', true);
         $images = get_post_meta($post->ID, '_teksttv_images', true);
+        // Playout skips the post; the editor should see why.
+        $schedule_invalid = Helpers::has_feature('scheduling') && ArticleContent::schedule_meta($post->ID) === null;
 
         // Missing meta means "all days"; a stored empty array means "no days".
         $days = Helpers::normalize_days($days);
-        if (!is_array($images)) {
-            $images = [];
-        }
+        $images = is_array($images) ? array_values(array_filter(array_map(ArticleContent::attachment_id(...), $images))) : [];
 
         if (empty($date_start) && empty($date_end)) {
             $date_start = self::default_start_date($post);
@@ -205,7 +194,7 @@ class PostMeta
             $toolbar_items[] = 'teksttv_separator';
         }
 
-        $plain_content = $use_tinymce ? '' : self::plain_editor_content((string) $content);
+        $plain_content = $use_tinymce ? '' : self::plain_editor_content($content);
 
         $valid_elements = ['br', 'p'];
         if (Helpers::has_feature('bold')) {

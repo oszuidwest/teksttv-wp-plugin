@@ -5,7 +5,7 @@ namespace TekstTV;
 use TekstTV\Blocks\Common\RecentPostsQuery;
 
 /**
- * Prepares per-post content for playout and RSS.
+ * Prepares per-post content for playout and RSS, and reads TekstTV post meta the same way for the admin screens.
  * Callers handle post type, status, password, and query selection.
  */
 final class ArticleContent
@@ -73,15 +73,8 @@ final class ArticleContent
         }
 
         if (Helpers::has_feature('scheduling')) {
-            $start = self::string_meta($post->ID, '_teksttv_date_start');
-            $end = self::string_meta($post->ID, '_teksttv_date_end');
-            $days = get_post_meta($post->ID, '_teksttv_days', true);
-            // Reject malformed meta before the permissive block scheduling helpers.
-            if (
-                !self::valid_date($start) || !self::valid_date($end)
-                || (is_array($days) ? array_filter($days, 'is_scalar') !== $days : $days !== '')
-                || !Helpers::is_block_scheduled(['date_start' => $start, 'date_end' => $end, 'days' => $days])
-            ) {
+            $schedule = self::schedule_meta($post->ID);
+            if ($schedule === null || !Helpers::is_block_scheduled($schedule)) {
                 return null;
             }
         }
@@ -122,13 +115,39 @@ final class ArticleContent
         return is_array($ids) ? array_values($ids) : [];
     }
 
-    private static function string_meta(int $post_id, string $key): ?string
+    /** Null for non-string meta such as a corrupt array or object. */
+    public static function string_meta(int $post_id, string $key): ?string
     {
         $value = get_post_meta($post_id, $key, true);
         return is_string($value) ? $value : null;
     }
 
-    /** Accepts empty or valid Y-m-d dates. */
+    /**
+     * Stored scheduling meta, or null when malformed meta keeps the post off air.
+     * The permissive block scheduling helpers would accept it.
+     *
+     * @return array{date_start: string, date_end: string, days: mixed}|null
+     */
+    public static function schedule_meta(int $post_id): ?array
+    {
+        $start = self::string_meta($post_id, '_teksttv_date_start');
+        $end = self::string_meta($post_id, '_teksttv_date_end');
+        $days = get_post_meta($post_id, '_teksttv_days', true);
+        if (
+            !self::valid_date($start) || !self::valid_date($end)
+            || (is_array($days) ? array_filter($days, 'is_scalar') !== $days : $days !== '')
+            || (is_array($days) && array_diff(array_map('strval', $days), ['1', '2', '3', '4', '5', '6', '7']) !== [])
+        ) {
+            return null;
+        }
+        return ['date_start' => $start, 'date_end' => $end, 'days' => $days];
+    }
+
+    /**
+     * Accepts empty or valid Y-m-d dates.
+     *
+     * @phpstan-assert-if-true string $date
+     */
     private static function valid_date(?string $date): bool
     {
         return $date !== null && Helpers::sanitize_date_input($date) === $date;
@@ -154,8 +173,8 @@ final class ArticleContent
     public static function get_sidebar_image_data(int $post_id): ?array
     {
         if (Helpers::has_feature('sidebar_image')) {
-            $override_id = get_post_meta($post_id, '_teksttv_sidebar_image', true);
-            if ($override_id === '0' || $override_id === 0) {
+            $override_id = self::sidebar_override($post_id);
+            if ($override_id === null) {
                 return null;
             }
             $data = self::image_data($override_id, 'text_sidebar');
@@ -174,6 +193,13 @@ final class ArticleContent
         return self::image_data(self::thumbnail_id($post_id), 'text_sidebar');
     }
 
+    /** Null suppresses the sidebar image, 0 uses the fallback chain, otherwise an attachment ID. */
+    public static function sidebar_override(int $post_id): ?int
+    {
+        $raw = get_post_meta($post_id, '_teksttv_sidebar_image', true);
+        return $raw === '0' || $raw === 0 ? null : self::attachment_id($raw);
+    }
+
     /** @return \Generator<int, int> Primary category first; lazy, so a primary image skips get_the_terms(). */
     private static function category_ids(int $post_id): \Generator
     {
@@ -188,11 +214,12 @@ final class ArticleContent
         }
     }
 
-    private static function thumbnail_id(int $post_id): int
+    public static function thumbnail_id(int $post_id): int
     {
-        // Core's (int) cast turns a corrupt array or object into attachment 1; objects also warn.
+        // Core's (int) cast turns corrupt meta such as an array or '1oops' into attachment 1; objects also warn.
         $raw = get_post_meta($post_id, '_thumbnail_id', true);
-        return is_array($raw) || is_object($raw) ? 0 : (int) get_post_thumbnail_id($post_id);
+        // Empty or zero meta still lets a post_thumbnail_id filter supply a fallback.
+        return in_array($raw, ['', '0', 0], true) || self::attachment_id($raw) > 0 ? (int) get_post_thumbnail_id($post_id) : 0;
     }
 
     /**
@@ -200,7 +227,7 @@ final class ArticleContent
      *
      * @return array<string, string>|null
      */
-    private static function image_data(mixed $raw, string $slot): ?array
+    public static function image_data(mixed $raw, string $slot): ?array
     {
         $id = self::attachment_id($raw);
         if ($id === 0) {
@@ -211,7 +238,7 @@ final class ArticleContent
     }
 
     /** Reject coercions such as '12.5' or '1e3' to unrelated attachments. */
-    private static function attachment_id(mixed $raw): int
+    public static function attachment_id(mixed $raw): int
     {
         return is_int($raw) || is_string($raw) ? max(0, (int) filter_var($raw, FILTER_VALIDATE_INT)) : 0;
     }

@@ -97,6 +97,19 @@ class ArticleContentTest extends TestCase
         $this->assertNotNull(ArticleContent::prepare($this->post));
     }
 
+    public function test_schedule_meta_validates_weekday_values(): void
+    {
+        foreach (['', [], [1, 3], ['1', '7']] as $days) {
+            $this->meta['_teksttv_days'] = $days;
+            $this->assertNotNull(ArticleContent::schedule_meta($this->post->ID));
+        }
+
+        foreach ([['99'], [0], [8], ['invalid'], ['1', '99']] as $days) {
+            $this->meta['_teksttv_days'] = $days;
+            $this->assertNull(ArticleContent::schedule_meta($this->post->ID));
+        }
+    }
+
     public function test_disabled_features_ignore_retained_even_corrupt_meta(): void
     {
         $this->features = [];
@@ -314,6 +327,8 @@ class ArticleContentTest extends TestCase
     public function test_sidebar_image_fallback_order(mixed $override, mixed $primary, array $category_images, int $thumbnail, ?int $expected): void
     {
         $this->meta['_teksttv_sidebar_image'] = $override;
+        // The thumbnail stub stands in for a post_thumbnail_id filter fallback.
+        $this->meta['_thumbnail_id'] = '0';
         $terms = array_map(fn($id) => (object) ['term_id' => $id], array_keys($category_images));
         Functions\when('get_the_terms')->justReturn($primary === '' ? $terms : array_slice($terms, 1));
         Functions\when('get_term_meta')->alias(fn($term_id) => $category_images[$term_id] ?? '');

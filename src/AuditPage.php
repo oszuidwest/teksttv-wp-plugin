@@ -132,10 +132,7 @@ class AuditPage
         $overview_url = self::page_url($selected_month);
         $toggle_url = self::page_url($selected_month, ['post_id' => $post_id, 'view' => $toggle_view]);
 
-        $ai_title = get_post_meta($post_id, '_teksttv_ai_title', true);
-        $ai_body = get_post_meta($post_id, '_teksttv_ai_body', true);
-        $current_title = get_post_meta($post_id, '_teksttv_title', true);
-        $current_body = get_post_meta($post_id, '_teksttv_content', true);
+        $meta = self::audit_meta($post_id);
 
         echo '<div class="wrap teksttv-admin">';
         echo '<h1>AI-audit: ' . esc_html($post->post_title) . '</h1>';
@@ -148,9 +145,9 @@ class AuditPage
         ?>
         <div class="teksttv-tab-content teksttv-admin-column teksttv-admin-column--wide">
             <div class="teksttv-card">
-                <h2><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($ai_title, $current_title)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h2>
+                <h2><?php echo esc_html('Kop'); ?> <?php echo self::render_status_badge(self::compare($meta['ai_title'], $meta['title'])); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h2>
                 <?php
-                $title_diff = self::render_diff($ai_title ?: '', $current_title ?: '', $split);
+                $title_diff = self::render_diff($meta['ai_title'], $meta['title'], $split);
                 if ($title_diff) {
                     // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- output from wp_text_diff
                     echo $title_diff;
@@ -161,11 +158,11 @@ class AuditPage
             </div>
 
             <div class="teksttv-card">
-                <h2><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($ai_body, $current_body)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h2>
+                <h2><?php echo esc_html('Tekst'); ?> <?php echo self::render_status_badge(self::compare($meta['ai_body'], $meta['body'])); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup with escaped labels ?></h2>
                 <?php
                 $body_diff = self::render_diff(
-                    wp_strip_all_tags($ai_body ?: ''),
-                    wp_strip_all_tags($current_body ?: ''),
+                    wp_strip_all_tags($meta['ai_body']),
+                    wp_strip_all_tags($meta['body']),
                     $split
                 );
                 if ($body_diff) {
@@ -299,15 +296,25 @@ class AuditPage
      */
     private static function get_post_statuses(int $post_id): array
     {
+        $meta = self::audit_meta($post_id);
         return [
-            'title_status' => self::compare(
-                get_post_meta($post_id, '_teksttv_ai_title', true),
-                get_post_meta($post_id, '_teksttv_title', true)
-            ),
-            'body_status' => self::compare(
-                get_post_meta($post_id, '_teksttv_ai_body', true),
-                get_post_meta($post_id, '_teksttv_content', true)
-            ),
+            'title_status' => self::compare($meta['ai_title'], $meta['title']),
+            'body_status' => self::compare($meta['ai_body'], $meta['body']),
+        ];
+    }
+
+    /**
+     * Reads compared meta; corrupt non-string values count as empty.
+     *
+     * @return array{ai_title: string, ai_body: string, title: string, body: string}
+     */
+    private static function audit_meta(int $post_id): array
+    {
+        return [
+            'ai_title' => ArticleContent::string_meta($post_id, '_teksttv_ai_title') ?? '',
+            'ai_body' => ArticleContent::string_meta($post_id, '_teksttv_ai_body') ?? '',
+            'title' => ArticleContent::string_meta($post_id, '_teksttv_title') ?? '',
+            'body' => ArticleContent::string_meta($post_id, '_teksttv_content') ?? '',
         ];
     }
 

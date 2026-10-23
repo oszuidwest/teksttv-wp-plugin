@@ -110,7 +110,7 @@ class Helpers
      */
     public static function normalize_days(mixed $days): ?array
     {
-        return is_array($days) ? $days : null;
+        return is_array($days) ? array_values(array_map('strval', array_filter($days, 'is_scalar'))) : null;
     }
 
     /**
