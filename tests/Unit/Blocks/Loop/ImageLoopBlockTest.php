@@ -72,7 +72,6 @@ class ImageLoopBlockTest extends TestCase
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/image.jpg');
         Functions\expect('wp_get_attachment_caption')->andReturn('');
-        Functions\expect('apply_filters')->andReturn('');
         Functions\expect('get_option')->with('teksttv_duration_image', 7)->andReturn(7);
 
         $block = ['image_id' => 42];
@@ -91,13 +90,21 @@ class ImageLoopBlockTest extends TestCase
         $this->assertSame([], ImageLoopBlock::build($block));
     }
 
+    public function test_build_omits_slide_when_url_filter_returns_empty(): void
+    {
+        Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/photo.jpg');
+        Functions\expect('wp_get_attachment_caption')->andReturn('Bijschrift');
+        Functions\expect('apply_filters')->andReturn('');
+
+        $this->assertSame([], ImageLoopBlock::build(['image_id' => 42, 'duration' => 7]));
+    }
+
     public function test_build_includes_caption(): void
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('wp_get_attachment_image_url')->andReturn('https://example.com/photo.jpg');
         Functions\expect('wp_get_attachment_caption')->andReturn('Een mooie foto');
-        Functions\expect('apply_filters')->andReturn('');
         Functions\expect('get_option')->with('teksttv_duration_image', 7)->andReturn(7);
 
         $result = ImageLoopBlock::build(['image_id' => 42]);
