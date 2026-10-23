@@ -306,6 +306,37 @@ test.describe('administrator admin screens', () => {
         await expect(enlarge).toHaveCSS('opacity', '1');
     });
 
+    test('live preview follows the Gutenberg post title', async ({ page }) => {
+        await openFixturePostEditor(page);
+        await page.waitForFunction(
+            () =>
+                (
+                    window as unknown as {
+                        wp?: { data?: { select(s: string): { getCurrentPostType?(): string } | null } };
+                    }
+                ).wp?.data
+                    ?.select('core/editor')
+                    ?.getCurrentPostType?.() === 'post',
+        );
+        await page.locator('#teksttv-title').fill('');
+
+        await page.evaluate(() => {
+            const browser = window as unknown as {
+                wp: { data: { dispatch(store: string): { editPost(values: Record<string, string>): void } } };
+            };
+            browser.wp.data.dispatch('core/editor').editPost({ title: 'Live preview titel' });
+        });
+
+        // The preview URL carries the slide as base64 JSON.
+        await expect
+            .poll(async () => {
+                const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
+                const data = new URL(src, 'http://localhost').searchParams.get('data');
+                return data ? (JSON.parse(Buffer.from(data, 'base64').toString('utf8')).title ?? null) : null;
+            })
+            .toBe('Live preview titel');
+    });
+
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
         await openFixturePostEditor(page);
         await page.waitForFunction(() => {

@@ -1,6 +1,6 @@
 import type { ImageData, Slide, TeksttvPostConfig, TextSlide } from '../../modules/types';
 import { splitPages } from '../../modules/utils';
-import { getTeksttvEditorHtml } from './editorContent';
+import { getCurrentPostTitle, getTeksttvEditorHtml } from './editorContent';
 
 export function resolveSidebarImage(
     config: TeksttvPostConfig | undefined,
@@ -28,11 +28,7 @@ export function buildSlidesFromDom(
     content = getTeksttvEditorHtml(),
 ): Slide[] {
     const customTitle = (document.querySelector<HTMLInputElement>('#teksttv-title')?.value ?? '').trim();
-    const postTitle = (
-        (document.querySelector<HTMLInputElement>('#title')?.value ?? '') ||
-        (document.querySelector<HTMLInputElement>('input[name="post_title"]')?.value ?? '') ||
-        ''
-    ).trim();
+    const postTitle = getCurrentPostTitle().trim();
     const title = customTitle || postTitle || config?.fallbackTitle || '';
     const result: Slide[] = [];
 

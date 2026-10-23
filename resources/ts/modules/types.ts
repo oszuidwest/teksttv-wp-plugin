@@ -94,6 +94,7 @@ interface WPGlobal {
         select(store: 'core/editor'): {
             getEditedPostAttribute(attribute: 'title' | 'content'): unknown;
         } | null;
+        subscribe(listener: () => void): () => void;
     };
 }
 

@@ -6,7 +6,7 @@ import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postM
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
-import { getTeksttvEditorHtml } from './postMeta/editorContent';
+import { getTeksttvEditorHtml, watchPostTitle } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { initTeksttvEditorWhenDisplayed } from './postMeta/lazyEditor';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
@@ -151,6 +151,7 @@ export function createPostMetaPage() {
             });
 
             document.querySelector('#title')?.addEventListener('input', updatePreview);
+            watchPostTitle(updatePreview);
 
             if (config?.aiSupported && config.generateUrl) {
                 if (!config.isNewPost) {

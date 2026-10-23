@@ -1,17 +1,28 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { buildSlidesFromDom } from '../../resources/ts/alpine/postMeta/buildSlides';
 import type { TeksttvPostConfig } from '../../resources/ts/modules/types';
 
 const originalDocument = globalThis.document;
 const originalHTMLElement = globalThis.HTMLElement;
 
-function editorDocument(content: string): Document {
+function editorDocument(content: string, fields: Record<string, string> = {}): Document {
     return {
         querySelector(selector: string) {
-            return selector === '#teksttv_content' ? { value: content } : null;
+            if (selector === '#teksttv_content') return { value: content };
+            return selector in fields ? { value: fields[selector] } : null;
         },
     } as unknown as Document;
 }
+
+function setEditorStore(title: unknown): void {
+    (globalThis as { wp?: unknown }).wp = {
+        data: { select: () => ({ getEditedPostAttribute: () => title }), subscribe: () => () => {} },
+    };
+}
+
+beforeEach(() => {
+    setEditorStore(undefined);
+});
 
 afterEach(() => {
     globalThis.document = originalDocument;
@@ -38,5 +49,34 @@ describe('buildSlidesFromDom', () => {
 
         expect(slides).toHaveLength(1);
         expect(slides[0]).toMatchObject({ type: 'text', body: content });
+    });
+
+    test('takes the title from the block editor store', () => {
+        globalThis.document = editorDocument('<p>Tekst</p>', { '#title': 'Klassieke kop' });
+        globalThis.HTMLElement = class {} as typeof HTMLElement;
+        setEditorStore('  Gutenberg kop ');
+
+        const slides = buildSlidesFromDom({ fallbackTitle: 'Opgeslagen kop' } as TeksttvPostConfig, null);
+
+        expect(slides[0]).toMatchObject({ title: 'Gutenberg kop' });
+    });
+
+    test('falls back to the classic title field without an editor store', () => {
+        globalThis.document = editorDocument('<p>Tekst</p>', { '#title': 'Klassieke kop' });
+        globalThis.HTMLElement = class {} as typeof HTMLElement;
+
+        const slides = buildSlidesFromDom(undefined, null);
+
+        expect(slides[0]).toMatchObject({ title: 'Klassieke kop' });
+    });
+
+    test('prefers the custom TekstTV title over the post title', () => {
+        globalThis.document = editorDocument('<p>Tekst</p>', { '#teksttv-title': 'Eigen kop' });
+        globalThis.HTMLElement = class {} as typeof HTMLElement;
+        setEditorStore('Gutenberg kop');
+
+        const slides = buildSlidesFromDom(undefined, null);
+
+        expect(slides[0]).toMatchObject({ title: 'Eigen kop' });
     });
 });
