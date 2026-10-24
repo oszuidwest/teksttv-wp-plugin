@@ -306,14 +306,37 @@ test.describe('administrator admin screens', () => {
         await expect(enlarge).toHaveCSS('opacity', '1');
     });
 
+    test('live preview follows the Gutenberg post title', async ({ page }) => {
+        await openFixturePostEditor(page);
+        // The preview URL carries the slide as base64 JSON.
+        const previewTitle = async () => {
+            const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
+            const data = new URL(src, 'http://localhost').searchParams.get('data');
+            return data ? (JSON.parse(Buffer.from(data, 'base64').toString('utf8')).title ?? null) : null;
+        };
+
+        const setStoreTitle = (title: string) =>
+            page.evaluate((value) => {
+                const browser = window as unknown as {
+                    wp: { data: { dispatch(store: string): { editPost(values: Record<string, string>): void } } };
+                };
+                browser.wp.data.dispatch('core/editor').editPost({ title: value });
+            }, title);
+
+        await page.locator('#teksttv-title').fill('');
+        await setStoreTitle('Eerste titel');
+        await expect.poll(previewTitle).toBe('Eerste titel');
+
+        // No field update is pending now, so only the store subscription can update the preview.
+        await setStoreTitle('Live preview titel');
+        await expect.poll(previewTitle).toBe('Live preview titel');
+
+        await page.locator('#teksttv-title').fill('Eigen kop');
+        await expect.poll(previewTitle).toBe('Eigen kop');
+    });
+
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
         await openFixturePostEditor(page);
-        await page.waitForFunction(() => {
-            const browser = window as unknown as {
-                wp?: { data?: { select(store: string): { getCurrentPostType?(): string } | null } };
-            };
-            return browser.wp?.data?.select('core/editor')?.getCurrentPostType?.() === 'post';
-        });
 
         page.on('dialog', (dialog) => dialog.accept());
         const generateUrl = await page.evaluate(() => {

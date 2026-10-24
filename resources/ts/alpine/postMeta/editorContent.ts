@@ -11,6 +11,29 @@ export function getTeksttvEditorHtml(): string {
     return getEditorHtml('teksttv_content') ?? '';
 }
 
+function getStoreTitle(): string | null {
+    const title = wp.data?.select('core/editor')?.getEditedPostAttribute('title');
+    return typeof title === 'string' ? title : null;
+}
+
+/** Read the unsaved post title from Gutenberg, falling back to the Classic Editor field. */
+export function getCurrentPostTitle(): string {
+    return getStoreTitle() ?? document.querySelector<HTMLInputElement>('#title')?.value ?? '';
+}
+
+/** Call `onChange` when the Gutenberg title changes. Classic keeps using the `#title` input listener. */
+export function watchPostTitle(onChange: () => void): void {
+    if (!wp.data?.subscribe) return;
+    let previous = getStoreTitle();
+    // The store notifies on every change; only a different title is forwarded.
+    wp.data.subscribe(() => {
+        const current = getStoreTitle();
+        if (current === null || current === previous) return;
+        previous = current;
+        onChange();
+    });
+}
+
 /** Read unsaved source content from Gutenberg or the Classic Editor. */
 export function getCurrentPostEditorState() {
     const editorStore = wp.data?.select('core/editor');
