@@ -308,16 +308,6 @@ test.describe('administrator admin screens', () => {
 
     test('live preview follows the Gutenberg post title', async ({ page }) => {
         await openFixturePostEditor(page);
-        await page.waitForFunction(
-            () =>
-                (
-                    window as unknown as {
-                        wp?: { data?: { select(s: string): { getCurrentPostType?(): string } | null } };
-                    }
-                ).wp?.data
-                    ?.select('core/editor')
-                    ?.getCurrentPostType?.() === 'post',
-        );
         // The preview URL carries the slide as base64 JSON.
         const previewTitle = async () => {
             const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
@@ -344,12 +334,6 @@ test.describe('administrator admin screens', () => {
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
         await openFixturePostEditor(page);
-        await page.waitForFunction(() => {
-            const browser = window as unknown as {
-                wp?: { data?: { select(store: string): { getCurrentPostType?(): string } | null } };
-            };
-            return browser.wp?.data?.select('core/editor')?.getCurrentPostType?.() === 'post';
-        });
 
         page.on('dialog', (dialog) => dialog.accept());
         const generateUrl = await page.evaluate(() => {

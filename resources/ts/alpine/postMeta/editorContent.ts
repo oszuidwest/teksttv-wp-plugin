@@ -18,12 +18,7 @@ function getStoreTitle(): string | null {
 
 /** Read the unsaved post title from Gutenberg, falling back to the Classic Editor field. */
 export function getCurrentPostTitle(): string {
-    return (
-        getStoreTitle() ??
-        document.querySelector<HTMLInputElement>('#title')?.value ??
-        document.querySelector<HTMLInputElement>('input[name="post_title"]')?.value ??
-        ''
-    );
+    return getStoreTitle() ?? document.querySelector<HTMLInputElement>('#title')?.value ?? '';
 }
 
 /** Call `onChange` when the Gutenberg title changes. Classic keeps using the `#title` input listener. */

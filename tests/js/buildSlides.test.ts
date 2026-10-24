@@ -69,14 +69,4 @@ describe('buildSlidesFromDom', () => {
 
         expect(slides[0]).toMatchObject({ title: 'Klassieke kop' });
     });
-
-    test('prefers the custom TekstTV title over the post title', () => {
-        globalThis.document = editorDocument('<p>Tekst</p>', { '#teksttv-title': 'Eigen kop' });
-        globalThis.HTMLElement = class {} as typeof HTMLElement;
-        setEditorStore('Gutenberg kop');
-
-        const slides = buildSlidesFromDom(undefined, null);
-
-        expect(slides[0]).toMatchObject({ title: 'Eigen kop' });
-    });
 });

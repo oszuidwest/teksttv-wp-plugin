@@ -19,7 +19,7 @@ export async function login(page: Page, username: string, password: string): Pro
     await expect(page.locator('#wpadminbar')).toBeVisible();
 }
 
-/** Open the seeded post and expose its classic meta boxes. */
+/** Open the seeded post once Gutenberg has loaded it, and expose its classic meta boxes. */
 export async function openFixturePostEditor(page: Page): Promise<void> {
     await page.goto('/wp-admin/edit.php');
     await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
@@ -31,6 +31,12 @@ export async function openFixturePostEditor(page: Page): Promise<void> {
     if ((await metaBoxesButton.getAttribute('aria-expanded')) !== 'true') await metaBoxesButton.press('Enter');
     await expect(metaBoxesButton).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('#teksttv_meta')).toBeVisible();
+    await page.waitForFunction(() => {
+        const browser = window as unknown as {
+            wp?: { data?: { select(store: string): { getCurrentPostType?(): string } | null } };
+        };
+        return browser.wp?.data?.select('core/editor')?.getCurrentPostType?.() === 'post';
+    });
 }
 
 const ADD_BLOCK_UI = {
