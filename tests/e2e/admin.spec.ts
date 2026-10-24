@@ -318,23 +318,28 @@ test.describe('administrator admin screens', () => {
                     ?.select('core/editor')
                     ?.getCurrentPostType?.() === 'post',
         );
-        await page.locator('#teksttv-title').fill('');
-
-        await page.evaluate(() => {
-            const browser = window as unknown as {
-                wp: { data: { dispatch(store: string): { editPost(values: Record<string, string>): void } } };
-            };
-            browser.wp.data.dispatch('core/editor').editPost({ title: 'Live preview titel' });
-        });
-
         // The preview URL carries the slide as base64 JSON.
-        await expect
-            .poll(async () => {
-                const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
-                const data = new URL(src, 'http://localhost').searchParams.get('data');
-                return data ? (JSON.parse(Buffer.from(data, 'base64').toString('utf8')).title ?? null) : null;
-            })
-            .toBe('Live preview titel');
+        const previewTitle = async () => {
+            const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
+            const data = new URL(src, 'http://localhost').searchParams.get('data');
+            return data ? (JSON.parse(Buffer.from(data, 'base64').toString('utf8')).title ?? null) : null;
+        };
+
+        const setStoreTitle = (title: string) =>
+            page.evaluate((value) => {
+                const browser = window as unknown as {
+                    wp: { data: { dispatch(store: string): { editPost(values: Record<string, string>): void } } };
+                };
+                browser.wp.data.dispatch('core/editor').editPost({ title: value });
+            }, title);
+
+        await page.locator('#teksttv-title').fill('');
+        await setStoreTitle('Eerste titel');
+        await expect.poll(previewTitle).toBe('Eerste titel');
+
+        // No field update is pending now, so only the store subscription can update the preview.
+        await setStoreTitle('Live preview titel');
+        await expect.poll(previewTitle).toBe('Live preview titel');
     });
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
