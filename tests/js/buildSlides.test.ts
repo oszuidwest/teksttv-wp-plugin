@@ -31,13 +31,14 @@ afterEach(() => {
 
 describe('buildSlidesFromDom', () => {
     test('preserves inline hyphens in a single slide', () => {
-        globalThis.document = editorDocument('<p>foo---bar</p>');
+        globalThis.document = editorDocument('<p>foo---bar</p>', { '#title': 'Klassieke kop' });
         globalThis.HTMLElement = class {} as typeof HTMLElement;
 
         const slides = buildSlidesFromDom(undefined, null);
 
         expect(slides).toHaveLength(1);
-        expect(slides[0]).toMatchObject({ type: 'text', body: '<p>foo---bar</p>' });
+        // Without a block editor title, the classic title field is used.
+        expect(slides[0]).toMatchObject({ type: 'text', title: 'Klassieke kop', body: '<p>foo---bar</p>' });
     });
 
     test('does not split preview pages when the feature is disabled', () => {
@@ -59,14 +60,5 @@ describe('buildSlidesFromDom', () => {
         const slides = buildSlidesFromDom({ fallbackTitle: 'Opgeslagen kop' } as TeksttvPostConfig, null);
 
         expect(slides[0]).toMatchObject({ title: 'Gutenberg kop' });
-    });
-
-    test('falls back to the classic title field without an editor store', () => {
-        globalThis.document = editorDocument('<p>Tekst</p>', { '#title': 'Klassieke kop' });
-        globalThis.HTMLElement = class {} as typeof HTMLElement;
-
-        const slides = buildSlidesFromDom(undefined, null);
-
-        expect(slides[0]).toMatchObject({ title: 'Klassieke kop' });
     });
 });

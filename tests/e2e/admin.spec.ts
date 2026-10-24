@@ -330,6 +330,9 @@ test.describe('administrator admin screens', () => {
         // No field update is pending now, so only the store subscription can update the preview.
         await setStoreTitle('Live preview titel');
         await expect.poll(previewTitle).toBe('Live preview titel');
+
+        await page.locator('#teksttv-title').fill('Eigen kop');
+        await expect.poll(previewTitle).toBe('Eigen kop');
     });
 
     test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
