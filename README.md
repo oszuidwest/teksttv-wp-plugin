@@ -131,9 +131,11 @@ RSS 2.0 feeds answer conditional requests (ETag, Last-Modified) with 304 while
 unchanged and send `Cache-Control: no-cache`, so caches revalidate every poll.
 Writes through WordPress APIs that can change the TekstTV output of published
 posts, the TekstTV settings or category images advance the validators from the
-next second; while export is enabled, so do local midnight and posts reaching
-the maximum age. Direct SQL writes are not detected. Other feed content follows
-WordPress's own validator.
+next second. Installing, updating, activating or deactivating any plugin also
+invalidates. While export is enabled, so do local midnight and posts reaching
+the maximum age. Direct SQL writes and code or filter-input changes outside
+these plugin events require manual [invalidation](EXTENDING.md#rss-validators).
+Other feed content follows WordPress's own validator.
 
 ## REST API
 

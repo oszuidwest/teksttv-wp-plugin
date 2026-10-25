@@ -35,6 +35,14 @@ final class RssFeed
         add_action('deleted_term_relationships', static fn($post_id, $tt_ids, $taxonomy) => self::terms_changed((int) $post_id, $taxonomy), 10, 3);
         // Category names order the sidebar image fallback.
         add_action('edited_category', [self::class, 'invalidate']);
+        // Other plugins can change the exported XML through filters too.
+        add_action('activated_plugin', [self::class, 'invalidate']);
+        add_action('deactivated_plugin', [self::class, 'invalidate']);
+        add_action('upgrader_process_complete', static function ($upgrader, $context) {
+            if (($context['type'] ?? '') === 'plugin') {
+                self::invalidate();
+            }
+        }, 10, 2);
     }
 
     /**

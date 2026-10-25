@@ -353,6 +353,8 @@ class RssFeedTest extends TestCase
         $this->assertNotFalse(has_action('after_delete_post'));
         $this->assertNotFalse(has_action('updated_post_meta', [RssFeed::class, 'post_meta_changed']));
         $this->assertNotFalse(has_action('edited_category', [RssFeed::class, 'invalidate']));
+        $this->assertNotFalse(has_action('activated_plugin', [RssFeed::class, 'invalidate']));
+        $this->assertNotFalse(has_action('deactivated_plugin', [RssFeed::class, 'invalidate']));
         $this->assertNotFalse(has_filter('pre_get_lastpostmodified'));
         $this->assertNotFalse(has_action('update_option_posts_per_rss', [RssFeed::class, 'invalidate']));
         $this->assertSame(10, has_filter('get_lastpostmodified', [RssFeed::class, 'last_modified']));
@@ -383,6 +385,9 @@ class RssFeedTest extends TestCase
             'category assignment' => ['set_object_terms', [42, [], [], 'category'], true],
             'tag removal' => ['deleted_term_relationships', [42, [], 'post_tag'], true],
             'other taxonomy' => ['set_object_terms', [42, [], [], 'region'], false],
+            'plugin install' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'install']], true],
+            'plugin update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'update', 'bulk' => true, 'plugins' => ['other-plugin/plugin.php']]], true],
+            'theme update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'theme', 'action' => 'update']], false],
         ];
     }
 
