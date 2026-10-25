@@ -39,7 +39,7 @@ final class RssFeed
         add_action('activated_plugin', [self::class, 'invalidate']);
         add_action('deactivated_plugin', [self::class, 'invalidate']);
         add_action('upgrader_process_complete', static function ($upgrader, $context) {
-            if (($context['type'] ?? '') === 'plugin' && in_array($context['action'] ?? '', ['install', 'update'], true)) {
+            if (($context['type'] ?? '') === 'plugin') {
                 self::invalidate();
             }
         }, 10, 2);

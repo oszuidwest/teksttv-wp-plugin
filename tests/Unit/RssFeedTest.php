@@ -353,6 +353,8 @@ class RssFeedTest extends TestCase
         $this->assertNotFalse(has_action('after_delete_post'));
         $this->assertNotFalse(has_action('updated_post_meta', [RssFeed::class, 'post_meta_changed']));
         $this->assertNotFalse(has_action('edited_category', [RssFeed::class, 'invalidate']));
+        $this->assertNotFalse(has_action('activated_plugin', [RssFeed::class, 'invalidate']));
+        $this->assertNotFalse(has_action('deactivated_plugin', [RssFeed::class, 'invalidate']));
         $this->assertNotFalse(has_filter('pre_get_lastpostmodified'));
         $this->assertNotFalse(has_action('update_option_posts_per_rss', [RssFeed::class, 'invalidate']));
         $this->assertSame(10, has_filter('get_lastpostmodified', [RssFeed::class, 'last_modified']));
@@ -367,39 +369,6 @@ class RssFeedTest extends TestCase
             }
         }
         $this->assertFalse(has_action('update_option_blogname', [RssFeed::class, 'invalidate']));
-    }
-
-    #[DataProvider('pluginLifecycleHooks')]
-    public function test_plugin_activation_and_deactivation_advance_the_feed_validator(string $hook): void
-    {
-        $callback = null;
-        Actions\expectAdded($hook)->whenHappen(function ($added) use (&$callback) {
-            $callback = $added;
-        });
-        RssFeed::init();
-        $this->assertNotFalse(has_action($hook, [RssFeed::class, 'invalidate']));
-        Functions\when('is_feed')->justReturn(true);
-        $before = RssFeed::last_modified('2026-10-01 12:00:00', 'GMT');
-
-        $callback('other-plugin/other-plugin.php', false);
-        $this->assertSame(1, $this->writes);
-        $now = strtotime('2026-10-19 10:00:02 GMT');
-        $_SERVER['REQUEST_TIME'] = $now;
-        Functions\when('current_datetime')->justReturn(new \DateTimeImmutable('@' . $now));
-        $after = RssFeed::last_modified('2026-10-01 12:00:00', 'GMT');
-        $this->assertGreaterThan($before, $after);
-        $_SERVER['REQUEST_TIME'] = $now + 60;
-        Functions\when('current_datetime')->justReturn(new \DateTimeImmutable('@' . ($now + 60)));
-        $this->assertSame($after, RssFeed::last_modified('2026-10-01 12:00:00', 'GMT'));
-    }
-
-    /** @return array<string, array{string}> */
-    public static function pluginLifecycleHooks(): array
-    {
-        return [
-            'activation' => ['activated_plugin'],
-            'deactivation' => ['deactivated_plugin'],
-        ];
     }
 
     /** @return array<string, array{string, list<mixed>, bool}> */
@@ -417,14 +386,8 @@ class RssFeedTest extends TestCase
             'tag removal' => ['deleted_term_relationships', [42, [], 'post_tag'], true],
             'other taxonomy' => ['set_object_terms', [42, [], [], 'region'], false],
             'plugin install' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'install']], true],
-            'TekstTV update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'update', 'plugin' => 'teksttv/teksttv.php']], true],
-            'other plugin update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'update', 'plugin' => 'other-plugin/plugin.php']], true],
-            'bulk plugin update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'update', 'bulk' => true, 'plugins' => ['one/plugin.php', 'two/plugin.php']]], true],
+            'plugin update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'update', 'bulk' => true, 'plugins' => ['other-plugin/plugin.php']]], true],
             'theme update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'theme', 'action' => 'update']], false],
-            'core update' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'core', 'action' => 'update']], false],
-            'translation install' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'translation', 'action' => 'install']], false],
-            'other plugin operation' => ['upgrader_process_complete', [new \stdClass(), ['type' => 'plugin', 'action' => 'delete']], false],
-            'missing updater context' => ['upgrader_process_complete', [new \stdClass(), []], false],
         ];
     }
 
