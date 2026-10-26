@@ -76,7 +76,8 @@ class AiGenerator
     /**
      * Generate fields, apply the region prefix, and persist the audit baseline.
      *
-     * Errors include an HTTP status for REST mapping.
+     * Errors include an HTTP status for REST mapping. For 'both', a failed
+     * body keeps the generated title and becomes a warning.
      *
      * @param string $field 'title', 'body', or 'both'.
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
@@ -119,6 +120,11 @@ class AiGenerator
         $warnings = [];
         foreach ($field === 'both' ? ['title', 'body'] : [$field] as $current_field) {
             $result = self::generate_single_field($current_field, $post_title, $post_text, $config, $has_photo);
+            if (is_wp_error($result) && $fields !== []) {
+                // Keep the generated title so the editor only regenerates the body.
+                $warnings[] = sprintf('Tekst genereren mislukt: %s', $result->get_error_message());
+                break;
+            }
             if (is_wp_error($result)) {
                 return new \WP_Error(
                     'teksttv_generation_failed',
