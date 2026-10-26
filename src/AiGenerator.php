@@ -120,12 +120,12 @@ class AiGenerator
         $warnings = [];
         foreach ($field === 'both' ? ['title', 'body'] : [$field] as $current_field) {
             $result = self::generate_single_field($current_field, $post_title, $post_text, $config, $has_photo);
-            if (is_wp_error($result) && $fields !== []) {
-                // Keep the generated title so the editor only regenerates the body.
-                $warnings[] = sprintf('Tekst genereren mislukt: %s', $result->get_error_message());
-                break;
-            }
             if (is_wp_error($result)) {
+                if ($fields !== []) {
+                    // Keep the generated title so the editor only regenerates the body.
+                    $warnings[] = sprintf('Tekst genereren mislukt: %s', $result->get_error_message());
+                    break;
+                }
                 return new \WP_Error(
                     'teksttv_generation_failed',
                     sprintf('AI-generatie mislukt: %s', $result->get_error_message()),
