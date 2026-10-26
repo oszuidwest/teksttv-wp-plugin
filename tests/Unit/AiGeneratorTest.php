@@ -549,6 +549,22 @@ class AiGeneratorTest extends TestCase
         $this->assertSame($result['fields']['body'], $saved_body);
     }
 
+    public function test_generate_for_post_keeps_title_when_body_fails(): void
+    {
+        $builder = self::mockAiBuilder('Korte kop', new \WP_Error('prompt_network_error', 'API timeout'));
+
+        Functions\expect('wp_ai_client_prompt')->andReturn($builder);
+        Functions\expect('is_wp_error')->andReturnUsing(fn($v) => $v instanceof \WP_Error);
+        Functions\when('wp_slash')->returnArg();
+        Functions\expect('update_post_meta')->once()->with(42, '_teksttv_ai_title', 'Korte kop');
+
+        $result = AiGenerator::generate_for_post(self::makePost(), 'both', self::aiConfig());
+
+        $this->assertIsArray($result);
+        $this->assertSame(['title' => 'Korte kop'], $result['fields']);
+        $this->assertSame('Tekst genereren mislukt: API timeout', $result['warning']);
+    }
+
     public function test_generate_for_post_maps_provider_failure_to_500(): void
     {
         $wp_error = \Mockery::mock('WP_Error');
