@@ -42,6 +42,7 @@ class MessagesListTableTest extends TestCase
         yield 'starts today' => ['2026-10-28', '', 'active'];
         yield 'starts tomorrow' => ['2026-10-29', '2026-11-05', 'upcoming'];
         yield 'ended yesterday' => ['2026-10-20', '2026-10-27', 'expired'];
+        yield 'start after end, start still ahead' => ['2026-11-10', '2026-11-01', 'upcoming'];
         yield 'malformed date' => ['2026-1-5', '', 'invalid'];
     }
 
@@ -72,6 +73,8 @@ class MessagesListTableTest extends TestCase
         $this->assertSame('>', MessagesListTable::meta_query('upcoming')[0]['compare']);
         $expired = MessagesListTable::meta_query('expired');
         $this->assertSame(['key' => '_teksttv_date_end', 'value' => '2026-10-28', 'compare' => '<', 'type' => 'DATE'], $expired[1]);
+        // Inverted schedules count as upcoming only, so the views never overlap.
+        $this->assertSame(['key' => '_teksttv_date_start', 'value' => '2026-10-28', 'compare' => '<=', 'type' => 'DATE'], $expired[2][2]);
         $this->assertSame('AND', MessagesListTable::meta_query('active')['relation']);
     }
 

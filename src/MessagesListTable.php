@@ -67,10 +67,17 @@ final class MessagesListTable
             'upcoming' => [
                 ['key' => '_teksttv_date_start', 'value' => $today, 'compare' => '>', 'type' => 'DATE'],
             ],
+            // A start date after the end date makes a message upcoming, as in state().
             'expired' => [
                 'relation' => 'AND',
                 ['key' => '_teksttv_date_end', 'value' => '', 'compare' => '!='],
                 ['key' => '_teksttv_date_end', 'value' => $today, 'compare' => '<', 'type' => 'DATE'],
+                [
+                    'relation' => 'OR',
+                    ['key' => '_teksttv_date_start', 'compare' => 'NOT EXISTS'],
+                    ['key' => '_teksttv_date_start', 'value' => '', 'compare' => '='],
+                    ['key' => '_teksttv_date_start', 'value' => $today, 'compare' => '<=', 'type' => 'DATE'],
+                ],
             ],
             default => Helpers::get_date_range_meta_query(),
         };
