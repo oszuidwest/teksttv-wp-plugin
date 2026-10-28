@@ -5,6 +5,7 @@ namespace TekstTV\Tests\Unit;
 use Brain\Monkey\Functions;
 use Mockery;
 use TekstTV\Helpers;
+use TekstTV\Messages;
 use TekstTV\Migrations;
 
 class MigrationsTest extends TestCase
@@ -18,6 +19,8 @@ class MigrationsTest extends TestCase
         parent::setUp();
         // Silence the expected migration error log.
         $this->previous_error_log = ini_set('error_log', '/dev/null');
+        // Message capability grants are covered by their own tests.
+        Functions\when('get_role')->justReturn(null);
     }
 
     protected function tearDown(): void
@@ -101,7 +104,7 @@ class MigrationsTest extends TestCase
         $this->assertArrayNotHasKey('group', $updates['teksttv_campaigns'][0]);
         $this->assertSame('commercial', $updates['teksttv_loop_tv1'][0]['type']);
         $this->assertSame(['grp_sponsors'], $updates['teksttv_loop_tv1'][0]['commercial_block_ids']);
-        $this->assertSame(1, $updates['teksttv_data_version']);
+        $this->assertSame(2, $updates['teksttv_data_version']);
     }
 
     public function test_run_maps_colliding_label_references_for_pre_id_data(): void
@@ -153,7 +156,7 @@ class MigrationsTest extends TestCase
     {
         $stored = ['teksttv_data_version' => 0];
         self::stubOptionReads($stored);
-        Functions\expect('update_option')->once()->with('teksttv_data_version', 1, true)->andReturn(true);
+        Functions\expect('update_option')->once()->with('teksttv_data_version', 2, true)->andReturn(true);
         Functions\expect('delete_option')->never();
         Functions\when('wp_roles')->justReturn((object) ['role_objects' => []]);
         $this->stubLoopOptionScan([]);
@@ -202,13 +205,33 @@ class MigrationsTest extends TestCase
     public function test_run_skips_everything_when_version_is_current(): void
     {
         // A string version must skip all migration work.
-        $stored = ['teksttv_data_version' => '1'];
+        $stored = ['teksttv_data_version' => '2'];
         self::stubOptionReads($stored);
         Functions\expect('update_option')->never();
         Functions\expect('delete_option')->never();
         Functions\expect('wp_roles')->never();
 
         Migrations::run();
+    }
+
+    public function test_run_from_version_one_only_grants_message_capabilities(): void
+    {
+        $stored = ['teksttv_data_version' => 1];
+        self::stubOptionReads($stored);
+        $granted = [];
+        $role = Mockery::mock();
+        $role->shouldReceive('add_cap')->andReturnUsing(static function (string $cap) use (&$granted): void {
+            $granted[] = $cap;
+        });
+        Functions\when('get_role')->alias(static fn(string $name) => in_array($name, ['administrator', 'editor'], true) ? $role : null);
+        // The commercials step must not run again.
+        Functions\expect('wp_roles')->never();
+        Functions\expect('delete_option')->never();
+        Functions\expect('update_option')->once()->with('teksttv_data_version', 2, true)->andReturn(true);
+
+        Migrations::run();
+
+        $this->assertSame(array_merge(Messages::CAPABILITIES, Messages::CAPABILITIES), $granted);
     }
 
     public function test_run_aborts_before_deleting_legacy_data_when_campaigns_write_fails(): void
@@ -293,7 +316,7 @@ class MigrationsTest extends TestCase
 
         $this->assertArrayNotHasKey('teksttv_commercial_blocks', $updates);
         $this->assertSame($admin_blocks, $stored['teksttv_commercial_blocks']);
-        $this->assertSame(1, $updates['teksttv_data_version']);
+        $this->assertSame(2, $updates['teksttv_data_version']);
     }
 
     public function test_run_accepts_equal_read_back_when_update_reports_unchanged(): void
@@ -320,7 +343,7 @@ class MigrationsTest extends TestCase
 
         Migrations::run();
 
-        $this->assertSame(1, $stored['teksttv_data_version']);
+        $this->assertSame(2, $stored['teksttv_data_version']);
     }
 
     public function test_convert_campaigns_renames_relation_and_preserves_campaign_data(): void

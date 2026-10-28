@@ -20,9 +20,8 @@ class RestApi
         register_rest_route(self::NAMESPACE, '/image-data', [
             'methods' => 'GET',
             'callback' => [self::class, 'get_image_data'],
-            'permission_callback' => function () {
-                return current_user_can('edit_teksttv');
-            },
+            // The meta box preview calls this on every post type that carries it.
+            'permission_callback' => [PostMeta::class, 'user_can_edit_any'],
             'args' => [
                 'id' => [
                     'required' => true,

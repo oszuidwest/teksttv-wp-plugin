@@ -17,13 +17,17 @@
  * @var list<string> $valid_elements
  * @var bool $use_tinymce
  * @var string $plain_content
+ * @var bool $is_message
+ * @var list<array{slug: string, label: string}> $channels
+ * @var list<string> $selected_channels
  */
 
 namespace TekstTV;
 
 defined('ABSPATH') || exit;
 
-$has_custom_title = Helpers::has_feature('custom_title');
+// A message's own title is its slide title.
+$has_custom_title = !$is_message && Helpers::has_feature('custom_title');
 $has_sidebar_image = Helpers::has_feature('sidebar_image');
 $has_extra_images = Helpers::has_feature('extra_images');
 $has_scheduling = Helpers::has_feature('scheduling');
@@ -31,6 +35,8 @@ $has_page_separator = Helpers::has_feature('page_separator');
 
 ?>
 <div class="teksttv-meta-box" x-data="teksttvPostMetaPage">
+    <?php // Messages are always on air when published, so they have no toggle. ?>
+    <?php if (!$is_message) : ?>
     <div class="teksttv-toggle-bar">
         <label class="teksttv-toggle-control">
             <input type="checkbox" name="teksttv_active" value="1" <?php checked($active, '1'); ?> id="teksttv-active" class="teksttv-visually-hidden" @change="onActiveChange()" />
@@ -38,6 +44,7 @@ $has_page_separator = Helpers::has_feature('page_separator');
             <span class="teksttv-toggle-title"><?php echo esc_html('Toon op Tekst TV'); ?></span>
         </label>
     </div>
+    <?php endif; ?>
 
     <?php if ($schedule_invalid) : ?>
     <div class="notice notice-warning inline">
@@ -162,12 +169,17 @@ $has_page_separator = Helpers::has_feature('page_separator');
                     // Corrupt IDs fall back to the default, as in playout.
                     $override_id = ArticleContent::sidebar_override($post->ID);
                     $active_state = $override_id === null ? 'none' : ($override_id ? 'custom' : 'default');
+                    // Messages have no category or featured image, so their default is no image.
+                    if ($is_message && $active_state === 'default') {
+                        $active_state = 'none';
+                    }
                     $sidebar_image_id = $active_state === 'default' ? '' : (string) ($override_id ?? 0);
                     $custom_url = $override_id ? wp_get_attachment_image_url($override_id, 'medium') : '';
                     $fallback_url = ArticleContent::thumbnail_id($post->ID) ? get_the_post_thumbnail_url($post->ID, 'medium') : '';
                     ?>
                     <input type="hidden" name="teksttv_sidebar_image" id="teksttv-sidebar-image-id" value="<?php echo esc_attr($sidebar_image_id); ?>" />
                     <div class="teksttv-image-cards" data-active="<?php echo esc_attr($active_state); ?>" role="group" aria-label="<?php echo esc_attr('Sidebarafbeelding kiezen'); ?>">
+                        <?php if (!$is_message) : ?>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'default' ? 'is-active' : ''; ?>" data-state="default" id="teksttv-sidebar-card-default" aria-pressed="<?php echo $active_state === 'default' ? 'true' : 'false'; ?>" @click.prevent="activateSidebarCardDefault()">
                             <span class="teksttv-image-card-label"><?php echo esc_html('Standaard'); ?></span>
                             <?php if ($fallback_url) : ?>
@@ -176,6 +188,7 @@ $has_page_separator = Helpers::has_feature('page_separator');
                                 <span class="teksttv-image-card-icon"><span class="dashicons dashicons-format-image" aria-hidden="true"></span></span>
                             <?php endif; ?>
                         </button>
+                        <?php endif; ?>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'custom' ? 'is-active' : ''; ?>" data-state="custom" id="teksttv-sidebar-card-custom" aria-pressed="<?php echo $active_state === 'custom' ? 'true' : 'false'; ?>" @click.prevent="openSidebarCustom()">
                             <span class="teksttv-image-card-label"><?php echo esc_html('Eigen'); ?></span>
                             <?php if ($custom_url) : ?>
@@ -212,6 +225,22 @@ $has_page_separator = Helpers::has_feature('page_separator');
             </div>
             <?php endif; ?>
             </div>
+        </section>
+        <?php endif; ?>
+
+        <?php if (count($channels) > 1) : ?>
+        <section class="teksttv-media-section teksttv-channels-section" aria-labelledby="teksttv-channels-title">
+            <h3 id="teksttv-channels-title"><?php echo esc_html('Kanalen'); ?></h3>
+            <fieldset>
+                <legend class="screen-reader-text"><?php echo esc_html('Kanalen'); ?></legend>
+                <?php foreach ($channels as $channel) : ?>
+                <label class="teksttv-inline-checkbox">
+                    <input type="checkbox" name="teksttv_channels[]" value="<?php echo esc_attr($channel['slug']); ?>" <?php checked(in_array($channel['slug'], $selected_channels, true)); ?> />
+                    <?php echo esc_html($channel['label']); ?>
+                </label>
+                <?php endforeach; ?>
+            </fieldset>
+            <p class="description"><?php echo esc_html('Geen kanaal aangevinkt betekent alle kanalen.'); ?></p>
         </section>
         <?php endif; ?>
 

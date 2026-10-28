@@ -58,6 +58,8 @@ Without `vendor/` and a built `assets/` the plugin won't load: `vendor/autoload.
 | Administrator | `manage_teksttv`, `manage_teksttv_commercials`, `manage_teksttv_content`, `edit_teksttv` |
 | Editor        | `edit_teksttv` (TekstTV fields on posts) |
 
+Administrators and editors also get the capabilities of the message post type (`edit_teksttv_messages`, `publish_teksttv_messages`, `delete_teksttv_messages` and the other `*_teksttv_messages` variants). They are separate from `edit_teksttv`, so a role can be allowed to manage standalone messages without access to website posts. Existing installations receive them through a data migration on the first request after updating.
+
 If you need a different distribution, use a capability plugin.
 
 ## Usage

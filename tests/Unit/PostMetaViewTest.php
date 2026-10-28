@@ -23,11 +23,15 @@ class PostMetaViewTest extends TestCase
 
     /**
      * @param list<string> $features
+     * @param list<array{slug: string, label: string}> $channels
+     * @param list<string> $selected_channels
      */
-    private static function renderView(array $features): string
+    private static function renderView(array $features, bool $is_message = false, array $channels = [], array $selected_channels = []): string
     {
         self::stubView($features);
-        Functions\when('checked')->justReturn('');
+        Functions\when('checked')->alias(static function (mixed $checked, mixed $current = true): void {
+            echo $checked === $current ? ' checked' : '';
+        });
         Functions\when('get_post_meta')->justReturn('');
         Functions\when('wp_json_encode')->alias('json_encode');
         Functions\when('wp_editor')->alias(static function (string $content, string $editor_id): void {
@@ -46,7 +50,7 @@ class PostMetaViewTest extends TestCase
         $images = [];
         $schedule_invalid = false;
         $preview_url = 'https://example.com/preview';
-        $ai_enabled = true;
+        $ai_enabled = !$is_message;
         $toolbar_items = [];
         $valid_elements = ['br', 'p'];
         $use_tinymce = array_intersect(self::RICH_TEXT_FEATURES, $features) !== [];
@@ -109,6 +113,52 @@ class PostMetaViewTest extends TestCase
         PostMeta::render_meta_box(self::makePost());
         $view = (string) ob_get_clean();
         $this->assertStringContainsString('De opgeslagen planning is ongeldig', $view);
+    }
+
+    public function test_article_view_shows_the_on_air_toggle_and_no_channels(): void
+    {
+        $view = self::renderView(['custom_title']);
+
+        $this->assertStringContainsString('<div class="teksttv-toggle-bar">', $view);
+        $this->assertStringContainsString('name="teksttv_active"', $view);
+        $this->assertStringContainsString('name="teksttv_title"', $view);
+        $this->assertStringNotContainsString('teksttv_channels[]', $view);
+    }
+
+    public function test_message_view_hides_toggle_and_custom_title_and_offers_channels(): void
+    {
+        $channels = [['slug' => 'tv1', 'label' => 'TV 1'], ['slug' => 'tv2', 'label' => 'TV 2']];
+        $view = self::renderView(['custom_title', 'ai_generate'], true, $channels, ['tv2']);
+
+        $this->assertStringNotContainsString('teksttv-toggle-bar', $view);
+        $this->assertStringNotContainsString('name="teksttv_active"', $view);
+        $this->assertStringNotContainsString('name="teksttv_title"', $view);
+        $this->assertStringNotContainsString('teksttv-generate-btn', $view);
+        $this->assertMatchesRegularExpression('/name="teksttv_channels\[\]" value="tv1"\s+\/>/', $view);
+        $this->assertMatchesRegularExpression('/name="teksttv_channels\[\]" value="tv2"\s+checked \/>/', $view);
+    }
+
+    public function test_message_view_offers_no_default_sidebar_image(): void
+    {
+        Functions\when('get_post_thumbnail_id')->justReturn(0);
+        Functions\when('wp_get_attachment_image_url')->justReturn(false);
+
+        $article = self::renderView(['sidebar_image']);
+        $message = self::renderView(['sidebar_image'], true);
+
+        $this->assertStringContainsString('data-state="default"', $article);
+        $this->assertStringContainsString('data-active="default"', $article);
+        $this->assertStringNotContainsString('data-state="default"', $message);
+        // Without a stored choice a message shows no image, so "Geen" is the active card.
+        $this->assertStringContainsString('data-active="none"', $message);
+        $this->assertStringContainsString('id="teksttv-sidebar-image-id" value="0"', $message);
+    }
+
+    public function test_message_view_omits_channel_choice_for_a_single_channel(): void
+    {
+        $view = self::renderView([], true, [['slug' => 'tv1', 'label' => 'TV 1']]);
+
+        $this->assertStringNotContainsString('teksttv_channels[]', $view);
     }
 
     public function test_combined_ai_action_includes_title_when_custom_titles_are_enabled(): void

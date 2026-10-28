@@ -32,6 +32,8 @@ class RssFeedTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Functions\when('get_post_type')->justReturn('post');
+        Functions\when('is_object_in_taxonomy')->justReturn(true);
         (new \ReflectionProperty(RssFeed::class, 'namespace_rendered'))->setValue(null, false);
         Functions\when('update_option')->alias(function ($key, $value) {
             $this->revision = $value;

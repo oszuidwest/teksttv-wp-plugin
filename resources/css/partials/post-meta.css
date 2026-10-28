@@ -660,3 +660,8 @@
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Messages never appear on the site, so WordPress's visibility setting has no meaning there. */
+.post-type-teksttv_message #visibility {
+    display: none;
+}

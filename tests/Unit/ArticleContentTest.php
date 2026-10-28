@@ -6,6 +6,7 @@ use Brain\Monkey\Functions;
 use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\ArticleContent;
 use TekstTV\Helpers;
+use TekstTV\Messages;
 
 class ArticleContentTest extends TestCase
 {
@@ -35,6 +36,8 @@ class ArticleContentTest extends TestCase
         Functions\when('get_post_datetime')->alias(fn($post) => \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $post->post_date, new \DateTimeZone('Europe/Amsterdam')));
         Functions\when('get_the_title')->justReturn('Gewone titel');
         Functions\when('get_the_terms')->justReturn(false);
+        Functions\when('get_post_type')->justReturn('post');
+        Functions\when('is_object_in_taxonomy')->justReturn(true);
         Functions\when('get_post_thumbnail_id')->justReturn(false);
         Functions\when('apply_filters')->alias(fn($hook, $value) => $value);
         Functions\when('wp_get_attachment_image_url')->alias(fn($id) => $id === 999 ? false : 'https://example.com/' . $id . '.jpg');
@@ -140,6 +143,39 @@ class ArticleContentTest extends TestCase
         Functions\when('current_datetime')->justReturn((new \DateTimeImmutable($now, new \DateTimeZone('Europe/Amsterdam')))->setTimezone(new \DateTimeZone('Europe/Amsterdam')));
         $this->post->post_date = $post_date;
         $this->assertSame($eligible, ArticleContent::prepare($this->post) !== null);
+    }
+
+    public function test_messages_ignore_the_article_age_limit(): void
+    {
+        $this->post->post_type = Messages::POST_TYPE;
+        $this->post->post_date = '2025-01-01 00:00:00';
+
+        $this->assertNotNull(ArticleContent::prepare($this->post));
+    }
+
+    public function test_messages_use_their_own_title_even_with_stored_title_override(): void
+    {
+        $this->post->post_type = Messages::POST_TYPE;
+        $this->meta['_teksttv_title'] = 'Oude kop';
+
+        $this->assertSame('Gewone titel', ArticleContent::prepare($this->post)['title']);
+    }
+
+    public function test_messages_still_follow_their_schedule(): void
+    {
+        $this->post->post_type = Messages::POST_TYPE;
+        $this->meta += ['_teksttv_date_start' => '2026-10-01', '_teksttv_date_end' => '2026-10-18'];
+
+        $this->assertNull(ArticleContent::prepare($this->post));
+    }
+
+    public function test_post_types_without_categories_skip_the_term_lookup(): void
+    {
+        Functions\when('is_object_in_taxonomy')->justReturn(false);
+        Functions\expect('get_the_terms')->never();
+        Functions\when('get_post_thumbnail_id')->justReturn(12);
+
+        $this->assertSame('https://example.com/12.jpg', ArticleContent::get_sidebar_image_data(42)['url']);
     }
 
     public function test_zero_age_limit_and_password_policy_belong_to_callers(): void

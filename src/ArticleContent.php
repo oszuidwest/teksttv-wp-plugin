@@ -66,8 +66,11 @@ final class ArticleContent
             return null;
         }
 
+        $is_message = $post->post_type === Messages::POST_TYPE;
+
         // Share an absolute expiry with RSS so a repeated DST hour cannot revive a post.
-        $expires = RecentPostsQuery::expires_at($post);
+        // Messages are not news: only their schedule ends them.
+        $expires = $is_message ? null : RecentPostsQuery::expires_at($post);
         if ($expires !== null && $expires <= current_datetime()->getTimestamp()) {
             return null;
         }
@@ -80,7 +83,7 @@ final class ArticleContent
         }
 
         $content = self::string_meta($post->ID, '_teksttv_content');
-        $override = Helpers::has_feature('custom_title') ? self::string_meta($post->ID, '_teksttv_title') : '';
+        $override = !$is_message && Helpers::has_feature('custom_title') ? self::string_meta($post->ID, '_teksttv_title') : '';
         if ($content === null || $override === null) {
             return null;
         }
@@ -203,6 +206,11 @@ final class ArticleContent
     /** @return \Generator<int, int> Primary category first; lazy, so a primary image skips get_the_terms(). */
     private static function category_ids(int $post_id): \Generator
     {
+        // Types without categories, such as messages, would cost an uncached term query per post.
+        $post_type = get_post_type($post_id);
+        if ($post_type === false || !is_object_in_taxonomy($post_type, 'category')) {
+            return;
+        }
         $primary = apply_filters('teksttv_primary_category', get_post_meta($post_id, '_yoast_wpseo_primary_category', true), $post_id);
         if (is_numeric($primary) && $primary) {
             yield (int) $primary;
