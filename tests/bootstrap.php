@@ -115,6 +115,39 @@ if (!class_exists('WP_Post')) {
     }
 }
 
+// Minimal WP_Query test double; found_posts comes from $GLOBALS['teksttv_test_found_posts'].
+if (!class_exists('WP_Query')) {
+    class WP_Query
+    {
+        /** @var list<mixed> */
+        public array $posts = [];
+        public int $found_posts = 0;
+
+        /**
+         * @param array<string, mixed> $query_vars
+         */
+        public function __construct(public array $query_vars = [])
+        {
+            $this->found_posts = (int) ($GLOBALS['teksttv_test_found_posts'] ?? 0);
+        }
+
+        public function is_main_query(): bool
+        {
+            return false;
+        }
+
+        public function get(string $key): mixed
+        {
+            return $this->query_vars[$key] ?? '';
+        }
+
+        public function set(string $key, mixed $value): void
+        {
+            $this->query_vars[$key] = $value;
+        }
+    }
+}
+
 // Minimal WP_REST_Response test double.
 if (!class_exists('WP_REST_Response')) {
     class WP_REST_Response

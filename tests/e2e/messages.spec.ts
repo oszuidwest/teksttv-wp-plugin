@@ -26,7 +26,7 @@ async function slideTitles(page: Page, channel: string): Promise<string[]> {
 async function createMessage(
     runWordPressPHP: RunWordPressPHP,
     title: string,
-    { channels = [] as string[], status = 'publish', date = '' } = {},
+    { channels = [] as string[], status = 'publish', date = '', start = '', end = '' } = {},
 ): Promise<void> {
     const output = await runWordPressPHP(`
 $id = wp_insert_post([
@@ -39,6 +39,8 @@ if (is_wp_error($id)) { throw new RuntimeException($id->get_error_message()); }
 update_post_meta($id, '_teksttv_active', '1');
 update_post_meta($id, '_teksttv_content', 'Tekst van ' . ${JSON.stringify(title)});
 update_post_meta($id, '_teksttv_channels', ${JSON.stringify(channels)});
+update_post_meta($id, '_teksttv_date_start', ${JSON.stringify(start)});
+update_post_meta($id, '_teksttv_date_end', ${JSON.stringify(end)});
 echo 'message-ok';
 `);
     expect(output).toContain('message-ok');
@@ -78,6 +80,38 @@ test.describe('standalone messages', () => {
         await expect(saved).toHaveCount(1);
         await expect(saved.locator('input[name$="[count]"]')).toHaveValue('2');
         expect(await slideTitles(page, 'tv1')).toEqual(['Via de loop']);
+    });
+
+    test('overview shows the air status and filters by it', async ({ page, runWordPressPHP }) => {
+        await runWordPressPHP(ENABLE_MESSAGES);
+        const day = (offset: number): string => {
+            const date = new Date();
+            date.setUTCDate(date.getUTCDate() + offset);
+            return date.toISOString().slice(0, 10);
+        };
+        // A day of margin keeps the test independent of the site timezone.
+        await createMessage(runWordPressPHP, 'Loopt nu', { start: day(-3), end: day(3) });
+        await createMessage(runWordPressPHP, 'Begint later', { start: day(5), end: day(9) });
+        await createMessage(runWordPressPHP, 'Al voorbij', { start: day(-9), end: day(-5) });
+        await createMessage(runWordPressPHP, 'Nog een concept', { status: 'draft' });
+
+        await page.goto('/wp-admin/edit.php?post_type=teksttv_message');
+        const rowState = (title: string) =>
+            page.locator('#the-list tr', { hasText: title }).locator('.teksttv-message-state');
+        await expect(rowState('Loopt nu')).toHaveText('Op Tekst TV');
+        await expect(rowState('Begint later')).toHaveText('Komt nog');
+        await expect(rowState('Al voorbij')).toHaveText('Verlopen');
+        // Core's own status label, translated per site locale.
+        await expect(rowState('Nog een concept')).toHaveText(/^(Draft|Concept)$/);
+
+        const views = page.locator('.subsubsub');
+        await expect(views.getByRole('link', { name: 'Actief (1)' })).toBeVisible();
+        await expect(views.getByRole('link', { name: 'Komt nog (1)' })).toBeVisible();
+        await views.getByRole('link', { name: 'Verlopen (1)' }).click();
+
+        await expect(page.locator('#the-list tr')).toHaveCount(1);
+        await expect(page.locator('#the-list')).toContainText('Al voorbij');
+        await expect(views.getByRole('link', { name: 'Verlopen (1)' })).toHaveAttribute('aria-current', 'page');
     });
 
     test('stay off air while the feature is disabled', async ({ page, runWordPressPHP }) => {
