@@ -72,7 +72,6 @@ final class ArticlesLoopBlock
         return PostSlides::collect($block, $count, RecentPostsQuery::args($count, $block['taxonomy_filters'] ?? [], [
             // A day wider than prepare()'s expires_at(), so a DST shift cannot hide an eligible post.
             'date_query' => $max_age > 0 ? [['after' => ($max_age + 1) . ' days ago']] : [],
-            'ignore_sticky_posts' => true,
         ]));
     }
 }

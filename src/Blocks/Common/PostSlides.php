@@ -46,6 +46,8 @@ final class PostSlides
             // Keep post__not_in fixed so pagination does not grow SQL/cache keys.
             'post__not_in' => BuildContext::get_seen_post_ids(),
             'orderby' => ['date' => 'DESC', 'ID' => 'DESC'],
+            // Stickiness is a front-page concept; honouring it costs an extra query per first batch.
+            'ignore_sticky_posts' => true,
         ]);
 
         $slides = [];
