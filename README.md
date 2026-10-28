@@ -150,7 +150,7 @@ GET /wp-json/teksttv/v1/slides?channel=<channel-slug>
 
 The payload contains `slides` (the loop) and `ticker` entries. `channel` must match a configured slug (`validate_channel`). Responses are built fresh on every request; add edge caching at the hosting layer (e.g. Cloudflare) if needed. The [playout app](https://github.com/oszuidwest/teksttv-frontend) consumes this shape on a timer (see Auto-Refresh in its README).
 
-Editor-only endpoints (image metadata, generation, …) need a user with `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
+Editor-only endpoints need a logged-in user with the right capability: image metadata accepts `edit_teksttv` or, while standalone messages are enabled, `edit_teksttv_messages`; generation needs `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
 
 ## Development scripts
 
