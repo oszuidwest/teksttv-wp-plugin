@@ -24,20 +24,41 @@ class PostMeta
         return $plugins;
     }
 
+    /**
+     * Post types that carry the TekstTV meta box, mapped to the capability required to use it.
+     *
+     * @return array<string, string>
+     */
+    public static function post_types(): array
+    {
+        return ['post' => 'edit_teksttv'];
+    }
+
+    /**
+     * Whether the current user may use the TekstTV fields on this post type.
+     */
+    public static function user_can_edit_type(string $post_type): bool
+    {
+        $capability = self::post_types()[$post_type] ?? null;
+        return $capability !== null && current_user_can($capability);
+    }
+
     public static function register_meta_box(): void
     {
-        if (!current_user_can('edit_teksttv')) {
-            return;
-        }
+        foreach (array_keys(self::post_types()) as $post_type) {
+            if (!self::user_can_edit_type($post_type)) {
+                continue;
+            }
 
-        add_meta_box(
-            'teksttv_meta',
-            'Tekst TV',
-            [self::class, 'render_meta_box'],
-            'post',
-            'normal',
-            'high'
-        );
+            add_meta_box(
+                'teksttv_meta',
+                'Tekst TV',
+                [self::class, 'render_meta_box'],
+                $post_type,
+                'normal',
+                'high'
+            );
+        }
     }
 
     public static function enqueue_assets(string $hook): void
@@ -46,12 +67,8 @@ class PostMeta
             return;
         }
 
-        if (!current_user_can('edit_teksttv')) {
-            return;
-        }
-
         $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== 'post') {
+        if (!$screen || !self::user_can_edit_type((string) $screen->post_type)) {
             return;
         }
 
@@ -227,11 +244,7 @@ class PostMeta
             return;
         }
 
-        if ($post->post_type !== 'post') {
-            return;
-        }
-
-        if (!current_user_can('edit_teksttv') || !current_user_can('edit_post', $post_id)) {
+        if (!self::user_can_edit_type($post->post_type) || !current_user_can('edit_post', $post_id)) {
             return;
         }
 

@@ -21,6 +21,39 @@ class PostMetaTest extends TestCase
         ], PostMeta::register_tinymce_plugin($plugins));
     }
 
+    public function test_user_can_edit_type_requires_the_mapped_capability(): void
+    {
+        Functions\expect('current_user_can')->with('edit_teksttv')->twice()->andReturn(true, false);
+
+        $this->assertTrue(PostMeta::user_can_edit_type('post'));
+        $this->assertFalse(PostMeta::user_can_edit_type('post'));
+    }
+
+    public function test_user_can_edit_type_rejects_unsupported_post_types(): void
+    {
+        Functions\expect('current_user_can')->never();
+
+        $this->assertFalse(PostMeta::user_can_edit_type('page'));
+    }
+
+    public function test_register_meta_box_adds_box_for_permitted_post_types(): void
+    {
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\expect('add_meta_box')
+            ->once()
+            ->with('teksttv_meta', 'Tekst TV', [PostMeta::class, 'render_meta_box'], 'post', 'normal', 'high');
+
+        PostMeta::register_meta_box();
+    }
+
+    public function test_register_meta_box_skips_user_without_capability(): void
+    {
+        Functions\when('current_user_can')->justReturn(false);
+        Functions\expect('add_meta_box')->never();
+
+        PostMeta::register_meta_box();
+    }
+
     public function test_enqueue_assets_skips_unrelated_admin_hook(): void
     {
         Functions\expect('current_user_can')->never();
@@ -34,8 +67,8 @@ class PostMetaTest extends TestCase
 
     public function test_enqueue_assets_skips_user_without_teksttv_capability(): void
     {
+        Functions\when('get_current_screen')->justReturn((object) ['post_type' => 'post']);
         Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(false);
-        Functions\expect('get_current_screen')->never();
         $this->expectNoAssets();
 
         PostMeta::enqueue_assets('post.php');
@@ -45,7 +78,7 @@ class PostMetaTest extends TestCase
 
     public function test_enqueue_assets_skips_missing_screen(): void
     {
-        Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(true);
+        Functions\expect('current_user_can')->never();
         Functions\when('get_current_screen')->justReturn(null);
         $this->expectNoAssets();
 
@@ -56,7 +89,7 @@ class PostMetaTest extends TestCase
 
     public function test_enqueue_assets_skips_non_post_screen(): void
     {
-        Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(true);
+        Functions\expect('current_user_can')->never();
         Functions\when('get_current_screen')->justReturn((object) ['post_type' => 'page']);
         $this->expectNoAssets();
 
