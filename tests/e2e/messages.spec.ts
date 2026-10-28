@@ -94,6 +94,8 @@ test.describe('standalone messages', () => {
         await createMessage(runWordPressPHP, 'Begint later', { start: day(5), end: day(9) });
         await createMessage(runWordPressPHP, 'Al voorbij', { start: day(-9), end: day(-5) });
         await createMessage(runWordPressPHP, 'Nog een concept', { status: 'draft' });
+        // Start after end: upcoming only, never also expired.
+        await createMessage(runWordPressPHP, 'Omgekeerde planning', { start: day(5), end: day(-5) });
 
         await page.goto('/wp-admin/edit.php?post_type=teksttv_message');
         const rowState = (title: string) =>
@@ -101,12 +103,13 @@ test.describe('standalone messages', () => {
         await expect(rowState('Loopt nu')).toHaveText('Op Tekst TV');
         await expect(rowState('Begint later')).toHaveText('Komt nog');
         await expect(rowState('Al voorbij')).toHaveText('Verlopen');
+        await expect(rowState('Omgekeerde planning')).toHaveText('Komt nog');
         // Core's own status label, translated per site locale.
         await expect(rowState('Nog een concept')).toHaveText(/^(Draft|Concept)$/);
 
         const views = page.locator('.subsubsub');
         await expect(views.getByRole('link', { name: 'Actief (1)' })).toBeVisible();
-        await expect(views.getByRole('link', { name: 'Komt nog (1)' })).toBeVisible();
+        await expect(views.getByRole('link', { name: 'Komt nog (2)' })).toBeVisible();
         await views.getByRole('link', { name: 'Verlopen (1)' }).click();
 
         await expect(page.locator('#the-list tr')).toHaveCount(1);
