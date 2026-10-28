@@ -8,7 +8,7 @@
  * Plugin URI: https://github.com/oszuidwest/teksttv-wp-plugin
  * License: GPL-2.0-or-later
  * Requires at least: 7.0
- * Requires PHP: 8.3
+ * Requires PHP: 8.4
  */
 
 if (!defined('ABSPATH')) {
