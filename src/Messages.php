@@ -100,11 +100,16 @@ final class Messages
     }
 
     /**
-     * Remove the message capabilities from every role, including ones a role plugin granted.
+     * Remove the message capabilities from the default roles. Grants a role plugin made
+     * to other roles survive, because activation would not restore them.
      */
     public static function revoke_capabilities(): void
     {
-        foreach (wp_roles()->role_objects as $role) {
+        foreach (self::DEFAULT_ROLES as $role_name) {
+            $role = get_role($role_name);
+            if (!$role) {
+                continue;
+            }
             foreach (self::CAPABILITIES as $capability) {
                 $role->remove_cap($capability);
             }

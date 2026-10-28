@@ -71,15 +71,16 @@ class MessagesTest extends TestCase
         $this->assertNotContains('edit_teksttv', Messages::CAPABILITIES);
     }
 
-    public function test_revoke_capabilities_covers_every_role(): void
+    public function test_revoke_capabilities_leaves_roles_a_role_plugin_configured(): void
     {
         $roles = [];
-        foreach (['administrator', 'editor', 'kabelkrant'] as $name) {
+        foreach (['administrator', 'editor'] as $name) {
             $role = Mockery::mock();
             $role->shouldReceive('remove_cap')->times(count(Messages::CAPABILITIES));
             $roles[$name] = $role;
         }
-        Functions\when('wp_roles')->justReturn((object) ['role_objects' => $roles]);
+        Functions\when('get_role')->alias(static fn(string $name) => $roles[$name] ?? null);
+        Functions\expect('wp_roles')->never();
 
         Messages::revoke_capabilities();
     }
