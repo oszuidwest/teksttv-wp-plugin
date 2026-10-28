@@ -6,6 +6,7 @@ use TekstTV\Blocks\Loop\ArticlesLoopBlock;
 use TekstTV\Blocks\Loop\CommercialLoopBlock;
 use TekstTV\Blocks\Loop\IframeLoopBlock;
 use TekstTV\Blocks\Loop\ImageLoopBlock;
+use TekstTV\Blocks\Loop\MessagesLoopBlock;
 use TekstTV\Blocks\Loop\WeatherLoopBlock;
 use TekstTV\Blocks\Ticker\TickerHeadlinesBlock;
 use TekstTV\Blocks\Ticker\TickerTextBlock;
@@ -20,6 +21,7 @@ class BuiltinBlocks
     public static function register(): void
     {
         ArticlesLoopBlock::register();
+        MessagesLoopBlock::register();
         ImageLoopBlock::register();
         IframeLoopBlock::register();
         CommercialLoopBlock::register();
