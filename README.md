@@ -58,13 +58,16 @@ Without `vendor/` and a built `assets/` the plugin won't load: `vendor/autoload.
 | Administrator | `manage_teksttv`, `manage_teksttv_commercials`, `manage_teksttv_content`, `edit_teksttv` |
 | Editor        | `edit_teksttv` (TekstTV fields on posts) |
 
+Administrators and editors also get the capabilities of the message post type (`edit_teksttv_messages`, `publish_teksttv_messages`, `delete_teksttv_messages` and the other `*_teksttv_messages` variants). They are separate from `edit_teksttv`, so a role can be allowed to manage standalone messages without access to website posts. Existing installations receive them through a data migration on the first request after updating.
+
 If you need a different distribution, use a capability plugin.
 
 ## Usage
 
-- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, commercial and weather. The ticker is configured separately.
+- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, messages, image, iframe, commercial and weather. The ticker is configured separately.
 - Settings: channel slugs (`tv1`, `tv2`, …), display duration for text and images, OpenWeather API key, feature toggles (TinyMCE, AI, scheduling), preview URL.
 - Commercials (`Reclame`): commercial blocks and their campaigns used in the loop.
+- Tekst TV-berichten, when **Losse berichten** is enabled in the settings: text slides that are not tied to a website post. A message airs while it is published and within its schedule, on the channels ticked in the message (none ticked means all channels). The maximum post age does not apply, and messages are not part of the RSS export. Place them in a loop with the Tekst TV-berichten block.
 - Content & AI / AI Audit, when AI generation is enabled and a configured provider supports TekstTV's text-generation requirements: prompts and audit log.
 
 If no channels are stored, `tv1` is assumed.
@@ -147,7 +150,7 @@ GET /wp-json/teksttv/v1/slides?channel=<channel-slug>
 
 The payload contains `slides` (the loop) and `ticker` entries. `channel` must match a configured slug (`validate_channel`). Responses are built fresh on every request; add edge caching at the hosting layer (e.g. Cloudflare) if needed. The [playout app](https://github.com/oszuidwest/teksttv-frontend) consumes this shape on a timer (see Auto-Refresh in its README).
 
-Editor-only endpoints (image metadata, generation, …) need a user with `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
+Editor-only endpoints need a logged-in user with the right capability: image metadata needs `upload_files`, like the media library, plus `edit_teksttv` or, while standalone messages are enabled, `edit_teksttv_messages`; generation needs `edit_teksttv`. See `TekstTV\RestApi::register_routes()` in [`src/RestApi.php`](src/RestApi.php), namespace `teksttv/v1`.
 
 ## Development scripts
 

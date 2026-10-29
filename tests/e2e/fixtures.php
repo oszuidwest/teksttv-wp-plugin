@@ -19,6 +19,17 @@ if (file_exists(WPMU_PLUGIN_DIR . '/rss-clock.php')) {
 delete_option('teksttv_test_clock');
 
 update_option('teksttv_channels', [['slug' => 'tv1', 'label' => 'TV 1']]);
+
+// Standalone messages are created per test; start every test without them.
+foreach (get_posts(['post_type' => 'teksttv_message', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids']) as $teksttv_message_id) {
+    wp_delete_post($teksttv_message_id, true);
+}
+$teksttv_message_user = get_user_by('login', 'teksttv_message_editor');
+if ($teksttv_message_user) {
+    require_once ABSPATH . 'wp-admin/includes/user.php';
+    wp_delete_user($teksttv_message_user->ID);
+}
+remove_role('teksttv_message_role');
 update_option('teksttv_preview_url', 'https://preview.example.test/');
 update_option('teksttv_duration_text', \TekstTV\Helpers::DURATION_DEFAULTS['teksttv_duration_text']);
 

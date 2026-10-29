@@ -19,6 +19,8 @@ class Plugin
         AuditPage::init();
         CommercialsPage::init();
         PostMeta::init();
+        Messages::init();
+        MessagesListTable::init();
         CategoryMeta::init();
         RestApi::init();
         RssFeed::init();

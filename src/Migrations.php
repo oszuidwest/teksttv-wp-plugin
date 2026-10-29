@@ -5,30 +5,44 @@ namespace TekstTV;
 final class Migrations
 {
     private const DATA_VERSION_OPTION = 'teksttv_data_version';
-    private const CURRENT_DATA_VERSION = 1;
+    private const CURRENT_DATA_VERSION = 2;
 
     public static function run(): void
     {
-        if ((int) get_option(self::DATA_VERSION_OPTION, 0) >= self::CURRENT_DATA_VERSION) {
+        $version = (int) get_option(self::DATA_VERSION_OPTION, 0);
+        if ($version >= self::CURRENT_DATA_VERSION) {
             return;
         }
 
+        if ($version < 1 && !self::migrate_to_commercials()) {
+            return;
+        }
+
+        // Updating does not run the activation hook, so sites that were already active get them here.
+        Messages::grant_capabilities();
+
+        // Autoload the migration version checked on every request.
+        update_option(self::DATA_VERSION_OPTION, self::CURRENT_DATA_VERSION, true);
+    }
+
+    private static function migrate_to_commercials(): bool
+    {
         // Grant renamed capabilities even if data migration fails.
         self::migrate_capabilities();
 
         if (!self::migrate_commercial_blocks()) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log('TekstTV: commercials data migration failed to persist; retrying on next request.');
-            return;
+            return false;
         }
 
         if (get_option('teksttv_campaign_groups', null) !== null && !delete_option('teksttv_campaign_groups')) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log('TekstTV: could not remove legacy campaign groups; retrying on next request.');
-            return;
+            return false;
         }
-        // Autoload the migration version checked on every request.
-        update_option(self::DATA_VERSION_OPTION, self::CURRENT_DATA_VERSION, true);
+
+        return true;
     }
 
     private static function migrate_commercial_blocks(): bool

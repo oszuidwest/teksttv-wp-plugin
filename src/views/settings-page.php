@@ -124,6 +124,12 @@ $render_feature_option = static function (string $value, string $label) use ($fe
         </div>
 
         <div class="teksttv-card">
+            <h2><?php echo esc_html('Losse berichten'); ?></h2>
+            <p class="description"><?php echo esc_html('Berichten die alleen op Tekst TV staan, zonder artikel op de website. Plaats ze in de loop met het blok Tekst TV-berichten.'); ?></p>
+            <?php $render_feature_option('messages', 'Losse berichten inschakelen'); ?>
+        </div>
+
+        <div class="teksttv-card">
             <h2><?php echo esc_html('RSS'); ?></h2>
             <p class="description"><?php echo esc_html('Voeg de Tekst TV-kop, tekst en afbeeldingen toe aan bestaande RSS-feeds.'); ?></p>
             <?php $render_feature_option('rss_feed', 'TekstTV opnemen in RSS'); ?>

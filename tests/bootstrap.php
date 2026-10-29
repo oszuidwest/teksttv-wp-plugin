@@ -111,6 +111,7 @@ if (!class_exists('WP_Post')) {
         public int $ID = 0;
         public string $post_title = '';
         public string $post_content = '';
+        public string $post_type = 'post';
     }
 }
 

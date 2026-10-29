@@ -39,6 +39,8 @@ register_activation_hook(__FILE__, function () {
     if ($editor) {
         $editor->add_cap('edit_teksttv');
     }
+
+    TekstTV\Messages::grant_capabilities();
 });
 
 register_deactivation_hook(__FILE__, function () {
@@ -52,4 +54,6 @@ register_deactivation_hook(__FILE__, function () {
             $role->remove_cap('edit_teksttv');
         }
     }
+
+    TekstTV\Messages::revoke_capabilities();
 });

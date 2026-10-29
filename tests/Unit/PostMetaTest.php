@@ -7,10 +7,30 @@ use Brain\Monkey\Functions;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\Helpers;
+use TekstTV\Messages;
 use TekstTV\PostMeta;
 
 class PostMetaTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Default options: stored features and settings fall back to their defaults.
+        Functions\when('get_option')->alias(static fn(string $name, mixed $default = false): mixed => $default);
+    }
+
+    /**
+     * @param list<string> $features
+     */
+    private static function stubOptions(array $features): void
+    {
+        Functions\when('get_option')->alias(static fn(string $name, mixed $default = false): mixed => match ($name) {
+            'teksttv_features' => $features,
+            'teksttv_channels' => [['slug' => 'tv1', 'label' => 'TV 1'], ['slug' => 'tv2', 'label' => 'TV 2']],
+            default => $default,
+        });
+    }
+
     public function test_register_tinymce_plugin_adds_separator(): void
     {
         $plugins = ['existing' => 'https://example.com/existing.js'];
@@ -19,6 +39,115 @@ class PostMetaTest extends TestCase
             'existing' => 'https://example.com/existing.js',
             'teksttv_separator' => TEKSTTV_PLUGIN_URL . 'assets/tinymce-separator.js',
         ], PostMeta::register_tinymce_plugin($plugins));
+    }
+
+    public function test_register_meta_box_adds_box_for_permitted_post_types(): void
+    {
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\expect('add_meta_box')
+            ->once()
+            ->with('teksttv_meta', 'Tekst TV', [PostMeta::class, 'render_meta_box'], 'post', 'normal', 'high');
+
+        PostMeta::register_meta_box();
+    }
+
+    public function test_register_meta_box_skips_user_without_capability(): void
+    {
+        Functions\when('current_user_can')->justReturn(false);
+        Functions\expect('add_meta_box')->never();
+
+        PostMeta::register_meta_box();
+    }
+
+    public function test_message_type_is_supported_only_while_the_feature_is_on(): void
+    {
+        $this->assertArrayNotHasKey(Messages::POST_TYPE, PostMeta::post_types());
+
+        self::stubOptions([Messages::FEATURE]);
+
+        $this->assertSame('edit_teksttv_messages', PostMeta::post_types()[Messages::POST_TYPE]);
+    }
+
+    /** @return iterable<string, array{array<string, mixed>, list<string>|null}> */
+    public static function messageChannelSaves(): iterable
+    {
+        yield 'ticked channels, unknown ones dropped' => [['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv2', 'tv9']], ['tv2']];
+        yield 'nothing ticked means all channels' => [['teksttv_channels_shown' => '1'], []];
+        // One channel hides the section; the stored choice must survive.
+        yield 'hidden section' => [[], null];
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     * @param list<string>|null $channels
+     */
+    #[DataProvider('messageChannelSaves')]
+    public function test_message_save_forces_on_air_and_stores_channels(array $fields, ?array $channels): void
+    {
+        $stored = $this->saveWithPost(Messages::POST_TYPE, $fields);
+
+        $this->assertSame('1', $stored['_teksttv_active']);
+        $this->assertSame('', $stored['_teksttv_title']);
+        if ($channels === null) {
+            $this->assertArrayNotHasKey(Messages::CHANNELS_META, $stored);
+        } else {
+            $this->assertSame($channels, $stored[Messages::CHANNELS_META]);
+        }
+    }
+
+    public function test_article_save_keeps_the_toggle_and_ignores_channels(): void
+    {
+        $stored = $this->saveWithPost('post', ['teksttv_channels' => ['tv2'], 'teksttv_title' => 'Eigen kop']);
+
+        $this->assertSame('0', $stored['_teksttv_active']);
+        $this->assertSame('Eigen kop', $stored['_teksttv_title']);
+        $this->assertArrayNotHasKey(Messages::CHANNELS_META, $stored);
+    }
+
+    public function test_message_save_requires_the_message_capability(): void
+    {
+        self::stubOptions([Messages::FEATURE]);
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        // edit_post passes, so only the message capability can stop the save.
+        Functions\when('current_user_can')->alias(static fn(string $cap): bool => in_array($cap, ['edit_teksttv', 'edit_post'], true));
+        Functions\expect('update_post_meta')->never();
+        $_POST = ['teksttv_meta_nonce' => 'nonce', 'teksttv_content' => 'Tekst'];
+        $post = self::makePost();
+        $post->post_type = Messages::POST_TYPE;
+
+        try {
+            PostMeta::save_meta($post->ID, $post);
+        } finally {
+            $_POST = [];
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     * @return array<string, mixed>
+     */
+    private function saveWithPost(string $post_type, array $fields): array
+    {
+        self::stubOptions([Messages::FEATURE, 'custom_title']);
+        Functions\when('wp_verify_nonce')->justReturn(true);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('wp_kses')->returnArg();
+        $stored = [];
+        Functions\when('update_post_meta')->alias(static function (int $post_id, string $key, mixed $value) use (&$stored): bool {
+            $stored[$key] = $value;
+            return true;
+        });
+        $_POST = ['teksttv_meta_nonce' => 'nonce', 'teksttv_content' => 'Tekst'] + $fields;
+        $post = self::makePost();
+        $post->post_type = $post_type;
+
+        try {
+            PostMeta::save_meta($post->ID, $post);
+        } finally {
+            $_POST = [];
+        }
+
+        return $stored;
     }
 
     public function test_enqueue_assets_skips_unrelated_admin_hook(): void
@@ -34,8 +163,8 @@ class PostMetaTest extends TestCase
 
     public function test_enqueue_assets_skips_user_without_teksttv_capability(): void
     {
+        Functions\when('get_current_screen')->justReturn((object) ['post_type' => 'post']);
         Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(false);
-        Functions\expect('get_current_screen')->never();
         $this->expectNoAssets();
 
         PostMeta::enqueue_assets('post.php');
@@ -45,7 +174,7 @@ class PostMetaTest extends TestCase
 
     public function test_enqueue_assets_skips_missing_screen(): void
     {
-        Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(true);
+        Functions\expect('current_user_can')->never();
         Functions\when('get_current_screen')->justReturn(null);
         $this->expectNoAssets();
 
@@ -56,7 +185,7 @@ class PostMetaTest extends TestCase
 
     public function test_enqueue_assets_skips_non_post_screen(): void
     {
-        Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(true);
+        Functions\expect('current_user_can')->never();
         Functions\when('get_current_screen')->justReturn((object) ['post_type' => 'page']);
         $this->expectNoAssets();
 

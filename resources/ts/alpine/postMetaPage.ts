@@ -102,9 +102,10 @@ export function createPostMetaPage() {
             const activeInput = document.querySelector<HTMLInputElement>('#teksttv-active');
             const fields = document.querySelector<HTMLElement>('#teksttv-fields');
 
-            if (!(activeInput && fields)) return;
+            if (!fields) return;
 
-            if (activeInput.checked) {
+            // Without a toggle (standalone messages) the fields are always shown.
+            if (!activeInput || activeInput.checked) {
                 show(fields);
             } else {
                 hide(fields);
@@ -153,7 +154,7 @@ export function createPostMetaPage() {
             document.querySelector('#title')?.addEventListener('input', updatePreview);
             watchPostTitle(updatePreview);
 
-            if (config?.aiSupported && config.generateUrl) {
+            if (activeInput && config?.aiSupported && config.generateUrl) {
                 if (!config.isNewPost) {
                     activeInput.addEventListener('change', () => {
                         if (!activeInput.checked) return;

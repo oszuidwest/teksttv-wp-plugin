@@ -660,3 +660,8 @@
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Password and private are website settings; a message airs only when published. */
+.post-type-teksttv_message #visibility {
+    display: none;
+}

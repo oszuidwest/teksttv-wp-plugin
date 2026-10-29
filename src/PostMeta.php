@@ -24,20 +24,68 @@ class PostMeta
         return $plugins;
     }
 
-    public static function register_meta_box(): void
+    /**
+     * Post types that carry the TekstTV meta box, mapped to the capability required to use it.
+     *
+     * @return array<string, string>
+     */
+    public static function post_types(): array
     {
-        if (!current_user_can('edit_teksttv')) {
-            return;
+        $types = ['post' => 'edit_teksttv'];
+        if (Messages::enabled()) {
+            $types[Messages::POST_TYPE] = 'edit_teksttv_messages';
         }
 
-        add_meta_box(
-            'teksttv_meta',
-            'Tekst TV',
-            [self::class, 'render_meta_box'],
-            'post',
-            'normal',
-            'high'
-        );
+        return $types;
+    }
+
+    /**
+     * Whether the current user may use the TekstTV fields on this post type.
+     */
+    public static function user_can_edit_type(string $post_type): bool
+    {
+        $capability = self::post_types()[$post_type] ?? null;
+        return $capability !== null && current_user_can($capability);
+    }
+
+    /**
+     * Whether the current user may use the TekstTV fields on any supported post type.
+     */
+    public static function user_can_edit_any(): bool
+    {
+        foreach (array_keys(self::post_types()) as $post_type) {
+            if (self::user_can_edit_type($post_type)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Messages have no article text to generate from.
+     */
+    private static function ai_enabled_for(string $post_type): bool
+    {
+        return $post_type !== Messages::POST_TYPE && Helpers::ai_supported();
+    }
+
+    public static function register_meta_box(): void
+    {
+        foreach (array_keys(self::post_types()) as $post_type) {
+            if (!self::user_can_edit_type($post_type)) {
+                continue;
+            }
+
+            add_meta_box(
+                'teksttv_meta',
+                'Tekst TV',
+                [self::class, 'render_meta_box'],
+                $post_type,
+                'normal',
+                'high'
+            );
+        }
     }
 
     public static function enqueue_assets(string $hook): void
@@ -46,12 +94,8 @@ class PostMeta
             return;
         }
 
-        if (!current_user_can('edit_teksttv')) {
-            return;
-        }
-
         $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== 'post') {
+        if (!$screen || !self::user_can_edit_type((string) $screen->post_type)) {
             return;
         }
 
@@ -77,7 +121,7 @@ class PostMeta
         $default_end = self::default_end_date($saved_start);
 
         $prompts = Helpers::get_ai_prompts();
-        $ai_supported = Helpers::ai_supported();
+        $ai_supported = self::ai_enabled_for((string) $screen->post_type);
         $is_new_post = !$post_id || get_post_status($post_id) === 'auto-draft';
         $fallback_title = $is_new_post ? '' : get_the_title($post_id);
 
@@ -172,7 +216,10 @@ class PostMeta
         }
 
         $preview_url = Helpers::get_preview_url();
-        $ai_enabled = Helpers::ai_supported();
+        $is_message = $post->post_type === Messages::POST_TYPE;
+        $ai_enabled = self::ai_enabled_for($post->post_type);
+        $channels = $is_message ? Helpers::get_channels() : [];
+        $selected_channels = $is_message ? Messages::channels($post->ID) : [];
 
         $toolbar_items = [];
         if (Helpers::has_feature('bold')) {
@@ -227,11 +274,7 @@ class PostMeta
             return;
         }
 
-        if ($post->post_type !== 'post') {
-            return;
-        }
-
-        if (!current_user_can('edit_teksttv') || !current_user_can('edit_post', $post_id)) {
+        if (!self::user_can_edit_type($post->post_type) || !current_user_can('edit_post', $post_id)) {
             return;
         }
 
@@ -255,6 +298,16 @@ class PostMeta
             'images' => is_array($raw_images) ? array_map('absint', $raw_images) : [],
             'sidebar_image' => sanitize_text_field(wp_unslash($_POST['teksttv_sidebar_image'] ?? '')),
         ];
+
+        if ($post->post_type === Messages::POST_TYPE) {
+            // A message exists only for TekstTV; publishing it is what puts it on air.
+            $data['active'] = true;
+            // A hidden channel section (one channel) must not overwrite the stored choice.
+            if (isset($_POST['teksttv_channels_shown'])) {
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via Messages::sanitize_channels()
+                update_post_meta($post_id, Messages::CHANNELS_META, Messages::sanitize_channels(wp_unslash($_POST['teksttv_channels'] ?? [])));
+            }
+        }
 
         self::process_save($post_id, $data);
     }
