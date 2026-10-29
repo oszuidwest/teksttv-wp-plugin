@@ -15,13 +15,21 @@ class RestApi
         add_action('rest_api_init', [self::class, 'register_routes']);
     }
 
+    /**
+     * The sidebar image picker calls this after a media library choice, on every post type with the meta box.
+     * Without upload_files the library is closed, so the endpoint must not reveal attachments either.
+     */
+    public static function can_read_image_data(): bool
+    {
+        return current_user_can('upload_files') && PostMeta::user_can_edit_any();
+    }
+
     public static function register_routes(): void
     {
         register_rest_route(self::NAMESPACE, '/image-data', [
             'methods' => 'GET',
             'callback' => [self::class, 'get_image_data'],
-            // The meta box preview calls this on every post type that carries it.
-            'permission_callback' => [PostMeta::class, 'user_can_edit_any'],
+            'permission_callback' => [self::class, 'can_read_image_data'],
             'args' => [
                 'id' => [
                     'required' => true,

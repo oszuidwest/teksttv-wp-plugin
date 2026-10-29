@@ -341,4 +341,23 @@ class RestApiTest extends TestCase
         $this->assertArrayHasKey('warning', $with_photo->get_data(), 'has_photo did not reach the generator.');
         $this->assertArrayNotHasKey('warning', $without_photo->get_data());
     }
+
+    /** @return iterable<string, array{list<string>, bool}> */
+    public static function imageDataGrants(): iterable
+    {
+        yield 'message editor with media access' => [['upload_files', 'edit_teksttv_messages'], true];
+        yield 'article editor with media access' => [['upload_files', 'edit_teksttv'], true];
+        yield 'message editor without media access' => [['edit_teksttv_messages'], false];
+        yield 'media access without TekstTV' => [['upload_files'], false];
+    }
+
+    /** @param list<string> $caps */
+    #[\PHPUnit\Framework\Attributes\DataProvider('imageDataGrants')]
+    public function test_image_data_needs_media_access_and_a_tekst_tv_capability(array $caps, bool $expected): void
+    {
+        self::stubOptions(['teksttv_features' => ['messages']]);
+        Functions\when('current_user_can')->alias(static fn(string $cap): bool => in_array($cap, $caps, true));
+
+        $this->assertSame($expected, RestApi::can_read_image_data());
+    }
 }
