@@ -188,6 +188,27 @@ class MessagesListTableTest extends TestCase
         MessagesListTable::filter_query($query);
     }
 
+    /** @return iterable<string, array{bool, bool}> */
+    public static function otherQueries(): iterable
+    {
+        // The view counts run their own queries on the same screen.
+        yield 'secondary admin query' => [true, false];
+        yield 'front end' => [false, true];
+    }
+
+    #[DataProvider('otherQueries')]
+    public function test_filter_only_touches_the_main_admin_query(bool $is_admin, bool $is_main): void
+    {
+        $_GET = ['teksttv_state' => 'expired'];
+        Functions\when('is_admin')->justReturn($is_admin);
+        $query = Mockery::mock(\WP_Query::class);
+        $query->shouldReceive('is_main_query')->andReturn($is_main);
+        $query->shouldReceive('get')->with('post_type')->andReturn(Messages::POST_TYPE);
+        $query->shouldNotReceive('set');
+
+        MessagesListTable::filter_query($query);
+    }
+
     public function test_filter_ignores_unknown_states_and_other_post_types(): void
     {
         Functions\when('is_admin')->justReturn(true);

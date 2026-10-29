@@ -172,7 +172,9 @@ class ArticleContentTest extends TestCase
     public function test_post_types_without_categories_skip_the_term_lookup(): void
     {
         Functions\when('is_object_in_taxonomy')->justReturn(false);
-        Functions\expect('get_the_terms')->never();
+        // A category image would win over the thumbnail if the lookup ran.
+        Functions\when('get_the_terms')->justReturn([(object) ['term_id' => 7]]);
+        Functions\when('get_term_meta')->justReturn(77);
         Functions\when('get_post_thumbnail_id')->justReturn(12);
 
         $this->assertSame('https://example.com/12.jpg', ArticleContent::get_sidebar_image_data(42)['url']);

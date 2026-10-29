@@ -79,10 +79,21 @@ class MessagesTest extends TestCase
             $role->shouldReceive('remove_cap')->times(count(Messages::CAPABILITIES));
             $roles[$name] = $role;
         }
+        // Roles a role plugin set up, reachable by name and through the role registry.
+        foreach (['author', 'teksttv_message_role'] as $name) {
+            $role = Mockery::mock();
+            $role->shouldNotReceive('remove_cap');
+            $roles[$name] = $role;
+        }
         Functions\when('get_role')->alias(static fn(string $name) => $roles[$name] ?? null);
         Functions\expect('wp_roles')->never();
+        $GLOBALS['wp_roles'] = (object) ['role_objects' => $roles];
 
-        Messages::revoke_capabilities();
+        try {
+            Messages::revoke_capabilities();
+        } finally {
+            unset($GLOBALS['wp_roles']);
+        }
     }
 
     public function test_channels_without_selection_air_everywhere(): void

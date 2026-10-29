@@ -120,7 +120,8 @@ class PostMetaTest extends TestCase
     {
         self::stubOptions([Messages::FEATURE]);
         Functions\when('wp_verify_nonce')->justReturn(true);
-        Functions\when('current_user_can')->alias(static fn(string $cap): bool => $cap === 'edit_teksttv');
+        // edit_post passes, so only the message capability can stop the save.
+        Functions\when('current_user_can')->alias(static fn(string $cap): bool => in_array($cap, ['edit_teksttv', 'edit_post'], true));
         Functions\expect('update_post_meta')->never();
         $_POST = ['teksttv_meta_nonce' => 'nonce', 'teksttv_content' => 'Tekst'];
         $post = self::makePost();
