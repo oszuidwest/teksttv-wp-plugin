@@ -42,7 +42,7 @@ class MessagesListTableTest extends TestCase
         yield 'starts today' => ['2026-10-28', '', 'active'];
         yield 'starts tomorrow' => ['2026-10-29', '2026-11-05', 'upcoming'];
         yield 'ended yesterday' => ['2026-10-20', '2026-10-27', 'expired'];
-        yield 'start after end, start still ahead' => ['2026-11-10', '2026-11-01', 'upcoming'];
+        yield 'start after end, start still ahead' => ['2026-11-10', '2026-10-20', 'upcoming'];
         yield 'malformed date' => ['2026-1-5', '', 'invalid'];
     }
 
