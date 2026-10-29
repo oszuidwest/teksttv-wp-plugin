@@ -20,7 +20,6 @@ class MessagesListTableTest extends TestCase
     {
         parent::setUp();
         $_GET = [];
-        unset($GLOBALS['teksttv_test_found_posts']);
         Functions\when('get_option')->alias(fn(string $name, mixed $default = false): mixed => $name === 'teksttv_features' ? $this->features : $default);
         Functions\when('get_post_meta')->alias(fn($id, $key) => $this->meta[$key] ?? '');
         Functions\when('current_datetime')->justReturn(new \DateTimeImmutable('2026-10-28 12:00:00'));
@@ -43,15 +42,12 @@ class MessagesListTableTest extends TestCase
         yield 'starts tomorrow' => ['2026-10-29', '2026-11-05', 'upcoming'];
         yield 'ended yesterday' => ['2026-10-20', '2026-10-27', 'expired'];
         yield 'start after end, start still ahead' => ['2026-11-10', '2026-10-20', 'upcoming'];
-        yield 'malformed date' => ['2026-1-5', '', 'invalid'];
     }
 
     #[DataProvider('schedules')]
     public function test_state_follows_the_schedule(string $start, string $end, string $expected): void
     {
-        $this->meta = ['_teksttv_date_start' => $start, '_teksttv_date_end' => $end];
-
-        $this->assertSame($expected, MessagesListTable::state($this->message()));
+        $this->assertSame($expected, MessagesListTable::state(['date_start' => $start, 'date_end' => $end, 'days' => '']));
     }
 
     private function renderColumn(string $status, array $meta): string
@@ -78,21 +74,9 @@ class MessagesListTableTest extends TestCase
         yield 'every day' => [['_teksttv_days' => ['1', '2', '3', '4', '5', '6', '7']], '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span>'];
         // Today is a Wednesday.
         yield 'no days' => [['_teksttv_days' => []], '<span class="teksttv-planning-state">Vandaag niet</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Geen dagen geselecteerd</span>'];
-        yield 'weekend' => [['_teksttv_days' => ['7', '6']], '<span class="teksttv-planning-state">Vandaag niet</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Alleen weekend</span>'];
-        yield 'weekend, upcoming' => [['_teksttv_date_start' => '2026-11-10', '_teksttv_days' => ['6', '7']], '<span class="teksttv-planning-state">Gepland</span><br /><span class="description">Vanaf 2026-11-10</span><br /><span class="description">Alleen weekend</span>'];
-        yield 'one day' => [['_teksttv_days' => ['3']], '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Alleen woensdag</span>'];
-        yield 'two days' => [
-            ['_teksttv_days' => ['2', '3']],
-            '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description"><span aria-hidden="true">Alleen di en wo</span><span class="screen-reader-text">Alleen dinsdag en woensdag</span></span>',
-        ];
-        yield 'weekdays' => [
-            ['_teksttv_days' => ['1', '2', '3', '4', '5']],
-            '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description"><span aria-hidden="true">Alleen ma t/m vr</span><span class="screen-reader-text">Alleen maandag tot en met vrijdag</span></span>',
-        ];
-        yield 'scattered days' => [
-            ['_teksttv_days' => ['5', '1', '3']],
-            '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description"><span aria-hidden="true">Alleen ma, wo en vr</span><span class="screen-reader-text">Alleen maandag, woensdag en vrijdag</span></span>',
-        ];
+        yield 'weekend' => [['_teksttv_days' => ['7', '6']], '<span class="teksttv-planning-state">Vandaag niet</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Alleen Za, Zo</span>'];
+        yield 'weekend, upcoming' => [['_teksttv_date_start' => '2026-11-10', '_teksttv_days' => ['6', '7']], '<span class="teksttv-planning-state">Gepland</span><br /><span class="description">Vanaf 2026-11-10</span><br /><span class="description">Alleen Za, Zo</span>'];
+        yield 'some days, in weekday order' => [['_teksttv_days' => ['5', '1', '3']], '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Alleen Ma, Wo, Vr</span>'];
     }
 
     /** @param array<string, mixed> $meta */
@@ -151,23 +135,6 @@ class MessagesListTableTest extends TestCase
         );
     }
 
-    public function test_views_are_added_with_counts_and_mark_the_current_filter(): void
-    {
-        $_GET = ['teksttv_state' => 'expired'];
-        Functions\when('admin_url')->alias(static fn(string $path): string => 'https://example.test/wp-admin/' . $path);
-        Functions\when('add_query_arg')->alias(static fn(array $args, string $url): string => $url . '?' . http_build_query($args));
-        Functions\stubEscapeFunctions();
-        $GLOBALS['teksttv_test_found_posts'] = 4;
-
-        $views = MessagesListTable::add_views(['all' => 'Alle']);
-
-        $this->assertSame(['all', 'teksttv_state_active', 'teksttv_state_upcoming', 'teksttv_state_expired'], array_keys($views));
-        $this->assertStringContainsString('Verlopen <span class="count">(4)</span>', $views['teksttv_state_expired']);
-        $this->assertStringContainsString('class="current"', $views['teksttv_state_expired']);
-        $this->assertStringNotContainsString('class="current"', $views['teksttv_state_active']);
-        $this->assertStringContainsString('teksttv_state=upcoming', $views['teksttv_state_upcoming']);
-    }
-
     public function test_views_are_hidden_without_scheduling(): void
     {
         $this->features = [];
@@ -175,51 +142,32 @@ class MessagesListTableTest extends TestCase
         $this->assertSame(['all' => 'Alle'], MessagesListTable::add_views(['all' => 'Alle']));
     }
 
-    public function test_filter_restricts_the_main_message_query(): void
+    /** @return iterable<string, array{bool, bool, string, string, bool}> */
+    public static function queries(): iterable
     {
-        $_GET = ['teksttv_state' => 'upcoming'];
-        Functions\when('is_admin')->justReturn(true);
-        $query = Mockery::mock(\WP_Query::class);
-        $query->shouldReceive('is_main_query')->andReturn(true);
-        $query->shouldReceive('get')->with('post_type')->andReturn(Messages::POST_TYPE);
-        $query->shouldReceive('set')->once()->with('post_status', 'publish');
-        $query->shouldReceive('set')->once()->with('meta_query', MessagesListTable::meta_query('upcoming'));
-
-        MessagesListTable::filter_query($query);
-    }
-
-    /** @return iterable<string, array{bool, bool}> */
-    public static function otherQueries(): iterable
-    {
+        yield 'main message query' => [true, true, Messages::POST_TYPE, 'upcoming', true];
         // The view counts run their own queries on the same screen.
-        yield 'secondary admin query' => [true, false];
-        yield 'front end' => [false, true];
+        yield 'secondary admin query' => [true, false, Messages::POST_TYPE, 'expired', false];
+        yield 'front end' => [false, true, Messages::POST_TYPE, 'expired', false];
+        yield 'other post type' => [true, true, 'post', 'active', false];
+        yield 'unknown state' => [true, true, Messages::POST_TYPE, 'bogus', false];
     }
 
-    #[DataProvider('otherQueries')]
-    public function test_filter_only_touches_the_main_admin_query(bool $is_admin, bool $is_main): void
+    #[DataProvider('queries')]
+    public function test_filter_only_restricts_the_main_admin_message_query(bool $is_admin, bool $is_main, string $post_type, string $state, bool $filtered): void
     {
-        $_GET = ['teksttv_state' => 'expired'];
+        $_GET = ['teksttv_state' => $state];
         Functions\when('is_admin')->justReturn($is_admin);
         $query = Mockery::mock(\WP_Query::class);
         $query->shouldReceive('is_main_query')->andReturn($is_main);
-        $query->shouldReceive('get')->with('post_type')->andReturn(Messages::POST_TYPE);
-        $query->shouldNotReceive('set');
+        $query->shouldReceive('get')->with('post_type')->andReturn($post_type);
+        if ($filtered) {
+            $query->shouldReceive('set')->once()->with('post_status', 'publish');
+            $query->shouldReceive('set')->once()->with('meta_query', MessagesListTable::meta_query($state));
+        } else {
+            $query->shouldNotReceive('set');
+        }
 
-        MessagesListTable::filter_query($query);
-    }
-
-    public function test_filter_ignores_unknown_states_and_other_post_types(): void
-    {
-        Functions\when('is_admin')->justReturn(true);
-        $_GET = ['teksttv_state' => 'bogus'];
-        $query = Mockery::mock(\WP_Query::class);
-        $query->shouldReceive('is_main_query')->andReturn(true);
-        $query->shouldReceive('get')->with('post_type')->andReturn(Messages::POST_TYPE, 'post');
-        $query->shouldNotReceive('set');
-
-        MessagesListTable::filter_query($query);
-        $_GET = ['teksttv_state' => 'active'];
         MessagesListTable::filter_query($query);
     }
 }

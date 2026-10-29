@@ -10,17 +10,6 @@ final class MessagesListTable
     private const COLUMN = 'teksttv_status';
     private const QUERY_VAR = 'teksttv_state';
 
-    /** @var array<int, string> ISO day number => full Dutch name. */
-    private const DAY_NAMES = [
-        1 => 'maandag',
-        2 => 'dinsdag',
-        3 => 'woensdag',
-        4 => 'donderdag',
-        5 => 'vrijdag',
-        6 => 'zaterdag',
-        7 => 'zondag',
-    ];
-
     /** @var array<string, string> Filter key => view label. */
     private const VIEWS = [
         'active' => 'Actief',
@@ -51,16 +40,13 @@ final class MessagesListTable
     }
 
     /**
-     * Planning state of a message: active, upcoming, expired or invalid.
+     * Planning state of a valid schedule: active, upcoming or expired.
      * It describes the period, not today's playout, so it matches the date-based views.
+     *
+     * @param array{date_start: string, date_end: string, days: mixed} $schedule
      */
-    public static function state(\WP_Post $post): string
+    public static function state(array $schedule): string
     {
-        $schedule = ArticleContent::schedule_meta($post->ID);
-        if ($schedule === null) {
-            return 'invalid';
-        }
-
         // Y-m-d strings compare chronologically.
         $today = current_datetime()->format('Y-m-d');
         if ($schedule['date_start'] !== '' && $schedule['date_start'] > $today) {
@@ -141,7 +127,7 @@ final class MessagesListTable
             return;
         }
 
-        $state = self::state($post);
+        $state = self::state($schedule);
         $days = Helpers::normalize_days($schedule['days']);
         $lines = [
             // The view words, except on a weekday playout skips: the views stay stable across the week.
@@ -151,10 +137,7 @@ final class MessagesListTable
 
         $days_label = self::days_label($days);
         if ($days_label !== null) {
-            [$visible, $spoken] = $days_label;
-            // Abbreviations are for the eye; screen readers get the full day names.
-            $text = $visible === $spoken ? esc_html($visible) : sprintf('<span aria-hidden="true">%s</span><span class="screen-reader-text">%s</span>', esc_html($visible), esc_html($spoken));
-            $lines[] = '<span class="description">' . $text . '</span>';
+            $lines[] = '<span class="description">' . esc_html($days_label) . '</span>';
         }
 
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- each line is escaped above.
@@ -245,43 +228,19 @@ final class MessagesListTable
     }
 
     /**
-     * Restricted weekdays as [visible, spoken] text; null when every day is allowed.
+     * Restricted weekdays, with the day labels of the planning fields; null when every day is allowed.
      *
      * @param list<string>|null $days
-     * @return array{string, string}|null
      */
-    private static function days_label(?array $days): ?array
+    private static function days_label(?array $days): ?string
     {
-        if ($days === null) {
-            return null;
-        }
-        $days = array_values(array_unique(array_map('intval', $days)));
-        sort($days);
-        if (count($days) === 7) {
+        if ($days === null || count(array_unique($days)) === 7) {
             return null;
         }
         if ($days === []) {
-            return ['Geen dagen geselecteerd', 'Geen dagen geselecteerd'];
-        }
-        if ($days === [6, 7]) {
-            return ['Alleen weekend', 'Alleen weekend'];
-        }
-        if (count($days) === 1) {
-            $name = self::DAY_NAMES[$days[0]];
-            return ['Alleen ' . $name, 'Alleen ' . $name];
+            return 'Geen dagen geselecteerd';
         }
 
-        $short = static fn(int $day): string => strtolower(Helpers::get_day_labels()[(string) $day]);
-        $long = static fn(int $day): string => self::DAY_NAMES[$day];
-        // Three or more consecutive days read as a range, such as "ma t/m vr".
-        if (count($days) > 2 && end($days) - $days[0] === count($days) - 1) {
-            return [
-                sprintf('Alleen %s t/m %s', $short($days[0]), $short(end($days))),
-                sprintf('Alleen %s tot en met %s', $long($days[0]), $long(end($days))),
-            ];
-        }
-
-        $list = static fn(array $names): string => implode(', ', array_slice($names, 0, -1)) . ' en ' . end($names);
-        return ['Alleen ' . $list(array_map($short, $days)), 'Alleen ' . $list(array_map($long, $days))];
+        return 'Alleen ' . implode(', ', array_intersect_key(Helpers::get_day_labels(), array_flip($days)));
     }
 }
