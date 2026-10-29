@@ -55,7 +55,10 @@ test.describe('standalone messages', () => {
         }
     });
 
-    test('air per channel, ignore the article age limit and skip drafts', async ({ page, runWordPressPHP }) => {
+    test('air per channel, ignore the article age limit, skip drafts and stay private', async ({
+        page,
+        runWordPressPHP,
+    }) => {
         await runWordPressPHP(ENABLE_MESSAGES);
         await createMessage(runWordPressPHP, 'Overal');
         await createMessage(runWordPressPHP, 'Alleen TV 2', { channels: ['tv2'] });
@@ -64,6 +67,17 @@ test.describe('standalone messages', () => {
 
         expect((await slideTitles(page, 'tv1')).sort()).toEqual(['Oud bericht', 'Overal']);
         expect((await slideTitles(page, 'tv2')).sort()).toEqual(['Alleen TV 2', 'Oud bericht', 'Overal']);
+
+        // Not exposed through the public site or core REST API.
+        const rest = await page.request.get('/wp-json/wp/v2/types');
+        expect(Object.keys(await rest.json())).not.toContain('teksttv_message');
+        const search = await page.request.get('/?s=Oud');
+        expect(await search.text()).not.toContain('Oud bericht');
+
+        // Off air and out of the admin once the feature is disabled.
+        await runWordPressPHP("update_option('teksttv_features', ['scheduling']);");
+        expect(await slideTitles(page, 'tv1')).toEqual([]);
+        expect((await page.request.get('/wp-admin/edit.php?post_type=teksttv_message')).ok()).toBe(false);
     });
 
     test('can be placed in a loop from the admin screen', async ({ page, runWordPressPHP }) => {
@@ -115,26 +129,14 @@ test.describe('standalone messages', () => {
 
         await expect(page.locator('#the-list tr')).toHaveCount(1);
         await expect(page.locator('#the-list')).toContainText('Al voorbij');
-        await expect(views.getByRole('link', { name: 'Verlopen (1)' })).toHaveAttribute('aria-current', 'page');
-    });
-
-    test('stay off air while the feature is disabled', async ({ page, runWordPressPHP }) => {
-        await runWordPressPHP(ENABLE_MESSAGES);
-        await createMessage(runWordPressPHP, 'Overal');
-        await runWordPressPHP("update_option('teksttv_features', ['scheduling']);");
-
-        expect(await slideTitles(page, 'tv1')).toEqual([]);
-        expect((await page.request.get('/wp-admin/edit.php?post_type=teksttv_message')).ok()).toBe(false);
-    });
-
-    test('are not exposed through the public site or core REST API', async ({ page, runWordPressPHP }) => {
-        await runWordPressPHP(ENABLE_MESSAGES);
-        await createMessage(runWordPressPHP, 'Geheim bericht');
-
-        const rest = await page.request.get('/wp-json/wp/v2/types');
-        expect(Object.keys(await rest.json())).not.toContain('teksttv_message');
-        const search = await page.request.get('/?s=Geheim');
-        expect(await search.text()).not.toContain('Geheim bericht');
+        const expired = views.getByRole('link', { name: 'Verlopen (1)' });
+        await expect(expired).toHaveAttribute('aria-current', 'page');
+        await expect(expired).toHaveClass('current');
+        await expect(views.getByRole('link', { name: 'Actief (1)' })).not.toHaveClass('current');
+        await expect(views.getByRole('link', { name: 'Gepland (2)' })).toHaveAttribute(
+            'href',
+            /teksttv_state=upcoming/,
+        );
     });
 
     test('a role with only message capabilities can publish a message for one channel', async ({

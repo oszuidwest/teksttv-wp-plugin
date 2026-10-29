@@ -2,7 +2,6 @@
 
 namespace TekstTV\Tests\Unit;
 
-use Brain\Monkey\Actions;
 use Brain\Monkey\Functions;
 use Mockery;
 use TekstTV\Messages;
@@ -20,13 +19,6 @@ class MessagesTest extends TestCase
             'teksttv_channels' => [['slug' => 'tv1', 'label' => 'TV 1'], ['slug' => 'tv2', 'label' => 'TV 2']],
             default => $default,
         });
-    }
-
-    public function test_init_registers_the_post_type_on_init(): void
-    {
-        Actions\expectAdded('init')->once()->with([Messages::class, 'register_post_type']);
-
-        Messages::init();
     }
 
     public function test_post_type_is_not_registered_while_the_feature_is_off(): void

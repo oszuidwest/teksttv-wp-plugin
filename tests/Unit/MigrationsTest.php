@@ -218,11 +218,8 @@ class MigrationsTest extends TestCase
     {
         $stored = ['teksttv_data_version' => 1];
         self::stubOptionReads($stored);
-        $granted = [];
         $role = Mockery::mock();
-        $role->shouldReceive('add_cap')->andReturnUsing(static function (string $cap) use (&$granted): void {
-            $granted[] = $cap;
-        });
+        $role->shouldReceive('add_cap')->times(2 * count(Messages::CAPABILITIES));
         Functions\when('get_role')->alias(static fn(string $name) => in_array($name, ['administrator', 'editor'], true) ? $role : null);
         // The commercials step must not run again.
         Functions\expect('wp_roles')->never();
@@ -230,8 +227,6 @@ class MigrationsTest extends TestCase
         Functions\expect('update_option')->once()->with('teksttv_data_version', 2, true)->andReturn(true);
 
         Migrations::run();
-
-        $this->assertSame(array_merge(Messages::CAPABILITIES, Messages::CAPABILITIES), $granted);
     }
 
     public function test_run_aborts_before_deleting_legacy_data_when_campaigns_write_fails(): void

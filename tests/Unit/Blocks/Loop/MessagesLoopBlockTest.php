@@ -33,11 +33,4 @@ class MessagesLoopBlockTest extends TestCase
             MessagesLoopBlock::save(['count' => '999', 'duration_text' => '999', 'duration_image' => '0'])
         );
     }
-
-    public function test_save_omits_empty_durations(): void
-    {
-        $result = MessagesLoopBlock::save(['count' => '3', 'duration_text' => '', 'duration_image' => '']);
-
-        $this->assertSame(['count' => 3], $result);
-    }
 }

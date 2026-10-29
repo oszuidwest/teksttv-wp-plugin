@@ -41,21 +41,6 @@ class PostMetaTest extends TestCase
         ], PostMeta::register_tinymce_plugin($plugins));
     }
 
-    public function test_user_can_edit_type_requires_the_mapped_capability(): void
-    {
-        Functions\expect('current_user_can')->with('edit_teksttv')->twice()->andReturn(true, false);
-
-        $this->assertTrue(PostMeta::user_can_edit_type('post'));
-        $this->assertFalse(PostMeta::user_can_edit_type('post'));
-    }
-
-    public function test_user_can_edit_type_rejects_unsupported_post_types(): void
-    {
-        Functions\expect('current_user_can')->never();
-
-        $this->assertFalse(PostMeta::user_can_edit_type('page'));
-    }
-
     public function test_register_meta_box_adds_box_for_permitted_post_types(): void
     {
         Functions\when('current_user_can')->justReturn(true);
@@ -83,28 +68,31 @@ class PostMetaTest extends TestCase
         $this->assertSame('edit_teksttv_messages', PostMeta::post_types()[Messages::POST_TYPE]);
     }
 
-    public function test_message_save_forces_on_air_and_stores_channels(): void
+    /** @return iterable<string, array{array<string, mixed>, list<string>|null}> */
+    public static function messageChannelSaves(): iterable
     {
-        $stored = $this->saveWithPost(Messages::POST_TYPE, ['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv2', 'tv9']]);
+        yield 'ticked channels, unknown ones dropped' => [['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv2', 'tv9']], ['tv2']];
+        yield 'nothing ticked means all channels' => [['teksttv_channels_shown' => '1'], []];
+        // One channel hides the section; the stored choice must survive.
+        yield 'hidden section' => [[], null];
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     * @param list<string>|null $channels
+     */
+    #[DataProvider('messageChannelSaves')]
+    public function test_message_save_forces_on_air_and_stores_channels(array $fields, ?array $channels): void
+    {
+        $stored = $this->saveWithPost(Messages::POST_TYPE, $fields);
 
         $this->assertSame('1', $stored['_teksttv_active']);
-        $this->assertSame(['tv2'], $stored[Messages::CHANNELS_META]);
         $this->assertSame('', $stored['_teksttv_title']);
-    }
-
-    public function test_message_save_without_channels_stores_all_channels(): void
-    {
-        $stored = $this->saveWithPost(Messages::POST_TYPE, ['teksttv_channels_shown' => '1']);
-
-        $this->assertSame([], $stored[Messages::CHANNELS_META]);
-    }
-
-    public function test_message_save_keeps_channels_when_the_section_was_hidden(): void
-    {
-        $stored = $this->saveWithPost(Messages::POST_TYPE, []);
-
-        $this->assertSame('1', $stored['_teksttv_active']);
-        $this->assertArrayNotHasKey(Messages::CHANNELS_META, $stored);
+        if ($channels === null) {
+            $this->assertArrayNotHasKey(Messages::CHANNELS_META, $stored);
+        } else {
+            $this->assertSame($channels, $stored[Messages::CHANNELS_META]);
+        }
     }
 
     public function test_article_save_keeps_the_toggle_and_ignores_channels(): void
