@@ -85,7 +85,7 @@ class PostMetaTest extends TestCase
 
     public function test_message_save_forces_on_air_and_stores_channels(): void
     {
-        $stored = $this->saveWithPost(Messages::POST_TYPE, ['teksttv_channels' => ['tv2', 'tv9']]);
+        $stored = $this->saveWithPost(Messages::POST_TYPE, ['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv2', 'tv9']]);
 
         $this->assertSame('1', $stored['_teksttv_active']);
         $this->assertSame(['tv2'], $stored[Messages::CHANNELS_META]);
@@ -94,9 +94,17 @@ class PostMetaTest extends TestCase
 
     public function test_message_save_without_channels_stores_all_channels(): void
     {
-        $stored = $this->saveWithPost(Messages::POST_TYPE, []);
+        $stored = $this->saveWithPost(Messages::POST_TYPE, ['teksttv_channels_shown' => '1']);
 
         $this->assertSame([], $stored[Messages::CHANNELS_META]);
+    }
+
+    public function test_message_save_keeps_channels_when_the_section_was_hidden(): void
+    {
+        $stored = $this->saveWithPost(Messages::POST_TYPE, []);
+
+        $this->assertSame('1', $stored['_teksttv_active']);
+        $this->assertArrayNotHasKey(Messages::CHANNELS_META, $stored);
     }
 
     public function test_article_save_keeps_the_toggle_and_ignores_channels(): void

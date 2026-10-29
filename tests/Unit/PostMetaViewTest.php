@@ -161,6 +161,23 @@ class PostMetaViewTest extends TestCase
         $this->assertStringNotContainsString('teksttv_channels[]', $view);
     }
 
+    public function test_message_view_warns_when_only_removed_channels_are_ticked(): void
+    {
+        $view = self::renderView([], true, [['slug' => 'tv1', 'label' => 'TV 1']], ['tv2']);
+
+        // Shown despite a single channel, so the editor can see and fix the choice.
+        $this->assertStringContainsString('name="teksttv_channels_shown"', $view);
+        $this->assertStringContainsString('staat alleen op kanalen die niet meer bestaan (tv2)', $view);
+    }
+
+    public function test_message_view_does_not_warn_while_a_ticked_channel_still_exists(): void
+    {
+        $channels = [['slug' => 'tv1', 'label' => 'TV 1'], ['slug' => 'tv2', 'label' => 'TV 2']];
+        $view = self::renderView([], true, $channels, ['tv1', 'tv9']);
+
+        $this->assertStringNotContainsString('niet meer bestaan', $view);
+    }
+
     public function test_combined_ai_action_includes_title_when_custom_titles_are_enabled(): void
     {
         $view = self::renderView(['ai_generate', 'custom_title']);

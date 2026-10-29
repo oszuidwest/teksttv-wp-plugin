@@ -302,8 +302,11 @@ class PostMeta
         if ($post->post_type === Messages::POST_TYPE) {
             // A message exists only for TekstTV; publishing it is what puts it on air.
             $data['active'] = true;
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via Messages::sanitize_channels()
-            update_post_meta($post_id, Messages::CHANNELS_META, Messages::sanitize_channels(wp_unslash($_POST['teksttv_channels'] ?? [])));
+            // A hidden channel section (one channel) must not overwrite the stored choice.
+            if (isset($_POST['teksttv_channels_shown'])) {
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via Messages::sanitize_channels()
+                update_post_meta($post_id, Messages::CHANNELS_META, Messages::sanitize_channels(wp_unslash($_POST['teksttv_channels'] ?? [])));
+            }
         }
 
         self::process_save($post_id, $data);

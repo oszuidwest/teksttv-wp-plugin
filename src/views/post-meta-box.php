@@ -32,6 +32,8 @@ $has_sidebar_image = Helpers::has_feature('sidebar_image');
 $has_extra_images = Helpers::has_feature('extra_images');
 $has_scheduling = Helpers::has_feature('scheduling');
 $has_page_separator = Helpers::has_feature('page_separator');
+// Channels removed from the settings stay stored until the message is saved again.
+$stale_channels = array_values(array_diff($selected_channels, array_column($channels, 'slug')));
 
 ?>
 <div class="teksttv-meta-box" x-data="teksttvPostMetaPage">
@@ -228,9 +230,16 @@ $has_page_separator = Helpers::has_feature('page_separator');
         </section>
         <?php endif; ?>
 
-        <?php if (count($channels) > 1) : ?>
+        <?php if (count($channels) > 1 || $stale_channels !== []) : ?>
         <section class="teksttv-media-section teksttv-channels-section" aria-labelledby="teksttv-channels-title">
             <h3 id="teksttv-channels-title"><?php echo esc_html('Kanalen'); ?></h3>
+            <?php if ($stale_channels !== [] && array_diff($selected_channels, $stale_channels) === []) : ?>
+            <div class="notice notice-warning inline">
+                <p><?php echo esc_html(sprintf('Dit bericht staat alleen op kanalen die niet meer bestaan (%s) en wordt nu nergens uitgezonden. Kies een kanaal, of vink niets aan voor alle kanalen.', implode(', ', $stale_channels))); ?></p>
+            </div>
+            <?php endif; ?>
+            <?php // Without this field the section was hidden, and saving keeps the stored channels. ?>
+            <input type="hidden" name="teksttv_channels_shown" value="1" />
             <fieldset>
                 <legend class="screen-reader-text"><?php echo esc_html('Kanalen'); ?></legend>
                 <?php foreach ($channels as $channel) : ?>
