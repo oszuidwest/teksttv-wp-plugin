@@ -6,7 +6,7 @@ use TekstTV\Blocks\Common\RecentPostsQuery;
 
 /**
  * Prepares per-post content for playout and RSS, and reads TekstTV post meta the same way for the admin screens.
- * Callers handle post type, status, password, and query selection.
+ * Callers handle post type, status, password, and query selection; messages only skip the age limit and custom title.
  */
 final class ArticleContent
 {
@@ -206,7 +206,7 @@ final class ArticleContent
     /** @return \Generator<int, int> Primary category first; lazy, so a primary image skips get_the_terms(). */
     private static function category_ids(int $post_id): \Generator
     {
-        // Types without categories, such as messages, would cost an uncached term query per post.
+        // Queries only prime the terms of their own post type, so types without categories would cost a term query per post.
         $post_type = get_post_type($post_id);
         if ($post_type === false || !is_object_in_taxonomy($post_type, 'category')) {
             return;

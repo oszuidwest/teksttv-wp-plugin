@@ -37,7 +37,7 @@ $stale_channels = array_values(array_diff($selected_channels, array_column($chan
 
 ?>
 <div class="teksttv-meta-box" x-data="teksttvPostMetaPage">
-    <?php // Messages are always on air when published, so they have no toggle. ?>
+    <?php // Publishing a message is its on-air switch, so it has no toggle. ?>
     <?php if (!$is_message) : ?>
     <div class="teksttv-toggle-bar">
         <label class="teksttv-toggle-control">

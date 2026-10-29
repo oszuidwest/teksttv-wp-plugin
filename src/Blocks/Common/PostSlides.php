@@ -19,7 +19,8 @@ final class PostSlides
      * Page through on-air candidates until `$count` posts produced slides.
      *
      * @param array<string, mixed>                $block      Stored block; supplies the slide durations.
-     * @param array<string, mixed>                $query_args Block-specific WP_Query args such as post type and filters.
+     * @param array<string, mixed>                $query_args Block-specific WP_Query args such as post type and filters;
+     *                                                       status, paging, meta_query, post__not_in, order and stickiness are overridden.
      * @param (callable(\WP_Post): bool)|null     $accept     Extra runtime filter applied before preparing a post.
      * @return list<array<string, mixed>>
      */
@@ -46,7 +47,7 @@ final class PostSlides
             // Keep post__not_in fixed so pagination does not grow SQL/cache keys.
             'post__not_in' => BuildContext::get_seen_post_ids(),
             'orderby' => ['date' => 'DESC', 'ID' => 'DESC'],
-            // Stickiness is a front-page concept; honouring it costs an extra query per first batch.
+            // Sticky posts would jump the date order and skip these filters, at the cost of an extra query.
             'ignore_sticky_posts' => true,
         ]);
 

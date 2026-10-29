@@ -94,7 +94,7 @@ test.describe('standalone messages', () => {
         await createMessage(runWordPressPHP, 'Begint later', { start: day(5), end: day(9) });
         await createMessage(runWordPressPHP, 'Al voorbij', { start: day(-9), end: day(-5) });
         await createMessage(runWordPressPHP, 'Nog een concept', { status: 'draft' });
-        // Start after end: upcoming only, never also expired.
+        // Start after end, start still ahead: upcoming only, never also expired.
         await createMessage(runWordPressPHP, 'Omgekeerde planning', { start: day(5), end: day(-5) });
 
         await page.goto('/wp-admin/edit.php?post_type=teksttv_message');

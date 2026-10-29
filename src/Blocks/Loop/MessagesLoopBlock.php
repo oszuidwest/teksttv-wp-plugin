@@ -68,6 +68,7 @@ final class MessagesLoopBlock
             Helpers::clamp_int($block['count'] ?? 5, 1, 50),
             ['post_type' => Messages::POST_TYPE],
             // Channel choice is stored as a list; filtering here avoids a LIKE on serialized meta.
+            // Rejected messages still count toward PostSlides' batch limit.
             static fn(\WP_Post $post): bool => Messages::airs_on($post->ID, $channel)
         );
     }

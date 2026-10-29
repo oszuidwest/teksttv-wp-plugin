@@ -661,7 +661,7 @@
     }
 }
 
-/* Messages never appear on the site, so WordPress's visibility setting has no meaning there. */
+/* Password and private are website settings; a message airs only when published. */
 .post-type-teksttv_message #visibility {
     display: none;
 }

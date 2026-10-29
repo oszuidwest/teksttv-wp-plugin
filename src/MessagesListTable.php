@@ -74,7 +74,7 @@ final class MessagesListTable
     }
 
     /**
-     * Meta query selecting published messages in a filter state.
+     * Meta query for a filter state; callers restrict it to published messages.
      *
      * @return array<int|string, mixed>
      */
@@ -86,7 +86,7 @@ final class MessagesListTable
             'upcoming' => [
                 ['key' => '_teksttv_date_start', 'value' => $today, 'compare' => '>', 'type' => 'DATE'],
             ],
-            // A start date after the end date makes a message upcoming, as in state().
+            // state() checks a future start before a past end, so a message that has not started is never expired.
             'expired' => [
                 'relation' => 'AND',
                 ['key' => '_teksttv_date_end', 'value' => '', 'compare' => '!='],

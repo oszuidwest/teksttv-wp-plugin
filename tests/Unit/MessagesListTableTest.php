@@ -138,7 +138,7 @@ class MessagesListTableTest extends TestCase
         $this->assertSame('>', MessagesListTable::meta_query('upcoming')[0]['compare']);
         $expired = MessagesListTable::meta_query('expired');
         $this->assertSame(['key' => '_teksttv_date_end', 'value' => '2026-10-28', 'compare' => '<', 'type' => 'DATE'], $expired[1]);
-        // Inverted schedules count as upcoming only, so the views never overlap.
+        // A future start wins over a past end, so the views never overlap.
         $this->assertSame(['key' => '_teksttv_date_start', 'value' => '2026-10-28', 'compare' => '<=', 'type' => 'DATE'], $expired[2][2]);
         $this->assertSame('AND', MessagesListTable::meta_query('active')['relation']);
     }

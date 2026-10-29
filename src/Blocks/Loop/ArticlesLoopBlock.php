@@ -68,7 +68,7 @@ final class ArticlesLoopBlock
         $count = Helpers::clamp_int($block['count'] ?? 3, 1, 50);
         $max_age = RecentPostsQuery::max_age_days();
 
-        // PostSlides::collect() sets the page size and on-air filters.
+        // PostSlides::collect() overrides the page size, status and on-air filters set here.
         return PostSlides::collect($block, $count, RecentPostsQuery::args($count, $block['taxonomy_filters'] ?? [], [
             // A day wider than prepare()'s expires_at(), so a DST shift cannot hide an eligible post.
             'date_query' => $max_age > 0 ? [['after' => ($max_age + 1) . ' days ago']] : [],

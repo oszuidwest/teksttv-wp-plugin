@@ -18,7 +18,7 @@ final class Migrations
             return;
         }
 
-        // Activation only grants capabilities on new installs; existing sites get them here.
+        // Updating does not run the activation hook, so sites that were already active get them here.
         Messages::grant_capabilities();
 
         // Autoload the migration version checked on every request.

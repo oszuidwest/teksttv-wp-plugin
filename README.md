@@ -64,7 +64,7 @@ If you need a different distribution, use a capability plugin.
 
 ## Usage
 
-- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, image, commercial and weather. The ticker is configured separately.
+- Tekst TV → Loop (per configured channel): the order and composition of the broadcast loop. Block types include posts, messages, image, iframe, commercial and weather. The ticker is configured separately.
 - Settings: channel slugs (`tv1`, `tv2`, …), display duration for text and images, OpenWeather API key, feature toggles (TinyMCE, AI, scheduling), preview URL.
 - Commercials (`Reclame`): commercial blocks and their campaigns used in the loop.
 - Tekst TV-berichten, when **Losse berichten** is enabled in the settings: text slides that are not tied to a website post. A message airs while it is published and within its schedule, on the channels ticked in the message (none ticked means all channels). The maximum post age does not apply, and messages are not part of the RSS export. Place them in a loop with the Tekst TV-berichten block.
