@@ -98,18 +98,19 @@ test.describe('standalone messages', () => {
         await createMessage(runWordPressPHP, 'Omgekeerde planning', { start: day(5), end: day(-5) });
 
         await page.goto('/wp-admin/edit.php?post_type=teksttv_message');
-        const rowState = (title: string) =>
-            page.locator('#the-list tr', { hasText: title }).locator('.teksttv-message-state');
-        await expect(rowState('Loopt nu')).toHaveText('Op Tekst TV');
-        await expect(rowState('Begint later')).toHaveText('Komt nog');
-        await expect(rowState('Al voorbij')).toHaveText('Verlopen');
-        await expect(rowState('Omgekeerde planning')).toHaveText('Komt nog');
-        // Core's own status label, translated per site locale.
-        await expect(rowState('Nog een concept')).toHaveText(/^(Draft|Concept)$/);
+        const planning = (title: string) =>
+            page.locator('#the-list tr', { hasText: title }).locator('td.column-teksttv_status');
+        // State, then the date that matters for it, like core's Date column.
+        await expect(planning('Loopt nu')).toHaveText(/^Actief\s*t\/m \S/);
+        await expect(planning('Begint later')).toHaveText(/^Gepland\s*Vanaf \S/);
+        await expect(planning('Al voorbij')).toHaveText(/^Verlopen\s*t\/m \S/);
+        await expect(planning('Omgekeerde planning')).toHaveText(/^Gepland\s*Vanaf \S/);
+        // Planning only matters once published; core labels drafts next to the title.
+        await expect(planning('Nog een concept')).toHaveText('');
 
         const views = page.locator('.subsubsub');
         await expect(views.getByRole('link', { name: 'Actief (1)' })).toBeVisible();
-        await expect(views.getByRole('link', { name: 'Komt nog (2)' })).toBeVisible();
+        await expect(views.getByRole('link', { name: 'Gepland (2)' })).toBeVisible();
         await views.getByRole('link', { name: 'Verlopen (1)' }).click();
 
         await expect(page.locator('#the-list tr')).toHaveCount(1);

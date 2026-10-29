@@ -54,17 +54,82 @@ class MessagesListTableTest extends TestCase
         $this->assertSame($expected, MessagesListTable::state($this->message()));
     }
 
-    public function test_unpublished_messages_are_never_on_air(): void
+    private function renderColumn(string $status, array $meta): string
     {
-        $this->assertSame('unpublished', MessagesListTable::state($this->message('draft')));
+        $post = $this->message($status);
+        $this->meta = $meta;
+        Functions\when('get_post')->justReturn($post);
+        Functions\when('wp_timezone')->justReturn(new \DateTimeZone('UTC'));
+        Functions\when('wp_date')->alias(static fn(string $format, int $timestamp): string => gmdate('Y-m-d', $timestamp));
+        Functions\stubEscapeFunctions();
+
+        ob_start();
+        MessagesListTable::render_column('teksttv_status', $post->ID);
+        return (string) ob_get_clean();
     }
 
-    public function test_without_scheduling_every_published_message_is_active(): void
+    /** @return iterable<string, array{array<string, mixed>, string}> */
+    public static function columns(): iterable
+    {
+        yield 'running: end date' => [['_teksttv_date_start' => '2026-10-20', '_teksttv_date_end' => '2026-11-03'], '<span class="teksttv-planning-state">Actief</span><br /><span class="description">t/m 2026-11-03</span>'];
+        yield 'running: open ended' => [['_teksttv_date_start' => '2026-10-20'], '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span>'];
+        yield 'upcoming: start date' => [['_teksttv_date_start' => '2026-11-10', '_teksttv_date_end' => '2026-11-20'], '<span class="teksttv-planning-state">Gepland</span><br /><span class="description">Vanaf 2026-11-10</span>'];
+        yield 'expired: end date' => [['_teksttv_date_end' => '2026-10-27'], '<span class="teksttv-planning-state">Verlopen</span><br /><span class="description">t/m 2026-10-27</span>'];
+        yield 'every day' => [['_teksttv_days' => ['1', '2', '3', '4', '5', '6', '7']], '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span>'];
+        // Today is a Wednesday.
+        yield 'no days' => [['_teksttv_days' => []], '<span class="teksttv-planning-state">Vandaag niet</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Geen dagen geselecteerd</span>'];
+        yield 'weekend' => [['_teksttv_days' => ['7', '6']], '<span class="teksttv-planning-state">Vandaag niet</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Alleen weekend</span>'];
+        yield 'weekend, upcoming' => [['_teksttv_date_start' => '2026-11-10', '_teksttv_days' => ['6', '7']], '<span class="teksttv-planning-state">Gepland</span><br /><span class="description">Vanaf 2026-11-10</span><br /><span class="description">Alleen weekend</span>'];
+        yield 'one day' => [['_teksttv_days' => ['3']], '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description">Alleen woensdag</span>'];
+        yield 'two days' => [
+            ['_teksttv_days' => ['2', '3']],
+            '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description"><span aria-hidden="true">Alleen di en wo</span><span class="screen-reader-text">Alleen dinsdag en woensdag</span></span>',
+        ];
+        yield 'weekdays' => [
+            ['_teksttv_days' => ['1', '2', '3', '4', '5']],
+            '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description"><span aria-hidden="true">Alleen ma t/m vr</span><span class="screen-reader-text">Alleen maandag tot en met vrijdag</span></span>',
+        ];
+        yield 'scattered days' => [
+            ['_teksttv_days' => ['5', '1', '3']],
+            '<span class="teksttv-planning-state">Actief</span><br /><span class="description">Zonder einddatum</span><br /><span class="description"><span aria-hidden="true">Alleen ma, wo en vr</span><span class="screen-reader-text">Alleen maandag, woensdag en vrijdag</span></span>',
+        ];
+    }
+
+    /** @param array<string, mixed> $meta */
+    #[DataProvider('columns')]
+    public function test_column_shows_state_then_the_relevant_date_like_the_date_column(array $meta, string $expected): void
+    {
+        $this->assertSame($expected, $this->renderColumn('publish', $meta));
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function unpublishedStatuses(): iterable
+    {
+        yield 'draft' => ['draft'];
+        yield 'scheduled' => ['future'];
+        yield 'pending' => ['pending'];
+        yield 'private' => ['private'];
+    }
+
+    #[DataProvider('unpublishedStatuses')]
+    public function test_column_stays_empty_until_the_message_is_published(string $status): void
+    {
+        $this->assertSame('', $this->renderColumn($status, ['_teksttv_date_start' => '2026-1-5', '_teksttv_date_end' => '2026-11-03']));
+    }
+
+    public function test_column_flags_an_invalid_schedule_like_a_missed_schedule(): void
+    {
+        $this->assertSame(
+            '<strong class="error-message">Ongeldige planning</strong>',
+            $this->renderColumn('publish', ['_teksttv_date_start' => '2026-1-5'])
+        );
+    }
+
+    public function test_column_is_hidden_without_scheduling(): void
     {
         $this->features = [];
-        $this->meta = ['_teksttv_date_end' => '2020-01-01'];
 
-        $this->assertSame('active', MessagesListTable::state($this->message()));
+        $this->assertSame(['title' => 'Titel'], MessagesListTable::add_column(['title' => 'Titel']));
     }
 
     public function test_meta_queries_compare_against_today(): void
@@ -81,25 +146,9 @@ class MessagesListTableTest extends TestCase
     public function test_column_follows_the_title(): void
     {
         $this->assertSame(
-            ['cb' => '', 'title' => 'Titel', 'teksttv_status' => 'Tekst TV', 'date' => 'Datum'],
+            ['cb' => '', 'title' => 'Titel', 'teksttv_status' => 'Planning', 'date' => 'Datum'],
             MessagesListTable::add_column(['cb' => '', 'title' => 'Titel', 'date' => 'Datum'])
         );
-    }
-
-    public function test_column_shows_state_period_and_weekdays(): void
-    {
-        $post = $this->message();
-        $this->meta = ['_teksttv_date_start' => '2026-10-20', '_teksttv_date_end' => '2026-11-03', '_teksttv_days' => ['1', '3']];
-        Functions\when('get_post')->justReturn($post);
-        Functions\when('date_i18n')->alias(static fn(string $format, int $timestamp): string => gmdate('Y-m-d', $timestamp));
-        Functions\stubEscapeFunctions();
-
-        ob_start();
-        MessagesListTable::render_column('teksttv_status', $post->ID);
-        $html = (string) ob_get_clean();
-
-        $this->assertStringContainsString('teksttv-message-state--active">Op Tekst TV</span>', $html);
-        $this->assertStringContainsString('2026-10-20 t/m 2026-11-03 · Alleen Ma, Wo', $html);
     }
 
     public function test_views_are_added_with_counts_and_mark_the_current_filter(): void
