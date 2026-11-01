@@ -8,17 +8,9 @@ use TekstTV\AuditPage;
 
 class AuditPageTest extends TestCase
 {
-    public function test_register_menu_skips_audit_without_supported_text_generator(): void
+    public function test_register_menu_adds_audit_without_model_discovery(): void
     {
-        $this->stubAiSupport(false);
-        Functions\expect('add_submenu_page')->never();
-
-        AuditPage::register_menu();
-    }
-
-    public function test_register_menu_adds_audit_with_supported_text_generator(): void
-    {
-        $this->stubAiSupport(true);
+        $this->stubMenuAccess();
         Functions\expect('add_submenu_page')
             ->once()
             ->with(
@@ -33,9 +25,17 @@ class AuditPageTest extends TestCase
         AuditPage::register_menu();
     }
 
+    public function test_register_menu_skips_audit_when_ai_is_off(): void
+    {
+        $this->stubMenuAccess(features: []);
+        Functions\expect('add_submenu_page')->never();
+
+        AuditPage::register_menu();
+    }
+
     public function test_register_menu_skips_audit_and_ai_discovery_without_capability(): void
     {
-        $this->stubAiSupport(true, false);
+        $this->stubMenuAccess(false);
         Functions\expect('add_submenu_page')->never();
 
         AuditPage::register_menu();
@@ -208,24 +208,20 @@ class AuditPageTest extends TestCase
         $this->assertSame(2.0, $result['any_modified_pct']);
     }
 
-    private function stubAiSupport(bool $supported, bool $can_manage_teksttv = true): void
+    /**
+     * @param list<string> $features
+     */
+    private function stubMenuAccess(bool $can_manage_teksttv = true, array $features = ['ai_generate']): void
     {
         if ($can_manage_teksttv) {
             Functions\when('current_user_can')->justReturn(true);
         } else {
             Functions\expect('current_user_can')->with('manage_teksttv')->once()->andReturn(false);
         }
-        Functions\when('get_option')->alias(static function (string $key, mixed $default = false): mixed {
-            return $key === 'teksttv_features' ? ['ai_generate'] : $default;
+        Functions\when('get_option')->alias(static function (string $key, mixed $default = false) use ($features): mixed {
+            return $key === 'teksttv_features' ? $features : $default;
         });
-        if ($can_manage_teksttv) {
-            Functions\when('wp_supports_ai')->justReturn(true);
-            Functions\when('wp_ai_client_prompt')->justReturn(
-                $supported ? self::mockAiBuilder() : self::mockUnsupportedAiBuilder()
-            );
-        } else {
-            Functions\expect('wp_supports_ai')->never();
-            Functions\expect('wp_ai_client_prompt')->never();
-        }
+        // Model discovery is remote; only the page load runs it.
+        Functions\expect('wp_ai_client_prompt')->never();
     }
 }

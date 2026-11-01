@@ -231,6 +231,13 @@ class PostMetaTest extends TestCase
         $this->assertFalse(Filters\has('mce_external_plugins'));
     }
 
+    public function test_enqueue_assets_shows_ai_controls_without_model_discovery(): void
+    {
+        $this->stubSuccessfulAssetEnqueue(['ai_generate']);
+
+        PostMeta::enqueue_assets('post.php');
+    }
+
     public function test_enqueue_assets_omits_the_auto_draft_fallback_title(): void
     {
         $this->stubSuccessfulAssetEnqueue(['bold'], true);
@@ -383,9 +390,11 @@ class PostMetaTest extends TestCase
         });
         Functions\when('rest_url')->returnArg();
         Functions\when('wp_json_encode')->alias('json_encode');
-        Functions\expect('wp_add_inline_script')->with(
+        // Model discovery is remote; generation requests check support instead.
+        Functions\expect('wp_ai_client_prompt')->never();
+        Functions\expect('wp_add_inline_script')->once()->with(
             'teksttv-admin',
-            Mockery::on(static function (string $script) use ($page_separator, $auto_draft): bool {
+            Mockery::on(static function (string $script) use ($features, $page_separator, $auto_draft): bool {
                 $prefix = 'var teksttvPost = ';
                 if (!str_starts_with($script, $prefix) || !str_ends_with($script, ';')) {
                     return false;
@@ -394,10 +403,11 @@ class PostMetaTest extends TestCase
                 $config = json_decode(substr($script, strlen($prefix), -1), true);
                 return is_array($config)
                     && $config['pageSeparator'] === $page_separator
+                    && $config['aiSupported'] === in_array('ai_generate', $features, true)
                     && (!$auto_draft || ($config['isNewPost'] === true && $config['fallbackTitle'] === ''));
             }),
             'before'
-        )->once();
+        );
     }
 
     private function expectNoAssets(): void

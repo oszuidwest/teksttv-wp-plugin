@@ -124,9 +124,9 @@ class AdminPage
             [self::class, 'render_settings_page']
         );
 
-        // Model discovery may call remote providers.
-        if (current_user_can('manage_teksttv_content') && Helpers::ai_supported()) {
-            add_submenu_page(
+        // Model discovery may call remote providers, so only the page load runs it.
+        if (current_user_can('manage_teksttv_content') && Helpers::has_feature('ai_generate')) {
+            $hook = add_submenu_page(
                 'teksttv',
                 'Inhoud & AI',
                 'Inhoud & AI',
@@ -134,6 +134,7 @@ class AdminPage
                 'teksttv-content',
                 [self::class, 'render_prompts_page']
             );
+            add_action('load-' . $hook, [Helpers::class, 'require_ai_supported']);
         }
 
         remove_submenu_page('teksttv', 'teksttv');
