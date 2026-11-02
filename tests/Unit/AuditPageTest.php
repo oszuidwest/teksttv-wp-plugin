@@ -221,7 +221,7 @@ class AuditPageTest extends TestCase
         Functions\when('get_option')->alias(static function (string $key, mixed $default = false) use ($features): mixed {
             return $key === 'teksttv_features' ? $features : $default;
         });
-        // Model discovery is remote; only the page load runs it.
+        // Model discovery is remote; the audit never runs it.
         Functions\expect('wp_ai_client_prompt')->never();
     }
 }
