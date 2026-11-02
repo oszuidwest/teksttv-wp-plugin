@@ -42,6 +42,28 @@ test.describe('monthly AI audit', () => {
         expect(html).toContain('month=2026-07');
     });
 
+    test('shows a private post on the detail page only to users who may read it', async ({
+        runWordPressPHP,
+        runWordPressPHPFile,
+    }) => {
+        const seedResult = await runWordPressPHPFile('audit-stats.php');
+        expect(seedResult).toContain('audit-stats-ok count=3');
+
+        const renderDetailAs = (login: string) =>
+            runWordPressPHP(`
+                require_once ABSPATH . 'wp-admin/includes/template.php';
+                wp_set_current_user(get_user_by('login', '${login}')->ID);
+                $_GET['post_id'] = (string) get_page_by_path('teksttv-audit-july-unmodified', OBJECT, 'post')->ID;
+                \\TekstTV\\AuditPage::render_page();
+            `);
+
+        expect(await renderDetailAs('admin')).toContain('AI-audit: TekstTV Audit Juli Ongewijzigd');
+        // The fixture role has manage_teksttv but not read_private_posts.
+        const deniedHtml = await renderDetailAs('teksttv_editor');
+        expect(deniedHtml).toContain('Post niet gevonden');
+        expect(deniedHtml).not.toContain('TekstTV Audit Juli Ongewijzigd');
+    });
+
     test('shows a month-scoped empty state for a month without audited posts', async ({
         runWordPressPHP,
         runWordPressPHPFile,
