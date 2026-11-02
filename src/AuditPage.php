@@ -11,12 +11,12 @@ class AuditPage
 
     public static function register_menu(): void
     {
-        // Model discovery may call remote providers, so only the page load runs it.
+        // The audit reads stored meta only, so it opens without an AI provider.
         if (!current_user_can('manage_teksttv') || !Helpers::has_feature('ai_generate')) {
             return;
         }
 
-        $hook = add_submenu_page(
+        add_submenu_page(
             'teksttv',
             'AI-audit',
             'AI-audit',
@@ -24,7 +24,6 @@ class AuditPage
             'teksttv-audit',
             [self::class, 'render_page']
         );
-        add_action('load-' . $hook, [Helpers::class, 'require_ai_supported']);
     }
 
     public static function render_page(): void
