@@ -154,7 +154,7 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
                                 </optgroup>
                             <?php endforeach; ?>
                         </select>
-                        <p class="description"><?php echo esc_html('Forceer een specifiek model. Overschrijft de provider-keuze hierboven.'); ?></p>
+                        <p class="description"><?php echo esc_html('Voorkeursmodel. Is dit model niet beschikbaar, dan kan WordPress een ander geschikt model kiezen. Overschrijft de provider-keuze hierboven.'); ?></p>
                     </td>
                 </tr>
             </table>

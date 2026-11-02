@@ -215,7 +215,8 @@ class Helpers
     }
 
     /**
-     * Whether AI is enabled and the configured model is available.
+     * Whether AI is enabled and core reports support for TekstTV's text-generation requirements.
+     * The configured model is only a preference: core can pick another suitable model.
      */
     public static function ai_supported(): bool
     {
