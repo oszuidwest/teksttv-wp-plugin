@@ -14,7 +14,8 @@ class OpenWeatherProviderTest extends TestCase
 
         Functions\expect('sanitize_title')->andReturn('bredanl');
         Functions\expect('get_transient')
-            ->with('teksttv_weather_bredanl')
+            ->once()
+            ->with('teksttv_weather_' . substr(md5('test-api-key'), 0, 8) . '_bredanl')
             ->andReturn($cached_data);
 
         $provider = new OpenWeatherProvider('test-api-key');
@@ -71,10 +72,12 @@ class OpenWeatherProviderTest extends TestCase
     {
         Functions\expect('sanitize_title')->andReturn('bredanl');
         Functions\expect('get_transient')
-            ->with('teksttv_weather_bredanl')
+            ->once()
+            ->with('teksttv_weather_' . substr(md5('test-key'), 0, 8) . '_bredanl')
             ->andReturn(false);
 
         Functions\expect('get_transient')
+            ->once()
             ->with('teksttv_geo_bredanl')
             ->andReturn(false);
 

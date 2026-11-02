@@ -16,6 +16,7 @@ class IframeLoopBlockTest extends TestCase
     public function test_save_sanitizes_url(): void
     {
         Functions\expect('esc_url_raw')
+            ->once()
             ->with('https://example.com/embed', ['http', 'https'])
             ->andReturn('https://example.com/embed');
 
@@ -57,7 +58,7 @@ class IframeLoopBlockTest extends TestCase
 
     public function test_save_defaults_to_empty_url(): void
     {
-        Functions\expect('esc_url_raw')->with('', ['http', 'https'])->andReturn('');
+        Functions\expect('esc_url_raw')->once()->with('', ['http', 'https'])->andReturn('');
 
         $result = IframeLoopBlock::save([]);
         $this->assertSame('', $result['url']);
@@ -115,7 +116,7 @@ class IframeLoopBlockTest extends TestCase
         self::passThroughUrlSanitization();
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-        Functions\expect('get_option')->with('teksttv_duration_iframe', 30)->andReturn(30);
+        Functions\expect('get_option')->once()->with('teksttv_duration_iframe', 30)->andReturn(30);
 
         $result = IframeLoopBlock::build(['url' => 'https://example.com/embed']);
 

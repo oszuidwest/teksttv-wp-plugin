@@ -43,7 +43,7 @@ class HelpersTest extends TestCase
 
     public function test_duration_ms_clamps_legacy_option(): void
     {
-        Functions\expect('get_option')->with('teksttv_duration_text', 20)->andReturn(0);
+        Functions\expect('get_option')->once()->with('teksttv_duration_text', 20)->andReturn(0);
 
         $this->assertSame(1000, Helpers::duration_ms(null, 'teksttv_duration_text'));
     }
@@ -51,6 +51,7 @@ class HelpersTest extends TestCase
     public function test_duration_ms_reads_default_from_duration_defaults(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_duration_image', Helpers::DURATION_DEFAULTS['teksttv_duration_image'])
             ->andReturnArg(1);
 
@@ -333,6 +334,7 @@ class HelpersTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([
                 ['channels' => ['tv1'], 'name' => 'A'],
@@ -353,6 +355,7 @@ class HelpersTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([
                 ['channels' => ['tv1'], 'name' => 'Active', 'date_start' => '2026-04-01', 'date_end' => '2026-04-30'],
@@ -373,6 +376,7 @@ class HelpersTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07 12:00:00'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([
                 ['channels' => ['tv1'], 'name' => 'TueOnly', 'days' => ['2']],
@@ -392,6 +396,7 @@ class HelpersTest extends TestCase
     public function test_get_image_data_returns_null_when_no_url(): void
     {
         Functions\expect('wp_get_attachment_image_url')
+            ->once()
             ->with(999, 'large')
             ->andReturn(false);
 
@@ -401,9 +406,11 @@ class HelpersTest extends TestCase
     public function test_get_image_data_returns_url_only_when_no_extras(): void
     {
         Functions\expect('wp_get_attachment_image_url')
+            ->once()
             ->with(42, 'large')
             ->andReturn('https://example.com/img.jpg');
         Functions\expect('wp_get_attachment_caption')
+            ->once()
             ->with(42)
             ->andReturn('');
         Functions\expect('apply_filters')->andReturnUsing(function ($tag, $value) {
@@ -430,6 +437,7 @@ class HelpersTest extends TestCase
     public function test_get_image_data_uses_custom_size(): void
     {
         Functions\expect('wp_get_attachment_image_url')
+            ->once()
             ->with(42, 'thumbnail')
             ->andReturn('https://example.com/thumb.jpg');
         Functions\expect('wp_get_attachment_caption')->andReturn('');
@@ -486,6 +494,7 @@ class HelpersTest extends TestCase
     public function test_get_ai_prompts_returns_defaults_when_empty(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_ai_prompts', [])
             ->andReturn([]);
 
@@ -503,6 +512,7 @@ class HelpersTest extends TestCase
     public function test_get_ai_prompts_uses_saved_values(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_ai_prompts', [])
             ->andReturn([
                 'system' => 'Custom system prompt',
@@ -524,6 +534,7 @@ class HelpersTest extends TestCase
     public function test_get_ai_prompts_clamps_out_of_range_limits(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_ai_prompts', [])
             ->andReturn([
                 'word_limit' => 9999,
@@ -563,6 +574,7 @@ class HelpersTest extends TestCase
     public function test_get_ai_prompts_resolves_photo_inheritance_marker(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_ai_prompts', [])
             ->andReturn([
                 'word_limit' => 250,
@@ -577,6 +589,7 @@ class HelpersTest extends TestCase
     public function test_get_ai_prompts_clamps_photo_word_limit_below_minimum(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_ai_prompts', [])
             ->andReturn(['word_limit_photo' => 1]);
 
@@ -589,6 +602,7 @@ class HelpersTest extends TestCase
     public function test_get_commercial_blocks_skips_malformed_entries(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_commercial_blocks', [])
             ->andReturn([
                 ['id' => 'cblock_aaa', 'label' => 'Sponsors'],
