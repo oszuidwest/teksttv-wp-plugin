@@ -138,17 +138,18 @@ final class Messages
     }
 
     /**
-     * Keep only configured channel slugs.
+     * Keep configured channel slugs, and the stored ones so an untouched save keeps a removed channel.
      *
+     * @param list<string> $stored
      * @return list<string>
      */
-    public static function sanitize_channels(mixed $raw): array
+    public static function sanitize_channels(mixed $raw, array $stored = []): array
     {
         if (!is_array($raw)) {
             return [];
         }
 
         $slugs = array_map(static fn($slug): string => is_scalar($slug) ? sanitize_key((string) $slug) : '', $raw);
-        return array_values(array_unique(array_intersect($slugs, Helpers::channel_slugs())));
+        return array_values(array_unique(array_intersect($slugs, [...Helpers::channel_slugs(), ...$stored])));
     }
 }
