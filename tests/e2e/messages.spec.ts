@@ -139,6 +139,37 @@ test.describe('standalone messages', () => {
         );
     });
 
+    test('an untouched save keeps a removed channel until it is unticked', async ({ page, runWordPressPHP }) => {
+        await runWordPressPHP(ENABLE_MESSAGES);
+        await createMessage(runWordPressPHP, 'Oud kanaal', { channels: ['tv9'] });
+        const id = await runWordPressPHP(
+            "echo get_posts(['post_type' => 'teksttv_message', 'title' => 'Oud kanaal', 'fields' => 'ids'])[0];",
+        );
+        const storedChannels = async () =>
+            JSON.parse(await runWordPressPHP(`echo wp_json_encode(get_post_meta(${id}, '_teksttv_channels', true));`));
+        const staleChannel = page.locator('input[name="teksttv_channels[]"][value="tv9"]');
+        const update = async () => {
+            await page.click('#publish');
+            await expect(page.locator('#message')).toBeVisible();
+        };
+
+        await page.goto(`/wp-admin/post.php?post=${id}&action=edit`);
+        await expect(staleChannel).toBeChecked();
+        await update();
+        expect(await storedChannels()).toEqual(['tv9']);
+        expect(await slideTitles(page, 'tv1')).toEqual([]);
+
+        await page.check('input[name="teksttv_channels[]"][value="tv2"]');
+        await staleChannel.uncheck();
+        await update();
+        expect(await storedChannels()).toEqual(['tv2']);
+
+        await page.uncheck('input[name="teksttv_channels[]"][value="tv2"]');
+        await update();
+        expect(await storedChannels()).toEqual([]);
+        expect(await slideTitles(page, 'tv1')).toEqual(['Oud kanaal']);
+    });
+
     test('a role with only message capabilities can publish a message for one channel', async ({
         browser,
         baseURL,

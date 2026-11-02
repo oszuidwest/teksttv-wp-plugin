@@ -68,22 +68,27 @@ class PostMetaTest extends TestCase
         $this->assertSame('edit_teksttv_messages', PostMeta::post_types()[Messages::POST_TYPE]);
     }
 
-    /** @return iterable<string, array{array<string, mixed>, list<string>|null}> */
+    /** @return iterable<string, array{array<string, mixed>, list<string>, list<string>|null}> */
     public static function messageChannelSaves(): iterable
     {
-        yield 'ticked channels, unknown ones dropped' => [['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv2', 'tv9']], ['tv2']];
-        yield 'nothing ticked means all channels' => [['teksttv_channels_shown' => '1'], []];
+        yield 'ticked channels, unknown ones dropped' => [['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv2', 'tv9']], [], ['tv2']];
+        yield 'nothing ticked means all channels' => [['teksttv_channels_shown' => '1'], ['tv9'], []];
+        // A removed channel stays until it is unticked; other unknown slugs are still dropped.
+        yield 'stored removed channel kept' => [['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv9', 'tv2', 'tv8']], ['tv9'], ['tv9', 'tv2']];
+        yield 'stored removed channel unticked' => [['teksttv_channels_shown' => '1', 'teksttv_channels' => ['tv2']], ['tv9'], ['tv2']];
         // One channel hides the section; the stored choice must survive.
-        yield 'hidden section' => [[], null];
+        yield 'hidden section' => [[], [], null];
     }
 
     /**
      * @param array<string, mixed> $fields
+     * @param list<string> $stored_channels
      * @param list<string>|null $channels
      */
     #[DataProvider('messageChannelSaves')]
-    public function test_message_save_forces_on_air_and_stores_channels(array $fields, ?array $channels): void
+    public function test_message_save_forces_on_air_and_stores_channels(array $fields, array $stored_channels, ?array $channels): void
     {
+        Functions\when('get_post_meta')->justReturn($stored_channels);
         $stored = $this->saveWithPost(Messages::POST_TYPE, $fields);
 
         $this->assertSame('1', $stored['_teksttv_active']);

@@ -305,7 +305,7 @@ class PostMeta
             // A hidden channel section (one channel) must not overwrite the stored choice.
             if (isset($_POST['teksttv_channels_shown'])) {
                 // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via Messages::sanitize_channels()
-                update_post_meta($post_id, Messages::CHANNELS_META, Messages::sanitize_channels(wp_unslash($_POST['teksttv_channels'] ?? [])));
+                update_post_meta($post_id, Messages::CHANNELS_META, Messages::sanitize_channels(wp_unslash($_POST['teksttv_channels'] ?? []), Messages::channels($post_id)));
             }
         }
 
