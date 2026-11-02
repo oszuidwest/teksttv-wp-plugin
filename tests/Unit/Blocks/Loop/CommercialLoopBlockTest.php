@@ -92,6 +92,7 @@ class CommercialLoopBlockTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([
                 [
@@ -121,6 +122,7 @@ class CommercialLoopBlockTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([
                 [
@@ -141,6 +143,7 @@ class CommercialLoopBlockTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([
                 [
@@ -150,6 +153,7 @@ class CommercialLoopBlockTest extends TestCase
                 ],
             ]);
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_duration_image', 7)
             ->andReturn(7);
         Functions\expect('wp_get_attachment_url')
@@ -166,6 +170,7 @@ class CommercialLoopBlockTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([
                 [
@@ -197,6 +202,7 @@ class CommercialLoopBlockTest extends TestCase
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_campaigns', [])
             ->andReturn([]);
 

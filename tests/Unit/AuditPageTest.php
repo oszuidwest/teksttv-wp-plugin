@@ -216,7 +216,7 @@ class AuditPageTest extends TestCase
         if ($can_manage_teksttv) {
             Functions\when('current_user_can')->justReturn(true);
         } else {
-            Functions\expect('current_user_can')->with('manage_teksttv')->once()->andReturn(false);
+            Functions\expect('current_user_can')->once()->with('manage_teksttv')->andReturn(false);
         }
         Functions\when('get_option')->alias(static function (string $key, mixed $default = false) use ($features): mixed {
             return $key === 'teksttv_features' ? $features : $default;

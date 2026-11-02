@@ -149,7 +149,7 @@ class AdminPageTest extends TestCase
     public function test_sanitize_ai_prompts_preserves_omitted_technical_fields(): void
     {
         Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);
-        Functions\expect('current_user_can')->with('manage_teksttv')->once()->andReturn(false);
+        Functions\expect('current_user_can')->once()->with('manage_teksttv')->andReturn(false);
 
         $stored = [
             'provider' => 'openai',
@@ -160,7 +160,7 @@ class AdminPageTest extends TestCase
             'max_tokens' => 4096,
             'system' => 'Oude system prompt',
         ];
-        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
+        Functions\expect('get_option')->once()->with('teksttv_ai_prompts', [])->andReturn($stored);
 
         // Simulate the reduced form for an editorial role.
         $result = AdminPage::sanitize_ai_prompts([
@@ -182,7 +182,7 @@ class AdminPageTest extends TestCase
     public function test_sanitize_ai_prompts_rejects_privileged_fields_without_manage_capability(): void
     {
         Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);
-        Functions\expect('current_user_can')->with('manage_teksttv')->once()->andReturn(false);
+        Functions\expect('current_user_can')->once()->with('manage_teksttv')->andReturn(false);
 
         $stored = [
             'region_taxonomy' => 'regio',
@@ -190,7 +190,7 @@ class AdminPageTest extends TestCase
             'model' => 'openai/gpt-5',
             'system' => 'Oude system prompt',
         ];
-        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
+        Functions\expect('get_option')->once()->with('teksttv_ai_prompts', [])->andReturn($stored);
 
         $result = AdminPage::sanitize_ai_prompts([
             'system' => 'Nieuwe system prompt',
@@ -208,8 +208,8 @@ class AdminPageTest extends TestCase
     public function test_sanitize_ai_prompts_accepts_privileged_fields_with_manage_capability(): void
     {
         Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);
-        Functions\expect('current_user_can')->with('manage_teksttv')->once()->andReturn(true);
-        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn([]);
+        Functions\expect('current_user_can')->once()->with('manage_teksttv')->andReturn(true);
+        Functions\expect('get_option')->once()->with('teksttv_ai_prompts', [])->andReturn([]);
 
         $result = AdminPage::sanitize_ai_prompts([
             'region_taxonomy' => 'regio',
@@ -225,7 +225,7 @@ class AdminPageTest extends TestCase
     public function test_sanitize_ai_prompts_non_array_input_keeps_current(): void
     {
         $stored = ['provider' => 'openai', 'model' => 'openai/gpt-5'];
-        Functions\expect('get_option')->with('teksttv_ai_prompts', [])->andReturn($stored);
+        Functions\expect('get_option')->once()->with('teksttv_ai_prompts', [])->andReturn($stored);
 
         $this->assertSame($stored, AdminPage::sanitize_ai_prompts('not an array'));
     }
@@ -366,7 +366,7 @@ class AdminPageTest extends TestCase
         $stored = [
             ['type' => 'addon_weather', 'location' => 'Breda'],
         ];
-        Functions\expect('get_option')->with('teksttv_loop_tv1', [])->andReturn($stored);
+        Functions\expect('get_option')->once()->with('teksttv_loop_tv1', [])->andReturn($stored);
 
         [$items, $preserved] = self::callPrivate(
             AdminPage::class,
@@ -384,6 +384,7 @@ class AdminPageTest extends TestCase
             'save' => static fn (array $raw): array => $raw,
         ]);
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_loop_tv1', [])
             ->andReturn([['type' => 'test_registered_row', 'value' => 'removed']]);
 
@@ -409,6 +410,7 @@ class AdminPageTest extends TestCase
         ]);
 
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_loop_tv1', [])
             ->andReturn([
                 ['type' => 'addon_first'],
@@ -450,7 +452,7 @@ class AdminPageTest extends TestCase
             'context' => 'ticker',
             'save' => static fn (array $raw): array => ['value' => $raw['value']],
         ]);
-        Functions\expect('get_option')->with('teksttv_loop_tv1', [])->andReturn([]);
+        Functions\expect('get_option')->once()->with('teksttv_loop_tv1', [])->andReturn([]);
 
         [$items, $preserved] = self::callPrivate(
             AdminPage::class,
@@ -491,7 +493,7 @@ class AdminPageTest extends TestCase
         if ($can_manage_content) {
             Functions\when('current_user_can')->justReturn(true);
         } else {
-            Functions\expect('current_user_can')->with('manage_teksttv_content')->once()->andReturn(false);
+            Functions\expect('current_user_can')->once()->with('manage_teksttv_content')->andReturn(false);
         }
         Functions\when('add_menu_page')->justReturn(null);
         Functions\when('add_submenu_page')->alias(

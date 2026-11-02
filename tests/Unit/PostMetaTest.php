@@ -164,7 +164,7 @@ class PostMetaTest extends TestCase
     public function test_enqueue_assets_skips_user_without_teksttv_capability(): void
     {
         Functions\when('get_current_screen')->justReturn((object) ['post_type' => 'post']);
-        Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(false);
+        Functions\expect('current_user_can')->once()->with('edit_teksttv')->andReturn(false);
         $this->expectNoAssets();
 
         PostMeta::enqueue_assets('post.php');
@@ -357,22 +357,22 @@ class PostMetaTest extends TestCase
     private function stubSuccessfulAssetEnqueue(array $features, bool $auto_draft = false): void
     {
         $page_separator = in_array('page_separator', $features, true);
-        Functions\expect('current_user_can')->with('edit_teksttv')->once()->andReturn(true);
+        Functions\expect('current_user_can')->once()->with('edit_teksttv')->andReturn(true);
         Functions\when('get_current_screen')->justReturn((object) ['post_type' => 'post']);
         Functions\expect('wp_enqueue_media')->once();
-        Functions\expect('wp_enqueue_script')->with(
+        Functions\expect('wp_enqueue_script')->once()->with(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.js',
             Helpers::admin_script_dependencies(),
             TEKSTTV_VERSION,
             true
-        )->once();
-        Functions\expect('wp_enqueue_style')->with(
+        );
+        Functions\expect('wp_enqueue_style')->once()->with(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
             [],
             TEKSTTV_VERSION
-        )->once();
+        );
         Functions\when('wp_script_is')->justReturn(false);
         Functions\when('get_the_ID')->justReturn($auto_draft ? 42 : false);
         if ($auto_draft) {
@@ -382,7 +382,7 @@ class PostMetaTest extends TestCase
             Functions\when('get_post_meta')->justReturn('');
             Functions\when('get_post')->justReturn($post);
             Functions\when('current_time')->justReturn('2026-08-04');
-            Functions\expect('get_post_status')->with(42)->once()->andReturn('auto-draft');
+            Functions\expect('get_post_status')->once()->with(42)->andReturn('auto-draft');
             Functions\expect('get_the_title')->never();
         }
         Functions\when('get_option')->alias(static function (string $name, mixed $default = false) use ($features): mixed {

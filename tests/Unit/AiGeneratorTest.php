@@ -70,9 +70,9 @@ class AiGeneratorTest extends TestCase
     {
         self::stubRateLimitTime();
         Functions\when('wp_using_ext_object_cache')->justReturn(true);
-        Functions\expect('wp_cache_add')->with('teksttv_ai_rate_7_2', 0, 'teksttv_ai_rate', 60)->andReturn(true);
+        Functions\expect('wp_cache_add')->once()->with('teksttv_ai_rate_7_2', 0, 'teksttv_ai_rate', 60)->andReturn(true);
         // The limit itself remains allowed.
-        Functions\expect('wp_cache_incr')->with('teksttv_ai_rate_7_2', 2, 'teksttv_ai_rate')->andReturn(AiGenerator::REQUESTS_PER_MINUTE);
+        Functions\expect('wp_cache_incr')->once()->with('teksttv_ai_rate_7_2', 2, 'teksttv_ai_rate')->andReturn(AiGenerator::REQUESTS_PER_MINUTE);
 
         $this->assertTrue(AiGenerator::within_rate_limit(7, 2));
     }
@@ -101,7 +101,7 @@ class AiGeneratorTest extends TestCase
     {
         self::stubRateLimitTime();
         Functions\when('wp_using_ext_object_cache')->justReturn(false);
-        Functions\expect('get_transient')->with('teksttv_ai_rate_7_2')->andReturn(3);
+        Functions\expect('get_transient')->once()->with('teksttv_ai_rate_7_2')->andReturn(3);
         Functions\expect('set_transient')->once()->with('teksttv_ai_rate_7_2', 4, 60)->andReturn(true);
 
         $this->assertTrue(AiGenerator::within_rate_limit(7));
@@ -264,6 +264,7 @@ class AiGeneratorTest extends TestCase
     public function test_get_region_prefix_returns_empty_when_taxonomy_not_exists(): void
     {
         Functions\expect('taxonomy_exists')
+            ->once()
             ->with('regio')
             ->andReturn(false);
         // Missing configured taxonomies must be logged.
@@ -276,9 +277,11 @@ class AiGeneratorTest extends TestCase
     public function test_get_region_prefix_returns_uppercase_term_name(): void
     {
         Functions\expect('taxonomy_exists')
+            ->once()
             ->with('regio')
             ->andReturn(true);
         Functions\expect('wp_get_post_terms')
+            ->once()
             ->with(1, 'regio', ['fields' => 'names'])
             ->andReturn(['Leiden']);
         Functions\expect('is_wp_error')->andReturn(false);
@@ -315,7 +318,7 @@ class AiGeneratorTest extends TestCase
         $error = \Mockery::mock('WP_Error');
         $error->shouldReceive('get_error_message')->andReturn('lookup failed');
         Functions\expect('wp_get_post_terms')->andReturn($error);
-        Functions\expect('is_wp_error')->with($error)->andReturn(true);
+        Functions\expect('is_wp_error')->once()->with($error)->andReturn(true);
         // Keep broken taxonomy configuration discoverable.
         Functions\expect('error_log')->once()->andReturn(true);
 
@@ -427,7 +430,7 @@ class AiGeneratorTest extends TestCase
         $builder = self::mockAiBuilder($wp_error);
 
         Functions\expect('wp_ai_client_prompt')->andReturn($builder);
-        Functions\expect('is_wp_error')->with($wp_error)->andReturn(true);
+        Functions\expect('is_wp_error')->once()->with($wp_error)->andReturn(true);
         Functions\expect('error_log')->never();
 
         $result = AiGenerator::generate_single_field('body', 'Titel', 'Tekst', self::aiConfig());

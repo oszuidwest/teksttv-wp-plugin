@@ -155,7 +155,7 @@ class WeatherLoopBlockTest extends TestCase
     {
         Functions\expect('current_datetime')->andReturn(new \DateTimeImmutable('2026-04-07'));
         Functions\expect('wp_timezone')->andReturn(new \DateTimeZone('UTC'));
-        Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('');
+        Functions\expect('get_option')->once()->with('teksttv_openweather_api_key', '')->andReturn('');
         Functions\expect('apply_filters')->andReturn(null);
         Functions\expect('error_log')->andReturn(true);
 
@@ -197,8 +197,9 @@ class WeatherLoopBlockTest extends TestCase
                 ],
             ]);
 
-        Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('test-key');
+        Functions\expect('get_option')->once()->with('teksttv_openweather_api_key', '')->andReturn('test-key');
         Functions\expect('apply_filters')
+            ->once()
             ->with('teksttv_weather_provider', \Mockery::type(OpenWeatherProvider::class))
             ->andReturn($mock_provider);
 
@@ -236,7 +237,7 @@ class WeatherLoopBlockTest extends TestCase
         $mock_provider = \Mockery::mock(WeatherProvider::class);
         $mock_provider->shouldReceive('fetch')->andReturn(null);
 
-        Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('key');
+        Functions\expect('get_option')->once()->with('teksttv_openweather_api_key', '')->andReturn('key');
         Functions\expect('apply_filters')->andReturn($mock_provider);
         Functions\expect('error_log')->andReturn(true);
 
@@ -247,9 +248,11 @@ class WeatherLoopBlockTest extends TestCase
     public function test_get_weather_provider_returns_null_without_api_key(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_openweather_api_key', '')
             ->andReturn('');
         Functions\expect('apply_filters')
+            ->once()
             ->with('teksttv_weather_provider', null)
             ->andReturn(null);
 
@@ -260,6 +263,7 @@ class WeatherLoopBlockTest extends TestCase
     public function test_get_weather_provider_returns_provider_with_api_key(): void
     {
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_openweather_api_key', '')
             ->andReturn('test-key');
         Functions\expect('apply_filters')
@@ -272,8 +276,8 @@ class WeatherLoopBlockTest extends TestCase
     public function test_get_weather_provider_caches_result(): void
     {
         Functions\expect('get_option')
-            ->with('teksttv_openweather_api_key', '')
             ->once()
+            ->with('teksttv_openweather_api_key', '')
             ->andReturn('test-key');
         Functions\expect('apply_filters')
             ->once()
@@ -290,9 +294,11 @@ class WeatherLoopBlockTest extends TestCase
         $custom_provider = \Mockery::mock(WeatherProvider::class);
 
         Functions\expect('get_option')
+            ->once()
             ->with('teksttv_openweather_api_key', '')
             ->andReturn('');
         Functions\expect('apply_filters')
+            ->once()
             ->with('teksttv_weather_provider', null)
             ->andReturn($custom_provider);
 
@@ -318,7 +324,7 @@ class WeatherLoopBlockTest extends TestCase
             ],
         ]);
 
-        Functions\expect('get_option')->with('teksttv_openweather_api_key', '')->andReturn('key');
+        Functions\expect('get_option')->once()->with('teksttv_openweather_api_key', '')->andReturn('key');
         Functions\expect('apply_filters')->andReturn($mock_provider);
         $block = ['location' => 'Breda,NL', 'title' => 'Weer'];
         $result = WeatherLoopBlock::build($block);
