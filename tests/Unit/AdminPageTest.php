@@ -8,27 +8,27 @@ use TekstTV\Helpers;
 
 class AdminPageTest extends TestCase
 {
-    public function test_register_menu_hides_content_page_without_supported_text_generator(): void
+    public function test_register_menu_adds_content_page_without_model_discovery(): void
     {
-        $submenu_slugs = $this->stubMenuRegistration(false);
-
-        AdminPage::register_menu();
-
-        $this->assertNotContains('teksttv-content', $submenu_slugs());
-    }
-
-    public function test_register_menu_shows_content_page_with_supported_text_generator(): void
-    {
-        $submenu_slugs = $this->stubMenuRegistration(true);
+        $submenu_slugs = $this->stubMenuRegistration();
 
         AdminPage::register_menu();
 
         $this->assertContains('teksttv-content', $submenu_slugs());
     }
 
+    public function test_register_menu_skips_content_page_when_ai_is_off(): void
+    {
+        $submenu_slugs = $this->stubMenuRegistration(features: []);
+
+        AdminPage::register_menu();
+
+        $this->assertNotContains('teksttv-content', $submenu_slugs());
+    }
+
     public function test_register_menu_skips_content_page_and_ai_discovery_without_capability(): void
     {
-        $submenu_slugs = $this->stubMenuRegistration(true, false);
+        $submenu_slugs = $this->stubMenuRegistration(false);
 
         AdminPage::register_menu();
 
@@ -475,15 +475,16 @@ class AdminPageTest extends TestCase
     }
 
     /**
+     * @param list<string> $features
      * @return callable(): list<string>
      */
-    private function stubMenuRegistration(bool $ai_supported, bool $can_manage_content = true): callable
+    private function stubMenuRegistration(bool $can_manage_content = true, array $features = ['ai_generate']): callable
     {
         $submenu_slugs = [];
-        Functions\when('get_option')->alias(static function (string $key, mixed $default = false): mixed {
+        Functions\when('get_option')->alias(static function (string $key, mixed $default = false) use ($features): mixed {
             return match ($key) {
                 'teksttv_channels' => [['slug' => 'tv1', 'label' => 'TV 1']],
-                'teksttv_features' => ['ai_generate'],
+                'teksttv_features' => $features,
                 default => $default,
             };
         });
@@ -505,15 +506,8 @@ class AdminPageTest extends TestCase
             }
         );
         Functions\when('remove_submenu_page')->justReturn(null);
-        if ($can_manage_content) {
-            Functions\when('wp_supports_ai')->justReturn(true);
-            Functions\when('wp_ai_client_prompt')->justReturn(
-                $ai_supported ? self::mockAiBuilder() : self::mockUnsupportedAiBuilder()
-            );
-        } else {
-            Functions\expect('wp_supports_ai')->never();
-            Functions\expect('wp_ai_client_prompt')->never();
-        }
+        // Model discovery is remote; only the page load runs it.
+        Functions\expect('wp_ai_client_prompt')->never();
 
         return static function () use (&$submenu_slugs): array {
             return $submenu_slugs;

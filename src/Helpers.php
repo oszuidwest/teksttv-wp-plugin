@@ -226,6 +226,16 @@ class Helpers
         return self::$ai_supported_cache ??= AiGenerator::supports_text_generation(self::get_ai_prompts());
     }
 
+    /**
+     * Load hook for AI pages: deny them without a usable provider.
+     */
+    public static function require_ai_supported(): void
+    {
+        if (!self::ai_supported()) {
+            wp_die(esc_html('AI is niet beschikbaar. Configureer een AI-provider in WordPress instellingen.'), '', ['response' => 403]);
+        }
+    }
+
     public static function has_feature(string $feature): bool
     {
         return in_array($feature, self::get_features(), true);

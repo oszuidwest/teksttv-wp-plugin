@@ -63,11 +63,11 @@ class PostMeta
     }
 
     /**
-     * Messages have no article text to generate from.
+     * Messages have no article text to generate from. The REST endpoint checks the provider.
      */
     private static function ai_enabled_for(string $post_type): bool
     {
-        return $post_type !== Messages::POST_TYPE && Helpers::ai_supported();
+        return $post_type !== Messages::POST_TYPE && Helpers::has_feature('ai_generate');
     }
 
     public static function register_meta_box(): void

@@ -465,9 +465,10 @@ class HelpersTest extends TestCase
         });
         Functions\expect('wp_supports_ai')->once()->andReturn(true);
         Functions\expect('wp_ai_client_prompt')->once()->andReturn(self::mockAiBuilder());
+        Functions\expect('wp_die')->never();
 
         $this->assertTrue(Helpers::ai_supported());
-        $this->assertTrue(Helpers::ai_supported());
+        Helpers::require_ai_supported();
     }
 
     public function test_ai_supported_memoizes_an_unsupported_probe_result(): void
