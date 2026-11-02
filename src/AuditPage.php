@@ -121,7 +121,7 @@ class AuditPage
     private static function render_detail_page(int $post_id, string $selected_month): void
     {
         $post = get_post($post_id);
-        if (!$post) {
+        if (!$post || !current_user_can('read_post', $post_id)) {
             echo '<div class="wrap teksttv-admin"><h1>' . esc_html('Post niet gevonden') . '</h1></div>';
             return;
         }
