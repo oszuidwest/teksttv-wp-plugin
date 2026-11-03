@@ -50,6 +50,17 @@ class AiGeneratorTest extends TestCase
         $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig()));
     }
 
+    public function test_supports_text_generation_returns_false_when_the_check_returns_the_builder(): void
+    {
+        Functions\expect('wp_supports_ai')->once()->andReturn(true);
+
+        $builder = self::mockBaseAiBuilder();
+        $builder->shouldReceive('is_supported_for_text_generation')->once()->andReturnSelf();
+        Functions\expect('wp_ai_client_prompt')->once()->andReturn($builder);
+
+        $this->assertFalse(AiGenerator::supports_text_generation(self::aiConfig()));
+    }
+
     public function test_support_check_uses_model_preference_and_bounded_output(): void
     {
         Functions\expect('wp_supports_ai')->once()->andReturn(true);

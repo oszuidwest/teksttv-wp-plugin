@@ -26,7 +26,8 @@ class AiGenerator
         try {
             $builder = self::configure_prompt_builder('Capability check', $config['system'], $config);
 
-            return (bool) $builder->is_supported_for_text_generation();
+            // Core 7.0 and 7.1 return the builder itself when the check throws.
+            return $builder->is_supported_for_text_generation() === true;
         } catch (\Throwable) {
             return false;
         }
