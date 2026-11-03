@@ -146,6 +146,45 @@ class AdminPageTest extends TestCase
         ));
     }
 
+    /** @return array<string, array{string, string, bool}> */
+    public static function savedAiChoices(): array
+    {
+        return [
+            'not listed' => ['gone', 'openai/ft-model', true],
+            'listed' => ['openai', 'openai/gpt-4.1-mini', false],
+            'automatic' => ['', '', false],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('savedAiChoices')]
+    public function test_prompts_page_keeps_a_saved_provider_and_model_that_discovery_does_not_list(string $provider, string $model, bool $unlisted): void
+    {
+        Functions\stubEscapeFunctions();
+        Functions\when('get_option')->alias(fn ($key, $default = false) => $key === 'teksttv_ai_prompts' ? ['provider' => $provider, 'model' => $model] : $default);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\when('wp_kses')->returnArg();
+        Functions\when('settings_fields')->justReturn(null);
+        Functions\when('checked')->justReturn(null);
+        Functions\when('submit_button')->justReturn(null);
+        Functions\when('selected')->alias(static function (mixed $selected, mixed $current = true): void {
+            echo $selected === $current ? ' selected' : '';
+        });
+        $prompts = Helpers::get_ai_prompts();
+        $all_taxonomies = [];
+        $ai_models = ['openai' => ['label' => 'OpenAI', 'models' => ['gpt-4.1-mini' => 'GPT-4.1 mini']]];
+
+        ob_start();
+        include dirname(__DIR__, 2) . '/src/views/prompts-page.php';
+        $html = (string) ob_get_clean();
+
+        if ($unlisted) {
+            $this->assertStringContainsString('<option value="gone" selected>gone (niet beschikbaar)</option>', $html);
+            $this->assertStringContainsString('<option value="openai/ft-model" selected>openai/ft-model (niet beschikbaar)</option>', $html);
+        } else {
+            $this->assertStringNotContainsString('(niet beschikbaar)', $html);
+        }
+    }
+
     public function test_sanitize_ai_prompts_preserves_omitted_technical_fields(): void
     {
         Functions\when('sanitize_textarea_field')->alias(fn ($s) => $s);
