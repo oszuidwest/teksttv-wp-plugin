@@ -136,6 +136,10 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
                             <?php foreach ($ai_models as $provider_id => $provider_data) : ?>
                                 <option value="<?php echo esc_attr($provider_id); ?>" <?php selected($prompts['provider'], $provider_id); ?>><?php echo esc_html($provider_data['label']); ?></option>
                             <?php endforeach; ?>
+                            <?php // A saved value that discovery does not list stays selected, so saving keeps it. ?>
+                            <?php if ($prompts['provider'] !== '' && !isset($ai_models[$prompts['provider']])) : ?>
+                                <option value="<?php echo esc_attr($prompts['provider']); ?>" selected><?php echo esc_html($prompts['provider'] . ' (niet beschikbaar)'); ?></option>
+                            <?php endif; ?>
                         </select>
                         <p class="description"><?php echo esc_html('Forceer een specifieke AI-provider. Bij "Automatisch" kiest WordPress de beste beschikbare provider.'); ?></p>
                     </td>
@@ -153,6 +157,10 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
                                     <?php endforeach; ?>
                                 </optgroup>
                             <?php endforeach; ?>
+                            <?php [$saved_provider_id, $saved_model_id] = explode('/', $prompts['model'], 2) + ['', '']; ?>
+                            <?php if ($prompts['model'] !== '' && !isset($ai_models[$saved_provider_id]['models'][$saved_model_id])) : ?>
+                                <option value="<?php echo esc_attr($prompts['model']); ?>" selected><?php echo esc_html($prompts['model'] . ' (niet beschikbaar)'); ?></option>
+                            <?php endif; ?>
                         </select>
                         <p class="description"><?php echo esc_html('Voorkeursmodel. Is dit model niet beschikbaar, dan kan WordPress een ander geschikt model kiezen. Overschrijft de provider-keuze hierboven.'); ?></p>
                     </td>
