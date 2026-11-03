@@ -156,11 +156,14 @@ class AdminPageTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('savedAiChoices')]
-    public function test_prompts_page_keeps_a_saved_provider_and_model_that_discovery_does_not_list(string $provider, string $model, bool $unlisted): void
+    /**
+     * @param array<string, string> $saved
+     * @param list<array{name: string, label: string, terms: array<int, string>}> $all_taxonomies
+     */
+    private function renderPromptsPage(array $saved, array $all_taxonomies): string
     {
         Functions\stubEscapeFunctions();
-        Functions\when('get_option')->alias(fn ($key, $default = false) => $key === 'teksttv_ai_prompts' ? ['provider' => $provider, 'model' => $model] : $default);
+        Functions\when('get_option')->alias(fn ($key, $default = false) => $key === 'teksttv_ai_prompts' ? $saved : $default);
         Functions\when('current_user_can')->justReturn(true);
         Functions\when('wp_kses')->returnArg();
         Functions\when('settings_fields')->justReturn(null);
@@ -170,16 +173,42 @@ class AdminPageTest extends TestCase
             echo $selected === $current ? ' selected' : '';
         });
         $prompts = Helpers::get_ai_prompts();
-        $all_taxonomies = [];
         $ai_models = ['openai' => ['label' => 'OpenAI', 'models' => ['gpt-4.1-mini' => 'GPT-4.1 mini']]];
 
         ob_start();
         include dirname(__DIR__, 2) . '/src/views/prompts-page.php';
-        $html = (string) ob_get_clean();
+        return (string) ob_get_clean();
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('savedAiChoices')]
+    public function test_prompts_page_keeps_a_saved_provider_and_model_that_discovery_does_not_list(string $provider, string $model, bool $unlisted): void
+    {
+        $html = $this->renderPromptsPage(['provider' => $provider, 'model' => $model], []);
 
         if ($unlisted) {
             $this->assertStringContainsString('<option value="gone" selected>gone (niet beschikbaar)</option>', $html);
             $this->assertStringContainsString('<option value="openai/ft-model" selected>openai/ft-model (niet beschikbaar)</option>', $html);
+        } else {
+            $this->assertStringNotContainsString('(niet beschikbaar)', $html);
+        }
+    }
+
+    /** @return array<string, array{string, bool}> */
+    public static function savedRegionTaxonomies(): array
+    {
+        return [
+            'not listed' => ['regio', true],
+            'listed' => ['category', false],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('savedRegionTaxonomies')]
+    public function test_prompts_page_keeps_a_saved_region_taxonomy_that_is_not_listed(string $region, bool $unlisted): void
+    {
+        $html = $this->renderPromptsPage(['region_taxonomy' => $region], [['name' => 'category', 'label' => 'Category', 'terms' => [1 => 'Nieuws']]]);
+
+        if ($unlisted) {
+            $this->assertStringContainsString('<option value="regio" selected>regio (niet beschikbaar)</option>', $html);
         } else {
             $this->assertStringNotContainsString('(niet beschikbaar)', $html);
         }

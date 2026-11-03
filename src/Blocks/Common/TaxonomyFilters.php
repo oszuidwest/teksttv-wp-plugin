@@ -35,6 +35,16 @@ final class TaxonomyFilters
         </div>
             <?php
         endforeach;
+
+        // A stored filter on a taxonomy that is not listed has no select; resubmit it so saving keeps it.
+        $unlisted = array_diff_key($filters, array_flip(array_column($all_taxonomies, 'name')));
+        foreach ($unlisted as $name => $term_ids) :
+            foreach ((array) $term_ids as $term_id) :
+                ?>
+        <input type="hidden" name="<?php echo esc_attr($prefix); ?>[<?php echo esc_attr((string) $index); ?>][taxonomy_filters][<?php echo esc_attr($name); ?>][]" value="<?php echo esc_attr((string) $term_id); ?>" />
+                <?php
+            endforeach;
+        endforeach;
     }
 
     /**

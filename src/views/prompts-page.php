@@ -117,6 +117,10 @@ echo '<h1>' . esc_html('Inhoud & AI') . '</h1>';
                             <?php foreach ($all_taxonomies as $tax) : ?>
                                 <option value="<?php echo esc_attr($tax['name']); ?>" <?php selected($region_tax, $tax['name']); ?>><?php echo esc_html($tax['label']); ?> (<?php echo esc_html($tax['name']); ?>)</option>
                             <?php endforeach; ?>
+                            <?php // A saved taxonomy that is not listed stays selected, so saving keeps it. ?>
+                            <?php if ($region_tax !== '' && !in_array($region_tax, array_column($all_taxonomies, 'name'), true)) : ?>
+                                <option value="<?php echo esc_attr($region_tax); ?>" selected><?php echo esc_html($region_tax . ' (niet beschikbaar)'); ?></option>
+                            <?php endif; ?>
                         </select>
                         <p class="description"><?php echo wp_kses('Kies de taxonomy waarvan de terms als regio-prefix worden gebruikt. Bij meerdere terms worden ze samengevoegd met <code>/</code>.', ['code' => []]); ?></p>
                     </td>
