@@ -66,7 +66,7 @@ abstract class TestCase extends PHPUnitTestCase
     /**
      * Stub shared AI-builder expectations without reading private constants.
      */
-    private static function mockBaseAiBuilder(): \Mockery\MockInterface
+    protected static function mockBaseAiBuilder(): \Mockery\MockInterface
     {
         $builder = \Mockery::mock();
         $builder->shouldReceive('using_system_instruction')->andReturnSelf();
