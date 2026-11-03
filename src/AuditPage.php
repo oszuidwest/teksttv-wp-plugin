@@ -138,7 +138,11 @@ class AuditPage
         echo '<h1>AI-audit: ' . esc_html($post->post_title) . '</h1>';
         echo '<p>';
         echo '<a href="' . esc_url($overview_url) . '">&larr; ' . esc_html('Terug naar overzicht') . '</a>';
-        echo ' | <a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html('Bericht bewerken') . '</a>';
+        // Null when the user may not edit this post.
+        $edit_url = get_edit_post_link($post_id);
+        if ($edit_url) {
+            echo ' | <a href="' . esc_url($edit_url) . '">' . esc_html('Bericht bewerken') . '</a>';
+        }
         echo ' | <a href="' . esc_url($toggle_url) . '">' . esc_html($toggle_label) . '</a>';
         echo '</p>';
 
