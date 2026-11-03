@@ -45,26 +45,33 @@ test.describe('monthly AI audit', () => {
         expect(html).toContain('month=2026-07');
     });
 
-    test('shows a private post on the detail page only to users who may read it', async ({
+    test('shows the detail page and its edit link only to users with access', async ({
         runWordPressPHP,
         runWordPressPHPFile,
     }) => {
         const seedResult = await runWordPressPHPFile('audit-stats.php');
         expect(seedResult).toContain('audit-stats-ok count=3');
 
-        const renderDetailAs = (login: string) =>
+        const renderDetailAs = (login: string, slug = 'teksttv-audit-july-unmodified') =>
             runWordPressPHP(`
                 require_once ABSPATH . 'wp-admin/includes/template.php';
                 wp_set_current_user(get_user_by('login', '${login}')->ID);
-                $_GET['post_id'] = (string) get_page_by_path('teksttv-audit-july-unmodified', OBJECT, 'post')->ID;
+                $_GET['post_id'] = (string) get_page_by_path('${slug}', OBJECT, 'post')->ID;
                 \\TekstTV\\AuditPage::render_page();
             `);
 
-        expect(await renderDetailAs('admin')).toContain('AI-audit: TekstTV Audit Juli Ongewijzigd');
+        const adminHtml = await renderDetailAs('admin');
+        expect(adminHtml).toContain('AI-audit: TekstTV Audit Juli Ongewijzigd');
+        expect(adminHtml).toMatch(/post\.php\?post=\d+&(amp;|#038;)?action=edit">Bericht bewerken/);
         // The fixture role has manage_teksttv but not read_private_posts.
         const deniedHtml = await renderDetailAs('teksttv_editor');
         expect(deniedHtml).toContain('Post niet gevonden');
         expect(deniedHtml).not.toContain('TekstTV Audit Juli Ongewijzigd');
+        // It may read the published post but not edit someone else's.
+        const readOnlyHtml = await renderDetailAs('teksttv_editor', 'teksttv-audit-july-modified');
+        expect(readOnlyHtml).toContain('AI-audit: TekstTV Audit Juli Bewerkt');
+        expect(readOnlyHtml).not.toContain('Bericht bewerken');
+        expect(readOnlyHtml).not.toContain(' |  | ');
     });
 
     test('shows a month-scoped empty state for a month without audited posts', async ({
