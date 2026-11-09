@@ -1,4 +1,13 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { type ConsoleMessage, expect, type Locator, type Page } from '@playwright/test';
+
+// TinyMCE 4 in WordPress core adds an unload listener to its editor iframe (core Trac #62924), which Chromium blocks.
+function isTinyMceUnloadViolation(message: ConsoleMessage): boolean {
+    return (
+        message.type() === 'error' &&
+        message.text() === 'Permissions policy violation: unload is not allowed in this document.' &&
+        /\/wp-includes\/js\/tinymce\/(?:wp-tinymce|tinymce\.min)\.js\?/.test(message.location().url)
+    );
+}
 
 export async function getBrowserErrors(page: Page): Promise<string[]> {
     const [pageErrors, consoleMessages] = await Promise.all([page.pageErrors(), page.consoleMessages()]);
@@ -6,7 +15,8 @@ export async function getBrowserErrors(page: Page): Promise<string[]> {
         ...pageErrors.map((error) => `pageerror: ${error.stack ?? error.message}`),
         ...consoleMessages
             .filter((message) => message.type() === 'error' || message.type() === 'assert')
-            .map((message) => `console.${message.type()}: ${message.text()}`),
+            .filter((message) => !isTinyMceUnloadViolation(message))
+            .map((message) => `console.${message.type()}: ${message.text()} (${message.location().url})`),
     ];
 }
 
