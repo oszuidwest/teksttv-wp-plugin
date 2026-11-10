@@ -14,6 +14,21 @@ class OpenWeatherProvider implements WeatherProvider
         $this->api_key = $api_key;
     }
 
+    /** List the API key on the core Connectors screen, which registers and saves the option. */
+    public static function register_connector(\WP_Connector_Registry $registry): void
+    {
+        $registry->register('openweather', [
+            'name' => 'OpenWeather',
+            'description' => 'Weerslides voor Tekst TV. Gebruikt de One Call API 3.0.',
+            'type' => 'weather',
+            'authentication' => [
+                'method' => 'api_key',
+                'credentials_url' => 'https://home.openweathermap.org/api_keys',
+                'setting_name' => 'teksttv_openweather_api_key',
+            ],
+        ]);
+    }
+
     /** @return array<string, mixed>|null */
     public function fetch(string $location): ?array
     {

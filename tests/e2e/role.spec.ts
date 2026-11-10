@@ -21,6 +21,7 @@ test('custom-capability role can access commercials and save settings', async ({
 
     await page.goto('/wp-admin/admin.php?page=teksttv-settings');
     await expect(page.locator('input[name="teksttv_duration_text"]')).toBeVisible();
+    await expect(page.locator('.teksttv-card a[href$="/options-connectors.php"]')).toHaveCount(0);
 
     await page.fill('input[name="teksttv_duration_text"]', '37');
     await page.click('#submit');

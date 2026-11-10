@@ -205,16 +205,11 @@ $render_feature_option = static function (string $value, string $label) use ($fe
 
         <div class="teksttv-card">
             <h2><?php echo esc_html('Weer'); ?></h2>
-            <p class="description"><?php echo esc_html('OpenWeather-API-configuratie voor weerslides.'); ?></p>
-            <table class="form-table teksttv-form-table">
-                <tr>
-                    <th scope="row"><label for="teksttv_openweather_api_key"><?php echo esc_html('API-sleutel'); ?></label></th>
-                    <td>
-                        <input type="password" id="teksttv_openweather_api_key" name="teksttv_openweather_api_key" value="<?php echo esc_attr(get_option('teksttv_openweather_api_key', '')); ?>" class="regular-text" autocomplete="off" spellcheck="false" />
-                        <p class="description"><?php echo wp_kses('OneCall API 3.0 key van <a href="https://openweathermap.org/api" target="_blank" rel="noopener">openweathermap.org</a>.', ['a' => ['href' => [], 'target' => [], 'rel' => []]]); ?></p>
-                    </td>
-                </tr>
-            </table>
+            <?php if (current_user_can('manage_options')) : ?>
+            <p class="description"><?php echo wp_kses(sprintf('Stel de OpenWeather-API-sleutel voor weerslides in via <a href="%s">WordPress Connectors</a>.', esc_url(admin_url('options-connectors.php'))), ['a' => ['href' => []]]); ?></p>
+            <?php else : ?>
+            <p class="description"><?php echo esc_html('Vraag een beheerder om de OpenWeather-API-sleutel voor weerslides in te stellen.'); ?></p>
+            <?php endif; ?>
         </div>
 
         <div class="teksttv-card">

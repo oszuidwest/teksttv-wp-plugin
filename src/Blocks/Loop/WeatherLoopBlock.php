@@ -196,7 +196,7 @@ final class WeatherLoopBlock
         $provider = self::getWeatherProvider();
         if (!$provider) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-            error_log('TekstTV: No weather provider configured. Check OpenWeather API key in settings.');
+            error_log('TekstTV: No weather provider configured. Check the OpenWeather key under Settings > Connectors.');
             return [];
         }
 

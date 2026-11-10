@@ -10,7 +10,7 @@ test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
         await page.goto('/wp-admin/admin.php?page=teksttv-settings');
         await expect(page.locator('input[name="teksttv_duration_text"]')).toBeVisible();
-        await expect(page.locator('#teksttv_openweather_api_key')).toHaveAttribute('type', 'password');
+        await expect(page.locator('.teksttv-card a[href$="/options-connectors.php"]')).toBeVisible();
         await expect(page.locator('#submit')).toBeVisible();
     });
 
@@ -33,6 +33,19 @@ test.describe('administrator admin screens', () => {
             expect((await saveResponse).status()).toBeLessThan(400);
             await expect(page.locator('input[name="teksttv_duration_text"]')).toHaveValue('42');
             await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
+        });
+
+        test('core saves the OpenWeather key through the registered connector', async ({ page, runWordPressPHP }) => {
+            await page.goto('/wp-admin/admin.php?page=teksttv-settings');
+            // Core ignores the setting over REST unless the connector is registered.
+            await page.evaluate(() =>
+                (window as unknown as { wp: { apiFetch(options: object): Promise<unknown> } }).wp.apiFetch({
+                    path: '/wp/v2/settings',
+                    method: 'POST',
+                    data: { teksttv_openweather_api_key: 'e2e-key' },
+                }),
+            );
+            expect(await runWordPressPHP("echo get_option('teksttv_openweather_api_key');")).toBe('e2e-key');
         });
 
         test('saving settings keeps an enabled taxonomy that is not listed', async ({ page, runWordPressPHP }) => {

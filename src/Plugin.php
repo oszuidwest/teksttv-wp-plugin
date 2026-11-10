@@ -26,5 +26,6 @@ class Plugin
         RssFeed::init();
 
         add_action('admin_print_footer_scripts', [Helpers::class, 'print_underscore_restore'], 99);
+        add_action('wp_connectors_init', [OpenWeatherProvider::class, 'register_connector']);
     }
 }

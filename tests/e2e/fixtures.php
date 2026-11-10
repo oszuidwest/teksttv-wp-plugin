@@ -17,6 +17,7 @@ if (file_exists(WPMU_PLUGIN_DIR . '/rss-clock.php')) {
     unlink(WPMU_PLUGIN_DIR . '/rss-clock.php');
 }
 delete_option('teksttv_test_clock');
+delete_option('teksttv_openweather_api_key');
 
 update_option('teksttv_channels', [['slug' => 'tv1', 'label' => 'TV 1']]);
 
