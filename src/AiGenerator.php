@@ -258,7 +258,7 @@ class AiGenerator
      * Apply identical requirements to probes and generation requests.
      *
      * @param AiConfig $config
-     * @return object
+     * @return \WP_AI_Client_Prompt_Builder
      */
     private static function configure_prompt_builder(string $user_prompt, string $system, array $config)
     {
