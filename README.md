@@ -177,12 +177,31 @@ The e2e suite mounts the **built plugin artifact** (not the raw checkout) into
 a disposable WordPress Playground and checks activation, administrator and
 custom-role settings saves, admin screen rendering, and the `/slides` REST
 shape. [`blueprint.json`](blueprint.json) pins WordPress and PHP, activates and
-validates the artifact, and loads the deterministic fixtures. Locally:
+validates the artifact, and loads the deterministic fixtures. It also turns off
+WordPress background updates. The Playground can reach WordPress.org, and
+without that setting core can update itself to a newer release in the middle of
+a run, which puts the site in maintenance mode for a few seconds. Locally:
 
 ```bash
 bun run build:package
 bun run test:e2e
 ```
+
+The suite runs test files across two workers, each with its own isolated
+Playground and fixtures. Tests within a file run sequentially. To run with one
+worker for debugging or on a machine with limited memory, use
+`bun run test:e2e --workers=1`.
+
+CI splits individual tests across shards on separate runners, with one worker
+per shard to avoid CPU contention between Playground instances. Playwright
+assigns the tests to shards itself, so a new test needs no CI change. The
+`shard` matrix of the `e2e-shard` job in `.github/workflows/ci.yml` is the only
+place that sets the number of shards. Tests within each shard still run
+sequentially against its own fixtures. All shards test the same validated
+plugin ZIP and must pass the combined WordPress smoke check. This trades
+additional runner time for a shorter wait for results. To reproduce a shard
+locally, pass the shard number and the total from the CI job name, for example
+`bun run test:e2e --workers=1 --fully-parallel --shard=1/6`.
 
 For interactive inspection, run `bun run env:start` and sign in with
 `admin` / `password`. Stop the ephemeral server with Ctrl-C. Playground uses
