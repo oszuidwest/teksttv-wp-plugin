@@ -10,7 +10,7 @@ use TekstTV\Helpers;
 final class TaxonomyFilters
 {
     /**
-     * Render one multi-select per enabled taxonomy.
+     * Render one multi-select per taxonomy that is enabled or has a stored filter.
      *
      * @param array<string, mixed> $filters Stored taxonomy_filters (taxonomy => term IDs).
      */
@@ -18,7 +18,8 @@ final class TaxonomyFilters
     {
         $enabled_tax = get_option('teksttv_enabled_taxonomies', ['category']);
         $all_taxonomies = Helpers::get_post_taxonomies();
-        $taxonomies = array_filter($all_taxonomies, fn ($t) => in_array($t['name'], $enabled_tax, true));
+        // A switched-off taxonomy keeps its select while the block still filters on it.
+        $taxonomies = array_filter($all_taxonomies, fn ($t) => in_array($t['name'], $enabled_tax, true) || !empty($filters[$t['name']]));
 
         foreach ($taxonomies as $tax) :
             $selected_terms = array_map('intval', (array) ($filters[$tax['name']] ?? []));

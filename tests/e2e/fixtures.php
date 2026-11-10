@@ -47,6 +47,7 @@ update_option('teksttv_features', [
 ]);
 
 update_option('teksttv_ai_prompts', []);
+update_option('teksttv_enabled_taxonomies', ['category']);
 
 update_option('teksttv_loop_tv1', [
     ['type' => 'articles', 'count' => 1, 'taxonomy_filters' => []],

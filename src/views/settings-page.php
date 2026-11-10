@@ -170,6 +170,13 @@ $render_feature_option = static function (string $value, string $label) use ($fe
                     <?php echo esc_html($tax['label']); ?> <code><?php echo esc_html($tax['name']); ?></code>
                 </label>
                 <?php endforeach; ?>
+                <?php // An enabled taxonomy that is not listed stays ticked, so saving keeps it. ?>
+                <?php foreach (array_diff($enabled_taxonomies, array_column($all_taxonomies, 'name')) as $name) : ?>
+                <label class="teksttv-checkbox-list-item">
+                    <input type="checkbox" name="teksttv_enabled_taxonomies[]" value="<?php echo esc_attr($name); ?>" checked />
+                    <code><?php echo esc_html($name); ?></code> <?php echo esc_html('(niet beschikbaar)'); ?>
+                </label>
+                <?php endforeach; ?>
             </fieldset>
         </div>
 
