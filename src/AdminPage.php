@@ -178,12 +178,6 @@ class AdminPage
             ]);
         }
 
-        register_setting('teksttv_settings', 'teksttv_openweather_api_key', [
-            'type' => 'string',
-            'sanitize_callback' => 'sanitize_text_field',
-            'default' => '',
-        ]);
-
         register_setting('teksttv_settings', 'teksttv_features', [
             'type' => 'array',
             'sanitize_callback' => function ($input) {
