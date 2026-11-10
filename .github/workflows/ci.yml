@@ -99,11 +99,17 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  e2e:
-    name: WordPress smoke (activate + REST + browser)
+  e2e-shard:
+    name: WordPress smoke shard ${{ matrix.shard }}/${{ strategy.job-total }}
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The only place that sets the shard count: strategy.job-total follows
+        # this list. Keep it 1..N without gaps and add no second matrix axis.
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -135,15 +141,26 @@ jobs:
         run: unzip -q "$ZIP" -d release
 
       - name: Install Playwright browser
-        run: bunx playwright install --with-deps chromium
+        run: bunx playwright install --with-deps --only-shell chromium
 
       - name: Run e2e suite in WordPress Playground
-        run: bun run test:e2e
+        run: bun run test:e2e --workers=1 --fully-parallel --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-results-${{ matrix.shard }}
+          path: test-results/
           retention-days: 7
+
+  e2e:
+    name: WordPress smoke (activate + REST + browser)
+    needs: e2e-shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every smoke shard to pass
+        env:
+          RESULT: ${{ needs.e2e-shard.result }}
+        run: test "$RESULT" = success
