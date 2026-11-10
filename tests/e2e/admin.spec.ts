@@ -35,6 +35,18 @@ test.describe('administrator admin screens', () => {
             await expect(page.locator('input[name="teksttv_channels[0][slug]"]')).toHaveValue('tv_one');
         });
 
+        test('saving settings keeps an enabled taxonomy that is not listed', async ({ page, runWordPressPHP }) => {
+            await runWordPressPHP("update_option('teksttv_enabled_taxonomies', ['category', 'regio']);");
+            await page.goto('/wp-admin/admin.php?page=teksttv-settings');
+            await expect(page.getByLabel('regio (niet beschikbaar)')).toBeChecked();
+            const saved = page.waitForResponse((response) => response.url().endsWith('/options.php'));
+            await page.click('#submit');
+            await saved;
+            expect(await runWordPressPHP("echo wp_json_encode(get_option('teksttv_enabled_taxonomies'));")).toBe(
+                '["category","regio"]',
+            );
+        });
+
         test('post editor uses a plain textarea when rich text options are disabled', async ({
             page,
             runWordPressPHP,
