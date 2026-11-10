@@ -8,7 +8,7 @@ The playout in [oszuidwest/teksttv-frontend](https://github.com/oszuidwest/tekst
 
 ## Requirements
 
-- WordPress 7.0 or newer
+- WordPress 7.1 or newer
 - PHP 8.4 or newer
 
 For development from a Git checkout you also need [Composer](https://getcomposer.org/) and [Bun](https://bun.sh/).

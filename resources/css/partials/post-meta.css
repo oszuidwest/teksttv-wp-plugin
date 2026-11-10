@@ -218,7 +218,7 @@
 /* The raw-HTML textarea behind TinyMCE reads as code; the plain editor reads as prose. */
 .teksttv-content-wrap .wp-editor-wrap textarea {
     border-radius: 0 0 var(--teksttv-radius-control) var(--teksttv-radius-control);
-    font-family: var(--wpds-typography-font-family-mono, Consolas, Monaco, monospace);
+    font-family: var(--wpds-typography-font-family-mono);
     font-size: 13px;
 }
 

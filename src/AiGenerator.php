@@ -19,7 +19,7 @@ class AiGenerator
      */
     public static function supports_text_generation(array $config): bool
     {
-        if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
+        if (!wp_supports_ai()) {
             return false;
         }
 
