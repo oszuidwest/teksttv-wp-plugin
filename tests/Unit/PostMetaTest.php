@@ -375,7 +375,7 @@ class PostMetaTest extends TestCase
         Functions\expect('wp_enqueue_style')->once()->with(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
-            [],
+            ['wp-theme'],
             TEKSTTV_VERSION
         );
         Functions\when('wp_script_is')->justReturn(false);
