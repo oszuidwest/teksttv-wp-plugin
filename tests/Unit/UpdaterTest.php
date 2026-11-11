@@ -4,101 +4,62 @@ namespace TekstTV\Tests\Unit;
 
 use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use TekstTV\Updater;
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 class UpdaterTest extends TestCase
 {
-    public function test_release_without_matching_asset_is_not_offered(): void
+    private const FILE = 'teksttv/teksttv.php';
+    private const RELEASE = ['slug' => 'teksttv', 'version' => '9.0.0', 'requires' => '7.1', 'requires_php' => '8.4'];
+
+    public function test_offers_the_latest_release_to_this_plugin_only(): void
     {
-        $api = $this->make_github_api('teksttv.zip');
+        [$update, $details] = $this->filters(self::RELEASE);
 
-        self::callPrivate(Updater::class, 'configure_release_assets', [$api]);
-
-        $this->assertNull($api->getLatestRelease());
+        $this->assertSame(self::RELEASE, $update(false, [], self::FILE));
+        $this->assertSame('theirs', $update('theirs', [], 'other/other.php'));
+        $this->assertEquals((object) self::RELEASE, $details(false, 'plugin_information', (object) self::RELEASE));
+        $this->assertFalse($details(false, 'plugin_information', (object) ['slug' => 'other']));
     }
 
-    public function test_release_with_matching_asset_uses_that_asset(): void
+    #[DataProvider('withheld_releases')]
+    public function test_withholds_a_release_this_site_cannot_run(mixed $release): void
     {
-        $asset_name = 'teksttv-0.0.4.zip';
-        $asset_url = "https://github.com/oszuidwest/teksttv-wp-plugin/releases/download/0.0.4/$asset_name";
-        $api = $this->make_github_api($asset_name);
+        [$update, $details] = $this->filters($release);
 
-        self::callPrivate(Updater::class, 'configure_release_assets', [$api]);
-
-        $release = $api->getLatestRelease();
-        $this->assertNotNull($release);
-        $this->assertSame($asset_url, $release->downloadUrl);
+        $this->assertFalse($update(false, [], self::FILE));
+        $this->assertFalse($details(false, 'plugin_information', (object) self::RELEASE));
     }
 
-    public function test_init_keeps_only_the_release_detection_strategy(): void
+    /** @return array<string, array{mixed}> */
+    public static function withheld_releases(): array
     {
-        // Constants and functions PUC needs to build a real update checker.
-        if (!defined('WP_DEBUG')) {
-            define('WP_DEBUG', false);
-        }
-        if (!defined('WP_PLUGIN_DIR')) {
-            define('WP_PLUGIN_DIR', dirname(__DIR__, 3));
-        }
-        if (!defined('WPMU_PLUGIN_DIR')) {
-            define('WPMU_PLUGIN_DIR', dirname(__DIR__, 3) . '/mu-plugins');
-        }
-        Functions\when('is_admin')->justReturn(true);
-        Functions\when('wp_next_scheduled')->justReturn(1234567890);
-        Functions\when('register_deactivation_hook')->justReturn(null);
-        Functions\when('plugin_basename')->alias(
-            static fn(string $file): string => basename(dirname($file)) . '/' . basename($file)
-        );
-        Functions\when('wp_parse_url')->alias(
-            static fn(string $url, int $component) => parse_url($url, $component)
-        );
-
-        $filter = null;
-        Filters\expectAdded('puc_vcs_update_detection_strategies-teksttv')
-            ->once()
-            ->whenHappen(static function (callable $callback) use (&$filter): void {
-                $filter = $callback;
-            });
-
-        Updater::init(dirname(__DIR__, 2) . '/teksttv.php');
-
-        $this->assertNotNull($filter);
-        $release_strategy = static fn(): string => 'release';
-        $filtered = $filter([
-            'latest_release' => $release_strategy,
-            'latest_tag' => static fn(): string => 'tag',
-            'branch' => static fn(): string => 'branch',
-        ]);
-        $this->assertSame(['latest_release' => $release_strategy], $filtered);
+        return [
+            'newer WordPress' => [['requires' => '7.2'] + self::RELEASE],
+            'newer PHP' => [['requires_php' => '8.5'] + self::RELEASE],
+            'no version' => [array_diff_key(self::RELEASE, ['version' => 0])],
+            'no WordPress minimum' => [array_diff_key(self::RELEASE, ['requires' => 0])],
+            'no PHP minimum' => [array_diff_key(self::RELEASE, ['requires_php' => 0])],
+        ];
     }
 
-    private function make_github_api(string $asset_name): object
+    /** @return list<callable> The update and the details callback. */
+    private function filters(mixed $release): array
     {
-        Functions\when('wp_parse_url')->alias(
-            static fn(string $url, int $component) => parse_url($url, $component)
-        );
-        Functions\when('is_wp_error')->justReturn(false);
-        Functions\when('wp_doing_cron')->justReturn(false);
-        Functions\when('wp_remote_retrieve_response_code')->justReturn(200);
-        Functions\when('wp_remote_retrieve_body')->justReturn(json_encode([
-            'tag_name' => '0.0.4',
-            'zipball_url' => 'https://api.github.com/repos/oszuidwest/teksttv-wp-plugin/zipball/0.0.4',
-            'created_at' => '2026-07-29T00:00:00Z',
-            'draft' => false,
-            'prerelease' => false,
-            'assets' => [
-                [
-                    'name' => $asset_name,
-                    'url' => 'https://api.github.com/repos/oszuidwest/teksttv-wp-plugin/releases/assets/1',
-                    'browser_download_url' => "https://github.com/oszuidwest/teksttv-wp-plugin/releases/download/0.0.4/$asset_name",
-                    'download_count' => 0,
-                ],
-            ],
-            'body' => '',
-        ], JSON_THROW_ON_ERROR));
+        Functions\when('plugin_basename')->justReturn(self::FILE);
         Functions\when('wp_remote_get')->justReturn([]);
+        Functions\when('wp_remote_retrieve_body')->justReturn(json_encode($release));
+        Functions\when('is_wp_version_compatible')->alias(static fn(string $v): bool => version_compare('7.1', $v, '>='));
+        Functions\when('is_php_version_compatible')->alias(static fn(string $v): bool => version_compare('8.4', $v, '>='));
 
-        $api_class = PucFactory::getLatestClassVersion('GitHubApi');
-        return new $api_class('https://github.com/oszuidwest/teksttv-wp-plugin/');
+        $filters = [];
+        foreach (['update_plugins_github.com', 'plugins_api'] as $hook) {
+            Filters\expectAdded($hook)->once()->with(\Mockery::any(), 10, 3)->whenHappen(static function (callable $callback) use (&$filters): void {
+                $filters[] = $callback;
+            });
+        }
+        Updater::init('/plugins/' . self::FILE);
+
+        return $filters;
     }
 }

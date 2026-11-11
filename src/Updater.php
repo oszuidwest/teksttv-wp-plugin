@@ -2,53 +2,45 @@
 
 namespace TekstTV;
 
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-
 /**
- * Update the plugin from GitHub Releases.
+ * Update the plugin from GitHub Releases through core's Update URI support.
  */
 class Updater
 {
-    private const REPO_URL = 'https://github.com/oszuidwest/teksttv-wp-plugin/';
-    private const SLUG = 'teksttv';
+    private const MANIFEST_URL = 'https://github.com/oszuidwest/teksttv-wp-plugin/releases/latest/download/teksttv.json';
 
     public static function init(string $plugin_file): void
     {
-        // Update checks only run in admin, cron, and WP-CLI contexts.
-        if (!is_admin() && !wp_doing_cron() && !(defined('WP_CLI') && WP_CLI)) {
-            return;
-        }
+        $plugin = plugin_basename($plugin_file);
 
-        if (!class_exists(PucFactory::class)) {
-            return;
-        }
-
-        $checker = PucFactory::buildUpdateChecker(
-            self::REPO_URL,
-            $plugin_file,
-            self::SLUG
+        // Every plugin with a github.com Update URI shares this hook.
+        add_filter(
+            'update_plugins_github.com',
+            static fn($update, $data, $file) => $file === $plugin ? self::release() : $update,
+            10,
+            3
         );
 
-        $api = $checker->getVcsApi();
-        self::configure_release_assets($api);
-
-        // Never fall back to source archives when a release asset is absent.
-        $checker->addFilter(
-            'vcs_update_detection_strategies',
-            static fn(array $strategies): array => array_intersect_key(
-                $strategies,
-                [$api::STRATEGY_LATEST_RELEASE => true]
-            )
+        // Without this the details popup asks WordPress.org about the slug.
+        add_filter(
+            'plugins_api',
+            static fn($result, $action, $args) =>
+                ($args->slug ?? '') === 'teksttv' && ($release = self::release()) ? (object) $release : $result,
+            10,
+            3
         );
     }
 
-    private static function configure_release_assets(object $api): void
+    /**
+     * @return array<string, mixed>|false The latest release, unless this site is too old for it.
+     */
+    private static function release(): array|false
     {
-        if (method_exists($api, 'enableReleaseAssets')) {
-            $api->enableReleaseAssets(
-                '/^' . self::SLUG . '-[0-9].*\.zip$/',
-                $api::REQUIRE_RELEASE_ASSETS
-            );
-        }
+        $release = json_decode(wp_remote_retrieve_body(wp_remote_get(self::MANIFEST_URL)), true);
+
+        // Core checks these minimums on some upgrade paths only.
+        return isset($release['version'], $release['requires'], $release['requires_php'])
+            && is_wp_version_compatible($release['requires'])
+            && is_php_version_compatible($release['requires_php']) ? $release : false;
     }
 }
