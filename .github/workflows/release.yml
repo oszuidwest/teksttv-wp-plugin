@@ -92,9 +92,22 @@ jobs:
               "this run built $GITHUB_SHA."
             exit 1
           fi
+          # Core reads this through the plugin's Update URI header.
+          header() { sed -En "s/^ \* $1: ([0-9.]+)\$/\1/p" teksttv.php; }
+          WP="$(header 'Requires at least')" PHP="$(header 'Requires PHP')"
+          # Core takes an empty minimum to mean every site is compatible.
+          : "${WP:?no Requires at least header}" "${PHP:?no Requires PHP header}"
+          jq -n --arg v "$VERSION" --arg wp "$WP" --arg php "$PHP" \
+            --arg r "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases" '{
+              name: "TekstTV", slug: "teksttv", version: $v,
+              requires: $wp, requires_php: $php,
+              package: "\($r)/download/\($v)/teksttv-\($v).zip",
+              sections: {changelog: "<a href=\"\($r)/tag/\($v)\">Release notes</a>"}
+            } | .download_link = .package' > teksttv.json
           ARGS=(
             "$VERSION"
             "$ZIP"
+            teksttv.json
             --verify-tag
             --title "$VERSION"
             --generate-notes

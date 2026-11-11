@@ -56,10 +56,6 @@ fi
 PACKAGE_DIR_ENV="$PACKAGE_DIR" php -r '
     $packageDir = getenv("PACKAGE_DIR_ENV");
     require $packageDir . "/vendor/autoload.php";
-    if (!class_exists("YahnisElsts\\PluginUpdateChecker\\v5\\PucFactory")) {
-        fwrite(STDERR, "Production updater dependency is not autoloadable.\n");
-        exit(1);
-    }
     $installed = require $packageDir . "/vendor/composer/installed.php";
     foreach ($installed["versions"] ?? [] as $name => $package) {
         if (($package["dev_requirement"] ?? false) === true) {

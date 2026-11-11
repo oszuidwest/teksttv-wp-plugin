@@ -48,6 +48,22 @@ test.describe('administrator admin screens', () => {
             expect(await runWordPressPHP("echo get_option('teksttv_openweather_api_key');")).toBe('e2e-key');
         });
 
+        test('core offers a newer release through the Update URI header', async ({ runWordPressPHP }) => {
+            const zip = 'https://example.test/teksttv.zip';
+            const offered = await runWordPressPHP(`
+                add_filter('pre_http_request', static fn($pre, $args, $url) => [
+                    'response' => ['code' => 200],
+                    'body' => str_ends_with($url, '/releases/latest/download/teksttv.json')
+                        ? '{"slug":"teksttv","version":"99.0.0","requires":"7.0","requires_php":"8.4","package":"${zip}"}'
+                        : '{"plugins":[],"translations":[],"no_update":[]}',
+                ], 10, 3);
+                delete_site_transient('update_plugins');
+                wp_update_plugins();
+                echo wp_json_encode(get_site_transient('update_plugins')->response['teksttv/teksttv.php']);
+            `);
+            expect(JSON.parse(offered)).toMatchObject({ slug: 'teksttv', new_version: '99.0.0', package: zip });
+        });
+
         test('saving settings keeps an enabled taxonomy that is not listed', async ({ page, runWordPressPHP }) => {
             await runWordPressPHP("update_option('teksttv_enabled_taxonomies', ['category', 'regio']);");
             await page.goto('/wp-admin/admin.php?page=teksttv-settings');

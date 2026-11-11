@@ -6,6 +6,7 @@
  * Author: Streekomroep ZuidWest
  * Author URI: https://www.zuidwesttv.nl/
  * Plugin URI: https://github.com/oszuidwest/teksttv-wp-plugin
+ * Update URI: https://github.com/oszuidwest/teksttv-wp-plugin
  * License: GPL-2.0-or-later
  * Requires at least: 7.0
  * Requires PHP: 8.4
