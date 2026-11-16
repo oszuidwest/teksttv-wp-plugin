@@ -342,7 +342,7 @@ class Helpers
      */
     public static function get_ai_models(): array
     {
-        if (!function_exists('wp_supports_ai') || !wp_supports_ai()) {
+        if (!wp_supports_ai()) {
             return [];
         }
 
@@ -614,7 +614,7 @@ class Helpers
         wp_enqueue_style(
             'teksttv-admin',
             TEKSTTV_PLUGIN_URL . 'assets/admin.css',
-            [],
+            ['wp-theme'],
             TEKSTTV_VERSION
         );
 
