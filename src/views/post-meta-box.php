@@ -178,7 +178,7 @@ $channel_options = [...$channels, ...array_map(static fn(string $slug): array =>
                     }
                     $sidebar_image_id = $active_state === 'default' ? '' : (string) ($override_id ?? 0);
                     $custom_url = $override_id ? wp_get_attachment_image_url($override_id, 'medium') : '';
-                    $fallback_url = ArticleContent::thumbnail_id($post->ID) ? get_the_post_thumbnail_url($post->ID, 'medium') : '';
+                    $fallback_url = ArticleContent::default_sidebar_image_data($post->ID)['url'] ?? '';
                     ?>
                     <input type="hidden" name="teksttv_sidebar_image" id="teksttv-sidebar-image-id" value="<?php echo esc_attr($sidebar_image_id); ?>" />
                     <div class="teksttv-image-cards" data-active="<?php echo esc_attr($active_state); ?>" role="group" aria-label="<?php echo esc_attr('Sidebarafbeelding kiezen'); ?>">

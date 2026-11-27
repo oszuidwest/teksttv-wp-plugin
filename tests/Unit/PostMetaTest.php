@@ -250,6 +250,17 @@ class PostMetaTest extends TestCase
         PostMeta::enqueue_assets('post-new.php');
     }
 
+    public function test_enqueue_assets_drops_a_default_image_with_an_empty_filtered_url(): void
+    {
+        $this->stubSuccessfulAssetEnqueue(['sidebar_image'], true);
+        Functions\when('get_post_thumbnail_id')->justReturn(7);
+        Functions\when('wp_get_attachment_image_url')->justReturn('https://example.com/7.jpg');
+        Functions\when('wp_get_attachment_caption')->justReturn('');
+        Filters\expectApplied('teksttv_image_url')->andReturn('');
+
+        PostMeta::enqueue_assets('post-new.php');
+    }
+
     public function test_enqueue_assets_ignores_corrupt_preview_image_ids(): void
     {
         $this->stubSuccessfulAssetEnqueue(['sidebar_image'], true);
@@ -384,6 +395,8 @@ class PostMetaTest extends TestCase
             $post = self::makePost();
             $post->post_date = '0000-00-00 00:00:00';
             Functions\when('get_post_thumbnail_id')->justReturn(0);
+            Functions\when('get_post_type')->justReturn('post');
+            Functions\when('is_object_in_taxonomy')->justReturn(false);
             Functions\when('get_post_meta')->justReturn('');
             Functions\when('get_post')->justReturn($post);
             Functions\when('current_time')->justReturn('2026-08-04');
@@ -412,7 +425,8 @@ class PostMetaTest extends TestCase
                     && $config['pageSeparator'] === $page_separator
                     && $config['aiSupported'] === in_array('ai_generate', $features, true)
                     && $config['regionRestBase'] === 'regio'
-                    && (!$auto_draft || $config['fallbackTitle'] === '');
+                    && (!$auto_draft || $config['fallbackTitle'] === '')
+                    && (!$auto_draft || $config['fallbackImage'] === '');
             }),
             'before'
         );

@@ -113,7 +113,7 @@ class PostMeta
         $fallback_image = null;
         $custom_image = null;
         if ($post_id) {
-            $fallback_image = ArticleContent::image_data(ArticleContent::thumbnail_id($post_id), 'text_sidebar');
+            $fallback_image = ArticleContent::default_sidebar_image_data($post_id);
             $custom_image = ArticleContent::image_data(ArticleContent::sidebar_override($post_id), 'text_sidebar');
         }
 
@@ -127,7 +127,10 @@ class PostMeta
             'previewUrl' => $preview_url,
             'imageDataUrl' => rest_url('teksttv/v1/image-data'),
             'defaultEndDays' => self::default_end_days(),
-            'fallbackImage' => $fallback_image ?: '',
+            // Playout drops a default image whose filtered URL is empty, so the preview does too.
+            'fallbackImage' => !empty($fallback_image['url']) ? $fallback_image : '',
+            // A category image wins over the featured image, as in playout.
+            'fallbackIsCategoryImage' => $post_id && ArticleContent::category_image_data($post_id),
             'customImage' => $custom_image ?: '',
             'generateUrl' => rest_url('teksttv/v1/generate'),
             'aiSupported' => $ai_supported,
