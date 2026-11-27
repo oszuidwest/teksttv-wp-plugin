@@ -31,6 +31,8 @@ export async function fetchSidebarImageData(config: TeksttvPostConfig, id: strin
 
 /** Keep the default sidebar image in step with the featured image set in the block editor. */
 export function followFeaturedImage(config: TeksttvPostConfig, refreshPreview: () => void): void {
+    // Playout prefers the category image, so the featured image changes nothing.
+    if (config.fallbackIsCategoryImage) return;
     let latestRequest = 0;
     watchFeaturedImage(async (id) => {
         const request = ++latestRequest;

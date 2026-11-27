@@ -19,6 +19,8 @@ class PostMetaViewTest extends TestCase
             fn ($key, $default = false) => $key === 'teksttv_features' ? $features : $default
         );
         Functions\stubEscapeFunctions();
+        Functions\when('get_post_type')->justReturn('post');
+        Functions\when('is_object_in_taxonomy')->justReturn(false);
     }
 
     /**
@@ -101,12 +103,12 @@ class PostMetaViewTest extends TestCase
         $meta['_teksttv_days'] = [1, 3];
         $meta['_thumbnail_id'] = '7';
         Functions\when('get_post_thumbnail_id')->justReturn(7);
-        Functions\when('get_the_post_thumbnail_url')->justReturn('https://cdn.example.com/7.jpg');
+        Functions\when('wp_get_attachment_caption')->justReturn('');
         ob_start();
         PostMeta::render_meta_box(self::makePost());
         $view = (string) ob_get_clean();
         $this->assertStringNotContainsString('De opgeslagen planning is ongeldig', $view);
-        $this->assertStringContainsString('https://cdn.example.com/7.jpg', $view);
+        $this->assertStringContainsString('https://example.com/7.jpg', $view);
 
         $meta['_teksttv_days'] = ['99'];
         ob_start();

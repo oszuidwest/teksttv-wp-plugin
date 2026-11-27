@@ -186,14 +186,29 @@ final class ArticleContent
             }
         }
 
+        return self::default_sidebar_image_data($post_id);
+    }
+
+    /**
+     * The sidebar image without an override: primary category, categories, featured image.
+     *
+     * @return array<string, string>|null
+     */
+    public static function default_sidebar_image_data(int $post_id): ?array
+    {
+        return self::category_image_data($post_id) ?? self::image_data(self::thumbnail_id($post_id), 'text_sidebar');
+    }
+
+    /** @return array<string, string>|null The first category image, primary category first. */
+    public static function category_image_data(int $post_id): ?array
+    {
         foreach (self::category_ids($post_id) as $term_id) {
             $data = self::image_data(get_term_meta($term_id, CategoryMeta::META_KEY, true), 'text_sidebar');
             if ($data) {
                 return $data;
             }
         }
-
-        return self::image_data(self::thumbnail_id($post_id), 'text_sidebar');
+        return null;
     }
 
     /** Null suppresses the sidebar image, 0 uses the fallback chain, otherwise an attachment ID. */

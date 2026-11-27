@@ -26,6 +26,7 @@ export interface TeksttvPostConfig {
     imageDataUrl: string;
     defaultEndDays: number;
     fallbackImage: ImageData | '';
+    fallbackIsCategoryImage: boolean;
     customImage: ImageData | '';
     generateUrl: string;
     aiSupported: boolean;

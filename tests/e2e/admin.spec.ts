@@ -1,10 +1,25 @@
 import { getBrowserErrors, openFixturePostEditor, showGutenbergMetaBoxes } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
-import { expect, test } from './test';
+import { expect, type Page, test } from './test';
 
 test.afterEach(async ({ page }) => {
     expect(await getBrowserErrors(page)).toEqual([]);
 });
+
+async function previewImage(page: Page): Promise<string | null> {
+    const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
+    const data = new URL(src, 'http://localhost').searchParams.get('data');
+    return data ? (JSON.parse(Buffer.from(data, 'base64').toString('utf8')).image?.url ?? null) : null;
+}
+
+function setFeaturedImage(page: Page, id: number): Promise<void> {
+    return page.evaluate((value) => {
+        const browser = window as unknown as {
+            wp: { data: { dispatch(store: string): { editPost(values: Record<string, number>): void } } };
+        };
+        browser.wp.data.dispatch('core/editor').editPost({ featured_media: value });
+    }, id);
+}
 
 test.describe('administrator admin screens', () => {
     test('settings page renders core controls', async ({ page }) => {
@@ -391,25 +406,39 @@ test.describe('administrator admin screens', () => {
         const attachmentId = Number(
             await page.locator('#teksttv-images-list .teksttv-image-item').getAttribute('data-id'),
         );
-        const previewImage = async () => {
-            const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
-            const data = new URL(src, 'http://localhost').searchParams.get('data');
-            return data ? (JSON.parse(Buffer.from(data, 'base64').toString('utf8')).image?.url ?? null) : null;
-        };
-        const setFeaturedImage = (id: number) =>
-            page.evaluate((value) => {
-                const browser = window as unknown as {
-                    wp: { data: { dispatch(store: string): { editPost(values: Record<string, number>): void } } };
-                };
-                browser.wp.data.dispatch('core/editor').editPost({ featured_media: value });
-            }, id);
 
-        await setFeaturedImage(attachmentId);
-        await expect.poll(previewImage).toMatch(/\.(jpe?g|png)$/);
+        await setFeaturedImage(page, attachmentId);
+        await expect.poll(() => previewImage(page)).toMatch(/\.(jpe?g|png)$/);
         await expect(page.locator('#teksttv-sidebar-default-img')).toBeVisible();
 
-        await setFeaturedImage(0);
-        await expect.poll(previewImage).toBeNull();
+        await setFeaturedImage(page, 0);
+        await expect.poll(() => previewImage(page)).toBeNull();
+    });
+
+    test.describe('category image', () => {
+        test.afterEach(({ runWordPressPHP }) =>
+            runWordPressPHP("delete_metadata('term', 0, \\TekstTV\\CategoryMeta::META_KEY, '', true);"),
+        );
+
+        test('preview default shows the category image that playout uses', async ({ page, runWordPressPHP }) => {
+            const [imageId, url] = JSON.parse(
+                await runWordPressPHP(`
+                    $post = get_page_by_path('teksttv-smoke-post', OBJECT, 'post');
+                    $image = get_posts(['post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => '_teksttv_e2e_fixture', 'fields' => 'ids'])[0];
+                    update_term_meta(wp_get_post_categories($post->ID)[0], \\TekstTV\\CategoryMeta::META_KEY, $image);
+                    echo wp_json_encode([$image, \\TekstTV\\ArticleContent::get_sidebar_image_data($post->ID)['url']]);
+                `),
+            );
+            await openFixturePostEditor(page);
+            const card = page.locator('#teksttv-sidebar-default-img');
+            await expect.poll(() => previewImage(page)).toBe(url);
+            await expect(card).toHaveAttribute('src', url);
+
+            // Removing the featured image does not drop the category image.
+            await setFeaturedImage(page, imageId);
+            await setFeaturedImage(page, 0);
+            await expect(card).toHaveAttribute('src', url);
+        });
     });
 
     test.describe('new post', () => {

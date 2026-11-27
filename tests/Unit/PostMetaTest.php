@@ -384,6 +384,8 @@ class PostMetaTest extends TestCase
             $post = self::makePost();
             $post->post_date = '0000-00-00 00:00:00';
             Functions\when('get_post_thumbnail_id')->justReturn(0);
+            Functions\when('get_post_type')->justReturn('post');
+            Functions\when('is_object_in_taxonomy')->justReturn(false);
             Functions\when('get_post_meta')->justReturn('');
             Functions\when('get_post')->justReturn($post);
             Functions\when('current_time')->justReturn('2026-08-04');
