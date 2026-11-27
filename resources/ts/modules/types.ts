@@ -24,7 +24,7 @@ export type Slide = TextSlide | ImageSlide;
 export interface TeksttvPostConfig {
     previewUrl: string;
     imageDataUrl: string;
-    defaultEndDate: string;
+    defaultEndDays: number;
     fallbackImage: ImageData | '';
     customImage: ImageData | '';
     generateUrl: string;
