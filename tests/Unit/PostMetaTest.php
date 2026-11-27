@@ -394,6 +394,8 @@ class PostMetaTest extends TestCase
             return $name === 'teksttv_features' ? $features : $default;
         });
         Functions\when('rest_url')->returnArg();
+        // Without its own rest_base, Gutenberg keys the terms by the taxonomy name.
+        Functions\when('get_taxonomy')->justReturn((object) ['name' => 'regio', 'rest_base' => false, 'show_in_rest' => true]);
         Functions\when('wp_json_encode')->alias('json_encode');
         // Model discovery is remote; generation requests check support instead.
         Functions\expect('wp_ai_client_prompt')->never();
@@ -409,6 +411,7 @@ class PostMetaTest extends TestCase
                 return is_array($config)
                     && $config['pageSeparator'] === $page_separator
                     && $config['aiSupported'] === in_array('ai_generate', $features, true)
+                    && $config['regionRestBase'] === 'regio'
                     && (!$auto_draft || $config['fallbackTitle'] === '');
             }),
             'before'

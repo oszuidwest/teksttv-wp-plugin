@@ -391,7 +391,14 @@ test.describe('administrator admin screens', () => {
 
         test('AI generation is offered and sends the latest unsaved state after saving a new Gutenberg post without a reload', async ({
             page,
+            runWordPressPHP,
         }) => {
+            const regionTermId = Number(
+                await runWordPressPHP(`
+                    update_option('teksttv_ai_prompts', ['region_taxonomy' => 'category']);
+                    echo (term_exists('E2E Regio', 'category') ?: wp_insert_term('E2E Regio', 'category'))['term_id'];
+                `),
+            );
             await page.goto('/wp-admin/post-new.php');
             await showGutenbergMetaBoxes(page);
 
@@ -404,12 +411,12 @@ test.describe('administrator admin screens', () => {
                 }),
             );
 
-            await page.evaluate(async () => {
+            await page.evaluate(async (categoryId) => {
                 const browser = window as unknown as {
                     wp: {
                         data: {
                             dispatch(store: string): {
-                                editPost(values: Record<string, string>): void;
+                                editPost(values: Record<string, unknown>): void;
                                 savePost(): Promise<void>;
                             };
                         };
@@ -421,8 +428,9 @@ test.describe('administrator admin screens', () => {
                 editor.editPost({
                     title: 'Onopgeslagen E2E titel',
                     content: '<p>Onopgeslagen E2E artikeltekst</p>',
+                    categories: [categoryId],
                 });
-            });
+            }, regionTermId);
 
             // Switching TekstTV on after the save offers to generate.
             const offer = page.waitForEvent('dialog');
@@ -437,6 +445,7 @@ test.describe('administrator admin screens', () => {
             expect(request.postDataJSON()).toMatchObject({
                 source_title: 'Onopgeslagen E2E titel',
                 source_content: '<p>Onopgeslagen E2E artikeltekst</p>',
+                region_terms: [regionTermId],
             });
         });
     });

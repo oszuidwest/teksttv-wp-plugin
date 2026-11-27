@@ -78,6 +78,10 @@ export function requestAiGeneration(
         return;
     }
 
+    // Without a region field in the editor the server uses the saved terms.
+    const regionTerms =
+        config.regionRestBase && wp.data?.select('core/editor')?.getEditedPostAttribute(config.regionRestBase);
+
     const originalChildren = [...btn.childNodes];
     let msgIndex = 0;
     const loadingLabel = document.createTextNode('');
@@ -111,6 +115,7 @@ export function requestAiGeneration(
             has_photo: hasPhoto,
             source_title: editorState.title,
             source_content: editorState.content,
+            ...(Array.isArray(regionTerms) && { region_terms: regionTerms }),
         },
     })
         .then((data) => {

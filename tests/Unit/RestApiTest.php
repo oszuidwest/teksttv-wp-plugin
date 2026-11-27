@@ -342,6 +342,27 @@ class RestApiTest extends TestCase
         $this->assertArrayNotHasKey('warning', $without_photo->get_data());
     }
 
+    public function test_generate_content_prefixes_the_unsaved_region(): void
+    {
+        self::stubHappyPath(['teksttv_ai_prompts' => ['min_input_words' => 0, 'region_taxonomy' => 'regio']]);
+        Functions\when('wpautop')->alias(fn ($text) => '<p>' . $text . '</p>');
+        Functions\when('update_post_meta')->justReturn(true);
+        Functions\when('esc_html')->returnArg();
+        Functions\when('taxonomy_exists')->justReturn(true);
+        Functions\when('get_taxonomy')->justReturn((object) ['show_in_rest' => true, 'cap' => (object) ['assign_terms' => 'assign_regio']]);
+        Functions\when('wp_ai_client_prompt')->justReturn(self::mockAiBuilder('Tekst'));
+        Functions\expect('get_terms')
+            ->once()
+            ->with(['taxonomy' => 'regio', 'include' => [3], 'fields' => 'names', 'hide_empty' => false])
+            ->andReturn(['Delft']);
+
+        $response = RestApi::generate_content(
+            self::requestMock(['post_id' => 42, 'field' => 'body', 'region_terms' => [3]])
+        );
+
+        $this->assertSame('DELFT - Tekst.', $response->get_data()['content']);
+    }
+
     /** @return iterable<string, array{list<string>, bool}> */
     public static function imageDataGrants(): iterable
     {

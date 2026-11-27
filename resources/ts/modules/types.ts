@@ -34,6 +34,7 @@ export interface TeksttvPostConfig {
     titleCharLimit: number;
     wordLimit: number;
     wordLimitPhoto: number;
+    regionRestBase: string;
     pageSeparator: boolean;
 }
 
@@ -91,7 +92,7 @@ interface WPGlobal {
     apiFetch<T>(options: { url: string; method?: 'GET' | 'POST'; data?: Record<string, unknown> }): Promise<T>;
     data?: {
         select(store: 'core/editor'): {
-            getEditedPostAttribute(attribute: 'title' | 'content'): unknown;
+            getEditedPostAttribute(attribute: string): unknown;
             isEditedPostNew(): boolean;
         } | null;
         subscribe(listener: () => void): () => void;
