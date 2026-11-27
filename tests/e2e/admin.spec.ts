@@ -416,15 +416,13 @@ test.describe('administrator admin screens', () => {
     });
 
     test.describe('category image', () => {
-        test.afterEach(({ runWordPressPHP }) =>
-            runWordPressPHP("delete_metadata('term', 0, \\TekstTV\\CategoryMeta::META_KEY, '', true);"),
-        );
+        test.afterEach(reseedFixtures);
 
         test('preview default shows the category image that playout uses', async ({ page, runWordPressPHP }) => {
             const [imageId, url] = JSON.parse(
                 await runWordPressPHP(`
                     $post = get_page_by_path('teksttv-smoke-post', OBJECT, 'post');
-                    $image = get_posts(['post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => '_teksttv_e2e_fixture', 'fields' => 'ids'])[0];
+                    $image = get_post_meta($post->ID, '_teksttv_images', true)[0];
                     update_term_meta(wp_get_post_categories($post->ID)[0], \\TekstTV\\CategoryMeta::META_KEY, $image);
                     echo wp_json_encode([$image, \\TekstTV\\ArticleContent::get_sidebar_image_data($post->ID)['url']]);
                 `),

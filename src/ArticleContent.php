@@ -191,6 +191,7 @@ final class ArticleContent
 
     /**
      * The sidebar image without an override: primary category, categories, featured image.
+     * An empty filtered URL stops the fallback; callers must check `url`.
      *
      * @return array<string, string>|null
      */
@@ -199,7 +200,7 @@ final class ArticleContent
         return self::category_image_data($post_id) ?? self::image_data(self::thumbnail_id($post_id), 'text_sidebar');
     }
 
-    /** @return array<string, string>|null The first category image, primary category first. */
+    /** @return array<string, string>|null The first category image, primary category first; may have an empty filtered `url`. */
     public static function category_image_data(int $post_id): ?array
     {
         foreach (self::category_ids($post_id) as $term_id) {

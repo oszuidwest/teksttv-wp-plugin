@@ -252,6 +252,9 @@ for ($teksttv_i = 1; $teksttv_i <= 10; $teksttv_i++) {
     ], $teksttv_filler_meta);
 }
 
+// Category images change the default sidebar image of every post in that category.
+delete_metadata('term', 0, \TekstTV\CategoryMeta::META_KEY, '', true);
+
 // Remove unseeded posts so admin order and slide feeds stay deterministic.
 $teksttv_all_post_ids = get_posts([
     'post_type' => 'post',
