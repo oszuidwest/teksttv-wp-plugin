@@ -312,6 +312,29 @@ class AiGeneratorTest extends TestCase
         $this->assertSame('DEN HAAG / LEIDEN', $result);
     }
 
+    public function test_get_region_prefix_is_empty_for_an_empty_term_list(): void
+    {
+        Functions\expect('taxonomy_exists')->andReturn(true);
+        Functions\when('get_taxonomy')->justReturn((object) ['show_in_rest' => true, 'cap' => (object) ['assign_terms' => 'assign_regio']]);
+        Functions\when('current_user_can')->justReturn(true);
+        Functions\expect('wp_get_post_terms')->never();
+        Functions\expect('get_terms')->never();
+
+        $this->assertSame('', AiGenerator::get_region_prefix(1, 'regio', []));
+    }
+
+    public function test_get_region_prefix_ignores_unsaved_terms_the_user_cannot_assign(): void
+    {
+        Functions\expect('taxonomy_exists')->andReturn(true);
+        Functions\when('get_taxonomy')->justReturn((object) ['show_in_rest' => true, 'cap' => (object) ['assign_terms' => 'assign_regio']]);
+        Functions\expect('current_user_can')->once()->with('assign_regio')->andReturn(false);
+        Functions\expect('get_terms')->never();
+        Functions\expect('wp_get_post_terms')->once()->andReturn(['Leiden']);
+        Functions\expect('is_wp_error')->andReturn(false);
+
+        $this->assertSame('LEIDEN', AiGenerator::get_region_prefix(1, 'regio', [3]));
+    }
+
     public function test_get_region_prefix_returns_empty_when_no_terms(): void
     {
         Functions\expect('taxonomy_exists')->andReturn(true);

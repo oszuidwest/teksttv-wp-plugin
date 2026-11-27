@@ -82,9 +82,10 @@ class AiGenerator
      *
      * @param string $field 'title', 'body', or 'both'.
      * @param AiConfig $config Config from Helpers::get_ai_prompts().
+     * @param list<int>|null $region_term_ids Region term IDs from the editor (may be unsaved); null uses the saved terms.
      * @return array{fields: array<string, string>, warning: string}|\WP_Error
      */
-    public static function generate_for_post(\WP_Post $post, string $field, array $config, bool $has_photo = false)
+    public static function generate_for_post(\WP_Post $post, string $field, array $config, bool $has_photo = false, ?array $region_term_ids = null)
     {
         if (!in_array($field, ['title', 'body', 'both'], true)) {
             return new \WP_Error(
@@ -140,7 +141,7 @@ class AiGenerator
         }
 
         if (isset($fields['body'])) {
-            $region_prefix = self::get_region_prefix($post->ID, $config['region_taxonomy']);
+            $region_prefix = self::get_region_prefix($post->ID, $config['region_taxonomy'], $region_term_ids);
             if (!empty($region_prefix)) {
                 $fields['body'] = '<p>' . esc_html($region_prefix) . ' - ' . ltrim(preg_replace('/^<p>/', '', $fields['body']));
             }
@@ -333,9 +334,13 @@ class AiGenerator
     }
 
     /**
-     * Build a region prefix from the post's terms in the configured taxonomy.
+     * Build a region prefix from region terms in the configured taxonomy: the given term IDs,
+     * or the post's saved terms when $term_ids is null or the user cannot assign them.
+     * An empty list from a user who can assign them gives no prefix.
+     *
+     * @param list<int>|null $term_ids Region term IDs from the editor (may be unsaved); null reads the saved terms.
      */
-    public static function get_region_prefix(int $post_id, string $taxonomy): string
+    public static function get_region_prefix(int $post_id, string $taxonomy, ?array $term_ids = null): string
     {
         if (empty($taxonomy)) {
             return '';
@@ -348,7 +353,23 @@ class AiGenerator
             return '';
         }
 
-        $terms = wp_get_post_terms($post_id, $taxonomy, ['fields' => 'names']);
+        $tax = $term_ids === null ? null : get_taxonomy($taxonomy);
+        if ($tax && !($tax->show_in_rest && current_user_can($tax->cap->assign_terms))) {
+            // Trust only IDs the editor could set in Gutenberg; otherwise use the saved terms.
+            $term_ids = null;
+        }
+
+        if ($term_ids === []) {
+            // An empty include would match every term.
+            return '';
+        }
+
+        if ($term_ids === null) {
+            $terms = wp_get_post_terms($post_id, $taxonomy, ['fields' => 'names']);
+        } else {
+            // The taxonomy filter drops IDs from other taxonomies and deleted terms; a new term has count 0.
+            $terms = get_terms(['taxonomy' => $taxonomy, 'include' => $term_ids, 'fields' => 'names', 'hide_empty' => false]);
+        }
         if (is_wp_error($terms)) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log(sprintf('TekstTV region prefix: term lookup failed for post %d: %s', $post_id, $terms->get_error_message()));

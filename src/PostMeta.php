@@ -118,6 +118,7 @@ class PostMeta
         }
 
         $prompts = Helpers::get_ai_prompts();
+        $region_taxonomy = get_taxonomy($prompts['region_taxonomy']);
         $ai_supported = self::ai_enabled_for((string) $screen->post_type);
         $is_new_post = !$post_id || get_post_status($post_id) === 'auto-draft';
         $fallback_title = $is_new_post ? '' : get_the_title($post_id);
@@ -135,6 +136,8 @@ class PostMeta
             'titleCharLimit' => $prompts['title_char_limit'],
             'wordLimit' => $prompts['word_limit'],
             'wordLimitPhoto' => $prompts['word_limit_photo'],
+            // The block editor keys post terms by the taxonomy's REST base.
+            'regionRestBase' => $region_taxonomy && $region_taxonomy->show_in_rest ? ($region_taxonomy->rest_base ?: $region_taxonomy->name) : '',
             'pageSeparator' => $page_separator,
         ];
         wp_add_inline_script('teksttv-admin', 'var teksttvPost = ' . wp_json_encode($config) . ';', 'before');

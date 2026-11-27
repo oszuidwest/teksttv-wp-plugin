@@ -75,6 +75,12 @@ class RestApi
                     'required' => true,
                     'type' => 'string',
                 ],
+                'region_terms' => [
+                    'required' => false,
+                    'type' => 'array',
+                    'items' => ['type' => 'integer', 'minimum' => 1],
+                    'maxItems' => 100,
+                ],
             ],
         ]);
 
@@ -181,7 +187,8 @@ class RestApi
             $source_post,
             $field,
             Helpers::get_ai_prompts(),
-            (bool) $request->get_param('has_photo')
+            (bool) $request->get_param('has_photo'),
+            $request->get_param('region_terms')
         );
         if (is_wp_error($result)) {
             return $result;
