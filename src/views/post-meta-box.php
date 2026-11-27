@@ -267,11 +267,11 @@ $channel_options = [...$channels, ...array_map(static fn(string $slug): array =>
                             <div class="teksttv-dates-row">
                                 <div class="teksttv-date-field">
                                     <label for="teksttv-date-start"><?php echo esc_html('Vanaf'); ?></label>
-                                    <input type="date" name="teksttv_date_start" value="<?php echo esc_attr($date_start); ?>" id="teksttv-date-start" />
+                                    <input type="date" name="teksttv_date_start" value="<?php echo esc_attr($date_start); ?>" id="teksttv-date-start" @change="onDateChange()" />
                                 </div>
                                 <div class="teksttv-date-field">
                                     <label for="teksttv-date-end"><?php echo esc_html('Tot en met'); ?></label>
-                                    <input type="date" name="teksttv_date_end" value="<?php echo esc_attr($date_end); ?>" id="teksttv-date-end" @change="onDateEndChange()" />
+                                    <input type="date" name="teksttv_date_end" value="<?php echo esc_attr($date_end); ?>" id="teksttv-date-end" @change="onDateChange()" />
                                     <button type="button" class="button-link teksttv-date-reset is-hidden" id="teksttv-date-end-reset" @click.prevent="resetDateEnd($event)"><?php echo esc_html('Standaard herstellen'); ?></button>
                                 </div>
                             </div>

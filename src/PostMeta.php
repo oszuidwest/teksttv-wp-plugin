@@ -112,13 +112,10 @@ class PostMeta
 
         $fallback_image = null;
         $custom_image = null;
-        $saved_start = '';
         if ($post_id) {
             $fallback_image = ArticleContent::image_data(ArticleContent::thumbnail_id($post_id), 'text_sidebar');
             $custom_image = ArticleContent::image_data(ArticleContent::sidebar_override($post_id), 'text_sidebar');
-            $saved_start = ArticleContent::string_meta($post_id, '_teksttv_date_start') ?: self::default_start_date(get_post($post_id));
         }
-        $default_end = self::default_end_date($saved_start);
 
         $prompts = Helpers::get_ai_prompts();
         $ai_supported = self::ai_enabled_for((string) $screen->post_type);
@@ -128,7 +125,7 @@ class PostMeta
         $config = [
             'previewUrl' => $preview_url,
             'imageDataUrl' => rest_url('teksttv/v1/image-data'),
-            'defaultEndDate' => $default_end,
+            'defaultEndDays' => self::default_end_days(),
             'fallbackImage' => $fallback_image ?: '',
             'customImage' => $custom_image ?: '',
             'generateUrl' => rest_url('teksttv/v1/generate'),
@@ -157,13 +154,18 @@ class PostMeta
      */
     private static function default_end_date(string $start_date): string
     {
-        $default_days = (int) get_option('teksttv_default_end_days', 7);
+        $default_days = self::default_end_days();
         $start_date = Helpers::sanitize_date_input($start_date);
         if ($default_days <= 0 || $start_date === '') {
             return '';
         }
 
         return (new \DateTimeImmutable($start_date))->modify('+' . $default_days . ' days')->format('Y-m-d');
+    }
+
+    private static function default_end_days(): int
+    {
+        return (int) get_option('teksttv_default_end_days', 7);
     }
 
     private static function has_rich_text_features(): bool

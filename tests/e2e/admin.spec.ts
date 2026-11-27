@@ -375,6 +375,17 @@ test.describe('administrator admin screens', () => {
         await expect.poll(previewTitle).toBe('Eigen kop');
     });
 
+    test('end date reset follows the unsaved start date', async ({ page }) => {
+        await openFixturePostEditor(page);
+        await page.getByRole('button', { name: 'Planning' }).click();
+        const reset = page.locator('#teksttv-date-end-reset');
+        await expect(reset).toBeHidden();
+        await page.locator('#teksttv-date-start').fill('2099-01-01');
+        await expect(reset).toBeVisible();
+        await reset.click();
+        await expect(page.locator('#teksttv-date-end')).toHaveValue('2099-01-08');
+    });
+
     test.describe('new post', () => {
         test.afterEach(reseedFixtures);
 

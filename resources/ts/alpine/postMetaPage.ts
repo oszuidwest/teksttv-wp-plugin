@@ -5,7 +5,7 @@ import { debounce, previewSlideUrl, removeImageItem, retryUntil } from '../modul
 import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postMeta/aiGeneration';
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
-import { syncDateEndResetButton } from './postMeta/dateEndUi';
+import { getDefaultEndDate, syncDateEndResetButton } from './postMeta/dateEndUi';
 import { getTeksttvEditorHtml, isNewPost, watchPostTitle } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { initTeksttvEditorWhenDisplayed } from './postMeta/lazyEditor';
@@ -215,13 +215,13 @@ export function createPostMetaPage() {
 
         openSidebarCustom,
 
-        onDateEndChange(): void {
+        onDateChange(): void {
             syncDateEndResetButton(config);
         },
 
         resetDateEnd(e: Event): void {
             e.preventDefault();
-            const defaultEndDate = config?.defaultEndDate ?? '';
+            const defaultEndDate = getDefaultEndDate(config);
             const dateEnd = document.querySelector<HTMLInputElement>('#teksttv-date-end');
             const btn = document.querySelector<HTMLButtonElement>('#teksttv-date-end-reset');
             if (!(dateEnd && defaultEndDate)) return;
