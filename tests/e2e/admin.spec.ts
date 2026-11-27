@@ -386,6 +386,32 @@ test.describe('administrator admin screens', () => {
         await expect(page.locator('#teksttv-date-end')).toHaveValue('2099-01-08');
     });
 
+    test('live preview follows the Gutenberg featured image', async ({ page }) => {
+        await openFixturePostEditor(page);
+        const attachmentId = Number(
+            await page.locator('#teksttv-images-list .teksttv-image-item').getAttribute('data-id'),
+        );
+        const previewImage = async () => {
+            const src = (await page.locator('#teksttv-preview-iframe').getAttribute('src')) ?? '';
+            const data = new URL(src, 'http://localhost').searchParams.get('data');
+            return data ? (JSON.parse(Buffer.from(data, 'base64').toString('utf8')).image?.url ?? null) : null;
+        };
+        const setFeaturedImage = (id: number) =>
+            page.evaluate((value) => {
+                const browser = window as unknown as {
+                    wp: { data: { dispatch(store: string): { editPost(values: Record<string, number>): void } } };
+                };
+                browser.wp.data.dispatch('core/editor').editPost({ featured_media: value });
+            }, id);
+
+        await setFeaturedImage(attachmentId);
+        await expect.poll(previewImage).toMatch(/\.(jpe?g|png)$/);
+        await expect(page.locator('#teksttv-sidebar-default-img')).toBeVisible();
+
+        await setFeaturedImage(0);
+        await expect.poll(previewImage).toBeNull();
+    });
+
     test.describe('new post', () => {
         test.afterEach(reseedFixtures);
 

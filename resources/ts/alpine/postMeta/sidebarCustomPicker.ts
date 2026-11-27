@@ -1,6 +1,6 @@
 import type { ImageData, TeksttvPostConfig, WPMediaFrame } from '../../modules/types';
 import { pickSingleImage } from '../../modules/wpMedia';
-import { applySidebarCardState } from './sidebarCard';
+import { applySidebarCardState, fetchSidebarImageData } from './sidebarCard';
 
 /**
  * Pick a sidebar image, falling back to attachment data if REST fails.
@@ -35,15 +35,9 @@ export function createSidebarCustomPicker(
                 const selectionIsCurrent = (): boolean =>
                     document.querySelector<HTMLInputElement>('#teksttv-sidebar-image-id')?.value === selectedId;
 
-                void wp
-                    .apiFetch<ImageData>({
-                        url: `${config.imageDataUrl}?${new URLSearchParams({ id: selectedId, slot: 'text_sidebar' })}`,
-                    })
+                void fetchSidebarImageData(config, selectedId)
                     .then((data) => {
                         if (!selectionIsCurrent()) return;
-                        if (!data.url) {
-                            throw new Error('image-data request failed');
-                        }
                         setCustomImageData(data);
                         applySidebarCardState('custom', refreshPreview);
                     })

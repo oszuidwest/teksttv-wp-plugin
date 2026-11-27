@@ -185,11 +185,8 @@ $channel_options = [...$channels, ...array_map(static fn(string $slug): array =>
                         <?php if (!$is_message) : ?>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'default' ? 'is-active' : ''; ?>" data-state="default" id="teksttv-sidebar-card-default" aria-pressed="<?php echo $active_state === 'default' ? 'true' : 'false'; ?>" @click.prevent="activateSidebarCardDefault()">
                             <span class="teksttv-image-card-label"><?php echo esc_html('Standaard'); ?></span>
-                            <?php if ($fallback_url) : ?>
-                                <img src="<?php echo esc_url($fallback_url); ?>" alt="" class="teksttv-image-card-thumb" width="100" height="68" />
-                            <?php else : ?>
-                                <span class="teksttv-image-card-icon"><span class="dashicons dashicons-format-image" aria-hidden="true"></span></span>
-                            <?php endif; ?>
+                            <img src="<?php echo esc_url($fallback_url); ?>" alt="" class="teksttv-image-card-thumb <?php echo $fallback_url ? '' : 'is-hidden'; ?>" id="teksttv-sidebar-default-img" width="100" height="68" />
+                            <span class="teksttv-image-card-icon <?php echo $fallback_url ? 'is-hidden' : ''; ?>" id="teksttv-sidebar-default-placeholder"><span class="dashicons dashicons-format-image" aria-hidden="true"></span></span>
                         </button>
                         <?php endif; ?>
                         <button type="button" class="teksttv-image-card <?php echo $active_state === 'custom' ? 'is-active' : ''; ?>" data-state="custom" id="teksttv-sidebar-card-custom" aria-pressed="<?php echo $active_state === 'custom' ? 'true' : 'false'; ?>" @click.prevent="openSidebarCustom()">

@@ -11,7 +11,7 @@ import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { initTeksttvEditorWhenDisplayed } from './postMeta/lazyEditor';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
 import { updatePreviewThumbnails } from './postMeta/previewThumbnails';
-import { applySidebarCardState } from './postMeta/sidebarCard';
+import { applySidebarCardState, followFeaturedImage } from './postMeta/sidebarCard';
 import { createSidebarCustomPicker } from './postMeta/sidebarCustomPicker';
 
 export function createPostMetaPage() {
@@ -153,6 +153,7 @@ export function createPostMetaPage() {
 
             document.querySelector('#title')?.addEventListener('input', updatePreview);
             watchPostTitle(updatePreview);
+            if (config) followFeaturedImage(config, updatePreview);
 
             if (activeInput && config?.aiSupported && config.generateUrl) {
                 activeInput.addEventListener('change', () => {

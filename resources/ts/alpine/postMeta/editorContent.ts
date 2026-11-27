@@ -39,6 +39,25 @@ export function isNewPost(): boolean {
     return wp.data?.select('core/editor')?.isEditedPostNew() === true;
 }
 
+function getStoreFeaturedImageId(): number | null {
+    const id = wp.data?.select('core/editor')?.getEditedPostAttribute('featured_media');
+    return typeof id === 'number' ? id : null;
+}
+
+/** Call `onChange` with the attachment ID (0 when removed) when the Gutenberg featured image changes. */
+export function watchFeaturedImage(onChange: (id: number) => void): void {
+    if (!wp.data?.subscribe) return;
+    let previous = getStoreFeaturedImageId();
+    wp.data.subscribe(() => {
+        const current = getStoreFeaturedImageId();
+        if (current === null || current === previous) return;
+        // Until the store has loaded the post it reports no ID; the first ID it then reports is the saved one, which the page config already holds.
+        const loaded = previous !== null;
+        previous = current;
+        if (loaded) onChange(current);
+    });
+}
+
 /** Read unsaved source content from Gutenberg or the Classic Editor. */
 export function getCurrentPostEditorState() {
     const editorStore = wp.data?.select('core/editor');
