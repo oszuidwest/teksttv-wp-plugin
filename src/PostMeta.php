@@ -134,7 +134,6 @@ class PostMeta
             'generateUrl' => rest_url('teksttv/v1/generate'),
             'aiSupported' => $ai_supported,
             'postId' => $post_id ?: 0,
-            'isNewPost' => $is_new_post,
             'fallbackTitle' => $fallback_title,
             'titleCharLimit' => $prompts['title_char_limit'],
             'wordLimit' => $prompts['word_limit'],

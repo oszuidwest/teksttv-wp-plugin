@@ -34,6 +34,11 @@ export function watchPostTitle(onChange: () => void): void {
     });
 }
 
+/** Ask the store on every call: Gutenberg saves without reloading the page. Without the store (Classic) this is false. */
+export function isNewPost(): boolean {
+    return wp.data?.select('core/editor')?.isEditedPostNew() === true;
+}
+
 /** Read unsaved source content from Gutenberg or the Classic Editor. */
 export function getCurrentPostEditorState() {
     const editorStore = wp.data?.select('core/editor');

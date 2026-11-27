@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { getAiGenerationErrorMessage } from '../../resources/ts/alpine/postMeta/aiGeneration';
-import { getCurrentPostEditorState } from '../../resources/ts/alpine/postMeta/editorContent';
+import { getCurrentPostEditorState, isNewPost } from '../../resources/ts/alpine/postMeta/editorContent';
 
 function setGlobal(name: string, value: unknown): void {
     Object.defineProperty(globalThis, name, { configurable: true, value });
@@ -21,6 +21,13 @@ test('reads unsaved Gutenberg title and content from the core editor store', () 
         title: 'Onopgeslagen titel',
         content: '<p>Onopgeslagen inhoud</p>',
     });
+});
+
+test('follows the Gutenberg new-post state', () => {
+    for (const isNew of [true, false]) {
+        setGlobal('wp', { data: { select: () => ({ isEditedPostNew: () => isNew }) } });
+        expect(isNewPost()).toBe(isNew);
+    }
 });
 
 test('falls back to the visible Classic Editor TinyMCE instance', () => {

@@ -30,7 +30,6 @@ export interface TeksttvPostConfig {
     generateUrl: string;
     aiSupported: boolean;
     postId: number;
-    isNewPost: boolean;
     fallbackTitle: string;
     titleCharLimit: number;
     wordLimit: number;
@@ -93,6 +92,7 @@ interface WPGlobal {
     data?: {
         select(store: 'core/editor'): {
             getEditedPostAttribute(attribute: 'title' | 'content'): unknown;
+            isEditedPostNew(): boolean;
         } | null;
         subscribe(listener: () => void): () => void;
     };

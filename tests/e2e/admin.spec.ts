@@ -1,4 +1,4 @@
-import { getBrowserErrors, openFixturePostEditor } from './helpers';
+import { getBrowserErrors, openFixturePostEditor, showGutenbergMetaBoxes } from './helpers';
 import { reseedFixtures } from './reseed-fixtures';
 import { expect, test } from './test';
 
@@ -375,55 +375,58 @@ test.describe('administrator admin screens', () => {
         await expect.poll(previewTitle).toBe('Eigen kop');
     });
 
-    test('AI generation sends the latest unsaved Gutenberg state', async ({ page }) => {
-        await openFixturePostEditor(page);
+    test.describe('new post', () => {
+        test.afterEach(reseedFixtures);
 
-        page.on('dialog', (dialog) => dialog.accept());
-        const generateUrl = await page.evaluate(() => {
-            const browser = window as unknown as { teksttvPost: { generateUrl: string } };
-            return browser.teksttvPost.generateUrl;
-        });
-        await page.route(`${generateUrl}*`, (route) =>
-            route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({ content: 'AI tekst' }),
-            }),
-        );
+        test('AI generation is offered and sends the latest unsaved state after saving a new Gutenberg post without a reload', async ({
+            page,
+        }) => {
+            await page.goto('/wp-admin/post-new.php');
+            await showGutenbergMetaBoxes(page);
 
-        const requestPromise = page.waitForRequest((request) => request.url().startsWith(generateUrl), {
-            timeout: 5000,
-        });
-        const disabled = await page.evaluate(() => {
-            const browser = window as unknown as {
-                wp: { data: { dispatch(store: string): { editPost(values: Record<string, string>): void } } };
-                teksttvPost: { aiSupported: boolean; isNewPost: boolean };
-            };
-            browser.wp.data.dispatch('core/editor').editPost({
-                title: 'Onopgeslagen E2E titel',
-                content: '<p>Onopgeslagen E2E artikeltekst</p>',
+            const generateUrl = /\/teksttv\/v1\/generate/;
+            await page.route(generateUrl, (route) =>
+                route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ content: 'AI tekst' }),
+                }),
+            );
+
+            await page.evaluate(async () => {
+                const browser = window as unknown as {
+                    wp: {
+                        data: {
+                            dispatch(store: string): {
+                                editPost(values: Record<string, string>): void;
+                                savePost(): Promise<void>;
+                            };
+                        };
+                    };
+                };
+                const editor = browser.wp.data.dispatch('core/editor');
+                editor.editPost({ title: 'Nieuw E2E concept', content: '<p>Opgeslagen E2E artikeltekst</p>' });
+                await editor.savePost();
+                editor.editPost({
+                    title: 'Onopgeslagen E2E titel',
+                    content: '<p>Onopgeslagen E2E artikeltekst</p>',
+                });
             });
-            browser.teksttvPost.aiSupported = true;
-            browser.teksttvPost.isNewPost = false;
 
-            const button = document.createElement('button');
-            button.dataset.field = 'body';
-            const metaBox = document.querySelector<
-                HTMLElement & {
-                    _x_dataStack?: Array<{ onGenerateClick(event: { currentTarget: HTMLButtonElement }): void }>;
-                }
-            >('.teksttv-meta-box');
-            const component = metaBox?._x_dataStack?.[0];
-            if (!component) throw new Error('TekstTV Alpine component is unavailable.');
-            component.onGenerateClick({ currentTarget: button });
-            return button.disabled;
-        });
-        expect(disabled).toBe(true);
+            // Switching TekstTV on after the save offers to generate.
+            const offer = page.waitForEvent('dialog');
+            await page.getByText('Toon op Tekst TV').click();
+            const dialog = await offer;
+            expect(dialog.message()).toMatch(/^Wil je automatisch /);
+            await dialog.dismiss();
 
-        const request = await requestPromise;
-        expect(request.postDataJSON()).toMatchObject({
-            source_title: 'Onopgeslagen E2E titel',
-            source_content: '<p>Onopgeslagen E2E artikeltekst</p>',
+            const requestPromise = page.waitForRequest(generateUrl, { timeout: 5000 });
+            await page.getByRole('button', { name: 'Genereer kop & tekst' }).click();
+            const request = await requestPromise;
+            expect(request.postDataJSON()).toMatchObject({
+                source_title: 'Onopgeslagen E2E titel',
+                source_content: '<p>Onopgeslagen E2E artikeltekst</p>',
+            });
         });
     });
 });
