@@ -409,7 +409,7 @@ class PostMetaTest extends TestCase
                 return is_array($config)
                     && $config['pageSeparator'] === $page_separator
                     && $config['aiSupported'] === in_array('ai_generate', $features, true)
-                    && (!$auto_draft || ($config['isNewPost'] === true && $config['fallbackTitle'] === ''));
+                    && (!$auto_draft || $config['fallbackTitle'] === '');
             }),
             'before'
         );

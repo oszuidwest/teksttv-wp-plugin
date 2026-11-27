@@ -6,7 +6,7 @@ import { requestAiGeneration, teksttvHasExistingGeneratedContent } from './postM
 import { buildSlidesFromDom, hasSidebarPhoto } from './postMeta/buildSlides';
 import { updateTeksttvCharCount, updateTeksttvWordCount } from './postMeta/counts';
 import { syncDateEndResetButton } from './postMeta/dateEndUi';
-import { getTeksttvEditorHtml, watchPostTitle } from './postMeta/editorContent';
+import { getTeksttvEditorHtml, isNewPost, watchPostTitle } from './postMeta/editorContent';
 import { createExtraImagesOpener } from './postMeta/extraImagesPicker';
 import { initTeksttvEditorWhenDisplayed } from './postMeta/lazyEditor';
 import { mountTeksttvPreviewOverlay } from './postMeta/previewOverlay';
@@ -155,34 +155,31 @@ export function createPostMetaPage() {
             watchPostTitle(updatePreview);
 
             if (activeInput && config?.aiSupported && config.generateUrl) {
-                if (!config.isNewPost) {
-                    activeInput.addEventListener('change', () => {
-                        if (!activeInput.checked) return;
-                        if (teksttvHasExistingGeneratedContent()) return;
+                activeInput.addEventListener('change', () => {
+                    if (!activeInput.checked || isNewPost() || teksttvHasExistingGeneratedContent()) return;
 
-                        window.setTimeout(() => {
-                            const generateBtn = document.querySelector<HTMLButtonElement>(
-                                '.teksttv-ai-section .teksttv-generate-btn',
+                    window.setTimeout(() => {
+                        const generateBtn = document.querySelector<HTMLButtonElement>(
+                            '.teksttv-ai-section .teksttv-generate-btn',
+                        );
+                        if (!generateBtn) return;
+
+                        const field = generateBtn.dataset.field === 'both' ? 'both' : 'body';
+                        const confirmation =
+                            field === 'both'
+                                ? 'Wil je automatisch een kop en tekst genereren?'
+                                : 'Wil je automatisch tekst genereren?';
+                        if (window.confirm(confirmation)) {
+                            requestAiGeneration(
+                                config,
+                                generateBtn,
+                                field,
+                                hasSidebarPhoto(config, customImageData),
+                                updatePreview,
                             );
-                            if (!generateBtn) return;
-
-                            const field = generateBtn.dataset.field === 'both' ? 'both' : 'body';
-                            const confirmation =
-                                field === 'both'
-                                    ? 'Wil je automatisch een kop en tekst genereren?'
-                                    : 'Wil je automatisch tekst genereren?';
-                            if (window.confirm(confirmation)) {
-                                requestAiGeneration(
-                                    config,
-                                    generateBtn,
-                                    field,
-                                    hasSidebarPhoto(config, customImageData),
-                                    updatePreview,
-                                );
-                            }
-                        }, 300);
-                    });
-                }
+                        }
+                    }, 300);
+                });
             }
 
             window.setTimeout(updatePreview, 500);
@@ -271,7 +268,7 @@ export function createPostMetaPage() {
             const field = btn.dataset.field;
             if (btn.disabled || !(field === 'title' || field === 'body' || field === 'both')) return;
 
-            if (config.isNewPost) {
+            if (isNewPost()) {
                 window.alert('Sla de post eerst op voordat je AI-content kunt genereren.');
                 return;
             }

@@ -29,10 +29,14 @@ export async function login(page: Page, username: string, password: string): Pro
     await expect(page.locator('#wpadminbar')).toBeVisible();
 }
 
-/** Open the seeded post once Gutenberg has loaded it, and expose its classic meta boxes. */
 export async function openFixturePostEditor(page: Page): Promise<void> {
     await page.goto('/wp-admin/edit.php');
     await page.getByRole('link', { name: 'TekstTV Smoke Post' }).first().click();
+    await showGutenbergMetaBoxes(page);
+}
+
+/** Wait until Gutenberg has loaded the post, and expose its classic meta boxes. */
+export async function showGutenbergMetaBoxes(page: Page): Promise<void> {
     await expect(page.locator('#teksttv_meta')).toBeAttached();
 
     // Fixtures disable onboarding before this control loads.
