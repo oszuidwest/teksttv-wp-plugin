@@ -127,7 +127,7 @@ class PostMeta
             'previewUrl' => $preview_url,
             'imageDataUrl' => rest_url('teksttv/v1/image-data'),
             'defaultEndDays' => self::default_end_days(),
-            // Playout drops an image whose filtered URL is empty, so the preview does too.
+            // Playout drops a default image whose filtered URL is empty, so the preview does too.
             'fallbackImage' => !empty($fallback_image['url']) ? $fallback_image : '',
             // A category image wins over the featured image, as in playout.
             'fallbackIsCategoryImage' => $post_id && ArticleContent::category_image_data($post_id),

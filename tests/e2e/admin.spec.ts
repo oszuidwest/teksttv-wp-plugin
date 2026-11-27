@@ -427,12 +427,13 @@ test.describe('administrator admin screens', () => {
                     echo wp_json_encode([$image, \\TekstTV\\ArticleContent::get_sidebar_image_data($post->ID)['url']]);
                 `),
             );
+            expect(url).toMatch(/\.(jpe?g|png)$/);
             await openFixturePostEditor(page);
             const card = page.locator('#teksttv-sidebar-default-img');
             await expect.poll(() => previewImage(page)).toBe(url);
             await expect(card).toHaveAttribute('src', url);
 
-            // Removing the featured image does not drop the category image.
+            // Set, then remove, a featured image: the watcher only fires on a change, and the category image must survive.
             await setFeaturedImage(page, imageId);
             await setFeaturedImage(page, 0);
             await expect(card).toHaveAttribute('src', url);

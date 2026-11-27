@@ -26,6 +26,7 @@ export interface TeksttvPostConfig {
     imageDataUrl: string;
     defaultEndDays: number;
     fallbackImage: ImageData | '';
+    /** True when a category supplies the default, even one whose URL is filtered away. */
     fallbackIsCategoryImage: boolean;
     customImage: ImageData | '';
     generateUrl: string;

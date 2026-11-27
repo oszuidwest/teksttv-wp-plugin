@@ -252,7 +252,7 @@ for ($teksttv_i = 1; $teksttv_i <= 10; $teksttv_i++) {
     ], $teksttv_filler_meta);
 }
 
-// Category images change the default sidebar image of every post in that category.
+// Clear category images: a leftover one replaces the featured image as the default sidebar image of every post in its category.
 delete_metadata('term', 0, \TekstTV\CategoryMeta::META_KEY, '', true);
 
 // Remove unseeded posts so admin order and slide feeds stay deterministic.
